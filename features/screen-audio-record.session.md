@@ -39,6 +39,21 @@ Spawning conversation for `bin/screen-audio-record` (the report card is
   live this session. Sequoia's weekly screen-recording re-prompt is a `@note` boundary
   the code cannot suppress.
 
+## Ship 2 (same session, ~01:00–01:10 EEST)
+Esa: *"make it so that it just saves it as ~/Videos/yyyy-mm-dd-hh-mm-ss and enables
+system-audio if i click on AppleToolbox and go 'Record Screen & Audio'. and a quick
+script for doing it right from the terminal. call it 'rec'."*
+- Made `--out` optional → `Recorder.defaultOutPath()` = `~/Videos/<timestamp>.mov`,
+  dir auto-created. Verified live: `rec` wrote `~/Videos/2026-07-02-01-07-46.mov`
+  (3.10s, avc1 + aac), then deleted the throwaway test file.
+- `bin/rec`: one-word wrapper `exec screen-audio-record --system-audio "$@"`.
+- AppleToolbox: replaced the old QuickTime-based Start/Stop rows (QuickTime can't do
+  system audio) with ONE toggle "🎥 Record Screen & Audio" that spawns the recorder,
+  retains the `Process` in `screenRecProc`, and on second click `interrupt()`s it
+  (SIGINT → finalize). Compiled + deployed via build.sh; menu-bar relaunched clean.
+  Honest grade: the toggle is `@built` — the underlying `--system-audio --out` path is
+  `@hw-verified` (via `rec`), but I did not GUI-click the menu row this session.
+
 ## Side effects surfaced
 - Audio scope for `--app` relies on ScreenCaptureKit scoping capturesAudio to the
   filter's included application(s); with `excludesCurrentProcessAudio=true` the

@@ -5,8 +5,10 @@
 # WHAT THIS CARD SPAWNS
 #   Codespace : bin/screen-audio-record.swift (source) + bin/screen-audio-record
 #               (compiled binary; swiftc -O, frameworks ScreenCaptureKit/AVFoundation/
-#               CoreMedia/CoreGraphics/AppKit), commands/screen-audio-record.md
-#               (/screen-audio-record slash pointer).
+#               CoreMedia/CoreGraphics/AppKit), bin/rec (one-word launcher wrapper),
+#               commands/screen-audio-record.md + commands/rec.md (slash pointers),
+#               topbar/AppleToolbox.swift (🧰 ▸ "Record Screen & Audio" toggle:
+#               recordScreenAudioToggle + recDefaultOutPath + screenRecProc state).
 #   Thinkspace: features/screen-audio-record.session.md (the spawning conversation).
 #   Areaspace : OWNS = capturing a display's video AND audio-off-the-system-engine into
 #               one .mov via ScreenCaptureKit, with the audio scoped either to a single
@@ -30,9 +32,11 @@
 #   @note         a documented boundary, not an executable claim.
 #
 # RESULT
-#   Direct-push to main, no PR. Files: bin/screen-audio-record.swift,
-#   bin/screen-audio-record (+x, compiled), commands/screen-audio-record.md,
-#   features/screen-audio-record.feature (+ .session.md).
+#   Two direct-pushes to main, no PR.
+#   Ship 1 (commit 412fccd): bin/screen-audio-record.swift + binary,
+#     commands/screen-audio-record.md, features/screen-audio-record.feature + .session.md.
+#   Ship 2 (this commit): default ~/Videos/<timestamp>.mov naming when --out omitted,
+#     bin/rec launcher, commands/rec.md, AppleToolbox "Record Screen & Audio" toggle.
 #   Live build machine: macOS 15.6.1 (24G90), display 1512x982 @2x.
 # ============================================================================
 
@@ -83,6 +87,41 @@ Feature: Record screen + system audio to one .mov with no loopback driver
       AVCaptureSession) and a SECOND AVAssetWriterInput(.audio) receives .microphone buffers
     And QuickTime plays the system-audio track by default; the mic is a selectable 2nd track
     # cite: setupWriter(mic:) + stream() .microphone case — @built: not exercised live
+
+  @hw-verified
+  Scenario: --out omitted defaults to ~/Videos/<timestamp>.mov  (ran live)
+    Given no --out is passed
+    When recording starts
+    Then Recorder.defaultOutPath() creates ~/Videos (if missing) and names the file
+      yyyy-MM-dd-HH-mm-ss.mov
+    And a live `rec` run wrote ~/Videos/2026-07-02-01-07-46.mov — probe confirmed
+      3.10s, video avc1 3024x1964, audio 'aac '
+    # cite: Recorder.defaultOutPath() + start()
+
+  @hw-verified
+  Scenario: rec is the one-word terminal launcher  (ran live)
+    Given `bin/rec` on PATH
+    When `rec` runs with no args
+    Then it exec's `screen-audio-record --system-audio "$@"` → whole screen + all system
+      audio → ~/Videos/<timestamp>.mov, Ctrl-C stops
+    And `rec --app <name>` passes through and single-app audio wins over --system-audio
+      (start() checks appName first)
+    # cite: bin/rec; ran live — wrote+finalized a .mov under ~/Videos
+
+  @built
+  Scenario: AppleToolbox 🧰 ▸ Record Screen & Audio is a start/stop toggle
+    Given the menu-bar app is running
+    When the row is clicked and screenRecProc is nil
+    Then it spawns `screen-audio-record --system-audio --out ~/Videos/<timestamp>.mov`,
+      retains the Process in screenRecProc, notifies "Recording…", and the row relabels
+      to "⏹ Stop Recording (→ ~/Videos)"
+    When clicked again
+    Then it sends SIGINT via Process.interrupt() so the recorder finalizes the .mov,
+      clears screenRecProc, and notifies "Recording saved <name>"
+    # cite: recordScreenAudioToggle() + recDefaultOutPath() + menu row in rebuildMenu()
+    # @built: compiled + deployed live (build.sh, menu-bar relaunched); the same binary
+    # + --system-audio --out path is @hw-verified via rec, but the click itself and the
+    # interrupt()-from-AppleToolbox path were not GUI-driven in this build session.
 
   @note
   Scenario: Sequoia re-prompts screen-recording permission

@@ -1,0 +1,20 @@
+#!/bin/bash
+# rec — one-word screen + system-audio recorder.
+#
+# Starts recording the whole screen + ALL system audio immediately, saving to
+# ~/Videos/yyyy-MM-dd-HH-mm-ss.mov. Press Ctrl-C to stop and finalize.
+# No microphone, no BlackHole/Loopback — audio comes off the system audio engine
+# via ScreenCaptureKit (bin/screen-audio-record).
+#
+# Usage:
+#   rec                      # whole screen + all system audio → ~/Videos/<timestamp>.mov
+#   rec --app Renoise        # screen + ONLY that app's audio
+#   rec --also-mic           # + your microphone as a 2nd track
+#   rec --out ~/foo.mov      # custom path
+#   rec --list               # displays + audible app names
+#
+# Any flag is passed straight through to screen-audio-record; --app overrides
+# --system-audio (single-app audio wins).
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$DIR/screen-audio-record" --system-audio "$@"

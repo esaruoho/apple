@@ -2698,6 +2698,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // can show the TRUE end-to-end state (flag ON *and* server up) without doing
     // a blocking localhost curl on the main thread during menu rebuilds.
     var voiceboxServerUp = false
+    // Live screen+system-audio recording (bin/screen-audio-record). Held so the
+    // menu toggle can SIGINT it to finalize the .mov. nil = not recording.
+    var screenRecProc: Process?
+    var screenRecOut: String?
     // Carbon hotkey ref retained so the system holds the registration alive
     // for the lifetime of the menu-bar process (which IS the lifetime — the
     // LaunchAgent re-spawns the menu-bar if it ever dies).
@@ -3608,50 +3612,57 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Thread.sleep(forTimeInterval: 0.4); openFile(out)
     }
 
-    // Screen recording via QuickTime Player. Start just opens the recording
-    // window — Esa clicks Record manually when ready (so he can choose the
-    // mic dropdown first if he wants to narrate, or skip it if he doesn't).
-    // Stop uses three fallbacks: QT's `stop document`, UI-clicking the
-    // menu-bar stop icon, and finally ⌃⌘Esc.
+    // Screen + system-audio recording via bin/screen-audio-record (ScreenCaptureKit).
+    // Unlike QuickTime, this captures audio straight off the system audio engine —
+    // no microphone, no BlackHole/Loopback. First click starts (whole screen + all
+    // system audio → ~/Videos/<timestamp>.mov); second click SIGINTs the recorder,
+    // which catches the signal and finalizes the file. Process() is retained in
+    // screenRecProc so interrupt() reaches the right PID.
 
-    @objc func startScreenRecording(_ sender: NSMenuItem) {
-        let script = """
-        tell application "QuickTime Player"
-            activate
-            try
-                new screen recording
-            end try
-        end tell
-        """
-        runDetached("/usr/bin/osascript", ["-e", script])
+    @objc func recordScreenAudioToggle(_ sender: NSMenuItem) {
+        if let p = screenRecProc, p.isRunning {
+            p.interrupt()   // SIGINT → recorder finalizes the .mov
+            let out = screenRecOut
+            screenRecProc = nil
+            screenRecOut = nil
+            rebuildMenu()
+            // Give it a moment to finish writing, then confirm + reveal.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                if let out, FileManager.default.fileExists(atPath: out) {
+                    notify("Recording saved", (out as NSString).lastPathComponent)
+                }
+            }
+            return
+        }
+        let bin = "\(HOME)/work/apple/bin/screen-audio-record"
+        guard FileManager.default.fileExists(atPath: bin) else {
+            notify("Record Screen & Audio", "screen-audio-record not found"); return
+        }
+        let out = Self.recDefaultOutPath()
+        let p = Process()
+        p.launchPath = bin
+        p.arguments = ["--system-audio", "--out", out]
+        p.standardOutput = FileHandle.nullDevice
+        p.standardError = FileHandle.nullDevice
+        do {
+            try p.run()
+            screenRecProc = p
+            screenRecOut = out
+            notify("Recording…", "Screen + system audio → \((out as NSString).lastPathComponent)")
+            rebuildMenu()
+        } catch {
+            notify("Record Screen & Audio", "failed to start: \(error.localizedDescription)")
+        }
     }
 
-    @objc func stopScreenRecording(_ sender: NSMenuItem) {
-        let script = """
-        -- Try 1: AppleScript stop on the recording document.
-        tell application "QuickTime Player"
-            try
-                if (count of documents) > 0 then
-                    stop document 1
-                end if
-            end try
-        end tell
-        -- Try 2: Click QT's menu-bar stop icon (visible while recording).
-        tell application "System Events"
-            try
-                tell application process "QuickTime Player"
-                    click menu bar item 1 of menu bar 2
-                end tell
-            end try
-        end tell
-        -- Try 3: macOS global stop-recording shortcut ⌃⌘Esc.
-        tell application "System Events"
-            try
-                key code 53 using {command down, control down}
-            end try
-        end tell
-        """
-        runDetached("/usr/bin/osascript", ["-e", script])
+    /// ~/Videos/yyyy-MM-dd-HH-mm-ss.mov (dir created if missing). Mirrors the
+    /// default in bin/screen-audio-record so the menu label's path is honest.
+    static func recDefaultOutPath() -> String {
+        let dir = (HOME as NSString).appendingPathComponent("Videos")
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd-HH-mm-ss"
+        return (dir as NSString).appendingPathComponent(f.string(from: Date()) + ".mov")
     }
 
     @objc func refresh() { rebuildMenu() }
@@ -3996,10 +4007,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             speechTitle = "🤫 Claude Speech: OFF — click to enable"
         }
         menu.addItem(customAction(speechTitle, selector: #selector(toggleClaudeSpeech(_:))))
-        menu.addItem(customAction("🎥 Start Recording Current Screen",
-                                  selector: #selector(startScreenRecording(_:))))
-        menu.addItem(customAction("⏹\u{FE0F} Stop Recording (save dialog)",
-                                  selector: #selector(stopScreenRecording(_:))))
+        // Screen + system-audio recording via ScreenCaptureKit (no loopback driver).
+        // Toggle: first click starts (whole screen + all system audio → ~/Videos),
+        // second click SIGINTs the recorder so it finalizes the .mov.
+        let recActive = (screenRecProc?.isRunning ?? false)
+        let recTitle = recActive
+            ? "⏹\u{FE0F} Stop Recording (→ ~/Videos)"
+            : "🎥 Record Screen & Audio"
+        menu.addItem(customAction(recTitle, selector: #selector(recordScreenAudioToggle(_:))))
 
         // Pinned-file row — populated when a file is dropped onto the
         // AppleToolbox icon in the Finder toolbar (via application(_:open:)).

@@ -62,7 +62,7 @@ func printUsage() {
       --display <n>          display index from --list (default 0 = main)
       --also-mic             add your microphone as a second audio track
       --fps <n>              frame rate (default 60)
-      --out, -o <path>       output .mov (required unless --list)
+      --out, -o <path>       output .mov (default: ~/Videos/yyyy-MM-dd-HH-mm-ss.mov)
 
     Press Ctrl-C to stop and finalize the file.
     """)
@@ -76,7 +76,16 @@ func err(_ s: String) -> Never {
 // MARK: - Recorder
 
 final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
-    let opts: Options
+    var opts: Options
+
+    /// Default output: ~/Videos/yyyy-MM-dd-HH-mm-ss.mov (dir created if missing).
+    static func defaultOutPath() -> String {
+        let dir = (NSHomeDirectory() as NSString).appendingPathComponent("Videos")
+        try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd-HH-mm-ss"
+        return (dir as NSString).appendingPathComponent(f.string(from: Date()) + ".mov")
+    }
     var stream: SCStream?
     var writer: AVAssetWriter!
     var videoInput: AVAssetWriterInput!
@@ -116,7 +125,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     func start(_ content: SCShareableContent) {
-        guard !opts.outPath.isEmpty else { err("--out <path> required (or use --list)") }
+        if opts.outPath.isEmpty { opts.outPath = Recorder.defaultOutPath() }
         guard opts.displayIndex < content.displays.count else { err("no display at index \(opts.displayIndex)") }
         let display = content.displays[opts.displayIndex]
 

@@ -317,15 +317,18 @@ The on-device agentic tool-calling loop on the Mini's MLX brain  —  10 scenari
   triad: .session✓  transcript✗  RESULT✓
   honesty: 10/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Record screen + system audio to one .mov with no loopback driver  —  6 scenarios   (features/screen-audio-record.feature)
+Record screen + system audio to one .mov with no loopback driver  —  9 scenarios   (features/screen-audio-record.feature)
   - [@hw-verified] single-app audio isolation captures screen + only that app's sou
   - [@hw-verified] Ctrl-C stops cleanly and finalizes a playable file  (ran live)
   - [@hw-verified] --list enumerates displays and audible apps  (ran live)
   - [@built] whole-display capture with all system audio
   - [@built] optional microphone as a second audio track
+  - [@hw-verified] --out omitted defaults to ~/Videos/<timestamp>.mov  (ran live)
+  - [@hw-verified] rec is the one-word terminal launcher  (ran live)
+  - [@built] AppleToolbox 🧰 ▸ Record Screen & Audio is a start/stop toggle
   - [(no grade)] Sequoia re-prompts screen-recording permission
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 5/6 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 8/9 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Desktop & Dock visibility from the command bar  —  3 scenarios   (features/shell-toggles.feature)
   - [@verified] "hide … desktop" and "hide the dock" route to their actions

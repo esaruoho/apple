@@ -1,4 +1,4 @@
-# CLI Tools Index — 275 tools in bin/
+# CLI Tools Index — 283 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -199,6 +199,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `process-router` — Dispatch a 'process'-tagged file to the right worker. — `bin/process-router`
 `qr-wifi` — generate a Wi-Fi-join QR code. Scanning it on iOS/Android joins — `bin/qr-wifi`
 `read-aloud` — (no description) — `bin/read-aloud`
+`rec` — one-word screen + system-audio recorder. — `bin/rec`
 `release-submit` — (no description) — `bin/release-submit`
 `release-worker` — (no description) — `bin/release-worker`
 `render-tag-icon.swift` — render a colored SF-Symbol tag icon as a .icns file. — `bin/render-tag-icon.swift`
