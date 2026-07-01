@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""fa-video-analysis-mailer — PART 2 of the convey-a-video-by-email flow.
+
+When someone emails a YouTube link to cloudcity-llm@, freellmask-mail CONVEYS it (queues it on the
+whisp belt) and records it as PENDING — it does NOT guess at the content (the 2026-07-01 hallucination).
+THIS script closes the loop: for each pending video, once its transcript has actually landed, it emails
+the requester an analysis built from the REAL transcript, via `convey email-transcript --analyze`.
+
+Reads:  ~/work/comms/queue/fa-video-pending.jsonl   (one {url,to,subj,ts} per line, appended by freellmask)
+Matches: ~/work/whisp-transcripts/catalog.yaml      (url → slug, once transcribed)
+         ~/work/whisp-transcripts/transcripts/<slug>/transcript.txt
+Emits:   convey email-transcript <transcript> --analyze --to <requester> --source <url>
+Rewrites the pending file without the ones it mailed. Best-effort, idempotent, cheap — run on a cadence.
+
+  fa-video-analysis-mailer            # one pass
+  fa-video-analysis-mailer --verbose
+"""
+import json, os, re, subprocess, sys
+from pathlib import Path
+
+HOME    = Path.home()
+PEND    = HOME/"work"/"comms"/"queue"/"fa-video-pending.jsonl"
+CATALOG = HOME/"work"/"whisp-transcripts"/"catalog.yaml"
+TDIR    = HOME/"work"/"whisp-transcripts"/"transcripts"
+CONVEY  = HOME/"work"/"apple"/"bin"/"convey"
+VERBOSE = "--verbose" in sys.argv or "-v" in sys.argv
+
+
+def vid_of(url):
+    m = re.search(r'(?:v=|youtu\.be/|shorts/|embed/)([\w-]{11})', url or "")
+    return m.group(1) if m else None
+
+
+def slug_for(vid, catalog_text):
+    """Find the catalog slug whose block cites this video id (i.e. it has been transcribed)."""
+    if not vid:
+        return None
+    for block in re.split(r'(?m)^(?=\S)', catalog_text):   # split at each top-level `slug:` key
+        if vid in block:
+            mk = re.match(r'^([^\s:]+):', block)
+            if mk and re.search(r'url:\s*\S*' + re.escape(vid), block):
+                return mk.group(1)
+    return None
+
+
+def main():
+    if not PEND.exists() or not CATALOG.exists():
+        return
+    try:
+        lines = [l for l in PEND.read_text(encoding="utf-8", errors="ignore").splitlines() if l.strip()]
+    except Exception:
+        return
+    if not lines:
+        return
+    cat = CATALOG.read_text(encoding="utf-8", errors="ignore")
+    keep, mailed = [], 0
+    for l in lines:
+        try:
+            rec = json.loads(l)
+        except Exception:
+            continue                                    # drop unparseable lines
+        url = rec.get("url", "")
+        slug = slug_for(vid_of(url), cat)
+        tpath = (TDIR/slug/"transcript.txt") if slug else None
+        if not slug or not tpath.exists():
+            keep.append(l)                              # not transcribed yet — keep pending
+            continue
+        to = rec.get("to") or os.environ.get("CONVEY_DIGEST_EMAIL", "esaruoho@gmail.com")
+        cmd = [str(CONVEY), "email-transcript", str(tpath), "--analyze", "--to", to, "--source", url]
+        try:
+            r = subprocess.run(cmd, timeout=360, capture_output=True, text=True)
+            if r.returncode == 0:
+                mailed += 1
+                if VERBOSE:
+                    print(f"  📩 emailed analysis of {slug} → {to}")
+            else:
+                keep.append(l)                          # send failed — retry next pass
+                if VERBOSE:
+                    print(f"  ✗ email-transcript failed for {slug}: {(r.stderr or r.stdout)[:120]}")
+        except Exception as e:
+            keep.append(l)
+            if VERBOSE:
+                print(f"  ✗ email-transcript error for {slug}: {e}")
+    try:
+        PEND.write_text(("\n".join(keep) + "\n") if keep else "", encoding="utf-8")
+    except Exception:
+        pass
+    if VERBOSE:
+        print(f"fa-video-analysis-mailer: mailed {mailed}, {len(keep)} still pending")
+
+
+if __name__ == "__main__":
+    main()

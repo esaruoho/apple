@@ -784,6 +784,19 @@ def poll_once(verbose=True):
             reply={"text":note, "html":md_to_inner_html(note)}
             used="convey (video queued — no hallucinated answer)"
             yt_note=""
+            # PART 2: record this video as PENDING analysis-email. When its transcript lands, the
+            # fa-video-analysis-mailer emails the analysis built from the REAL transcript (no guessing).
+            try:
+                _who=full.get("from") or ""
+                _mm=re.search(r"<([^>]+)>", _who); _to=(_mm.group(1) if _mm else _who).strip() or BCC
+                _pend=Path.home()/"work"/"comms"/"queue"/"fa-video-pending.jsonl"
+                with _pend.open("a") as _pf:
+                    for _u in yt_urls:
+                        _pf.write(json.dumps({"url":_u,"to":_to,"subj":full.get("subject",""),
+                                              "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
+                if verbose: print(f"  📝 pending video-analysis email → {_to} for {len(yt_urls)} video(s)")
+            except Exception as _e:
+                if verbose: print(f"  pending-write error: {_e}")
         elif prior:
             if verbose: print("  → rendering the PRIOR thread answer to PDF (no regeneration)")
             note="Here's the printable one-pager of the previous answer — attached. Same content, just formatted."
