@@ -92,9 +92,10 @@ if hdrs:
             rows.append((parts[0], " ".join(parts[1:-1]), parts[-1]))  # pid, topcmd, power
 info, args = ae.proc_maps()
 cur = ae.current_version()
-print("%-8s %-72s %8s" % ("PID", "COMMAND / WHAT IT IS", "POWER"))
+sm = ae.session_map(info)   # pid -> (session name, confident) for claude rows
+print("%-8s %-90s %8s" % ("PID", "COMMAND / WHAT IT IS", "POWER"))
 for pid, topcmd, power in rows[:n]:
-    print("%-8s %-72s %8s" % (pid, ae.annotate(pid, info, args, topcmd, cur)[:72], power))
+    print("%-8s %-90s %8s" % (pid, ae.annotate(pid, info, args, topcmd, cur, sm)[:90], power))
 PY
 }
 
@@ -187,10 +188,11 @@ sys.path.insert(0, os.environ["APPLE_ENERGY_BIN"])
 import _apple_energy as ae
 cur = ae.current_version()
 info, _ = ae.proc_maps()
+sm = ae.session_map(info)
 print("Running Claude Code sessions (current installed version: %s)\n" % cur)
-print("%-7s %-9s %-4s %-8s %-6s %-8s %-8s %s"
-      % ("PID", "VERSION", "", "AGE", "%CPU", "TERM", "TTY", "PROJECT (cwd)"))
-print("-" * 92)
+print("%-7s %-9s %-4s %-8s %-5s %-8s %-8s %-22s %s"
+      % ("PID", "VERSION", "", "AGE", "%CPU", "TERM", "TTY", "PROJECT", "SESSION NAME"))
+print("-" * 116)
 total = old = 0
 for p in ae.claude_pids():
     cpu = subprocess.run(["ps", "-p", p, "-o", "%cpu="],
@@ -199,14 +201,18 @@ for p in ae.claude_pids():
         continue
     r = ae.claude_row(p, info)
     flag = "OLD" if r["old"] else "ok"
+    name, conf = sm.get(p, ("", False))
+    if name and not conf:
+        name = "~" + name           # ~ = inferred (start-times didn't match; e.g. resumed)
     total += 1
     old += 1 if r["old"] else 0
-    print("%-7s %-9s %-4s %-8s %-6s %-8s %-8s %s"
-          % (p, r["ver"], flag, r["age"], cpu, r["term"], r["tty"], r["cwd"]))
+    proj = os.path.basename(r["cwd"].rstrip("/")) or r["cwd"]
+    print("%-7s %-9s %-4s %-8s %-5s %-8s %-8s %-22s %s"
+          % (p, r["ver"], flag, r["age"], cpu, r["term"], r["tty"], proj[:22], (name or "?")[:44]))
 print()
 print("%d session(s), %d on an OLD version. Restart an OLD one to pick up %s." % (total, old, cur))
-print("Jump to a session's terminal tab:  apple-energy jump <pid|tty|version|project>")
-print("Kill it now:                       apple-energy kill <pid>")
+print("Jump to a session's tab:  apple-energy jump <pid|tty|version|project|name>")
+print("Kill it now:              apple-energy kill <pid>")
 PY
 }
 
@@ -222,13 +228,15 @@ sys.path.insert(0, os.environ["APPLE_ENERGY_BIN"])
 import _apple_energy as ae
 target = os.environ["APPLE_ENERGY_TARGET"].strip().lower()
 info, _ = ae.proc_maps()
+sm = ae.session_map(info)
 matches = []
 for p in ae.claude_pids():
     if p not in info:
         continue
     r = ae.claude_row(p, info)
+    r["name"] = sm.get(p, ("", False))[0]
     tty = r["tty"].lower()
-    hay = " ".join([p, r["ver"], r["cwd"], tty, r["term"]]).lower()
+    hay = " ".join([p, r["ver"], r["cwd"], tty, r["term"], r["name"]]).lower()
     if target == p or target == tty or ("ttys" + target) == tty or target in hay:
         matches.append(r)
 if not matches:
@@ -237,8 +245,9 @@ if not matches:
 if len(matches) > 1:
     print("Ambiguous — '%s' matches %d sessions:" % (target, len(matches)))
     for r in matches:
-        print("  pid %s  %s  %s  %s %s  %s" % (r["pid"], r["ver"], r["age"], r["term"], r["tty"], r["cwd"]))
-    print("Re-run with a unique PID or tty.")
+        print("  pid %s  %s  %s  %s %s  %s  «%s»"
+              % (r["pid"], r["ver"], r["age"], r["term"], r["tty"], r["cwd"], r.get("name", "")))
+    print("Re-run with a unique PID, tty, or name.")
     sys.exit(1)
 r = matches[0]
 tty = r["tty"]

@@ -104,6 +104,23 @@ Feature: Read macOS energy & power telemetry from the command line
     #       readable ages, TERM iTerm2/Terminal, ttys002-009
 
   @built
+  Scenario: claude/now/jump show the SESSION NAME, not just the project  (ran live)
+    Given Claude Code stores one transcript per session at
+      ~/.claude/projects/<encoded-cwd>/<session-id>.jsonl with a name derivable as
+      customTitle → summary → first user-message snippet (same rule as bin/sessions)
+    And the running process does NOT keep the transcript open, so PID→session is inferred
+    When session_map(info) runs
+    Then it pairs each PID to its session by matching the process start time (ps lstart)
+      to the session's first-message timestamp — verified EXACT for all 4 merlib-dump
+      sessions (gravity-paper/prigogine/"boot up …" each matched a PID to the second)
+    And a confident (≤180s) match shows the plain name; a fallback (freshest unclaimed
+      transcript, e.g. a resumed session whose creation ≠ process start) is prefixed "~"
+    And claude gains a SESSION NAME column, now appends «name» to the claude row, and
+      jump matches on the name too (jump <name> focuses that session's tab)
+    # cite: bin/_apple_energy.py session_map/_session_for/session_name; ran live —
+    #       "robmcneilly" (76.7%% CPU), "gravity-paper", "prigogine"; jump prigogine worked
+
+  @built
   Scenario: jump focuses a claude session's terminal window/tab  (resolution + tty-read ran live)
     Given each session has a tty (ttysNNN) and a terminal (iTerm2/Terminal)
     When `apple-energy jump <pid|tty|version|project-substring>` runs

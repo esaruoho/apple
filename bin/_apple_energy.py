@@ -3,6 +3,11 @@
 # Apple-native: only shells out to ps / pgrep / lsof / osascript. No deps.
 
 import os
+import re
+import glob
+import json
+import time
+import calendar
 import subprocess
 
 # terminal-emulator comm substrings → display name (walked up the ppid chain)
@@ -158,7 +163,121 @@ def claude_row(pid, info):
     }
 
 
-def annotate(pid, info, args, topcmd="", cur=""):
+# ---- session-name mapping (PID → Claude Code session + its title) ----------
+# Claude Code stores one transcript per session at
+#   ~/.claude/projects/<encoded-cwd>/<session-id>.jsonl
+# The running process doesn't keep it open, but a session's first message
+# timestamp == the process's start time (to the second), so we pair PID↔session
+# by start time; the name is customTitle → summary → first user-message snippet.
+
+def _proj_dir(cwd):
+    return os.path.expanduser("~/.claude/projects/" + re.sub(r"[^A-Za-z0-9]", "-", cwd))
+
+
+def _iso_epoch(ts):
+    m = re.match(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})", ts or "")
+    if not m:
+        return None
+    return calendar.timegm(tuple(int(x) for x in m.groups()) + (0, 0, 0))  # ts is UTC
+
+
+def _first_ts_epoch(path):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for i, line in enumerate(f):
+                if i > 30:
+                    break
+                if '"timestamp"' not in line:
+                    continue
+                try:
+                    ts = json.loads(line).get("timestamp")
+                except Exception:
+                    continue
+                if ts:
+                    return _iso_epoch(ts)
+    except OSError:
+        pass
+    return None
+
+
+def pid_start_epoch(pid):
+    out = _run(["ps", "-p", str(pid), "-o", "lstart="]).strip()
+    if not out:
+        return None
+    try:
+        return time.mktime(time.strptime(out, "%a %b %d %H:%M:%S %Y"))  # local → epoch
+    except Exception:
+        return None
+
+
+def session_name(path):
+    ct = summ = snip = None
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                t = d.get("type")
+                if t == "custom-title" and d.get("customTitle"):
+                    ct = d["customTitle"]  # last-write-wins
+                elif t == "summary" and not summ:
+                    summ = d.get("summary") or d.get("text")
+                elif t == "user" and snip is None:
+                    c = (d.get("message") or {}).get("content", "")
+                    if isinstance(c, list):
+                        c = " ".join(x.get("text", "") for x in c
+                                     if isinstance(x, dict) and x.get("type") == "text")
+                    c = str(c).strip().replace("\n", " ")
+                    if c and not c.startswith("<"):
+                        snip = c
+    except OSError:
+        pass
+    return (ct or summ or snip or "").strip()
+
+
+def _session_for(pid, info, claimed):
+    cwd = cwd_of(pid)
+    if not cwd:
+        return (None, "", False)
+    files = glob.glob(os.path.join(_proj_dir(cwd), "*.jsonl"))
+    if not files:
+        return (None, "", False)
+    files.sort(key=lambda p: os.path.getmtime(p) if os.path.exists(p) else 0, reverse=True)
+    files = files[:60]
+    pstart = pid_start_epoch(pid)
+    best, bestdelta = None, None
+    if pstart is not None:
+        for fp in files:
+            if fp in claimed:
+                continue
+            st = _first_ts_epoch(fp)
+            if st is None:
+                continue
+            dl = abs(st - pstart)
+            if bestdelta is None or dl < bestdelta:
+                best, bestdelta = fp, dl
+    if best is not None and bestdelta is not None and bestdelta <= 180:
+        return (best, session_name(best), True)          # confident (start-time match)
+    for fp in files:                                     # fallback: freshest unclaimed
+        if fp not in claimed:
+            return (fp, session_name(fp), False)
+    return (None, "", False)
+
+
+def session_map(info):
+    """pid -> (name, confident). Confident = start-times matched within 180s."""
+    out, claimed = {}, set()
+    for p in sorted(claude_pids(), key=lambda p: pid_start_epoch(p) or 0):
+        fp, name, conf = _session_for(p, info, claimed)
+        if fp:
+            claimed.add(fp)
+        out[p] = (name, conf)
+    return out
+
+
+def annotate(pid, info, args, topcmd="", cur="", sessmap=None):
     """Human-readable 'what is this process' for the `now` table."""
     d = info.get(pid)
     if not d:
@@ -169,8 +288,12 @@ def annotate(pid, info, args, topcmd="", cur=""):
     if low == "claude" or "/versions/2." in comm:
         r = claude_row(pid, info)
         flag = "OLD" if r["old"] else "ok"
-        return "claude %s %s · %s · %s · %s %s" % (
-            r["ver"], flag, r["age"], r["cwd"], r["term"], r["tty"])
+        nm = ""
+        if sessmap and pid in sessmap and sessmap[pid][0]:
+            name, conf = sessmap[pid]
+            nm = " «%s»" % ((name if conf else "~" + name)[:34])
+        return "claude %s %s%s · %s · %s · %s %s" % (
+            r["ver"], flag, nm, r["age"], r["cwd"], r["term"], r["tty"])
     if name in KNOWN:
         return "%s — %s" % (name, KNOWN[name])
     if is_runtime(low):
