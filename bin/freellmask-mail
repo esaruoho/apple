@@ -628,6 +628,9 @@ def poll_once(verbose=True):
         full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
         # body: prefer extracted/plain text; fall back to HTML (forwards are often HTML-only)
         raw_body=(full.get("extracted_text") or full.get("text") or html_to_text(full.get("html")) or full.get("preview") or "")
+        if not raw_body.strip() and full.get("html"):          # html_to_text choked on odd HTML → crude strip
+            raw_body=re.sub(r'\s+',' ', _htmlmod.unescape(
+                re.sub(r'(?is)<(script|style|head).*?</\1>|<[^>]+>',' ', full.get("html")))).strip()
         question=strip_signature(raw_body)                      # drop name/phone/Patreon-URL signature
         answer=""                                               # defined for the forward path (reformat branch never sets it, but only fires with no atts)
         atts=full.get("attachments") or []
@@ -648,7 +651,19 @@ def poll_once(verbose=True):
                          f"Transcripts land in the archive as they finish.")
             elif verbose:
                 print(f"  📼 {seen_n} youtube url(s) already transcribed — nothing new to queue")
-        if not question and not extra and not yt_urls: seen.add(mid); continue   # genuinely nothing to do
+        # NEVER vanish silently. If body extraction/stripping left nothing, fall back to the UNstripped
+        # body (strip_signature may have over-eaten it, the Jeane bug) then the SUBJECT ("Patent
+        # Us8901943" is itself a real request). Only skip when there is GENUINELY nothing — and LOG it,
+        # so a dropped email is never silent again.
+        if not question and not extra:
+            subj=re.sub(r'(?i)^\s*(re|fwd|fw):\s*','', full.get("subject") or "").strip()
+            fb=raw_body.strip() or subj
+            if fb and len(fb)>=3:
+                question=fb
+                print(f"  ↪ empty after extraction — using {'raw body' if raw_body.strip() else 'subject'}: {fb[:70]!r}")
+        if not question and not extra and not yt_urls:
+            print(f"  ⊘ SKIP — genuinely empty (no body/subject/attachments): mid={mid} subj={(full.get('subject') or '')!r}")
+            seen.add(mid); continue
         ctx=thread_context(k, msgs, m.get("thread_id"), mid)
         # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
         # answer (the immutable record), never regenerate. This is the Karpathy fix.
