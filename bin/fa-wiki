@@ -363,22 +363,21 @@ _Q_LEAK=("we need","we can ask","we can propose","could ask","not sure","for exa
 # META questions interrogate the wiki's bookkeeping, not its subject — useless to file. Reject them.
 _Q_META=("how many claims","according to the index","page according to","number of claims",
          "listed in the index","in the index?","entity page")
+_Q_START=(r'(?:What|How|Why|Which|Who|Whose|When|Where|Does|Do|Did|Is|Are|Was|Were|Can|Could|'
+          r'Should|Would|Will|Has|Have|In what|To what|By what|Under what|In which|On what)')
 def _clean_question(ln):
-    """Pull ONE clean question from a model line, rejecting nemotron's reasoning leaks. A valid question
-    ends in '?', is 15-180 chars, and carries none of the chain-of-thought tells ('We need to', 'For
-    example', 'maybe', …). If a line buries a real question inside reasoning, extract the LAST '?'-ended
-    sentence and re-check it. Returns the question or None."""
-    q=re.sub(r'^\s*(?:[-*•]|\d+[.)])\s*', '', ln).strip().strip('"').strip()
-    low=q.lower()
-    if any(m in low for m in _Q_LEAK):
-        sents=re.findall(r'[A-Z][^?]{12,180}\?', q)       # salvage a buried, clean question
-        cand=next((s.strip() for s in reversed(sents)
-                   if not any(m in s.lower() for m in _Q_LEAK)), None)
-        if not cand: return None
-        q=cand; low=q.lower()
-    if not q.endswith("?") or not (15<=len(q)<=180): return None
-    if any(m in q.lower() for m in _Q_META): return None      # drop wiki-bookkeeping meta-questions
-    return q
+    """Extract ONE genuine question from a model line — WHITELIST, robust to the three things nemotron
+    does: reasoning leaks ('We need to'), framing leaks ('That would be like', 'Examples:'), and echoing
+    the system prompt back ('NOTHING else — no numbering … Example of a GOOD line: …'). We pull only
+    INTERROGATIVE-led sentences (What/How/Why/…) that end in '?', drop any carrying a leak/meta tell, and
+    return the last clean one. Non-questions the model echoed yield nothing (2026-07-01 junk incident)."""
+    q=re.sub(r'^\s*(?:[-*•]|\d+[.)])\s*', '', ln).strip()
+    cands=[c.strip().strip('"').strip("'").strip()
+           for c in re.findall(_Q_START+r'\b[^?]{8,170}\?', q)]
+    cands=[c for c in cands if 15<=len(c)<=180
+           and not any(m in c.lower() for m in _Q_LEAK)
+           and not any(m in c.lower() for m in _Q_META)]
+    return cands[-1] if cands else None
 
 def _lint_findings(base):
     """The lint signals the grow-loop turns into questions: orphan entities (no edges) and
@@ -411,13 +410,12 @@ def cmd_grow(a):
     lint_summary=(f"Orphans (entities with NO links — connect them): {', '.join(find['orphans']) or 'none'}\n"
                   f"Possible duplicate entities (reconcile): "
                   f"{', '.join('%s~%s'%(x,y) for x,y in find['dupes']) or 'none'}")
-    sysm=(lens+"\n\nPropose the NEXT questions to GROW this wiki. STRICT FORMAT: output EXACTLY one "
-          "question per line; each line is a SINGLE specific question that ENDS WITH '?'; output NOTHING "
-          "else — no numbering, no reasoning, no 'We need to', no 'For example', no 'Similarly', no "
-          "commentary, no blank analysis. Example of a GOOD line: 'What primary-source measurement "
-          "supports the Repulsine's claimed lift?'. Each question must be answerable FROM the existing "
-          "corpus: link an orphan, deepen a thin page, connect two existing entities, or resolve a "
-          "contradiction. Begin directly with the first question.")
+    sysm=(lens+"\n\nPropose the NEXT questions to GROW this wiki. Output EXACTLY one question per line. "
+          "Every line MUST begin with an interrogative word (What / How / Why / Which / Does / …) and end "
+          "with '?'. Do NOT restate these instructions, do NOT write 'Examples:' or 'That would be like', "
+          "do NOT number or add commentary — output ONLY the questions themselves. Each must be answerable "
+          "FROM the existing corpus: link an orphan, deepen a thin page, connect two existing entities, or "
+          "resolve a contradiction.")
     user=f"INDEX:\n{index_md[:4000]}\n\nLINT:\n{lint_summary}\n\nGive {a.n+5} questions, one per line."
     qs=[]; seen_q=set()
     for _ in range(5):                                    # nemotron leaks reasoning — retry for clean lines
