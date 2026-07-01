@@ -164,6 +164,11 @@ def _is_wiki_refusal(t):
         "the supplied wiki","the provided wiki","wiki pages do not","pages do not contain",
         "pages do not cover","not covered in the supplied","no information about"))
 
+# Returned by fm_research when the free-energy viewpoint is active but the model would not produce
+# the required '## Thought about it' heading within this pass. The poll loop treats it as "not
+# sendable yet": it does NOT send and does NOT mark the email seen, so the next poll retries it fresh.
+REQUEUE_NO_THINKING = "\x00REQUEUE-NO-THINKING\x00"
+
 def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint=""):
     """Answer an email via FreeLLMAPI, GATED for clean output. The WIKI CONTEXT (if any) and the
     VIEWPOINT AUGMENT the answer — they NEVER gate it. The model uses the wiki + attachments + its
@@ -201,16 +206,19 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
          f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
          (f"\n\nATTACHMENTS (extracted text):\n{attachments[:24000]}" if attachments else "")
     msgs_nowiki=[{"role":"system","content":sysm},{"role":"user","content":user_nowiki}]
-    # When the viewpoint is active the reply must carry the 'Thought about it' thinking heading.
-    # nemotron drops it ~1/3 of the time; if so we regenerate (never fabricate the reasoning).
+    # When the viewpoint is active the reply MUST carry the '## Thought about it' thinking heading.
+    # nemotron drops it ~1/3 of the time. We NEVER send without it and NEVER fabricate it: we
+    # regenerate for the whole (enlarged) budget, and if it still won't comply this pass we return
+    # REQUEUE_NO_THINKING so the poll loop leaves the email unseen and a later poll retries it fresh.
     def _missing_thinking(t):
         if not viewpoint: return False
         return re.search(r'(?im)^\s*#{1,3}\s*thought about it\b', t) is None
     NUDGE=("\n\nREMINDER: your previous reply omitted the required '## Thought about it' section. Begin THIS reply "
            "with the literal heading '## Thought about it' followed by 4-7 sentences of genuine reasoning, THEN the "
            "'## Answer' and the three tone sections. Do not skip it.")
-    used=FM_MODEL; cur=msgs; last_clean=None; think_tries=0
-    for _ in range(max(1,tries)):
+    eff_tries = max(tries, 12) if viewpoint else max(1, tries)   # give the thinking heading room to land
+    used=FM_MODEL; cur=msgs
+    for _ in range(eff_tries):
         try:
             ans, used = _fm_call(cur)
         except Exception:
@@ -219,14 +227,12 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             continue
         if _is_wiki_refusal(ans):          # the wiki context biased it into refusing → drop it, retry
             cur=msgs_nowiki; continue
-        if _missing_thinking(ans):         # clean+on-topic but no thinking heading → keep as fallback, regenerate
-            last_clean=(ans, used); think_tries+=1
-            if think_tries<=2:             # bounded: at most 2 corrective regenerations, then accept fallback
-                cur=[{"role":"system","content":sysm+NUDGE},{"role":"user","content":cur[1]["content"]}]
-                continue
-            return last_clean
-        return ans, used
-    if last_clean: return last_clean       # never throw away a good answer just for a missing heading
+        if _missing_thinking(ans):         # clean but no thinking heading → REGENERATE, never accept, never fake
+            cur=[{"role":"system","content":sysm+NUDGE},{"role":"user","content":cur[1]["content"]}]
+            continue
+        return ans, used                   # has the thinking heading (or off-corpus) → sendable
+    if viewpoint:                          # exhausted this pass without the heading → not sendable; re-queue
+        return (REQUEUE_NO_THINKING, used)
     return ("I wasn't able to generate a reliable answer this time — the model returned an unusable "
             "response on every attempt. Please reply to this email to try again.", used)
 
@@ -589,6 +595,11 @@ def poll_once(verbose=True):
                 answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp)
             except Exception as e:
                 print(f"  research failed for {mid}: {e}"); continue
+            if answer is REQUEUE_NO_THINKING:
+                # viewpoint answer never gained the '## Thought about it' heading this pass → do NOT
+                # send and do NOT mark seen; leave it in the inbox so the next poll retries it fresh.
+                print(f"  ↻ re-queued {mid}: no 'Thought about it' heading yet — will retry next poll")
+                continue
             reply={"text": answer, "html": md_to_html(answer)}
             if WANT_PDF.search(question or ""):     # a NEW question that also wants a PDF
                 b64=make_pdf_b64(answer)
