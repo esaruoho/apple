@@ -29,6 +29,15 @@ STATE     = Path(os.environ.get("FREELLMASK_MAIL_STATE", Path.home()/"work"/"com
 POLL_SEC  = int(os.environ.get("FREELLMASK_MAIL_POLL", "45"))
 FM_HOST   = os.environ.get("FM_FREE_HOST", "http://cloudcitymacmini:3001/v1")
 FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "nemotron-3-super-120b")
+# Big-context escalation: nemotron holds ~256k tokens. When the assembled context (attachments +
+# wiki + thread + question) is large, escalate that call to Gemini's 1M window AND stop truncating,
+# so a whole book/paper emailed in is read IN FULL instead of clipped. nemotron stays the default.
+BIG_MODEL     = os.environ.get("FREELLMASK_MAIL_BIG_MODEL", "gemini-2.5-flash")
+BIG_CTX_CHARS = int(os.environ.get("FREELLMASK_MAIL_BIG_CHARS", "180000"))   # ~45k tokens → escalate
+BIG_ATT_CAP   = int(os.environ.get("FREELLMASK_MAIL_BIG_ATT_CAP", "2200000")) # ~550k tok of attachments
+BIG_WIKI_CAP  = int(os.environ.get("FREELLMASK_MAIL_BIG_WIKI_CAP", "400000"))  # ~100k tok of wiki
+SMALL_ATT_CAP = 24000
+SMALL_WIKI_CAP= 16000
 BCC       = os.environ.get("FREELLMASK_MAIL_BCC", "esaruoho@gmail.com")   # blind-copy every outbound reply
 FORWARD_TO= os.environ.get("FREELLMASK_MAIL_FORWARD", "esaruoho@gmail.com")  # forward inbound + answer + attachments here
 VISION_OCR= Path.home()/"work"/"apple"/"bin"/"vision-ocr"                  # Apple Vision OCR (PDFs + images, on the Mini)
@@ -138,9 +147,9 @@ def _has_leak(text):
         "the user wants","let me answer","i need to answer","let's answer","the question is",
         "okay, so","alright, the user","so the user"))
 
-def _fm_call(messages, max_tokens=3000, temperature=0.3):
+def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
     """One FreeLLMAPI /chat/completions call, with 429 backoff. Returns (text, model_used)."""
-    body={"model":FM_MODEL,"messages":messages,"max_tokens":max_tokens,"temperature":temperature}
+    body={"model":model or FM_MODEL,"messages":messages,"max_tokens":max_tokens,"temperature":temperature}
     req=urllib.request.Request(FM_HOST.rstrip('/')+"/chat/completions", data=json.dumps(body).encode(),
         headers={"Authorization":f"Bearer {fm_key()}","Content-Type":"application/json"})
     d=None
@@ -194,17 +203,25 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
         sysm=viewpoint+"\n\n"+base+struct
     else:           # off-corpus (e.g. parenting) → plain direct answer, no preamble, no tones
         sysm=base+" Output ONLY the final answer — no reasoning preamble; begin directly with the answer."
+    # BIG-CONTEXT ESCALATION: if the raw context is large, use Gemini's 1M window and DON'T truncate;
+    # otherwise nemotron with the normal caps. Decided on RAW sizes (pre-truncation) so a big
+    # attachment that would be clipped for nemotron triggers the escalation.
+    raw_len = len(question or "") + len(thread_context or "") + len(attachments or "") + len(wiki_ctx or "")
+    big = raw_len > BIG_CTX_CHARS
+    chosen_model = BIG_MODEL if big else FM_MODEL
+    att_cap  = BIG_ATT_CAP  if big else SMALL_ATT_CAP
+    wiki_cap = BIG_WIKI_CAP if big else SMALL_WIKI_CAP
     user=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
          f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
          (f"\n\nRELEVANT WIKI CONTEXT (your accumulated free-energy synthesis — build on it, but also use "
-          f"your own knowledge; it may be incomplete):\n{wiki_ctx[:16000]}" if wiki_ctx else "") + \
-         (f"\n\nATTACHMENTS (extracted text):\n{attachments[:24000]}" if attachments else "")
+          f"your own knowledge; it may be incomplete):\n{wiki_ctx[:wiki_cap]}" if wiki_ctx else "") + \
+         (f"\n\nATTACHMENTS (extracted text):\n{attachments[:att_cap]}" if attachments else "")
     msgs=[{"role":"system","content":sysm},{"role":"user","content":user}]
     # Fallback message set with NO wiki context — used if the model gets biased into refusing
     # ("the wiki pages do not contain…"). Stripping the wiki lets it answer from its own knowledge.
     user_nowiki=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
          f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
-         (f"\n\nATTACHMENTS (extracted text):\n{attachments[:24000]}" if attachments else "")
+         (f"\n\nATTACHMENTS (extracted text):\n{attachments[:att_cap]}" if attachments else "")
     msgs_nowiki=[{"role":"system","content":sysm},{"role":"user","content":user_nowiki}]
     # When the viewpoint is active the reply MUST carry the '## Thought about it' thinking heading.
     # nemotron drops it ~1/3 of the time. We NEVER send without it and NEVER fabricate it: we
@@ -217,10 +234,10 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
            "with the literal heading '## Thought about it' followed by 4-7 sentences of genuine reasoning, THEN the "
            "'## Answer' and the three tone sections. Do not skip it.")
     eff_tries = max(tries, 12) if viewpoint else max(1, tries)   # give the thinking heading room to land
-    used=FM_MODEL; cur=msgs
+    used=chosen_model; cur=msgs
     for _ in range(eff_tries):
         try:
-            ans, used = _fm_call(cur)
+            ans, used = _fm_call(cur, model=chosen_model)
         except Exception:
             continue
         if not ans or _looks_garbage(ans) or _has_leak(ans):
