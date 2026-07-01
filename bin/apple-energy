@@ -93,9 +93,10 @@ if hdrs:
 info, args = ae.proc_maps()
 cur = ae.current_version()
 sm = ae.session_map(info)   # pid -> (session name, confident) for claude rows
-print("%-8s %-90s %8s" % ("PID", "COMMAND / WHAT IT IS", "POWER"))
-for pid, topcmd, power in rows[:n]:
-    print("%-8s %-90s %8s" % (pid, ae.annotate(pid, info, args, topcmd, cur, sm)[:90], power))
+table_rows = [[pid, ae.annotate(pid, info, args, topcmd, cur, sm), power]
+              for pid, topcmd, power in rows[:n]]
+print(ae.render_table(["PID", "Command / what it is", "Power"], table_rows,
+                      ["l", "l", "r"]))
 PY
 }
 
@@ -190,9 +191,8 @@ cur = ae.current_version()
 info, _ = ae.proc_maps()
 sm = ae.session_map(info)
 print("Running Claude Code sessions (current installed version: %s)\n" % cur)
-print("%-7s %-9s %-4s %-8s %-5s %-8s %-8s %-22s %s"
-      % ("PID", "VERSION", "", "AGE", "%CPU", "TERM", "TTY", "PROJECT", "SESSION NAME"))
-print("-" * 116)
+headers = ["PID", "Version", "", "Age", "%CPU", "Term", "TTY", "Project", "Session name"]
+table_rows = []
 total = old = 0
 for p in ae.claude_pids():
     cpu = subprocess.run(["ps", "-p", p, "-o", "%cpu="],
@@ -207,8 +207,10 @@ for p in ae.claude_pids():
     total += 1
     old += 1 if r["old"] else 0
     proj = os.path.basename(r["cwd"].rstrip("/")) or r["cwd"]
-    print("%-7s %-9s %-4s %-8s %-5s %-8s %-8s %-22s %s"
-          % (p, r["ver"], flag, r["age"], cpu, r["term"], r["tty"], proj[:22], (name or "?")[:44]))
+    table_rows.append([p, r["ver"], flag, r["age"], cpu + "%",
+                       r["term"], r["tty"], proj[:22], (name or "?")[:44]])
+aligns = ["l", "l", "l", "l", "r", "l", "l", "l", "l"]
+print(ae.render_table(headers, table_rows, aligns))
 print()
 print("%d session(s), %d on an OLD version. Restart an OLD one to pick up %s." % (total, old, cur))
 print("Jump to a session's tab:  apple-energy jump <pid|tty|version|project|name>")

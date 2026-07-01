@@ -104,6 +104,16 @@ Feature: Read macOS energy & power telemetry from the command line
     #       readable ages, TERM iTerm2/Terminal, ttys002-009
 
   @built
+  Scenario: claude and now render as Unicode box-drawing tables  (ran live)
+    Given Esa wanted the boxed table style (┌─┬─┐ │ ├─┼─┤ └─┴─┘), not ASCII "----" rules
+    When claude or now prints
+    Then it builds rows and calls the shared `_apple_energy.render_table(headers, rows,
+      aligns)` which auto-sizes each column, centers headers, left/right-aligns data cells,
+      and draws single-line box borders
+    And no emoji is used inside cells (they can render double-width and break alignment)
+    # cite: bin/_apple_energy.py render_table(); bin/apple-energy cmd_claude()/cmd_now()
+
+  @built
   Scenario: claude/now/jump show the SESSION NAME, not just the project  (ran live)
     Given Claude Code stores one transcript per session at
       ~/.claude/projects/<encoded-cwd>/<session-id>.jsonl with a name derivable as

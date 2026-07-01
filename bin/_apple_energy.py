@@ -37,6 +37,40 @@ KNOWN = {
 }
 
 
+def render_table(headers, rows, aligns=None):
+    """Unicode box-drawing table. aligns: list of 'l'|'r' per column (data cells);
+    headers are centered. Returns the full multi-line string."""
+    cols = len(headers)
+    widths = [len(str(h)) for h in headers]
+    for r in rows:
+        for i in range(cols):
+            widths[i] = max(widths[i], len(str(r[i])))
+    aligns = (aligns or ["l"] * cols)
+
+    def pad(s, w, a):
+        s = str(s)
+        if a == "c":
+            extra = w - len(s)
+            left = extra // 2
+            return " " * left + s + " " * (extra - left)
+        return s.rjust(w) if a == "r" else s.ljust(w)
+
+    def border(left, mid, right):
+        return left + mid.join("─" * (w + 2) for w in widths) + right
+
+    def line(cells, al):
+        return "│" + "│".join(" " + pad(c, w, a) + " "
+                              for c, w, a in zip(cells, widths, al)) + "│"
+
+    out = [border("┌", "┬", "┐"),
+           line(headers, ["c"] * cols),
+           border("├", "┼", "┤")]
+    for r in rows:
+        out.append(line(r, aligns))
+    out.append(border("└", "┴", "┘"))
+    return "\n".join(out)
+
+
 def _run(cmd):
     try:
         return subprocess.run(cmd, capture_output=True, text=True).stdout
