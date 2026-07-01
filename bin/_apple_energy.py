@@ -326,7 +326,7 @@ def session_map(info):
     return out
 
 
-def annotate(pid, info, args, topcmd="", cur="", sessmap=None):
+def annotate(pid, info, args, topcmd="", cur="", sessmap=None, links=False):
     """Human-readable 'what is this process' for the `now` table."""
     d = info.get(pid)
     if not d:
@@ -339,10 +339,11 @@ def annotate(pid, info, args, topcmd="", cur="", sessmap=None):
         flag = "OLD" if r["old"] else "ok"
         nm = ""
         if sessmap and pid in sessmap and sessmap[pid][0]:
-            name, conf = sessmap[pid]
-            nm = " «%s»" % ((name if conf else "~" + name)[:34])
+            sname, conf = sessmap[pid]
+            nm = " «%s»" % ((sname if conf else "~" + sname)[:34])
+        tty = hyperlink("aejump://%s" % pid, r["tty"]) if links else r["tty"]
         return "claude %s %s%s · %s · %s · %s %s" % (
-            r["ver"], flag, nm, r["age"], r["cwd"], r["term"], r["tty"])
+            r["ver"], flag, nm, r["age"], r["cwd"], r["term"], tty)
     if name in KNOWN:
         return "%s — %s" % (name, KNOWN[name])
     if is_runtime(low):

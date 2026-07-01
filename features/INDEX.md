@@ -47,13 +47,14 @@ Plus LLM prefixes: `? <q>` (grounded in your learned rules), `chat <q>` / `conve
 ## Behaviour cards — graded Gherkin (parsed by `convey read features/*.feature`)
 
 ```
-Read macOS energy & power telemetry from the command line  —  14 scenarios   (features/apple-energy.feature)
+Read macOS energy & power telemetry from the command line  —  15 scenarios   (features/apple-energy.feature)
   - [@built] now prints a no-sudo snapshot of top apps by energy impact  (ran
   - [@built] watch samples powermetrics over a window and ranks per-process e
   - [@built] power reports actual system watts, not relative units  (ran live
   - [@built] adapter prints wattage + battery state, no sudo  (ran live)
   - [@built] claude enumerates running Claude Code sessions by version  (ran 
   - [@built] claude TTYs are Cmd-clickable to jump to the session  (registrat
+  - [@built] the aejump handler sends the AppleEvent directly (TCC-correct)  
   - [@built] claude and now render as Unicode box-drawing tables  (ran live)
   - [@built] claude/now/jump show the SESSION NAME, not just the project  (ra
   - [@built] jump focuses a claude session's terminal window/tab  (resolution
@@ -63,7 +64,7 @@ Read macOS energy & power telemetry from the command line  —  14 scenarios   (
   - [(no grade)] power POLICY is out of bounds
   - [@built] same capability is reachable as a zero-roundtrip slash
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 13/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 14/15 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 AppleBar karaoke — the chat answer is revealed in sync with the spoken voice  —  5 scenarios   (features/applebar-karaoke.feature)
   - [@verified] AppleBar compiles and launches with the synth wired

@@ -115,8 +115,22 @@ Feature: Read macOS energy & power telemetry from the command line
     And render_table stays aligned because it measures VISIBLE width (_vislen strips the
       OSC 8 + SGR escapes) — verified: every boxed line is the same visible width
     And piped/non-tty output emits plain TTYs (no escapes)
-    # cite: cmd_install_jump() + cmd_claude() links branch + _apple_energy.hyperlink/_vislen;
-    #       ran live — scheme claimed (lsregister dump), open aejump://<bogus> launched the handler
+    And BOTH claude and now make the claude-session TTY clickable (shared hyperlink path)
+    # cite: cmd_install_jump() + cmd_claude()/annotate() links branch + hyperlink/_vislen
+
+  @built
+  Scenario: the aejump handler sends the AppleEvent directly (TCC-correct)  (diagnosed live)
+    Given a first attempt buried the `tell iTerm2` in shell→python→osascript, which macOS
+      could not attribute, so it denied with -1743 "Not authorised" and showed NO prompt
+    When install-jump builds the applet
+    Then the applet's `on open location` calls `apple-energy _resolve <pid>` (a shell call,
+      no Apple events) to get TERM+tty, then `tell application "iTerm2"/"Terminal"` DIRECTLY
+      so macOS attributes the event to the app and shows the one-time Automation prompt
+    And the app gets a stable CFBundleIdentifier + ad-hoc codesign + NSAppleEventsUsageDescription
+      so TCC identity is stable, and install-jump `tccutil reset AppleEvents <id>` clears stale denies
+    And it logs each invocation to ~/.local/state/apple-energy/jump.log for debuggability
+    # cite: cmd_install_jump() applet + cmd_resolve(); diagnosed via jump.log showing -1743,
+    #       fixed to direct-tell — remaining step is the user's one-time Allow click
 
   @built
   Scenario: claude and now render as Unicode box-drawing tables  (ran live)

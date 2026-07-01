@@ -94,10 +94,13 @@ if hdrs:
 info, args = ae.proc_maps()
 cur = ae.current_version()
 sm = ae.session_map(info)   # pid -> (session name, confident) for claude rows
-table_rows = [[pid, ae.annotate(pid, info, args, topcmd, cur, sm), power]
+links = sys.stdout.isatty()
+table_rows = [[pid, ae.annotate(pid, info, args, topcmd, cur, sm, links), power]
               for pid, topcmd, power in rows[:n]]
 print(ae.render_table(["PID", "Command / what it is", "Power"], table_rows,
                       ["l", "l", "r"]))
+if links:
+    print("Cmd-click a claude TTY to jump to it · full session list: apple-energy claude")
 PY
 }
 
@@ -221,40 +224,108 @@ if links and handler:
     print("Cmd-click a TTY to jump to that session's tab (iTerm2/Terminal).")
 elif links and not handler:
     print("Tip: run `apple-energy install-jump` once to make the TTYs Cmd-clickable.")
-print("Or:  apple-energy jump <pid|tty|version|project|name>   ·   kill: apple-energy kill <pid>")
+print("Jump:          apple-energy jump <pid|tty|version|project|name>")
+print("Kill now:      apple-energy kill <pid>            (SIGTERM; a launchd-kept proc respawns)")
+print("Kill properly: apple-energy off  <name> [--yes]  (stop + launchctl disable so it stays dead)")
+PY
+}
+
+# ---- _resolve: machine-readable "TERM<TAB>/dev/ttyNNN" for a pid (used by the applet) ----
+cmd_resolve() {
+  [[ $# -ge 1 ]] || die "usage: apple-energy _resolve <pid>"
+  APPLE_ENERGY_TARGET="$1" python3 <<'PY'
+import os, sys
+sys.path.insert(0, os.environ["APPLE_ENERGY_BIN"])
+import _apple_energy as ae
+pid = os.environ["APPLE_ENERGY_TARGET"]
+info, _ = ae.proc_maps()
+if pid not in info:
+    sys.exit(1)
+r = ae.claude_row(pid, info)
+tty = r["tty"]
+dev = tty if tty.startswith("/dev/") else "/dev/" + tty
+print("%s\t%s" % (r["term"], dev))
 PY
 }
 
 # ---- install-jump: register the aejump:// URL scheme so TTYs are Cmd-clickable ----
-# Builds a tiny AppleScript handler app whose `on open location` runs
-# `apple-energy jump <pid>`, then registers the aejump: scheme via Launch Services.
+# The applet's `on open location` sends the AppleEvent to iTerm2/Terminal DIRECTLY
+# (not via a nested osascript) so macOS can attribute it to the app and show the
+# one-time Automation prompt — burying the tell in shell→python→osascript caused a
+# silent -1743 "not authorised" with no prompt.
 cmd_install_jump() {
   local app="$HOME/Applications/AppleEnergyJump.app"
   local bin="$APPLE_ENERGY_BIN/apple-energy"
   local tmp; tmp="$(mktemp -t aejump)".applescript
-  cat > "$tmp" <<APPLESCRIPT
+  cat > "$tmp" <<'APPLESCRIPT'
 on open location this_URL
 	set AppleScript's text item delimiters to "//"
 	set _pid to last text item of this_URL
+	set AppleScript's text item delimiters to tab
+	set _res to (do shell script "__BIN__ _resolve " & quoted form of _pid)
+	set _term to text item 1 of _res
+	set _tty to text item 2 of _res
 	set AppleScript's text item delimiters to ""
-	do shell script "$bin jump " & quoted form of _pid & " >/dev/null 2>&1"
+	set _status to "notfound"
+	try
+		if _term is "iTerm2" then
+			tell application "iTerm2"
+				repeat with w in windows
+					repeat with t in tabs of w
+						repeat with s in sessions of t
+							if tty of s is _tty then
+								select s
+								select t
+								select w
+								activate
+								set _status to "ok"
+							end if
+						end repeat
+					end repeat
+				end repeat
+			end tell
+		else if _term is "Terminal" then
+			tell application "Terminal"
+				repeat with w in windows
+					repeat with tb in tabs of w
+						if tty of tb is _tty then
+							set selected of tb to true
+							set frontmost of w to true
+							activate
+							set _status to "ok"
+						end if
+					end repeat
+				end repeat
+			end tell
+		end if
+	on error e
+		set _status to "ERR " & e
+	end try
+	do shell script "mkdir -p $HOME/.local/state/apple-energy; echo " & quoted form of (_pid & " " & _term & " " & _tty & " :: " & _status) & " >> $HOME/.local/state/apple-energy/jump.log"
 end open location
 APPLESCRIPT
+  sed -i '' "s|__BIN__|$bin|g" "$tmp"
   mkdir -p "$HOME/Applications"
   rm -rf "$app"
   osacompile -o "$app" "$tmp" || die "osacompile failed"
   rm -f "$tmp"
   local plist="$app/Contents/Info.plist"
+  local bundleid="com.esaruoho.apple-energy-jump"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $bundleid" "$plist" 2>/dev/null \
+    || /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string $bundleid" "$plist" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$plist" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string com.esaruoho.apple-energy.jump" "$plist" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$plist" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string aejump" "$plist" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add :NSAppleEventsUsageDescription string Focuses the terminal tab of a Claude session." "$plist" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$plist" 2>/dev/null || true
+  codesign --force --deep -s - "$app" 2>/dev/null || true   # ad-hoc: stable TCC identity
+  tccutil reset AppleEvents "$bundleid" 2>/dev/null || true # clear any stale deny → fresh prompt
   local LSR=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
   [[ -x "$LSR" ]] && "$LSR" -f "$app" 2>/dev/null || true
-  echo "✓ Installed $app and registered the aejump: URL scheme."
-  echo "  Now run 'apple-energy claude' and Cmd-click a TTY to jump to that session."
-  echo "  (First click may prompt once to allow controlling iTerm2/Terminal.)"
+  echo "✓ Installed $app and registered aejump:."
+  echo "  In iTerm2, Cmd-click a TTY in 'apple-energy claude'. The FIRST click pops a"
+  echo "  one-time 'AppleEnergyJump wants to control iTerm2' prompt — click OK, then it jumps."
 }
 
 # ---- jump: bring a claude session's terminal window/tab to the front --------
@@ -479,6 +550,7 @@ case "${1:-help}" in
   adapter)  shift; cmd_adapter "$@" ;;
   claude)   shift; cmd_claude "$@" ;;
   jump)         shift; cmd_jump "$@" ;;
+  _resolve)     shift; cmd_resolve "$@" ;;
   install-jump) shift; cmd_install_jump "$@" ;;
   kill)     shift; cmd_kill "$@" ;;
   off)      shift; cmd_off "$@" ;;
