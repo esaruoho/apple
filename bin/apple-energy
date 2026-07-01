@@ -56,11 +56,38 @@ cmd_now() {
   echo "Top $n processes by energy impact (snapshot, no sudo)"
   echo "Energy Impact = relative units, same metric as Activity Monitor."
   echo
-  top -l 2 -s 1 -n "$n" -o power -stats pid,command,power 2>/dev/null \
-    | awk '
-        /^PID[[:space:]]+COMMAND/ { hdr++; if (hdr==2) { capture=1; print } next }
-        capture && NF>=3 { print }
-      '
+  # top truncates its COMMAND column to ~16 chars. Pull PID+power from top's
+  # SECOND listing (first reads 0.0 — no delta), then resolve the full,
+  # untruncated name via `ps -ww` so "Ray Helper (Rend" → "Ray Helper (Renderer)".
+  APPLE_ENERGY_N="$n" python3 <<'PY'
+import os, subprocess
+n = int(os.environ.get("APPLE_ENERGY_N", "15"))
+top = subprocess.run(
+    ["top", "-l", "2", "-s", "1", "-n", str(n), "-o", "power", "-stats", "pid,power"],
+    capture_output=True, text=True).stdout.splitlines()
+hdrs = [i for i, l in enumerate(top) if l.strip().startswith("PID")]
+rows = []
+if hdrs:
+    for l in top[hdrs[-1] + 1:]:
+        parts = l.split()
+        if len(parts) >= 2 and parts[0].isdigit():
+            rows.append((parts[0], parts[1]))
+# full, untruncated executable path per pid
+psmap = {}
+for l in subprocess.run(["ps", "-ww", "-eo", "pid=,comm="],
+                        capture_output=True, text=True).stdout.splitlines():
+    l = l.strip()
+    if not l:
+        continue
+    pid, _, comm = l.partition(" ")
+    psmap[pid.strip()] = comm.strip()
+def name(pid):
+    c = psmap.get(pid, "?")
+    return os.path.basename(c) if "/" in c else c
+print("%-8s %-40s %8s" % ("PID", "COMMAND", "POWER"))
+for pid, power in rows[:n]:
+    print("%-8s %-40s %8s" % (pid, name(pid)[:40], power))
+PY
 }
 
 # ---- watch: sample powermetrics over a window, aggregate per process -----

@@ -45,10 +45,14 @@ Feature: Read macOS energy & power telemetry from the command line
   Scenario: now prints a no-sudo snapshot of top apps by energy impact  (ran live)
     Given top's POWER column is the same per-process energy-impact metric Activity Monitor shows
     When `apple-energy now [N]` runs
-    Then it takes TWO top listings (-l 2) and prints only the SECOND, ranked by power
+    Then it takes TWO top listings (-l 2) and reads only the SECOND, ranked by power
     And the first listing is discarded because top reports 0.0 until it has a delta
+    And it resolves each PID's FULL name via `ps -ww -o comm=` instead of top's
+      ~16-char-truncated COMMAND column, so "Ray Helper (Rend" → "Ray Helper (Renderer)"
+      and a version-truncated slice like "2.1.193" resolves to its real name ("claude")
+    And a PID that exits between the top sample and the ps lookup shows "?" (honest)
     And no sudo is required
-    # cite: bin/apple-energy cmd_now(); awk keeps rows after the 2nd PID header
+    # cite: bin/apple-energy cmd_now(); python joins top pid+power to a ps -ww name map
 
   @built @parser-verified
   Scenario: watch samples powermetrics over a window and ranks per-process energy
