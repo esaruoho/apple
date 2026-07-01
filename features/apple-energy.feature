@@ -9,10 +9,13 @@
 #               commands/apple-energy.md (/apple-energy slash pointer),
 #               analysis/energy-consumption-cli.md (the answer-to-Dima writeup).
 #   Thinkspace: features/apple-energy.session.md (the spawning conversation).
-#   Areaspace : OWNS = reading energy/power telemetry from Apple-shipped CLIs and
-#               aggregating per-process energy impact over a sampled window.
-#               MUST NOT TOUCH = changing any power setting (pmset writes, caffeinate,
-#               sleep state) — this tool is READ-ONLY telemetry, never a mutator.
+#   Areaspace : OWNS = (a) reading energy/power/heat telemetry from Apple-shipped
+#               CLIs + aggregating per-process energy over a sampled window, and
+#               (b) ACTING on hogs: SIGTERM a process (kill) or stop+disable a
+#               launchd job so it stays dead (off). The read/act split is explicit
+#               in help. MUST NOT TOUCH = changing power POLICY (pmset writes,
+#               caffeinate, sleep/hibernate mode) and critical/system processes
+#               (kill refuses a denylist + pid<50). off is dry-run by default.
 #
 # WHY THIS CARD EXISTS
 #   Dima asked: he has `system_profiler SPPowerDataType | grep Wattage` for current
@@ -75,10 +78,45 @@ Feature: Read macOS energy & power telemetry from the command line
     And it is a superset of Dima's one-liner (87W confirmed live, plus 100% / 312 cycles / Normal)
     # cite: bin/apple-energy cmd_adapter(); ran live this session
 
+  @built
+  Scenario: heat frames watts AS heat and shows the thermal drivers  (ran live, no-sudo part)
+    Given Apple Silicon (M3 Pro) exposes no clean CPU die temp, but a chip dissipates
+      ~100%% of its drawn power as heat, so package watts ARE the heat-generation rate
+    When `apple-energy heat [N]` runs
+    Then it prints the watts=heat explainer, `pmset -g therm` throttle state (no sudo),
+      then `sudo powermetrics --samplers cpu_power,thermal,smc` package power +
+      thermal pressure + fan RPM
+    And with no sudo it still prints the throttle state and a clear "(no powermetrics
+      data — sudo may have been declined)" line instead of failing
+    # cite: bin/apple-energy cmd_heat(); no-sudo portion ran live this session
+
+  @built
+  Scenario: kill SIGTERMs a hog now but refuses critical processes  (ran live)
+    When `apple-energy kill <name|pid>` runs
+    Then it resolves names via pgrep -i, SIGTERMs each match, and reports what died
+    And it REFUSES pid<50 or any name in the critical denylist (kernel_task, launchd,
+      WindowServer, coreaudiod, loginwindow, configd, powerd, …)
+    And it points at `off` for anything that respawns (launchd-kept)
+    # cite: bin/apple-energy cmd_kill() + CRITICAL_RE; ran live — killed a throwaway
+    #       sleep, refused WindowServer (pid 174), handled no-match
+
+  @built
+  Scenario: off finds the launchd job, dry-runs by default, disables on --yes  (dry-run ran live)
+    Given a hog like lghub_updater is kept alive by launchd and just respawns after kill
+    When `apple-energy off <name>` runs
+    Then a python3 + PlistBuddy scan of ~/Library/LaunchAgents + /Library/LaunchAgents
+      + /Library/LaunchDaemons matches by plist filename / Label / program basename
+    And it prints each matched Label + program + plist + domain and STOPS (dry run)
+    And only `off <name> --yes` runs `launchctl bootout` + `launchctl disable`
+      (system domain auto-prepends sudo) and prints the exact `launchctl enable` undo
+    And it correctly resolved lghub_updater → com.logi.ghub.updater in /Library/LaunchDaemons
+      (system domain) this session, distinct from the com.logi.ghub tray agent
+    # cite: bin/apple-energy cmd_off(); dry-run ran live against the real lghub plists
+
   @note
-  Scenario: the tool is read-only telemetry
-    Given it only ever READS power state
-    Then it never calls pmset write / caffeinate / pmset sleep — no mutation of power policy
+  Scenario: power POLICY is out of bounds
+    Given the ACT verbs stop processes/jobs, they never change how the Mac manages power
+    Then no pmset write / caffeinate / sleep-mode change is ever issued — only bootout/disable/kill
 
   @built
   Scenario: same capability is reachable as a zero-roundtrip slash

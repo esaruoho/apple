@@ -50,3 +50,29 @@ Esa's instruction: **build apple-energy THEN commit THEN draft a reply to Dima**
   escaping. (Same heredoc-vs-quoting class of bug as the md-to-clipboard incident.)
 - `now` header printed twice (printed on both top listings); fixed to print the header
   only for the second listing.
+
+## Follow-up (2026-07-01): heat + kill + off
+
+Esa ran `apple-energy now` live (M3 Pro), watched Finder/lghub_updater/WindowServer/Renoise
+rank, closed some Finder windows and saw the numbers drop, then asked for two more things:
+
+1. *"how much a cpu percentage is resulting in heat"* → new **`heat`** verb. Reframed
+   honestly: on a chip ~100% of drawn power becomes heat, so **package watts ARE the
+   heat-generation rate** — there is no separate heat number. Apple Silicon (M3 Pro)
+   exposes no clean CPU die temp, so `heat` reports the real drivers: `pmset -g therm`
+   throttle state (no sudo) + `powermetrics --samplers cpu_power,thermal,smc` package
+   power, thermal pressure, and fan RPM (sudo).
+2. *"a method of turning something off, like killing the lghub server"* → new **`kill`**
+   (SIGTERM now, with a critical-process denylist + pid<50 guard) and **`off`** (find the
+   launchd job via PlistBuddy across the 3 LaunchAgents/Daemons dirs, dry-run by default,
+   `--yes` runs `launchctl bootout` + `disable` and prints the `enable` undo).
+
+Live-tested this session (no-sudo / non-mutating paths): `heat` no-sudo portion, `kill`
+on a throwaway sleep (confirmed dead) + WindowServer refusal + no-match, `off lghub` and
+`off lghub_updater` dry-runs (correctly resolved com.logi.ghub.updater as a system
+LaunchDaemon, so `--yes` will use sudo). The sudo `heat`/`power`/`watch` capture and the
+`off --yes` execution are for Esa to run — no TTY for sudo in the build session.
+
+Design call worth keeping: `off` is **dry-run by default**. `off lghub` matches BOTH the
+G HUB tray agent and the updater daemon; showing both before acting stops Esa from nuking
+his whole Logitech setup when he only wants the useless updater gone.

@@ -10,15 +10,20 @@
 # "top apps over time" must be RECORDED by sampling powermetrics + aggregated —
 # which is exactly what `watch` does.
 #
-# Usage:
+# READ verbs (telemetry):
 #   apple-energy now [N]                  no-sudo snapshot: top N apps by energy impact
 #   apple-energy watch [mins] [secs]      sample powermetrics over <mins>, rank apps (sudo)
 #   apple-energy power [N]                system CPU/GPU/package watts (sudo)
+#   apple-energy heat [N]                 heat = watts: package power + thermal pressure
+#                                         + throttle + fans (sudo where available)
 #   apple-energy adapter                  power adapter wattage + battery state (no sudo)
+# ACT verbs (mutating — you asked for these):
+#   apple-energy kill <name|pid>          SIGTERM a hog now (may respawn if launchd-kept)
+#   apple-energy off <name> [--yes]       stop + DISABLE a launchd job so it stays dead
 #   apple-energy help                     this help
 #
-# Energy Impact is a relative unit — the SAME metric Activity Monitor shows,
-# not watts. `power` reports actual watts (mW) for the whole package.
+# Energy Impact is a relative unit — the SAME metric Activity Monitor shows.
+# `power`/`heat` report actual watts (mW): on a chip, watts drawn == heat produced.
 #
 # FEATURE-CARD >> features/apple-energy.feature
 
@@ -29,7 +34,7 @@ PROG=$(basename "$0")
 die() { echo "$PROG: $*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '/^# READ verbs/,/^# FEATURE-CARD/p' "$0" | grep -v '^# FEATURE-CARD' | sed 's/^# \{0,1\}//'
 }
 
 # ---- sudo helper ---------------------------------------------------------
@@ -135,12 +140,145 @@ cmd_adapter() {
   pmset -g batt | sed 's/^/  /'
 }
 
+# ---- heat: watts ARE heat + thermal pressure + throttle + fans -----------
+# On a chip essentially 100% of electrical power is dissipated as heat, so the
+# package power in watts IS the heat-generation rate. Temperature is what results
+# when that heat outruns the cooling. Apple Silicon doesn't expose a clean CPU
+# die temp, so we report the drivers: watts, thermal pressure, throttle, fans.
+cmd_heat() {
+  local n="${1:-1}"
+  echo "Heat = watts. A chip turns ~100% of the power it draws into heat, so the"
+  echo "package power below IS the heat being generated right now. Higher %CPU →"
+  echo "more watts → more heat → fans spin up, then the OS throttles (Speed Limit<100)."
+  echo
+  echo "Throttle / thermal state (pmset -g therm, no sudo):"
+  pmset -g therm 2>/dev/null | sed 's/^/  /'
+  echo
+  need_sudo
+  echo "Package power + thermal pressure + fans (powermetrics, $n sample @1s):" >&2
+  echo >&2
+  "${SUDO[@]}" powermetrics --samplers cpu_power,thermal,smc -i 1000 -n "$n" 2>/dev/null \
+    | grep -Ei 'Power:|pressure|Fan|temperature|die temp|Combined Power' \
+    | grep -viE 'idle|GPU HW active frequency' \
+    | sed 's/^/  /' \
+    || echo "  (no powermetrics data — sudo may have been declined)"
+}
+
+# ---- kill: SIGTERM a hog right now ---------------------------------------
+# Critical processes are refused so a fat-fingered name can't take down the box.
+CRITICAL_RE='^(kernel_task|launchd|WindowServer|loginwindow|coreaudiod|mds|mds_stores|systemstats|logind|opendirectoryd|configd|powerd)$'
+cmd_kill() {
+  [[ $# -ge 1 ]] || die "usage: apple-energy kill <name|pid> [<name|pid> …]"
+  local pids=() t
+  for t in "$@"; do
+    if [[ "$t" =~ ^[0-9]+$ ]]; then
+      pids+=("$t")
+    else
+      while read -r p; do [[ -n "$p" ]] && pids+=("$p"); done < <(pgrep -i "$t" 2>/dev/null || true)
+    fi
+  done
+  [[ ${#pids[@]} -gt 0 ]] || { echo "No running process matched."; return 0; }
+  local killed=0
+  for p in "${pids[@]}"; do
+    [[ "$p" == "$$" ]] && continue
+    local comm; comm=$(ps -p "$p" -o comm= 2>/dev/null | xargs basename 2>/dev/null || true)
+    [[ -z "$comm" ]] && continue
+    if (( p < 50 )) || [[ "$comm" =~ $CRITICAL_RE ]]; then
+      echo "  ⚠︎ refusing to kill $p ($comm) — critical/system process"
+      continue
+    fi
+    if kill -TERM "$p" 2>/dev/null; then
+      echo "  ✗ killed $p ($comm)"
+      killed=$((killed+1))
+    else
+      echo "  ⚠︎ could not kill $p ($comm) — may need sudo (system-owned)"
+    fi
+  done
+  echo
+  echo "$killed process(es) terminated. If it comes back, it's launchd-kept →"
+  echo "use: apple-energy off <name>   (stops it AND keeps it off)."
+}
+
+# ---- off: stop + disable a launchd job so it stays dead -------------------
+cmd_off() {
+  local yes=0 q=""
+  local a
+  for a in "$@"; do case "$a" in --yes|-y) yes=1 ;; *) q="$a" ;; esac; done
+  [[ -n "$q" ]] || die "usage: apple-energy off <name> [--yes]"
+
+  local plan
+  plan=$(APPLE_ENERGY_Q="$q" python3 <<'PY'
+import os, glob, subprocess
+q = os.environ["APPLE_ENERGY_Q"].lower()
+uid = str(os.getuid())
+dirs = [
+    (os.path.expanduser("~/Library/LaunchAgents"), "gui/%s" % uid),
+    ("/Library/LaunchAgents", "gui/%s" % uid),
+    ("/Library/LaunchDaemons", "system"),
+]
+def pb(path, key):
+    try:
+        return subprocess.check_output(
+            ["/usr/libexec/PlistBuddy", "-c", "Print :%s" % key, path],
+            stderr=subprocess.DEVNULL).decode().strip()
+    except Exception:
+        return ""
+seen = set()
+for d, domain in dirs:
+    for p in sorted(glob.glob(os.path.join(d, "*.plist"))):
+        label = pb(p, "Label") or os.path.splitext(os.path.basename(p))[0]
+        prog = pb(p, "Program") or pb(p, "ProgramArguments:0")
+        hay = " ".join([os.path.basename(p), label, os.path.basename(prog)]).lower()
+        if q in hay:
+            k = (domain, label)
+            if k in seen:
+                continue
+            seen.add(k)
+            print("\t".join([domain, label, prog, p]))
+PY
+)
+  if [[ -z "$plan" ]]; then
+    echo "No launchd job matches '$q'."
+    echo "(For a one-shot stop of a running process, use: apple-energy kill $q)"
+    return 0
+  fi
+
+  echo "Matched launchd job(s) for '$q':"
+  echo
+  printf '%s\n' "$plan" | while IFS=$'\t' read -r domain label prog path; do
+    echo "  • $label   [$domain]"
+    echo "      program: ${prog:-?}"
+    echo "      plist:   $path"
+  done
+  echo
+
+  if [[ $yes -eq 0 ]]; then
+    echo "Dry run — nothing changed. To STOP now and keep it off across logins:"
+    echo "    apple-energy off $q --yes"
+    return 0
+  fi
+
+  printf '%s\n' "$plan" | while IFS=$'\t' read -r domain label prog path; do
+    local SUDO2=(); [[ "$domain" == system* && $EUID -ne 0 ]] && SUDO2=(sudo)
+    echo "→ stopping + disabling $label ($domain)…"
+    "${SUDO2[@]}" launchctl bootout "$domain/$label" 2>/dev/null || true
+    "${SUDO2[@]}" launchctl disable "$domain/$label" 2>/dev/null || true
+    echo "    undo: ${SUDO2[*]:+sudo }launchctl enable $domain/$label  (then log out/in)"
+  done
+  pkill -i "$q" 2>/dev/null || true
+  echo
+  echo "Done. Verify with: apple-energy now"
+}
+
 # ---- dispatch ------------------------------------------------------------
 case "${1:-help}" in
   now)      shift; cmd_now "$@" ;;
   watch)    shift; cmd_watch "$@" ;;
   power)    shift; cmd_power "$@" ;;
+  heat)     shift; cmd_heat "$@" ;;
   adapter)  shift; cmd_adapter "$@" ;;
+  kill)     shift; cmd_kill "$@" ;;
+  off)      shift; cmd_off "$@" ;;
   help|-h|--help) usage ;;
   *) die "unknown command '${1}'. Try '$PROG help'." ;;
 esac

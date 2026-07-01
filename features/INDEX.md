@@ -47,15 +47,18 @@ Plus LLM prefixes: `? <q>` (grounded in your learned rules), `chat <q>` / `conve
 ## Behaviour cards — graded Gherkin (parsed by `convey read features/*.feature`)
 
 ```
-Read macOS energy & power telemetry from the command line  —  6 scenarios   (features/apple-energy.feature)
+Read macOS energy & power telemetry from the command line  —  9 scenarios   (features/apple-energy.feature)
   - [@built] now prints a no-sudo snapshot of top apps by energy impact  (ran
   - [@built] watch samples powermetrics over a window and ranks per-process e
   - [@built] power reports actual system watts, not relative units  (ran live
   - [@built] adapter prints wattage + battery state, no sudo  (ran live)
-  - [(no grade)] the tool is read-only telemetry
+  - [@built] heat frames watts AS heat and shows the thermal drivers  (ran li
+  - [@built] kill SIGTERMs a hog now but refuses critical processes  (ran liv
+  - [@built] off finds the launchd job, dry-runs by default, disables on --ye
+  - [(no grade)] power POLICY is out of bounds
   - [@built] same capability is reachable as a zero-roundtrip slash
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 5/6 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 8/9 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 AppleBar karaoke — the chat answer is revealed in sync with the spoken voice  —  5 scenarios   (features/applebar-karaoke.feature)
   - [@verified] AppleBar compiles and launches with the synth wired

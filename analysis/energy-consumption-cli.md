@@ -94,6 +94,27 @@ A natural fit for the apple toolbox — `bin/apple-energy`:
 
 All Apple-shipped CLIs, no Homebrew, no deps — same constraints as the rest of the toolbox.
 
+## 6. CPU% → heat, and killing hogs (added 2026-07-01)
+
+### Watts *are* heat
+There is no separate "heat" number to read. A CPU does no mechanical work, so ~100% of the
+electrical power it draws is dissipated as heat. **Package power in watts IS the
+heat-generation rate.** `apple-energy heat` therefore reports:
+- `pmset -g therm` — throttle / speed-limit state (no sudo; <100% CPU_Speed_Limit = throttling)
+- `sudo powermetrics --samplers cpu_power,thermal,smc` — package watts (= heat), thermal
+  pressure (Apple-Silicon: Nominal/Moderate/Heavy/…), and fan RPM.
+- Apple Silicon (M3 Pro here) exposes no clean CPU die *temperature*; watts + pressure +
+  fan RPM are the readable drivers. Temperature is the *result* of watts vs cooling.
+
+### Turning a hog off
+- `apple-energy kill <name|pid>` — SIGTERM now. Refuses a critical denylist (kernel_task,
+  WindowServer, coreaudiod, launchd, …) and pid<50. Good for a one-shot "quiet down."
+- `apple-energy off <name>` — for launchd-kept hogs (e.g. `lghub_updater`, which respawns
+  after a plain kill). Scans the 3 LaunchAgents/Daemons dirs, matches the job, **dry-runs
+  by default**, and only on `--yes` runs `launchctl bootout` + `launchctl disable` so it
+  stays dead across logins (prints the `launchctl enable` undo). System-domain jobs (the
+  lghub updater is one) auto-prepend sudo.
+
 ## TL;DR for the reply
 
 - **"Which apps over time"** → `sudo powermetrics --samplers tasks --show-process-energy`
