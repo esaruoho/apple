@@ -1,11 +1,10 @@
 #!/usr/bin/env bash
-# doi2scihub — map DOI(s) to https://sci-hub.ru/<DOI> and open in the default browser.
-# Sci-Hub blocks bots/curl (Cloudflare), so the reliable grab is a real browser tab.
+# doi2scihub — thin shim. The implementation now lives in convey:
+#   convey scihub <doi> --browser   (opens sci-hub.ru/<doi> in the default browser)
+# Kept here as a short command that preserves multi-DOI args + stdin piping.
 # Usage: doi2scihub 10.1122/1.549724 [10.1109/... ...]   |   echo "DOIs..." | doi2scihub
 [ -t 0 ] || set -- $(cat)
+[ $# -eq 0 ] && { echo "usage: doi2scihub <doi> [<doi> ...]   (or pipe DOIs on stdin)" >&2; exit 2; }
 for doi in "$@"; do
-  doi="${doi#https://doi.org/}"; doi="${doi#doi:}"; doi="$(echo "$doi" | tr -d '[]')"
-  url="https://sci-hub.ru/${doi}"
-  echo "  $url"
-  open "$url"
+  convey scihub --browser "$doi"
 done
