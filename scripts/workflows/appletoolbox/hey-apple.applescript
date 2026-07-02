@@ -6,4 +6,4 @@
 -- Wired to AppleToolbox.app --activate (which posts a DistributedNotification or
 -- spawns a fresh --live instance if none is alive).
 
-do shell script "open -a /Users/esaruoho/work/apple/topbar/AppleToolbox.app --args --activate"
+do shell script "open -b com.esaruoho.appletoolbox --args --activate"

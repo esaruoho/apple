@@ -51,14 +51,15 @@ else
     # menu-bar instance is already running, `open -a App --args …` re-activates
     # that existing process and silently drops the args — the new --live never
     # spawns. Direct exec forces a separate process with our flags honored.
-    APP="/Applications/AppleToolbox/AppleToolbox.app"
-    DEV="$(cd "$(dirname "$0")/.." && pwd)/topbar/AppleToolbox.app"
+    # Resolve the installed AppleToolbox by bundle id (path-independent), with the
+    # known install path as fallback. The old ~/work/apple/topbar/AppleToolbox.app copy
+    # is deleted by build.sh every build — never rely on it.
+    APP="$(mdfind "kMDItemCFBundleIdentifier == 'com.esaruoho.appletoolbox'" 2>/dev/null | head -1)"
+    [ -x "$APP/Contents/MacOS/AppleToolbox" ] || APP="/Applications/AppleToolbox/Apple-Workflows/AppleToolbox.app"
     if [ -x "$APP/Contents/MacOS/AppleToolbox" ]; then
         BIN="$APP/Contents/MacOS/AppleToolbox"
-    elif [ -x "$DEV/Contents/MacOS/AppleToolbox" ]; then
-        BIN="$DEV/Contents/MacOS/AppleToolbox"
     else
-        echo "toolbox-goto: AppleToolbox.app not found at $APP or $DEV" >&2
+        echo "toolbox-goto: AppleToolbox.app not found (bundle id com.esaruoho.appletoolbox)" >&2
         exit 1
     fi
     # nohup + disown so the spawned process survives the parent shell exit

@@ -57,12 +57,22 @@ func exportOneTrack(_ track: AVAssetTrack, duration: CMTime, to outPath: String)
     let out = URL(fileURLWithPath: outPath)
     try? FileManager.default.removeItem(at: out)
     guard let export = AVAssetExportSession(asset: comp, presetName: AVAssetExportPresetAppleM4A) else { die("export session") }
-    export.outputURL = out
-    export.outputFileType = .m4a
-    let sem = DispatchSemaphore(value: 0)
-    export.exportAsynchronously { sem.signal() }
-    sem.wait()
-    if export.status != .completed { die("export failed: \(export.error?.localizedDescription ?? "unknown")") }
+
+    // Version-safe export. The modern export(to:as:) is macOS 15+ only; the
+    // outputURL/exportAsynchronously/status path is deprecated on 15 but is the only
+    // option on macOS 13–14 (Ventura/Sonoma) and still works. #available picks at runtime;
+    // compiling with MACOSX_DEPLOYMENT_TARGET=13.0 lets the binary RUN on Ventura+ and also
+    // silences the deprecation warning (the API isn't deprecated at that deployment target).
+    if #available(macOS 15.0, *) {
+        sync { try await export.export(to: out, as: .m4a) }
+    } else {
+        export.outputURL = out
+        export.outputFileType = .m4a
+        let sem = DispatchSemaphore(value: 0)
+        export.exportAsynchronously { sem.signal() }
+        sem.wait()
+        if export.status != .completed { die("export failed: \(export.error?.localizedDescription ?? "unknown")") }
+    }
 }
 
 // MARK: - flatten: mix all audio tracks into one, keep video (passthrough)

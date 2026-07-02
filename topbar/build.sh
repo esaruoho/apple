@@ -112,7 +112,9 @@ xcrun swiftc -O ../bin/screen-audio-record.swift -o "$APP/Contents/Helpers/scree
 # rec-audio must sit NEXT TO the recorder in the bundle so --auto-flatten can find it
 # (the recorder resolves rec-audio relative to its own executable path).
 echo "==> Compiling bundled rec-audio helper (Contents/Helpers/rec-audio)..."
-xcrun swiftc -O ../bin/rec-audio.swift -o "$APP/Contents/Helpers/rec-audio" \
+# Target macOS 13 (Ventura) so this post-processor runs on Ventura/Sonoma too — it only
+# needs AVFoundation, and the #available branch inside handles the 15+ export API.
+xcrun swiftc -O -target "$(uname -m)-apple-macos13.0" ../bin/rec-audio.swift -o "$APP/Contents/Helpers/rec-audio" \
     -framework AVFoundation -framework CoreMedia
 
 # Prefer a stable signing identity over ad-hoc so TCC permissions (FDA, Apple

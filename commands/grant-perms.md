@@ -12,8 +12,12 @@ ambushing you later. Click through each one; AppleToolbox won't ask again.
 Use Bash to execute (one call, then stop):
 
 ```
-/Users/esaruoho/work/apple/topbar/AppleToolbox.app/Contents/MacOS/AppleToolbox --grant-permissions
+"$(mdfind "kMDItemCFBundleIdentifier == 'com.esaruoho.appletoolbox'" | head -1)/Contents/MacOS/AppleToolbox" --grant-permissions
 ```
+
+(Resolves the installed app by bundle id — the old `~/work/apple/topbar/AppleToolbox.app`
+path is deleted by `build.sh` every build. Fallback path:
+`/Applications/AppleToolbox/Apple-Workflows/AppleToolbox.app/Contents/MacOS/AppleToolbox`.)
 
 After the command completes, remind the user to also drag
 AppleToolbox.app into System Settings → Privacy & Security → Full Disk
