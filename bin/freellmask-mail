@@ -628,29 +628,20 @@ def _is_owner(sender):
     return any(a in s for a in OWNER_ADDRS)
 SPACECARDS = {
   "envoy-protocol": {"label":"ENVOY / Penpal protocol","mode":"protocol","personas":False,"headings":False,
-      "retrieval":False,"memory_ns":"peers/cybe/envoy","adjacent":[],
+      "retrieval":False,"memory_ns":"peers/cybe/envoy","adjacent":[],"access":"open",
       "senders":["francois@agentmail.to","cybe","staffan","envoy-penpal-peer"],
       "keywords":["penpal","envoy","penpal-protocol-v0","clean_protocol","clean protocol","machine block",
                   "bootstrap protocol","spacecard","context space handshake","protocol mode","protocol_mode"]},
   "free-energy": {"label":"Free energy / over-unity","mode":"creative","personas":True,"headings":True,
-      "retrieval":True,"memory_ns":"esa/free-energy","adjacent":["spirituality"],"senders":[],"keywords":[]},
+      "retrieval":True,"memory_ns":"esa/free-energy","adjacent":["spirituality"],"senders":[],"keywords":[],"access":"open"},
   "spirituality": {"label":"Spirituality / esoteric / mysticism","mode":"answer","personas":False,"headings":False,
       "retrieval":False,"memory_ns":"esa/spirituality","adjacent":["health","free-energy"],"senders":[],
       "keywords":["spiritual","spirituality","esoteric","mysticism","mystical","occult","hermetic","kabbalah",
                   "gnostic","meditation","consciousness","soul","astral","chakra","sacred","divine","enlighten",
                   "awakening","tarot","alchemy","channeled","hilarion"]},
-  "health": {"label":"Health / body / mental-health / family","mode":"answer","personas":False,
-      "headings":False,"retrieval":"skill","skill_dir":"~/work/health","memory_ns":"esa/health",
-      "private":True,"adjacent":["spirituality","hyp"],"senders":[],
-      "keywords":["health","inflammation","intestine","gut","microbiome","dysbiosis","diet","nutrition",
-                  "sleep","anxiety","stress","depression","cortisol","ayurveda","alzheimer","mindfulness",
-                  "mental","emotion","wellbeing","symptom","medical","doctor","supplement","fasting"]},
-  "hyp": {"label":"Hypnosis / Ericksonian / McNeilly (hyp skill)","mode":"answer","personas":False,
-      "headings":False,"retrieval":"skill","skill_dir":"~/work/hyp","memory_ns":"esa/hyp",
-      "private":True,"adjacent":["health","spirituality"],"senders":[],
-      "keywords":["hypnosis","hypnotic","hypnotherapy","self-hypnosis","hypno","induction","trance",
-                  "deepener","suggestion","fractionation","elman","ericksonian","erickson","mcneilly",
-                  "milton model","post-hypnotic","solution-focused"]},
+  # PRIVATE spaces (health, hyp) — with their ~/work/<skill> paths — are NOT in this public repo.
+  # They are loaded at runtime from ~/work/comms/queue/fa-spaces-config.json (gitignored, Syncthing-
+  # shared to the Mini) by _load_spaces_config() below, and MERGED into this dict.
   "apple": {"label":"Apple / macOS automation / AppleScript tooling (apple skill)","mode":"answer",
       "personas":False,"headings":False,"retrieval":"skill","skill_dir":"~/work/apple","memory_ns":"esa/apple",
       "adjacent":["admin","music"],"senders":[],
@@ -670,8 +661,104 @@ SPACECARDS = {
       "keywords":["tooling","suggest","recommend","study","resource","workflow","automation","configure",
                   "install","llm","chatgpt","claude"]},
   "general": {"label":"General / plain","mode":"answer","personas":False,"headings":False,"retrieval":False,
-      "memory_ns":"esa/general","adjacent":[],"senders":[],"keywords":[]},
+      "memory_ns":"esa/general","adjacent":[],"senders":[],"keywords":[],"access":"open"},
 }
+
+# ── ACCESS TIERS + APPROVAL / ALLOWLIST ─────────────────────────────────────────────────────────
+# cloudcity-llm@ is a PUBLIC inbox. Each SpaceCard has an `access`: "open" (anyone answered —
+# free-energy, envoy-protocol, general) or "approval" (default for personal spaces). An UNKNOWN sender
+# hitting an approval-space is HELD: Esa is emailed "so-and-so sent this, r u sure?"; on his OK the
+# sender is whitelisted and the held message is released (answered on the next poll). Owner is always
+# allowed. Private-corpus spaces (health/hyp) additionally only serve their CORPUS to the owner.
+FA_SPACES_CONFIG    = Path.home()/"work"/"comms"/"queue"/"fa-spaces-config.json"      # private SpaceCards (gitignored)
+FA_ALLOWLIST        = Path.home()/"work"/"comms"/"queue"/"fa-spaces-allowlist.json"   # {"emails":[...]} approved senders
+FA_APPROVAL_PENDING = Path.home()/"work"/"comms"/"queue"/"fa-approval-pending.jsonl"  # held requests awaiting Esa's ok
+
+def _load_spaces_config():
+    """Merge private/override SpaceCards from the gitignored local config into SPACECARDS. If the file
+    is missing (e.g. not synced yet), the private spaces simply don't exist — a fail-SAFE: no private
+    corpus can be served because the card (and its skill_dir) isn't present."""
+    if FA_SPACES_CONFIG.exists():
+        try:
+            data=json.loads(FA_SPACES_CONFIG.read_text())
+            for sid,card in (data.get("spaces") or data).items():
+                if isinstance(card, dict): SPACECARDS[sid]=card
+        except Exception as e:
+            print(f"fa-spaces-config load error: {e}")
+_load_spaces_config()
+
+def _sender_email(frm):
+    m=re.search(r"<([^>]+)>", frm or ""); return (m.group(1) if m else (frm or "")).strip().lower()
+def _load_allowlist():
+    if FA_ALLOWLIST.exists():
+        try: return set(a.strip().lower() for a in json.loads(FA_ALLOWLIST.read_text()).get("emails",[]) if a.strip())
+        except Exception: return set()
+    return set()
+def _add_allowlist(email):
+    cur=[]
+    if FA_ALLOWLIST.exists():
+        try: cur=json.loads(FA_ALLOWLIST.read_text()).get("emails",[])
+        except Exception: cur=[]
+    if email and email.lower() not in [c.lower() for c in cur]:
+        cur.append(email)
+        FA_ALLOWLIST.parent.mkdir(parents=True, exist_ok=True)
+        FA_ALLOWLIST.write_text(json.dumps({"emails":cur}, indent=2))
+def _is_allowed(frm):
+    return _is_owner(frm) or (_sender_email(frm) in _load_allowlist())
+def _space_access(space):
+    return (SPACECARDS.get(space) or {}).get("access","approval")
+
+def _pending_add(rec):
+    try:
+        FA_APPROVAL_PENDING.parent.mkdir(parents=True, exist_ok=True)
+        with FA_APPROVAL_PENDING.open("a") as fh: fh.write(json.dumps(rec)+"\n")
+    except Exception: pass
+def _pending_all():
+    if not FA_APPROVAL_PENDING.exists(): return []
+    out=[]
+    for l in FA_APPROVAL_PENDING.read_text(errors="ignore").splitlines():
+        if l.strip():
+            try: out.append(json.loads(l))
+            except Exception: pass
+    return out
+def _pending_remove(pred):
+    keep=[r for r in _pending_all() if not pred(r)]
+    try: FA_APPROVAL_PENDING.write_text("".join(json.dumps(r)+"\n" for r in keep))
+    except Exception: pass
+
+def _parse_owner_approval(body):
+    """From an OWNER email, detect an approval/denial + target address. Returns (action, email) with
+    action in {approve, deny, None}. Only fires when a target is resolvable (explicit 'approve x@y' or
+    a quoted 'PENDING-FROM: x@y'), so a normal Esa email starting with 'ok'/'yes' is NOT an approval."""
+    b=body or ""
+    m=re.search(r'(?im)^\s*(approve|deny|reject)\s+([^\s<>]+@[^\s<>]+)', b)
+    if m: return ("deny" if m.group(1).lower() in ("deny","reject") else "approve"), m.group(2).strip().lower()
+    pf=re.search(r'PENDING-FROM:\s*([^\s<>]+@[^\s<>]+)', b)
+    if pf and re.search(r'(?im)^\s*(approve|yes|ok|okay|whitelist)\b', b): return "approve", pf.group(1).strip().lower()
+    if pf and re.search(r'(?im)^\s*(deny|no|reject|decline)\b', b): return "deny", pf.group(1).strip().lower()
+    return None, None
+
+def _email_owner_approval(k, sender_frm, sender_em, space, subj, preview, pend_id):
+    """Ask Esa to approve an unknown sender who hit a gated space."""
+    txt=(f"A new sender emailed cloudcity-llm and routed to your '{space}' space (gated).\n\n"
+         f"From: {sender_frm}\nSpace: {space}\nSubject: {subj}\n\nPreview:\n{preview[:600]}\n\n"
+         f"To APPROVE (whitelist them + answer their message), reply with:  approve {sender_em}\n"
+         f"  (or just reply 'approve' / 'yes' to this email).\n"
+         f"To DECLINE, ignore this (or reply 'deny {sender_em}').\n\n"
+         f"PENDING-FROM: {sender_em}\nPENDING-ID: {pend_id}\n")
+    html=("<p>A new sender emailed cloudcity-llm and routed to your <b>"+_htmlmod.escape(space)+
+          "</b> space (gated).</p>"
+          f"<p><b>From:</b> {_htmlmod.escape(sender_frm)}<br><b>Subject:</b> {_htmlmod.escape(subj)}</p>"
+          f"<pre style='white-space:pre-wrap;background:#f6f6f6;padding:8px'>{_htmlmod.escape(preview[:600])}</pre>"
+          "<p>To <b>approve</b> (whitelist + answer), reply <code>approve "+_htmlmod.escape(sender_em)+
+          "</code> — or just <code>approve</code>/<code>yes</code>. To decline, ignore this.</p>"
+          f"<p style='color:#888;font-size:12px'>PENDING-FROM: {_htmlmod.escape(sender_em)} · PENDING-ID: {pend_id}</p>")
+    try:
+        http(f"{AM_BASE}/inboxes/{INBOX}/messages/send", k, "POST",
+             {"to":[FORWARD_TO],"subject":f"Approve? {sender_em} → {space} space","text":txt,"html":html})
+        return True
+    except Exception as e:
+        print(f"  approval email failed: {e}"); return False
 
 def route_space(sender, subject, body, wslugs=None):
     """Pick ONE primary space. Explicit signals win (sender identity, [space:X] tag, a penpal block);
@@ -1082,6 +1169,34 @@ def poll_once(verbose=True):
             print(f"  ⊘ SKIP — genuinely empty (no body/subject/attachments): mid={mid} subj={(full.get('subject') or '')!r}")
             seen.add(mid); continue
         ctx=thread_context(k, msgs, m.get("thread_id"), mid)
+        # ── OWNER APPROVAL + GATED-SPACE ACCESS ──────────────────────────────────────────────
+        frm_full = full.get("from") or ""
+        # (a) OWNER approves/denies a held sender → update the allowlist + release/drop the held msg(s)
+        if _is_owner(frm_full):
+            _act,_tgt = _parse_owner_approval(raw_body)
+            if _act and _tgt:
+                if _act=="approve":
+                    _add_allowlist(_tgt)
+                    _rel=[r.get("mid") for r in _pending_all() if r.get("sender_email")==_tgt and r.get("mid")]
+                    for _rm in _rel: seen.discard(_rm)          # un-see → next poll answers now they're allowed
+                    _pending_remove(lambda r: r.get("sender_email")==_tgt)
+                    print(f"  ✅ approved {_tgt} → whitelisted; released {len(_rel)} held message(s)")
+                else:
+                    _pending_remove(lambda r: r.get("sender_email")==_tgt)
+                    print(f"  ⛔ denied {_tgt} → dropped held message(s)")
+                seen.add(mid); new+=1; continue
+        # (b) GATED space + sender NOT allowed → HOLD, ask Esa, do not answer (no ack — don't confirm
+        #     liveness to spammers). Owner + whitelisted senders skip this and are answered normally.
+        if not _is_allowed(frm_full):
+            _gspace,_ = route_space(frm_full, full.get("subject"), raw_body, wslugs=None)
+            if _space_access(_gspace)!="open":
+                _sem=_sender_email(frm_full); _pid=_uid()
+                _pending_add({"id":_pid,"mid":mid,"sender_email":_sem,"sender":frm_full,"space":_gspace,
+                              "subject":full.get("subject",""),"ts":time.strftime("%Y-%m-%dT%H:%M:%S")})
+                _email_owner_approval(k, frm_full, _sem, _gspace, full.get("subject","(no subject)"),
+                                      (question or raw_body or ""), _pid)
+                print(f"  🚦 gated [{_gspace}] from {_sem} → held for approval (asked Esa)")
+                seen.add(mid); new+=1; continue
         # BARE VIDEO: an email that is essentially just a YouTube link is a "convey this video"
         # request, NOT a question. The model CANNOT watch the video — answering it hallucinates the
         # content from wiki context (the 2026-07-01 BrunoVK/Don-Smith/eclipse confabulation). So:
