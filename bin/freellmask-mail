@@ -754,7 +754,9 @@ def compose_protocol_reply(full, body, to_email):
     bootstrap' rule is WRITTEN to the peers/cybe/envoy namespace, and a 'memory retrieval test'
     READS it back (source: persistent_memory) — Gates 6 & 7. Returns (text, html)."""
     ns=SPACECARDS["envoy-protocol"]["memory_ns"]
-    conv=_penpal_field(body, "conversation_id") or f"conv-cloudcity-{_uid()}"
+    conv=_penpal_field(body, "conversation_id") or ""
+    if (not conv) or re.search(r'(?i)replace|unique_id|placeholder|xxxx', conv):
+        conv=f"conv-cloudcity-{_uid()}"   # never echo a placeholder id (Penpal flags placeholder_identifier)
     rcpt=f"rcpt-cloudcity-{_uid()}"
     subj=full.get("subject") or "Capability Discovery & First Contact"
     if not subj.lower().startswith("re:"): subj="Re: "+subj
@@ -892,6 +894,51 @@ def gdrive_id(u):
        or re.search(r'/d/([\w-]+)', u))
     return m.group(1) if m else ""
 
+CONVEY_BIN = os.path.expanduser("~/work/apple/bin/convey")
+_CHATGPT_RE = re.compile(r'https?://chatgpt\.com/(?:s|share)/[A-Za-z0-9_-]+', re.I)
+def chatgpt_urls(text):
+    """ChatGPT SHARE links in an email body: /s/t_… post snapshots and /share/<uuid> full threads."""
+    if not text: return []
+    seen=set(); out=[]
+    for u in _CHATGPT_RE.findall(text):
+        u=u.rstrip('.,);]>\'"')
+        if u not in seen: seen.add(u); out.append(u)
+    return out
+def _chatgpt_id(u):
+    m=re.search(r'/(?:s|share)/([A-Za-z0-9_-]+)', u); return m.group(1) if m else ""
+
+def convey_chatgpt(urls, verbose=False):
+    """Hoover + multi-brain-analyse each ChatGPT share URL via `convey chatgpt --analyze`
+    (zero-token fetch/decode + MLX/Qwen + Apple FoundationModels + FreeLLMAPI). Returns
+    (folded_context, attachments, note, done). Best-effort — never raises into the poll loop.
+    The conversation.md is folded into the answer context so THIS agent's own FreeLLMAPI reply
+    is grounded in the real conversation too (multi-place, as intended)."""
+    folded=[]; atts=[]; done=0
+    for u in urls:
+        try:
+            r=subprocess.run([CONVEY_BIN,"chatgpt",u,"--analyze"], capture_output=True, text=True, timeout=700)
+            if verbose and r.returncode: print(f"  🤖 convey chatgpt rc={r.returncode}: {(r.stderr or '')[:160]}")
+        except Exception as e:
+            if verbose: print(f"  🤖 convey chatgpt error: {e}"); continue
+        sid=_chatgpt_id(u)
+        home=Path.home()/"work"/"convey-packs"/"chatgpt"/sid
+        conv=home/"conversation.md"; anal=home/"analysis.md"
+        if conv.exists():
+            done+=1
+            folded.append(f"=== ChatGPT conversation hoovered from {u} ===\n"+conv.read_text(encoding='utf-8',errors='ignore'))
+            atts.append({"filename":f"chatgpt-{sid[:20]}.md","content_type":"text/markdown",
+                         "content":base64.b64encode(conv.read_bytes()).decode()})
+            if anal.exists():
+                folded.append("=== Multi-brain analysis (MLX/Qwen · Apple FoundationModels · FreeLLMAPI) ===\n"
+                              +anal.read_text(encoding='utf-8',errors='ignore'))
+                atts.append({"filename":f"chatgpt-{sid[:20]}-analysis.md","content_type":"text/markdown",
+                             "content":base64.b64encode(anal.read_bytes()).decode()})
+        elif verbose:
+            print(f"  🤖 convey chatgpt produced no conversation.md for {u} (private/expired?)")
+    note=(f"\n\n---\n🤖 **Hoovered {done} ChatGPT conversation(s)** to markdown and analysed across "
+          f"MLX/Qwen, Apple FoundationModels, and FreeLLMAPI — both files attached.") if done else ""
+    return "\n\n".join(folded), atts, note, done
+
 def expand_playlists(urls, cap=None):
     """A playlist/channel URL → ALL its individual video URLs (yt-dlp --flat-playlist). A 5000-video
     channel yields 5000 videos: each transcribed, analysed, emailed. Bare video URLs pass through. NO
@@ -993,6 +1040,24 @@ def poll_once(verbose=True):
                 if verbose: print(f"  📁 gdrive: triggered {_n} fetch(es), pending analysis-email → {_to}")
             except Exception as _e:
                 if verbose: print(f"  gdrive trigger error: {_e}")
+        # AUTO-TRIGGER: a ChatGPT SHARE link → hoover the WHOLE conversation to markdown + analyse it
+        # across the three brains (convey chatgpt --analyze), fold it into the answer context (so this
+        # agent's own FreeLLMAPI reply is grounded in the real conversation), and attach both files.
+        # Unlike a video, there is NOTHING to wait for — the conversation is IN the page. No guessing.
+        cg_urls=chatgpt_urls(raw_body); cg_note=""; cg_atts=[]
+        if cg_urls:
+            try:
+                cg_ctx, cg_atts, cg_note, cg_done = convey_chatgpt(cg_urls, verbose)
+                if cg_ctx:
+                    extra="\n\n".join(x for x in (extra, cg_ctx) if x)
+                    # a bare "here's a chatgpt link" with no real question → make it an analyse request
+                    residue=re.sub(r'https?://\S+',' ', question or '')
+                    residue=re.sub(r'[^A-Za-z0-9]+',' ',residue).strip()
+                    if len(residue)<12:
+                        question="Summarise and analyse this ChatGPT conversation: the key ideas, decisions, and anything worth double-checking."
+                if verbose: print(f"  🤖 chatgpt: hoovered+analysed {cg_done}/{len(cg_urls)}")
+            except Exception as _e:
+                if verbose: print(f"  chatgpt trigger error: {_e}")
         # NEVER vanish silently. If body extraction/stripping left nothing, fall back to the UNstripped
         # body (strip_signature may have over-eaten it, the Jeane bug) then the SUBJECT ("Patent
         # Us8901943" is itself a real request). Only skip when there is GENUINELY nothing — and LOG it,
@@ -1129,11 +1194,14 @@ def poll_once(verbose=True):
                 if b64:
                     reply["attachments"]=[{"filename":pdf_filename(answer, full.get("subject")),
                                            "content_type":"application/pdf","content":b64}]
-        # Append the transcription-belt + gdrive-fetch notes to whichever reply path built the message.
-        for _n in (yt_note, gd_note):
+        # Append the transcription-belt + gdrive-fetch + chatgpt-hoover notes to whichever reply path built it.
+        for _n in (yt_note, gd_note, cg_note):
             if _n:
                 reply["text"]=reply.get("text","")+_n
                 reply["html"]=reply.get("html","")+"<hr>"+md_to_inner_html(_n)
+        # Attach the hoovered ChatGPT conversation.md + analysis.md to the reply.
+        if cg_atts:
+            reply.setdefault("attachments", []).extend(cg_atts)
         # SELF-CONTAINED REPLY: if the sender attached files (a cool PDF), send them RIGHT BACK on the
         # reply alongside the analysis — so 'email a PDF in → analysis + the PDF back out' just works
         # for ANYONE, including Esa mailing himself. (Reusable: rides on the same reply.)
