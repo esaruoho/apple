@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# doi2scihub — map DOI(s) to https://sci-hub.ru/<DOI> and open in the default browser.
+# Sci-Hub blocks bots/curl (Cloudflare), so the reliable grab is a real browser tab.
+# Usage: doi2scihub 10.1122/1.549724 [10.1109/... ...]   |   echo "DOIs..." | doi2scihub
+[ -t 0 ] || set -- $(cat)
+for doi in "$@"; do
+  doi="${doi#https://doi.org/}"; doi="${doi#doi:}"; doi="$(echo "$doi" | tr -d '[]')"
+  url="https://sci-hub.ru/${doi}"
+  echo "  $url"
+  open "$url"
+done
