@@ -204,7 +204,7 @@ def _is_failure_answer(t):
     if len(tl)>900: return False
     return bool(_FAILURE_RE.search(tl))
 
-def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint=""):
+def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint="", lens=""):
     """Answer an email via FreeLLMAPI, GATED for clean output. The WIKI CONTEXT (if any) and the
     VIEWPOINT AUGMENT the answer — they NEVER gate it. The model uses the wiki + attachments + its
     OWN knowledge and ALWAYS gives a full answer; it must not refuse for lack of wiki coverage."""
@@ -229,6 +229,10 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
         sysm=viewpoint+"\n\n"+base+struct
     else:           # off-corpus (e.g. parenting) → plain direct answer, no preamble, no tones
         sysm=base+" Output ONLY the final answer — no reasoning preamble; begin directly with the answer."
+        if lens:    # a skill-backed space (apple/health/hyp) → frame the answer through the skill's lens
+            sysm=("You are answering WITHIN this skill/role space. Honour its rules and grounding "
+                  "(especially any anti-fabrication rules) as the authoritative frame:\n"+lens.strip()
+                  +"\n\n"+sysm)
     # BIG-CONTEXT ESCALATION: if the raw context is large, use Gemini's 1M window and DON'T truncate;
     # otherwise nemotron with the normal caps. Decided on RAW sizes (pre-truncation) so a big
     # attachment that would be clipped for nemotron triggers the escalation.
@@ -239,8 +243,8 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     wiki_cap = BIG_WIKI_CAP if big else SMALL_WIKI_CAP
     user=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
          f"LATEST EMAIL TO ANSWER:\n{question or '(no body text — answer based on the attachments)'}" + \
-         (f"\n\nRELEVANT WIKI CONTEXT (your accumulated free-energy synthesis — build on it, but also use "
-          f"your own knowledge; it may be incomplete):\n{wiki_ctx[:wiki_cap]}" if wiki_ctx else "") + \
+         (f"\n\nRELEVANT CONTEXT (retrieved from your knowledge base — build on it, but also use your own "
+          f"knowledge; it may be incomplete):\n{wiki_ctx[:wiki_cap]}" if wiki_ctx else "") + \
          (f"\n\nATTACHMENTS (extracted text):\n{attachments[:att_cap]}" if attachments else "")
     msgs=[{"role":"system","content":sysm},{"role":"user","content":user}]
     # Fallback message set with NO wiki context — used if the model gets biased into refusing
@@ -626,11 +630,24 @@ SPACECARDS = {
       "keywords":["spiritual","spirituality","esoteric","mysticism","mystical","occult","hermetic","kabbalah",
                   "gnostic","meditation","consciousness","soul","astral","chakra","sacred","divine","enlighten",
                   "awakening","tarot","alchemy","channeled","hilarion"]},
-  "health": {"label":"Health incl. mental-health / hypnosis / mindfulness","mode":"answer","personas":False,
-      "headings":False,"retrieval":False,"memory_ns":"esa/health","adjacent":["spirituality"],"senders":[],
-      "keywords":["health","inflammation","intestine","gut","diet","nutrition","sleep","anxiety","stress",
-                  "depression","therapy","hypnosis","hypnotherapy","erickson","mcneilly","mindfulness","mental",
-                  "emotion","wellbeing","symptom","medical","doctor","supplement","fasting"]},
+  "health": {"label":"Health / body / mental-health / family","mode":"answer","personas":False,
+      "headings":False,"retrieval":"skill","skill_dir":"~/work/health","memory_ns":"esa/health",
+      "adjacent":["spirituality","hyp"],"senders":[],
+      "keywords":["health","inflammation","intestine","gut","microbiome","dysbiosis","diet","nutrition",
+                  "sleep","anxiety","stress","depression","cortisol","ayurveda","alzheimer","mindfulness",
+                  "mental","emotion","wellbeing","symptom","medical","doctor","supplement","fasting"]},
+  "hyp": {"label":"Hypnosis / Ericksonian / McNeilly (hyp skill)","mode":"answer","personas":False,
+      "headings":False,"retrieval":"skill","skill_dir":"~/work/hyp","memory_ns":"esa/hyp",
+      "adjacent":["health","spirituality"],"senders":[],
+      "keywords":["hypnosis","hypnotic","hypnotherapy","self-hypnosis","hypno","induction","trance",
+                  "deepener","suggestion","fractionation","elman","ericksonian","erickson","mcneilly",
+                  "milton model","post-hypnotic","solution-focused"]},
+  "apple": {"label":"Apple / macOS automation / AppleScript tooling (apple skill)","mode":"answer",
+      "personas":False,"headings":False,"retrieval":"skill","skill_dir":"~/work/apple","memory_ns":"esa/apple",
+      "adjacent":["admin","music"],"senders":[],
+      "keywords":["applescript","apple script","osascript","asobjc","appletoolbox","apple toolbox",
+                  "applebar","loupedeck","streamdeck","contour shuttle","macos automation","system events",
+                  "shortcuts","app intents","url scheme","sdef","scripting dictionary","finder","sal soghoian"]},
   "finances": {"label":"Finances / money / admin-money","mode":"answer","personas":False,"headings":False,
       "retrieval":False,"memory_ns":"esa/finances","adjacent":["music","admin"],"senders":[],
       "keywords":["invoice","tax","vat","budget","income","expense","salary","payment","bank","loan","kela",
@@ -669,6 +686,42 @@ def route_space(sender, subject, body, wslugs=None):
 
 def is_protocol_space(sender, subject, body):
     return route_space(sender, subject, body, wslugs=None)[0] == "envoy-protocol"
+
+_SKILL_SKIP = {".git","node_modules",".venv","venv","__pycache__",".pytest_cache",".mypy_cache","dist","build"}
+def _skill_lens(d):
+    """The skill's own instruction file = the lens (SKILL.md / skill.md / CLAUDE.md, capped)."""
+    for fn in ("SKILL.md","skill.md","CLAUDE.md"):
+        f=d/fn
+        if f.exists():
+            try: return f.read_text(errors="ignore")[:4000]
+            except Exception: pass
+    return ""
+def skill_context(question, skill_dir, k_pages=6, scan_cap=1500):
+    """RETRIEVAL ONLY for a skill-backed space: score the markdown under ~/work/<skill> by keyword
+    overlap and return (context_text, [names], lens_text). Bounded (skips VCS/dep dirs, caps file
+    count + size) so a big repo like ~/work/apple stays cheap. AUGMENTS the answer; never gates it."""
+    d=Path(skill_dir).expanduser()
+    if not d.exists(): return "", [], ""
+    lens=_skill_lens(d)
+    if not question: return "", [], lens
+    qw=set(re.findall(r'[a-z]{4,}', question.lower()))
+    if not qw: return "", [], lens
+    scored=[]; scanned=0
+    for p in d.rglob("*.md"):
+        if scanned>=scan_cap: break
+        if _SKILL_SKIP & set(p.parts): continue
+        try:
+            if p.stat().st_size>400000: continue
+            t=p.read_text(errors="ignore").lower()
+        except Exception: continue
+        scanned+=1
+        s=sum(t.count(w) for w in qw) + (25 if any(w in p.stem.lower() for w in qw) else 0)
+        if s: scored.append((s,p))
+    scored.sort(key=lambda x:x[0], reverse=True)
+    if not scored or scored[0][0]<4: return "", [], lens
+    top=scored[:k_pages]
+    ctx="\n\n".join(f"=== {p.stem} ===\n{_best_window(p.read_text(errors='ignore'), qw)}" for s,p in top)
+    return ctx, [p.stem for s,p in top], lens
 
 # ── per-space persistent memory (federated namespaces; the Gate 6/7 substrate) ──
 def _space_mem_file(ns):
@@ -1041,14 +1094,25 @@ def poll_once(verbose=True):
             # space (dad/health/spirituality/finances/music/admin/general) gets a plain answer with the
             # free-energy persona SUPPRESSED — so a parenting question never comes back as a Tesla coil.
             space, why = route_space(full.get("from"), full.get("subject"), raw_body, wslugs)
+            card = SPACECARDS.get(space, {})
             in_fe = (space == "free-energy")
             vp = VIEWPOINT if in_fe else ""
-            wctx = wctx if in_fe else ""
+            lens = ""; sslugs = []
+            if in_fe:
+                pass                                    # free-energy: keep the wiki context (wctx) as-is
+            elif card.get("retrieval") == "skill" and card.get("skill_dir"):
+                # SKILL-BACKED space (apple/health/hyp): retrieve from ~/work/<skill> + use its lens.
+                try: wctx, sslugs, lens = skill_context(question, card["skill_dir"])
+                except Exception as e:
+                    wctx=""; print(f"  skill context error [{space}]: {e}")
+            else:
+                wctx = ""                               # plain space: no free-energy RAG leakage
             if verbose: print(f"  → researching [{space}·{why}]: {full.get('subject','(no subject)')[:50]} from {full.get('from','?')}"
                               + (f" [+{len(atts)} att]" if atts else "") + (" [+url-pdf]" if url_text else "")
-                              + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else ""))
+                              + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else "")
+                              + (f" [+skill:{len(sslugs)}]" if sslugs else "") + (" [+lens]" if lens else ""))
             try:
-                answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp)
+                answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp, lens=lens)
             except Exception as e:
                 print(f"  research failed for {mid}: {e}"); continue
             if answer is REQUEUE_NO_THINKING or answer is REQUEUE_FAILED:
