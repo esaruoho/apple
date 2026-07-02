@@ -3663,29 +3663,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
-        // Start: ask for the audio source first.
-        guard let withMic = askRecordMode() else { return }   // nil = cancelled
-        startScreenAudioRecording(withMic: withMic)
+        // Start: ask for the audio source (+ optional webcam) first.
+        guard let mode = askRecordMode() else { return }   // nil = cancelled
+        startScreenAudioRecording(withMic: mode.mic, withCam: mode.cam)
     }
 
-    /// Modal chooser shown on start: Sound only vs Sound + Mic (or Cancel).
-    /// Returns true = +mic, false = sound only, nil = cancelled.
-    func askRecordMode() -> Bool? {
+    /// Modal chooser shown on start: Sound only vs Sound + Mic (or Cancel), plus a
+    /// webcam checkbox that bakes a picture-in-picture speaking head into the recording.
+    /// Returns (mic, cam) or nil if cancelled.
+    func askRecordMode() -> (mic: Bool, cam: Bool)? {
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.messageText = "Record Screen & Audio"
-        alert.informativeText = "Capture the whole screen. Choose the audio source — you can still toggle the mic live with ⌃⌥⌘M."
+        alert.informativeText = "Capture the whole screen. Choose the audio source (toggle the mic live with ⌃⌥⌘M), and optionally bake in the webcam."
         alert.addButton(withTitle: "🔊 Sound only")        // .alertFirstButtonReturn (default / Return)
         alert.addButton(withTitle: "🔊 + 🎤 Sound + Mic")  // .alertSecondButtonReturn
         alert.addButton(withTitle: "Cancel")               // .alertThirdButtonReturn
+        let cam = NSButton(checkboxWithTitle: "🎥 Include webcam (picture-in-picture, bottom-right)",
+                           target: nil, action: nil)
+        cam.state = .off
+        alert.accessoryView = cam
         switch alert.runModal() {
-        case .alertFirstButtonReturn:  return false
-        case .alertSecondButtonReturn: return true
+        case .alertFirstButtonReturn:  return (false, cam.state == .on)
+        case .alertSecondButtonReturn: return (true, cam.state == .on)
         default:                       return nil
         }
     }
 
-    func startScreenAudioRecording(withMic: Bool) {
+    func startScreenAudioRecording(withMic: Bool, withCam: Bool = false) {
         // Prefer the recorder bundled INSIDE AppleToolbox.app (Contents/Helpers),
         // signed with the app's identity so it inherits the app's TCC screen-recording
         // grant — no endless re-prompt. Fall back to the external dev copy only if the
@@ -3704,6 +3709,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // With the mic, also auto-produce a YouTube-ready -flat.mov (mixed single track),
         // since YouTube plays only the first audio track and would drop the voice otherwise.
         if withMic { args.append("--mic"); args.append("--auto-flatten") }
+        if withCam { args.append("--pip") }   // bake the webcam into the corner
         p.arguments = args
         p.standardOutput = FileHandle.nullDevice
         p.standardError = FileHandle.nullDevice

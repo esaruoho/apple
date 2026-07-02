@@ -19,6 +19,7 @@ import ScreenCaptureKit
 import AVFoundation
 import CoreMedia
 import CoreGraphics
+import CoreImage
 import AppKit
 
 // MARK: - Options
@@ -33,6 +34,10 @@ struct Options {
     var list = false
     var reveal = false
     var autoFlatten = false   // after stop, if the mic was used, also emit a YouTube-ready -flat.mov
+    var pip = false           // bake the webcam into a corner of the screen (picture-in-picture)
+    var pipCorner = "br"      // br|bl|tr|tl
+    var pipScale = 0.26       // webcam width as a fraction of the screen width
+    var pipCamera: String?    // camera name substring (default: front/built-in)
 }
 
 func parseArgs() -> Options {
@@ -48,6 +53,10 @@ func parseArgs() -> Options {
         case "--out", "-o":    o.outPath = (it.next() as NSString?)?.expandingTildeInPath ?? ""
         case "--reveal":       o.reveal = true
         case "--auto-flatten": o.autoFlatten = true
+        case "--pip", "--camera": o.pip = true
+        case "--pip-corner":   o.pipCorner = it.next() ?? "br"
+        case "--pip-scale":    o.pipScale = Double(it.next() ?? "0.26") ?? 0.26
+        case "--pip-camera":   o.pipCamera = it.next()
         case "--list", "-l":   o.list = true
         case "--help", "-h":   printUsage(); exit(0)
         default: FileHandle.standardError.write("unknown arg: \(a)\n".data(using: .utf8)!); exit(2)
@@ -70,6 +79,10 @@ func printUsage() {
       --reveal               after finalizing, reveal the file in Finder (open -R)
       --auto-flatten         if the mic was used, also emit a YouTube-ready <name>-flat.mov
                              (one track with system + mic mixed — YouTube plays only track 1)
+      --pip, --camera        bake the webcam into a corner of the recording (speaking head)
+      --pip-corner <c>       br | bl | tr | tl  (default br = bottom-right)
+      --pip-scale <f>        webcam width as a fraction of screen width (default 0.26)
+      --pip-camera <name>    camera name substring (default: built-in / front camera)
 
     Press Ctrl-C to stop and finalize the file.
     Live mic toggle: send SIGUSR1 to this process — `kill -USR1 <pid>` — to turn the
@@ -85,8 +98,16 @@ func err(_ s: String) -> Never {
 
 // MARK: - Recorder
 
-final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
+final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
     var opts: Options
+
+    // Picture-in-picture webcam compositing (--pip)
+    var captureSession: AVCaptureSession?
+    let cameraQueue = DispatchQueue(label: "sar.camera")
+    let cameraLock = NSLock()
+    var latestCameraBuffer: CVPixelBuffer?     // holding it retains the frame past the capture pool
+    var ciContext: CIContext?
+    var videoAdaptor: AVAssetWriterInputPixelBufferAdaptor?
 
     /// Default output: <current working directory>/yyyy-MM-dd-HH-mm-ss.mov —
     /// the file lands in whatever folder you ran the command from.
@@ -182,6 +203,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         // The mic ALWAYS gets its own track + stream output, even if it starts muted,
         // so a live SIGUSR1 toggle can turn it on later without rebuilding the writer.
         setupWriter(width: cfg.width, height: cfg.height)
+        if opts.pip { _ = setupCamera() }
 
         let s = SCStream(filter: filter, configuration: cfg, delegate: self)
         do {
@@ -216,6 +238,20 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: vSettings)
         videoInput.expectsMediaDataInRealTime = true
         writer.add(videoInput)
+
+        // For PiP we composite each screen frame + the webcam corner into a fresh pixel
+        // buffer, so the video input is fed via a pixel-buffer adaptor instead of raw
+        // screen sample buffers.
+        if opts.pip {
+            let attrs: [String: Any] = [
+                kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA),
+                kCVPixelBufferWidthKey as String: width,
+                kCVPixelBufferHeightKey as String: height,
+            ]
+            videoAdaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: videoInput,
+                                                                sourcePixelBufferAttributes: attrs)
+            ciContext = CIContext(options: [.cacheIntermediates: false])
+        }
 
         let aSettings: [String: Any] = [
             AVFormatIDKey: kAudioFormatMPEG4AAC,
@@ -258,7 +294,11 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
 
         switch type {
         case .screen:
-            if videoInput.isReadyForMoreMediaData { videoInput.append(sampleBuffer) }
+            if opts.pip, let px = CMSampleBufferGetImageBuffer(sampleBuffer) {
+                compositePiP(screen: px, pts: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
+            } else if videoInput.isReadyForMoreMediaData {
+                videoInput.append(sampleBuffer)
+            }
         case .audio:
             if sysAudioInput.isReadyForMoreMediaData { sysAudioInput.append(sampleBuffer) }
         case .microphone:
@@ -266,6 +306,104 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
             if micOn, let mic = micInput, mic.isReadyForMoreMediaData { mic.append(sampleBuffer) }
         @unknown default:
             break
+        }
+    }
+
+    // AVCaptureVideoDataOutputSampleBufferDelegate — keep the latest webcam frame.
+    // Holding the CVPixelBuffer retains it past the capture pool's recycling.
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard let px = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        cameraLock.lock(); latestCameraBuffer = px; cameraLock.unlock()
+    }
+
+    /// Composite the latest webcam frame into a corner of the screen frame and append the
+    /// result. If no webcam frame has arrived yet (or the pool is momentarily empty), the
+    /// screen frame is appended unchanged — a recording is never lost to PiP.
+    func compositePiP(screen: CVPixelBuffer, pts: CMTime) {
+        guard let adaptor = videoAdaptor, let ctx = ciContext,
+              adaptor.assetWriterInput.isReadyForMoreMediaData else { return }
+        guard let pool = adaptor.pixelBufferPool else {
+            if videoInput.isReadyForMoreMediaData { adaptor.append(screen, withPresentationTime: pts) }
+            return
+        }
+        var outBuf: CVPixelBuffer?
+        CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outBuf)
+        guard let dst = outBuf else { adaptor.append(screen, withPresentationTime: pts); return }
+
+        var image = CIImage(cvPixelBuffer: screen)
+        let baseW = CGFloat(CVPixelBufferGetWidth(screen))
+        let baseH = CGFloat(CVPixelBufferGetHeight(screen))
+
+        cameraLock.lock(); let cam = latestCameraBuffer; cameraLock.unlock()
+        if let cam = cam {
+            var camImg = CIImage(cvPixelBuffer: cam)
+            let camW = camImg.extent.width, camH = camImg.extent.height
+            if camW > 0 && camH > 0 {
+                let targetW = baseW * CGFloat(opts.pipScale)
+                let scale = targetW / camW
+                let targetH = camH * scale
+                let margin = baseW * 0.02
+                camImg = camImg.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+                let x: CGFloat, y: CGFloat   // CIImage origin is bottom-left
+                switch opts.pipCorner {
+                case "bl": x = margin;                    y = margin
+                case "tl": x = margin;                    y = baseH - targetH - margin
+                case "tr": x = baseW - targetW - margin;  y = baseH - targetH - margin
+                default:   x = baseW - targetW - margin;  y = margin   // br
+                }
+                camImg = camImg.transformed(by: CGAffineTransform(translationX: x, y: y))
+                image = camImg.composited(over: image)
+            }
+        }
+        ctx.render(image, to: dst)
+        adaptor.append(dst, withPresentationTime: pts)
+    }
+
+    /// Start webcam capture for PiP. Returns false (and records screen-only) if no camera
+    /// or access is denied — never aborts the recording.
+    func setupCamera() -> Bool {
+        // Ask for camera access up front (blocks briefly on first run for the TCC prompt).
+        let status = AVCaptureDevice.authorizationStatus(for: .video)
+        if status == .notDetermined {
+            let sem = DispatchSemaphore(value: 0)
+            AVCaptureDevice.requestAccess(for: .video) { _ in sem.signal() }
+            sem.wait()
+        }
+        guard AVCaptureDevice.authorizationStatus(for: .video) == .authorized else {
+            FileHandle.standardError.write("PiP: camera access not granted — recording without webcam\n".data(using: .utf8)!)
+            return false
+        }
+        let device: AVCaptureDevice?
+        if let name = opts.pipCamera {
+            let types: [AVCaptureDevice.DeviceType] = [.builtInWideAngleCamera, .external, .continuityCamera]
+            device = AVCaptureDevice.DiscoverySession(deviceTypes: types, mediaType: .video, position: .unspecified)
+                .devices.first { $0.localizedName.range(of: name, options: .caseInsensitive) != nil }
+        } else {
+            device = AVCaptureDevice.default(for: .video)
+        }
+        guard let device else {
+            FileHandle.standardError.write("PiP: no camera found — recording without webcam\n".data(using: .utf8)!)
+            return false
+        }
+        let session = AVCaptureSession()
+        session.sessionPreset = .high
+        do {
+            let input = try AVCaptureDeviceInput(device: device)
+            guard session.canAddInput(input) else { return false }
+            session.addInput(input)
+            let output = AVCaptureVideoDataOutput()
+            output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_32BGRA)]
+            output.alwaysDiscardsLateVideoFrames = true
+            output.setSampleBufferDelegate(self, queue: cameraQueue)
+            guard session.canAddOutput(output) else { return false }
+            session.addOutput(output)
+            session.startRunning()
+            captureSession = session
+            FileHandle.standardError.write("🎥 webcam PiP: \(device.localizedName) (\(opts.pipCorner))\n".data(using: .utf8)!)
+            return true
+        } catch {
+            FileHandle.standardError.write("PiP: camera error \(error.localizedDescription) — recording without webcam\n".data(using: .utf8)!)
+            return false
         }
     }
 
@@ -338,6 +476,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     func finish() {
         lock.lock(); if finishing { lock.unlock(); return }; finishing = true; lock.unlock()
         FileHandle.standardError.write("\n■ stopping…\n".data(using: .utf8)!)
+        captureSession?.stopRunning()
         stream?.stopCapture { [weak self] _ in
             guard let self else { return }
             self.sampleQueue.async {

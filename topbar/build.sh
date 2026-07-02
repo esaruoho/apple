@@ -108,7 +108,7 @@ echo "==> Compiling bundled recorder helper (Contents/Helpers/screen-audio-recor
 mkdir -p "$APP/Contents/Helpers"
 xcrun swiftc -O ../bin/screen-audio-record.swift -o "$APP/Contents/Helpers/screen-audio-record" \
     -framework ScreenCaptureKit -framework AVFoundation -framework CoreMedia \
-    -framework CoreGraphics -framework AppKit
+    -framework CoreGraphics -framework CoreImage -framework AppKit
 # rec-audio must sit NEXT TO the recorder in the bundle so --auto-flatten can find it
 # (the recorder resolves rec-audio relative to its own executable path).
 echo "==> Compiling bundled rec-audio helper (Contents/Helpers/rec-audio)..."
