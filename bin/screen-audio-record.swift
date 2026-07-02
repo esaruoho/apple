@@ -31,6 +31,7 @@ struct Options {
     var fps = 60
     var outPath = ""
     var list = false
+    var reveal = false
 }
 
 func parseArgs() -> Options {
@@ -41,9 +42,10 @@ func parseArgs() -> Options {
         case "--app":          o.appName = it.next()
         case "--display":      o.displayIndex = Int(it.next() ?? "0") ?? 0
         case "--system-audio": o.systemAudio = true
-        case "--also-mic":     o.alsoMic = true
+        case "--also-mic", "--mic": o.alsoMic = true
         case "--fps":          o.fps = Int(it.next() ?? "60") ?? 60
         case "--out", "-o":    o.outPath = (it.next() as NSString?)?.expandingTildeInPath ?? ""
+        case "--reveal":       o.reveal = true
         case "--list", "-l":   o.list = true
         case "--help", "-h":   printUsage(); exit(0)
         default: FileHandle.standardError.write("unknown arg: \(a)\n".data(using: .utf8)!); exit(2)
@@ -60,11 +62,15 @@ func printUsage() {
       --app <name>           capture only this app's screen windows AND its audio
       --system-audio         capture the whole display + all system audio
       --display <n>          display index from --list (default 0 = main)
-      --also-mic             add your microphone as a second audio track
+      --also-mic, --mic      start with your microphone recording (2nd audio track)
       --fps <n>              frame rate (default 60)
       --out, -o <path>       output .mov (default: ./yyyy-MM-dd-HH-mm-ss.mov in the current folder)
+      --reveal               after finalizing, reveal the file in Finder (open -R)
 
     Press Ctrl-C to stop and finalize the file.
+    Live mic toggle: send SIGUSR1 to this process — `kill -USR1 <pid>` — to turn the
+    microphone on/off mid-recording (the mic goes to its own track, so muting just
+    stops writing mic samples). The AppleToolbox ⌃⌥⌘M shortcut does this for you.
     """)
 }
 
@@ -87,10 +93,12 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         return (dir as NSString).appendingPathComponent(f.string(from: Date()) + ".mov")
     }
     var stream: SCStream?
+    var cfg: SCStreamConfiguration!   // kept mutable so SIGUSR1 can flip captureMicrophone live
     var writer: AVAssetWriter!
     var videoInput: AVAssetWriterInput!
     var sysAudioInput: AVAssetWriterInput!
     var micInput: AVAssetWriterInput?
+    var micOn = false                 // whether mic samples are currently being written
     var sessionStarted = false
     let lock = NSLock()
     let sampleQueue = DispatchQueue(label: "sar.samples")
@@ -159,33 +167,36 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         cfg.sampleRate = 48_000
         cfg.channelCount = 2
         cfg.excludesCurrentProcessAudio = true
-        if opts.alsoMic {
-            cfg.captureMicrophone = true   // macOS 15+ native mic capture, no AVCaptureSession
-        }
+        // macOS 15+ native mic capture (no AVCaptureSession). Start on/off per --mic;
+        // SIGUSR1 flips it live via updateConfiguration().
+        micOn = opts.alsoMic
+        cfg.captureMicrophone = micOn
+        self.cfg = cfg
 
-        setupWriter(width: cfg.width, height: cfg.height, mic: opts.alsoMic)
+        // The mic ALWAYS gets its own track + stream output, even if it starts muted,
+        // so a live SIGUSR1 toggle can turn it on later without rebuilding the writer.
+        setupWriter(width: cfg.width, height: cfg.height)
 
         let s = SCStream(filter: filter, configuration: cfg, delegate: self)
         do {
             try s.addStreamOutput(self, type: .screen, sampleHandlerQueue: sampleQueue)
             try s.addStreamOutput(self, type: .audio, sampleHandlerQueue: sampleQueue)
-            if opts.alsoMic {
-                try s.addStreamOutput(self, type: .microphone, sampleHandlerQueue: sampleQueue)
-            }
+            try s.addStreamOutput(self, type: .microphone, sampleHandlerQueue: sampleQueue)
         } catch { err("addStreamOutput: \(error.localizedDescription)") }
         self.stream = s
 
         s.startCapture { [weak self] error in
             if let error { err("startCapture: \(error.localizedDescription)") }
-            let scope = self?.opts.appName.map { "app \"\($0)\"" } ?? "whole display + all system audio"
-            let mic = (self?.opts.alsoMic ?? false) ? " + mic" : ""
-            FileHandle.standardError.write("● recording \(scope)\(mic) → \(self?.opts.outPath ?? "")\n  press Ctrl-C to stop\n".data(using: .utf8)!)
+            guard let self else { return }
+            let scope = self.opts.appName.map { "app \"\($0)\"" } ?? "whole display + all system audio"
+            let mic = self.micOn ? " + mic ON" : " (mic off)"
+            FileHandle.standardError.write("● recording \(scope)\(mic) → \(self.opts.outPath)\n  Ctrl-C to stop · SIGUSR1 (kill -USR1 \(ProcessInfo.processInfo.processIdentifier)) toggles mic\n".data(using: .utf8)!)
         }
 
         installSignalHandler()
     }
 
-    func setupWriter(width: Int, height: Int, mic: Bool) {
+    func setupWriter(width: Int, height: Int) {
         let url = URL(fileURLWithPath: opts.outPath)
         try? FileManager.default.removeItem(at: url)
         do { writer = try AVAssetWriter(outputURL: url, fileType: .mov) }
@@ -210,12 +221,12 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         sysAudioInput.expectsMediaDataInRealTime = true
         writer.add(sysAudioInput)
 
-        if mic {
-            let m = AVAssetWriterInput(mediaType: .audio, outputSettings: aSettings)
-            m.expectsMediaDataInRealTime = true
-            writer.add(m)
-            micInput = m
-        }
+        // Mic track always exists so live-enabling the mic mid-recording has somewhere
+        // to write. If the mic is never turned on, this track simply receives no samples.
+        let m = AVAssetWriterInput(mediaType: .audio, outputSettings: aSettings)
+        m.expectsMediaDataInRealTime = true
+        writer.add(m)
+        micInput = m
 
         guard writer.startWriting() else {
             err("startWriting failed: \(writer.error?.localizedDescription ?? "unknown")")
@@ -245,7 +256,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         case .audio:
             if sysAudioInput.isReadyForMoreMediaData { sysAudioInput.append(sampleBuffer) }
         case .microphone:
-            if let mic = micInput, mic.isReadyForMoreMediaData { mic.append(sampleBuffer) }
+            // Only write mic samples while the mic is toggled ON.
+            if micOn, let mic = micInput, mic.isReadyForMoreMediaData { mic.append(sampleBuffer) }
         @unknown default:
             break
         }
@@ -256,14 +268,35 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         finish()
     }
 
-    // Ctrl-C → clean stop + finalize.
+    // Ctrl-C → clean stop + finalize.  SIGUSR1 → toggle mic on/off live.
     func installSignalHandler() {
         signal(SIGINT, SIG_IGN)
-        let src = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
-        src.setEventHandler { [weak self] in self?.finish() }
-        src.resume()
-        // Retain the source for the life of the process.
-        objc_setAssociatedObject(self, "sigsrc", src, .OBJC_ASSOCIATION_RETAIN)
+        let intSrc = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
+        intSrc.setEventHandler { [weak self] in self?.finish() }
+        intSrc.resume()
+        objc_setAssociatedObject(self, "sigint", intSrc, .OBJC_ASSOCIATION_RETAIN)
+
+        signal(SIGUSR1, SIG_IGN)
+        let micSrc = DispatchSource.makeSignalSource(signal: SIGUSR1, queue: .main)
+        micSrc.setEventHandler { [weak self] in self?.toggleMic() }
+        micSrc.resume()
+        objc_setAssociatedObject(self, "sigusr1", micSrc, .OBJC_ASSOCIATION_RETAIN)
+    }
+
+    /// Flip the mic between ON and OFF mid-recording. The append gate (micOn) is the
+    /// source of truth for what lands in the file; updateConfiguration() also starts/stops
+    /// the actual mic hardware capture so "off" means the mic is truly not listening.
+    func toggleMic() {
+        micOn.toggle()
+        cfg.captureMicrophone = micOn
+        let now = micOn
+        if let s = stream {
+            Task {
+                do { try await s.updateConfiguration(cfg) }
+                catch { NSLog("updateConfiguration(mic=\(now)) failed: \(error.localizedDescription)") }
+            }
+        }
+        FileHandle.standardError.write("🎤 mic \(micOn ? "ON" : "OFF")\n".data(using: .utf8)!)
     }
 
     var finishing = false
@@ -277,12 +310,21 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
                 self.sysAudioInput.markAsFinished()
                 self.micInput?.markAsFinished()
                 self.writer.finishWriting {
-                    if self.writer.status == .completed {
+                    let ok = self.writer.status == .completed
+                    if ok {
                         print("✓ saved \(self.opts.outPath)")
+                        if self.opts.reveal {
+                            // Reveal + select the file in Finder (opens its containing folder).
+                            let p = Process()
+                            p.launchPath = "/usr/bin/open"
+                            p.arguments = ["-R", self.opts.outPath]
+                            try? p.run()
+                            p.waitUntilExit()
+                        }
                     } else {
                         FileHandle.standardError.write("write failed: \(self.writer.error?.localizedDescription ?? "unknown")\n".data(using: .utf8)!)
                     }
-                    exit(self.writer.status == .completed ? 0 : 1)
+                    exit(ok ? 0 : 1)
                 }
             }
         }

@@ -2702,6 +2702,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     // menu toggle can SIGINT it to finalize the .mov. nil = not recording.
     var screenRecProc: Process?
     var screenRecOut: String?
+    var recMicOn = false          // mirrors the recorder's mic state for the menu label
+    var recordHotKeyRef: EventHotKeyRef?      // ⌃⌥⌘R start/stop
+    var micToggleHotKeyRef: EventHotKeyRef?   // ⌃⌥⌘M mic on/off
     // Carbon hotkey ref retained so the system holds the registration alive
     // for the lifetime of the menu-bar process (which IS the lifetime — the
     // LaunchAgent re-spawns the menu-bar if it ever dies).
@@ -3002,6 +3005,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     ///   id=5  ⌃⌥⌘C  → activate Renoise (launch if not running)
     ///   id=6  ⌃⌥⌘V  → activate Pure Data (launch if not running)
     ///   id=7  ⌃⌥⌘B  → activate Ableton Live 12 Suite (launch if not running)
+    ///   id=9  ⌃⌥⌘R  → recordScreenAudioToggle (start/stop screen + system-audio recording)
+    ///   id=10 ⌃⌥⌘M  → toggleRecordMic (mic on/off live during a recording)
     /// Each keyboard shortcut must NOT also be registered by LiveViewportDelegate;
     /// double-registration across two processes races last-writer-wins.
     func registerMenuBarHotKeys() {
@@ -3030,6 +3035,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 case 5: me.activateOrLaunch(path: LauncherSlots.currentPath(forKey: "C"))
                 case 6: me.activateOrLaunch(path: LauncherSlots.currentPath(forKey: "V"))
                 case 7: me.activateOrLaunch(path: LauncherSlots.currentPath(forKey: "B"))
+                case 9: me.recordScreenAudioToggle(nil)   // ⌃⌥⌘R start/stop recording
+                case 10: me.toggleRecordMic(nil)          // ⌃⌥⌘M mic on/off (live)
                 default: break
                 }
             }
@@ -3107,6 +3114,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSLog("AppleToolbox: ⌃⌥⌘B registration failed with OSStatus \(abletonStatus)")
         }
         abletonHotKeyRef = abletonRef
+
+        // id=9 — ⌃⌥⌘R — 'ATBR' — start/stop screen + system-audio recording
+        var recRef: EventHotKeyRef?
+        let recID = EventHotKeyID(signature: OSType(0x41544252), id: 9)
+        let recStatus = RegisterEventHotKey(UInt32(kVK_ANSI_R), mods, recID,
+                                            GetApplicationEventTarget(), 0, &recRef)
+        if recStatus != noErr {
+            NSLog("AppleToolbox: ⌃⌥⌘R registration failed with OSStatus \(recStatus)")
+        }
+        recordHotKeyRef = recRef
+
+        // id=10 — ⌃⌥⌘M — 'ATBM' — toggle mic on/off during a recording
+        var micRef: EventHotKeyRef?
+        let micID = EventHotKeyID(signature: OSType(0x4154424D), id: 10)
+        let micStatus = RegisterEventHotKey(UInt32(kVK_ANSI_M), mods, micID,
+                                            GetApplicationEventTarget(), 0, &micRef)
+        if micStatus != noErr {
+            NSLog("AppleToolbox: ⌃⌥⌘M registration failed with OSStatus \(micStatus)")
+        }
+        micToggleHotKeyRef = micRef
     }
 
     /// Bring an .app to the front, launching it if not running.
@@ -3614,19 +3641,21 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Screen + system-audio recording via bin/screen-audio-record (ScreenCaptureKit).
     // Unlike QuickTime, this captures audio straight off the system audio engine —
-    // no microphone, no BlackHole/Loopback. First click starts (whole screen + all
-    // system audio → ~/Videos/<timestamp>.mov); second click SIGINTs the recorder,
-    // which catches the signal and finalizes the file. Process() is retained in
-    // screenRecProc so interrupt() reaches the right PID.
+    // no microphone hack, no BlackHole/Loopback. Toggle (menu row or ⌃⌥⌘R):
+    //   • start → ask "Sound only" vs "Sound + Mic", spawn the recorder writing to
+    //     ~/Movies/<timestamp>.mov with --reveal (Finder opens + selects it on stop);
+    //   • stop  → SIGINT the recorder, which finalizes the .mov and reveals it.
+    // While recording, ⌃⌥⌘M (or the menu row) sends SIGUSR1 to toggle the mic live.
+    // Process() is retained in screenRecProc so interrupt()/kill() reach the right PID.
 
-    @objc func recordScreenAudioToggle(_ sender: NSMenuItem) {
+    @objc func recordScreenAudioToggle(_ sender: Any?) {
         if let p = screenRecProc, p.isRunning {
-            p.interrupt()   // SIGINT → recorder finalizes the .mov
+            p.interrupt()   // SIGINT → recorder finalizes the .mov and (via --reveal) shows it
             let out = screenRecOut
             screenRecProc = nil
             screenRecOut = nil
+            recMicOn = false
             rebuildMenu()
-            // Give it a moment to finish writing, then confirm + reveal.
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
                 if let out, FileManager.default.fileExists(atPath: out) {
                     notify("Recording saved", (out as NSString).lastPathComponent)
@@ -3634,6 +3663,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             return
         }
+        // Start: ask for the audio source first.
+        guard let withMic = askRecordMode() else { return }   // nil = cancelled
+        startScreenAudioRecording(withMic: withMic)
+    }
+
+    /// Modal chooser shown on start: Sound only vs Sound + Mic (or Cancel).
+    /// Returns true = +mic, false = sound only, nil = cancelled.
+    func askRecordMode() -> Bool? {
+        NSApp.activate(ignoringOtherApps: true)
+        let alert = NSAlert()
+        alert.messageText = "Record Screen & Audio"
+        alert.informativeText = "Capture the whole screen. Choose the audio source — you can still toggle the mic live with ⌃⌥⌘M."
+        alert.addButton(withTitle: "🔊 Sound only")        // .alertFirstButtonReturn (default / Return)
+        alert.addButton(withTitle: "🔊 + 🎤 Sound + Mic")  // .alertSecondButtonReturn
+        alert.addButton(withTitle: "Cancel")               // .alertThirdButtonReturn
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:  return false
+        case .alertSecondButtonReturn: return true
+        default:                       return nil
+        }
+    }
+
+    func startScreenAudioRecording(withMic: Bool) {
         let bin = "\(HOME)/work/apple/bin/screen-audio-record"
         guard FileManager.default.fileExists(atPath: bin) else {
             notify("Record Screen & Audio", "screen-audio-record not found"); return
@@ -3641,24 +3693,40 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let out = Self.recDefaultOutPath()
         let p = Process()
         p.launchPath = bin
-        p.arguments = ["--system-audio", "--out", out]
+        var args = ["--system-audio", "--reveal", "--out", out]
+        if withMic { args.append("--mic") }
+        p.arguments = args
         p.standardOutput = FileHandle.nullDevice
         p.standardError = FileHandle.nullDevice
         do {
             try p.run()
             screenRecProc = p
             screenRecOut = out
-            notify("Recording…", "Screen + system audio → \((out as NSString).lastPathComponent)")
+            recMicOn = withMic
+            notify("Recording…", "\(withMic ? "Screen + system audio + mic" : "Screen + system audio") → \((out as NSString).lastPathComponent)")
             rebuildMenu()
         } catch {
             notify("Record Screen & Audio", "failed to start: \(error.localizedDescription)")
         }
     }
 
-    /// ~/Videos/yyyy-MM-dd-HH-mm-ss.mov (dir created if missing). Mirrors the
-    /// default in bin/screen-audio-record so the menu label's path is honest.
+    /// Toggle the mic on/off DURING a recording — sends SIGUSR1 to the recorder, which
+    /// flips its mic track live (no restart). ⌃⌥⌘M or the menu row calls this.
+    @objc func toggleRecordMic(_ sender: Any?) {
+        guard let p = screenRecProc, p.isRunning else {
+            notify("Mic", "No recording in progress"); return
+        }
+        kill(p.processIdentifier, SIGUSR1)
+        recMicOn.toggle()
+        notify("Recording", recMicOn ? "🎤 Mic ON" : "🎤 Mic OFF")
+        rebuildMenu()
+    }
+
+    /// ~/Movies/yyyy-MM-dd-HH-mm-ss.mov (dir created if missing). The menu-bar / hotkey
+    /// path has no working directory, so it uses the standard macOS Movies folder;
+    /// the CLI (`rec`) writes to the current folder instead.
     static func recDefaultOutPath() -> String {
-        let dir = (HOME as NSString).appendingPathComponent("Videos")
+        let dir = (HOME as NSString).appendingPathComponent("Movies")
         try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd-HH-mm-ss"
@@ -4008,13 +4076,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
         menu.addItem(customAction(speechTitle, selector: #selector(toggleClaudeSpeech(_:))))
         // Screen + system-audio recording via ScreenCaptureKit (no loopback driver).
-        // Toggle: first click starts (whole screen + all system audio → ~/Videos),
-        // second click SIGINTs the recorder so it finalizes the .mov.
+        // Toggle (⌃⌥⌘R): start asks Sound-only vs Sound+Mic → ~/Movies, stop finalizes
+        // + reveals in Finder. While recording, a mic on/off row appears (⌃⌥⌘M).
         let recActive = (screenRecProc?.isRunning ?? false)
         let recTitle = recActive
-            ? "⏹\u{FE0F} Stop Recording (→ ~/Videos)"
-            : "🎥 Record Screen & Audio"
+            ? "⏹\u{FE0F} Stop Recording (⌃⌥⌘R)"
+            : "🎥 Record Screen & Audio (⌃⌥⌘R)"
         menu.addItem(customAction(recTitle, selector: #selector(recordScreenAudioToggle(_:))))
+        if recActive {
+            let micTitle = recMicOn
+                ? "🎤 Mic: ON — click to mute (⌃⌥⌘M)"
+                : "🎤 Mic: OFF — click to unmute (⌃⌥⌘M)"
+            menu.addItem(customAction(micTitle, selector: #selector(toggleRecordMic(_:))))
+        }
 
         // Pinned-file row — populated when a file is dropped onto the
         // AppleToolbox icon in the Finder toolbar (via application(_:open:)).

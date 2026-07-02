@@ -54,6 +54,29 @@ script for doing it right from the terminal. call it 'rec'."*
   Honest grade: the toggle is `@built` — the underlying `--system-audio --out` path is
   `@hw-verified` (via `rec`), but I did not GUI-click the menu row this session.
 
+## Ship 4 (same session) — mic toggle, chooser, hotkeys, Finder reveal
+Esa: enable/disable mic while `rec` is running; record laptop audio + mic at once (theorize
+how); bind ⌃⌥⌘R to start/stop; on stop open the Movies folder with the file selected; and
+"ask sound-out or sound-out&microphone, then turn mic on/off with a simple shortcut."
+- **Both-at-once** answer: system audio + mic are captured as TWO separate tracks (`--mic`,
+  or toggle live). A single MIXED track would need real-time PCM summation of the two
+  streams (buffer + time-align on the system-audio clock, sum samples, gate the mic to 0
+  when muted) — theorized in the reply + README, not built; two tracks is the robust ship.
+- **Live toggle**: recorder gained a SIGUSR1 handler → `toggleMic()` flips `micOn`, sets
+  `cfg.captureMicrophone`, and calls `SCStream.updateConfiguration(cfg)` so the mic hardware
+  truly starts/stops (privacy), while the append-gate decides what's written. Mic always
+  gets its own track + `.microphone` stream output so it can be enabled from a muted start.
+  Verified live: start-off → USR1 on → USR1 off → stop yielded a 3-track .mov.
+- **--reveal**: `open -R` on finalize. Verified live.
+- **AppleToolbox**: replaced the ~/Videos default with ~/Movies (Esa said "Movies folder");
+  ⌃⌥⌘R (id=9) toggles start/stop with an NSAlert Sound-only/Sound+Mic chooser; ⌃⌥⌘M (id=10)
+  sends SIGUSR1 to the recorder for live mic toggle; spawn passes `--reveal`. Compiled +
+  deployed; both hotkeys registered with no failure logged. Honest grade: the AppleToolbox
+  click/modal/keypress paths are @built (not GUI-driven headlessly); the recorder they
+  drive is @hw-verified.
+- Note: `~/Movies` is the real macOS folder ("Movies" is its Finder name); the earlier
+  ~/Videos was a literal reading of Esa's first message. CLI `rec` still writes to cwd.
+
 ## Side effects surfaced
 - Audio scope for `--app` relies on ScreenCaptureKit scoping capturesAudio to the
   filter's included application(s); with `excludesCurrentProcessAudio=true` the

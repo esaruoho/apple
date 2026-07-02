@@ -37,10 +37,14 @@
 #     commands/screen-audio-record.md, features/screen-audio-record.feature + .session.md.
 #   Ship 2 (commit eeb9b9e): --out-optional default, bin/rec launcher, commands/rec.md,
 #     AppleToolbox "Record Screen & Audio" toggle.
-#   Ship 3 (this commit): default now the CURRENT folder (cwd), not ~/Videos; `rec`
+#   Ship 3 (commit 264a8fd): default now the CURRENT folder (cwd), not ~/Videos; `rec`
 #     mirrored to standalone PUBLIC repo esaruoho/apple-rec (~/work/apple-rec) —
 #     self-bootstrapping rec + build.sh + README + MIT LICENSE. Standalone canonical
 #     on divergence (same rule as apple-energy / sessions).
+#   Ship 4 (this commit): live mic toggle (SIGUSR1 + SCStream.updateConfiguration),
+#     --mic start state, --reveal (open -R). AppleToolbox: ⌃⌥⌘R start/stop toggle with a
+#     Sound-only / Sound+Mic chooser (NSAlert), ⌃⌥⌘M live mic toggle, files → ~/Movies
+#     with --reveal. Mirror + docs updated.
 #   Live build machine: macOS 15.6.1 (24G90), display 1512x982 @2x.
 # ============================================================================
 
@@ -129,6 +133,55 @@ Feature: Record screen + system audio to one .mov with no loopback driver
     # @built: compiled + deployed live (build.sh, menu-bar relaunched); the same binary
     # + --system-audio --out path is @hw-verified via rec, but the click itself and the
     # interrupt()-from-AppleToolbox path were not GUI-driven in this build session.
+
+  @hw-verified
+  Scenario: mic toggles on/off live during a recording via SIGUSR1  (ran live)
+    Given a recording started with the mic OFF
+    When the process receives SIGUSR1 (kill -USR1 <pid>)
+    Then toggleMic() flips micOn, sets cfg.captureMicrophone, and calls
+      SCStream.updateConfiguration(cfg) so the mic hardware actually starts/stops
+    And mic sample buffers are written to a SECOND audio track only while micOn is true
+    And a live run (start off → USR1 on → 3s → USR1 off → SIGINT) produced a 5.25s .mov
+      with THREE tracks: video avc1 + system-audio aac + a mic aac track — verified by probe
+    # cite: toggleMic() + installSignalHandler() SIGUSR1 source + stream() .microphone gate
+
+  @hw-verified
+  Scenario: an unused mic track does not break finalization  (ran live)
+    Given a recording where the mic was never turned on
+    When it stops
+    Then AVAssetWriter drops the zero-sample mic input — the .mov has just video +
+      system-audio (verified: 2.68s, 2 tracks, clean finalize, no orphan)
+    # cite: setupWriter() always adds micInput; finish() marks it finished regardless
+
+  @hw-verified
+  Scenario: --reveal opens the file in Finder on finalize  (ran live)
+    Given --reveal is passed
+    When the writer completes
+    Then it runs `open -R <path>`, which opens the containing folder with the file selected
+    And a live run confirmed Finder was invoked on the saved .mov
+    # cite: finish() reveal branch
+
+  @built
+  Scenario: AppleToolbox ⌃⌥⌘R start/stop with a Sound-only vs Sound+Mic chooser
+    Given the menu-bar app is running (⌃⌥⌘R registered — verified: no registration-failure log)
+    When ⌃⌥⌘R (or the menu row) fires and nothing is recording
+    Then askRecordMode() shows an NSAlert: "🔊 Sound only" / "🔊 + 🎤 Sound + Mic" / Cancel
+    And the choice spawns screen-audio-record --system-audio --reveal --out ~/Movies/<ts>.mov
+      (+ --mic if chosen); a second ⌃⌥⌘R SIGINTs it → finalize + Finder reveal
+    # cite: recordScreenAudioToggle() + askRecordMode() + startScreenAudioRecording() + id=9 hotkey
+    # @built: compiled + deployed (menu-bar relaunched, hotkey registered clean); the GUI
+    # click / modal / global-keypress were not driven headlessly this session. The spawned
+    # command IS the @hw-verified recorder path.
+
+  @built
+  Scenario: AppleToolbox ⌃⌥⌘M toggles the mic live during a recording
+    Given a recording is in progress
+    When ⌃⌥⌘M (or the "🎤 Mic: …" menu row) fires
+    Then toggleRecordMic() sends kill(pid, SIGUSR1) to the recorder, flips recMicOn, and the
+      menu row relabels ON⇄OFF
+    # cite: toggleRecordMic() + id=10 hotkey + rebuildMenu() mic row
+    # @built: same as above — SIGUSR1 delivery is @hw-verified via CLI; the AppleToolbox
+    # kill() path + keypress were not GUI-driven this session.
 
   @note
   Scenario: Sequoia re-prompts screen-recording permission

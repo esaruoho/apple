@@ -16,11 +16,13 @@ Modes:
 - `/screen-audio-record --list` — list displays + audible running apps, then exit
 - `/screen-audio-record --app Renoise --out ~/rec.mov` — screen + ONLY that app's audio
 - `/screen-audio-record --system-audio --out ~/rec.mov` — whole display + ALL system audio
-- `/screen-audio-record --app Renoise --also-mic --out ~/rec.mov` — + your mic as a 2nd track
+- `/screen-audio-record --app Renoise --mic --out ~/rec.mov` — + your mic as a 2nd track
+- `/screen-audio-record --system-audio --reveal` — reveal the finished file in Finder
 - `--display <n>` picks a display from `--list`; `--fps <n>` sets frame rate (default 60)
 
-Press **Ctrl-C** to stop and finalize the file. No BlackHole/Loopback needed — audio comes
-straight off the system audio engine via ScreenCaptureKit. Sequoia re-prompts screen-recording
-permission weekly / after reboot; approve iTerm once when asked.
+Press **Ctrl-C** to stop and finalize the file. Toggle the mic on/off mid-recording with
+`kill -USR1 <pid>`. No BlackHole/Loopback needed — audio comes straight off the system audio
+engine via ScreenCaptureKit. Sequoia re-prompts screen-recording permission weekly / after
+reboot; approve iTerm once when asked.
 
 After the command completes, report only the lines it printed.
