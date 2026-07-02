@@ -17,7 +17,7 @@ Secrets / config (never in git):
   FM_FREE_KEY / ~/.fm-free.key                 (FreeLLMAPI unified key — the research brain)
   FM_FREE_HOST       (default cloudcity Mini :3001)
 """
-import base64, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.parse, urllib.request, urllib.error
+import base64, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.parse, urllib.request, urllib.error, uuid
 from pathlib import Path
 
 def enc(s):  # message_ids look like <...@email.amazonses.com> — must be URL-encoded in the path
@@ -604,6 +604,148 @@ def wiki_context(question, k_pages=8):
     ctx="\n\n".join(f"=== [[{p.stem}]] ({c}) ===\n{_best_window(p.read_text(errors='ignore'), qw)}" for s,p,c in top)
     return ctx, [p.stem for s,p,c in top]
 
+# ── TOPIC-SPACE ROUTING (SpaceCards) ─────────────────────────────────────────────────────────
+# ESA-space is the whole person; each ROLE is its own space = a retrieval namespace + a memory
+# namespace + a response policy. A message is ROUTED to ONE primary space and answered FROM it,
+# with the other spaces SUPPRESSED — so a parenting question is never answered with a Tesla coil,
+# a health question never summons Bearden, and a dry ENVOY/Penpal handshake never summons Walter
+# Russell. Free-energy is just space #1 now, no longer the funnel everything is forced through.
+# Spaces are ADJACENT and bleed at the edges (health↔spirituality via mindfulness/hypnosis); v0
+# routes to ONE primary space and records adjacency for later edge-aware retrieval.
+SPACE_MEM_ROOT = Path.home()/"work"/"comms"/"queue"/"fa-spaces-memory"   # on-Mini, Syncthing-shared, survives across email threads
+SPACECARDS = {
+  "envoy-protocol": {"label":"ENVOY / Penpal protocol","mode":"protocol","personas":False,"headings":False,
+      "retrieval":False,"memory_ns":"peers/cybe/envoy","adjacent":[],
+      "senders":["francois@agentmail.to","cybe","staffan","envoy-penpal-peer"],
+      "keywords":["penpal","envoy","penpal-protocol-v0","clean_protocol","clean protocol","machine block",
+                  "bootstrap protocol","spacecard","context space handshake","protocol mode","protocol_mode"]},
+  "free-energy": {"label":"Free energy / over-unity","mode":"creative","personas":True,"headings":True,
+      "retrieval":True,"memory_ns":"esa/free-energy","adjacent":["spirituality"],"senders":[],"keywords":[]},
+  "spirituality": {"label":"Spirituality / esoteric / mysticism","mode":"answer","personas":False,"headings":False,
+      "retrieval":False,"memory_ns":"esa/spirituality","adjacent":["health","free-energy"],"senders":[],
+      "keywords":["spiritual","spirituality","esoteric","mysticism","mystical","occult","hermetic","kabbalah",
+                  "gnostic","meditation","consciousness","soul","astral","chakra","sacred","divine","enlighten",
+                  "awakening","tarot","alchemy","channeled","hilarion"]},
+  "health": {"label":"Health incl. mental-health / hypnosis / mindfulness","mode":"answer","personas":False,
+      "headings":False,"retrieval":False,"memory_ns":"esa/health","adjacent":["spirituality"],"senders":[],
+      "keywords":["health","inflammation","intestine","gut","diet","nutrition","sleep","anxiety","stress",
+                  "depression","therapy","hypnosis","hypnotherapy","erickson","mcneilly","mindfulness","mental",
+                  "emotion","wellbeing","symptom","medical","doctor","supplement","fasting"]},
+  "finances": {"label":"Finances / money / admin-money","mode":"answer","personas":False,"headings":False,
+      "retrieval":False,"memory_ns":"esa/finances","adjacent":["music","admin"],"senders":[],
+      "keywords":["invoice","tax","vat","budget","income","expense","salary","payment","bank","loan","kela",
+                  "matkalasku","accounting","finance","financial","pricing","revenue"]},
+  "music": {"label":"Music / promotion / tooling (Paketti, Gumroad, Renoise)","mode":"answer","personas":False,
+      "headings":False,"retrieval":False,"memory_ns":"esa/music","adjacent":["finances","admin"],"senders":[],
+      "keywords":["music","track","song","album","release","mixdown","renoise","paketti","gumroad","bandcamp",
+                  "spotify","promotion","promo","midi","sample","synth","daw","lackluster"]},
+  "admin": {"label":"Admin: suggested tools/links/study/LLMs/URLs/YT-analysis","mode":"answer","personas":False,
+      "headings":False,"retrieval":False,"memory_ns":"esa/admin","adjacent":["music","finances"],"senders":[],
+      "keywords":["tooling","suggest","recommend","study","resource","workflow","automation","configure",
+                  "install","llm","chatgpt","claude"]},
+  "general": {"label":"General / plain","mode":"answer","personas":False,"headings":False,"retrieval":False,
+      "memory_ns":"esa/general","adjacent":[],"senders":[],"keywords":[]},
+}
+
+def route_space(sender, subject, body, wslugs=None):
+    """Pick ONE primary space. Explicit signals win (sender identity, [space:X] tag, a penpal block);
+    then keyword scoring; then the free-energy WIKI match (the pre-existing behaviour); else general.
+    NEVER silently defaults to free-energy — free-energy only wins when it is the routed space.
+    Returns (space_id, reason)."""
+    s=(sender or "").lower(); text=f"{subject or ''}\n{body or ''}".lower()
+    mtag=re.search(r'(?:\[space:|x-space:\s*|space=)\s*([a-z\-]+)', text)
+    if mtag and mtag.group(1) in SPACECARDS: return mtag.group(1), "explicit-tag"
+    env=SPACECARDS["envoy-protocol"]
+    if any(tok in s for tok in env["senders"]) or "```penpal" in (body or "") or "penpal-protocol-v0" in text:
+        return "envoy-protocol", "sender/penpal-block"
+    best, best_s = None, 0
+    for sid, card in SPACECARDS.items():
+        sc=sum(1 for w in (card.get("keywords") or []) if w in text)
+        if sc>best_s: best, best_s = sid, sc
+    if best and best_s>=2: return best, f"keywords:{best}({best_s})"
+    if wslugs: return "free-energy", "wiki-match"
+    if best and best_s>=1: return best, f"keywords:{best}({best_s})"
+    return "general", "default"
+
+def is_protocol_space(sender, subject, body):
+    return route_space(sender, subject, body, wslugs=None)[0] == "envoy-protocol"
+
+# ── per-space persistent memory (federated namespaces; the Gate 6/7 substrate) ──
+def _space_mem_file(ns):
+    p=SPACE_MEM_ROOT/ns; p.mkdir(parents=True, exist_ok=True); return p/"memory.jsonl"
+def space_mem_write(ns, rec):
+    try:
+        with _space_mem_file(ns).open("a") as fh: fh.write(json.dumps(rec)+"\n"); return True
+    except Exception: return False
+def space_mem_read(ns):
+    f=_space_mem_file(ns)
+    if not f.exists(): return []
+    out=[]
+    for l in f.read_text(errors="ignore").splitlines():
+        if l.strip():
+            try: out.append(json.loads(l))
+            except Exception: pass
+    return out
+
+def _uid(): return uuid.uuid4().hex[:16]
+def _penpal_field(body, field):
+    m=re.search(r'"'+re.escape(field)+r'"\s*:\s*"([^"]+)"', body or "")
+    return m.group(1) if m else None
+
+def compose_protocol_reply(full, body, to_email):
+    """DETERMINISTIC clean_protocol reply for the envoy-protocol space: one status line + one
+    penpal-protocol-v0 block composed IN CODE (schema-valid by construction — real IDs, allowed
+    evidence type, plain-string claims), and NOTHING else. No LLM persona, no wiki, no scratchpad,
+    no forced five-heading template — so nemotron token-salad can't contaminate the protocol channel
+    and Penpal Gate 2 passes deterministically. Also services the memory gates: a 'declared memory
+    bootstrap' rule is WRITTEN to the peers/cybe/envoy namespace, and a 'memory retrieval test'
+    READS it back (source: persistent_memory) — Gates 6 & 7. Returns (text, html)."""
+    ns=SPACECARDS["envoy-protocol"]["memory_ns"]
+    conv=_penpal_field(body, "conversation_id") or f"conv-cloudcity-{_uid()}"
+    rcpt=f"rcpt-cloudcity-{_uid()}"
+    subj=full.get("subject") or "Capability Discovery & First Contact"
+    if not subj.lower().startswith("re:"): subj="Re: "+subj
+    low=f"{full.get('subject','')}\n{body}".lower()
+    stored=False
+    claims=["The responder used current email and prior thread context only.",
+            "No external actions were taken.","No wiki retrieval was used.",
+            "No persona or tone mode was used in this reply."]
+    rule=_penpal_field(body, "rule")
+    if rule and ("memory_candidate" in (body or "") or "memory bootstrap" in low or "declared_memory" in low):
+        stored=space_mem_write(ns, {"type":"peer_protocol_rule","peer":"Cybe / francois@agentmail.to",
+                                    "rule":rule,"ts":time.strftime("%Y-%m-%dT%H:%M:%S")})
+        claims=[f"Stored a peer communication rule in persistent memory namespace '{ns}'." if stored
+                else f"Memory write to namespace '{ns}' was attempted but failed; treat as not stored.",
+                "memory_write_performed: %s (authority: explicit_user_requested_memory_bootstrap)." % ("true" if stored else "false"),
+                "The rule is retrievable in a future fresh thread from this namespace." if stored else
+                "No rule was persisted; a working storage layer is required.",
+                "No external actions were taken. No wiki retrieval was used. No persona mode was used."]
+    elif "memory retrieval" in low or ("remember" in low and "rule" in low):
+        rules=[r for r in space_mem_read(ns) if r.get("rule")]
+        if rules:
+            claims=[f"Retrieved a remembered Cybe/ENVOY communication rule from persistent memory namespace '{ns}'.",
+                    "Remembered rule: "+rules[-1].get("rule",""),
+                    "source: persistent_memory (not current_email, not prior_thread, not inference).",
+                    "No quoted prior-thread context was relied upon."]
+        else:
+            claims=[f"No persistent memory rule was found for Cybe in namespace '{ns}'.",
+                    "source: unknown. No rule was inferred or invented.",
+                    "No quoted prior-thread context was relied upon."]
+    block={"version":"penpal-protocol-v0","kind":"report","message_id":f"msg-cloudcity-{_uid()}",
+           "conversation_id":conv,
+           "sender":{"contact_email":"cloudcity-llm@agentmail.to","node":"cloudcity","person":"cloudcity-llm"},
+           "recipient":{"contact_email":to_email},"subject":subj,
+           "summary":"Clean protocol response with declared context sources and visible receipt.",
+           "claims":claims,"evidence":[{"type":"log_ref","ref":rcpt}],
+           "generated_by":"tool","requested_action":"human_review","reply_expectations":"human_review",
+           "safety_level":"untrusted_review"}
+    lead="Operating in clean_protocol mode. No wiki retrieval, persona mode, or external action was used."
+    if stored: lead+=f" One persistent-memory write was performed in namespace '{ns}' as explicitly requested."
+    txt=lead+"\n\n```penpal\n"+json.dumps(block, indent=2)+"\n```"
+    html=("<pre style=\"white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:13px\">"
+          +_htmlmod.escape(txt)+"</pre>")
+    return txt, html
+
 def inbound_atts_b64(k, mid, atts):
     """Re-download each inbound attachment via its AgentMail signed URL and return them as
     AgentMail send-attachments [{filename, content_type, content(base64)}] — so the original files
@@ -868,6 +1010,16 @@ def poll_once(verbose=True):
             reply={"text":note,"html":md_to_inner_html(note)}
             used="gdrive (fetching — analysis from the real files)"
             gd_note=""
+        elif is_protocol_space(full.get("from"), full.get("subject"), raw_body):
+            # ENVOY / Penpal space → a DETERMINISTIC clean_protocol reply (code-composed schema-valid
+            # penpal block, no persona, no wiki, no scratchpad). This is Staffan's long-requested
+            # clean_protocol mode: the free-energy five-heading template is BYPASSED entirely here.
+            _who=full.get("from") or ""; _mm=re.search(r"<([^>]+)>", _who)
+            _to=(_mm.group(1) if _mm else _who).strip() or BCC
+            ptext, phtml = compose_protocol_reply(full, raw_body, _to)
+            reply={"text":ptext, "html":phtml}
+            used="envoy-protocol (clean_protocol · deterministic penpal block)"
+            if verbose: print(f"  🛰  envoy-protocol clean reply → {_to}")
         elif prior:
             if verbose: print("  → rendering the PRIOR thread answer to PDF (no regeneration)")
             note="Here's the printable one-pager of the previous answer — attached. Same content, just formatted."
@@ -884,10 +1036,17 @@ def poll_once(verbose=True):
             if question:
                 try: wctx, wslugs = wiki_context(question)
                 except Exception as e: print(f"  wiki context error: {e}")
-            vp = VIEWPOINT if wslugs else ""
-            if verbose: print(f"  → researching: {full.get('subject','(no subject)')[:60]} from {full.get('from','?')}"
+            # ROUTE to a role-space; the free-energy VIEWPOINT (Russell/Bearden/Hilarion five-heading
+            # template) + free-energy RAG fire ONLY when the routed space IS free-energy. Every other
+            # space (dad/health/spirituality/finances/music/admin/general) gets a plain answer with the
+            # free-energy persona SUPPRESSED — so a parenting question never comes back as a Tesla coil.
+            space, why = route_space(full.get("from"), full.get("subject"), raw_body, wslugs)
+            in_fe = (space == "free-energy")
+            vp = VIEWPOINT if in_fe else ""
+            wctx = wctx if in_fe else ""
+            if verbose: print(f"  → researching [{space}·{why}]: {full.get('subject','(no subject)')[:50]} from {full.get('from','?')}"
                               + (f" [+{len(atts)} att]" if atts else "") + (" [+url-pdf]" if url_text else "")
-                              + (f" [+wiki:{len(wslugs)}]" if wslugs else ""))
+                              + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else ""))
             try:
                 answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp)
             except Exception as e:
