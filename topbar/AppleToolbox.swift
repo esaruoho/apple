@@ -3686,7 +3686,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func startScreenAudioRecording(withMic: Bool) {
-        let bin = "\(HOME)/work/apple/bin/screen-audio-record"
+        // Prefer the recorder bundled INSIDE AppleToolbox.app (Contents/Helpers),
+        // signed with the app's identity so it inherits the app's TCC screen-recording
+        // grant — no endless re-prompt. Fall back to the external dev copy only if the
+        // bundled one is somehow missing (e.g. running an old build).
+        let bundled = Bundle.main.bundleURL
+            .appendingPathComponent("Contents/Helpers/screen-audio-record").path
+        let external = "\(HOME)/work/apple/bin/screen-audio-record"
+        let bin = FileManager.default.fileExists(atPath: bundled) ? bundled : external
         guard FileManager.default.fileExists(atPath: bin) else {
             notify("Record Screen & Audio", "screen-audio-record not found"); return
         }

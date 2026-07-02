@@ -95,6 +95,21 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 PLIST
 plutil -lint "$APP/Contents/Info.plist" >/dev/null
 
+# ─── Bundled screen-recording helper ───────────────────────────────────────
+# The "Record Screen & Audio" feature calls ScreenCaptureKit. TCC keys the
+# screen-recording grant to the *actual SCK client process*. If we shelled out
+# to the external ~/work/apple/bin/screen-audio-record (ad-hoc, linker-signed,
+# outside the bundle, cdhash churns every build), macOS treats it as a distinct
+# unauthorised client and re-prompts endlessly even though AppleToolbox.app is
+# granted. Fix: compile the recorder INTO the bundle and sign it with the SAME
+# identity as the app, so it's covered by the app's grant (same TeamID + launched
+# by + inside the granted bundle → inherits, no re-prompt).
+echo "==> Compiling bundled recorder helper (Contents/Helpers/screen-audio-record)..."
+mkdir -p "$APP/Contents/Helpers"
+xcrun swiftc -O ../bin/screen-audio-record.swift -o "$APP/Contents/Helpers/screen-audio-record" \
+    -framework ScreenCaptureKit -framework AVFoundation -framework CoreMedia \
+    -framework CoreGraphics -framework AppKit
+
 # Prefer a stable signing identity over ad-hoc so TCC permissions (FDA, Apple
 # Events, etc.) survive rebuilds. TCC keys ad-hoc binaries by cdhash — which
 # changes on every build — but keys signed binaries by designated requirement
@@ -103,9 +118,14 @@ SIGN_ID=$(security find-identity -v -p codesigning 2>/dev/null \
     | awk '/Apple Development:|Developer ID Application:|AppleToolbox Local Signing/ {print $2; exit}')
 if [ -n "$SIGN_ID" ]; then
     echo "==> Codesigning with stable identity: $SIGN_ID"
+    # Nested code (the recorder helper) MUST be signed before the container so the
+    # app signature seals a valid helper. Same identity → helper inherits the app's
+    # TCC screen-recording grant.
+    codesign --force --sign "$SIGN_ID" "$APP/Contents/Helpers/screen-audio-record" 2>&1 | sed 's/^/    /'
     codesign --force --sign "$SIGN_ID" "$APP" 2>&1 | sed 's/^/    /'
 else
     echo "==> Ad-hoc codesign (no stable identity found — FDA will be lost on every rebuild)"
+    codesign --force --sign - "$APP/Contents/Helpers/screen-audio-record" 2>&1 | sed 's/^/    /'
     codesign --force --sign - "$APP" 2>&1 | sed 's/^/    /'
 fi
 
