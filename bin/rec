@@ -17,4 +17,6 @@
 # --system-audio (single-app audio wins).
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$DIR/screen-audio-record" --system-audio "$@"
+# --auto-flatten is a no-op unless the mic is used; with --mic it also writes a
+# YouTube-ready <name>-flat.mov (system + mic mixed into one track).
+exec "$DIR/screen-audio-record" --system-audio --auto-flatten "$@"

@@ -3701,7 +3701,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let p = Process()
         p.launchPath = bin
         var args = ["--system-audio", "--reveal", "--out", out]
-        if withMic { args.append("--mic") }
+        // With the mic, also auto-produce a YouTube-ready -flat.mov (mixed single track),
+        // since YouTube plays only the first audio track and would drop the voice otherwise.
+        if withMic { args.append("--mic"); args.append("--auto-flatten") }
         p.arguments = args
         p.standardOutput = FileHandle.nullDevice
         p.standardError = FileHandle.nullDevice

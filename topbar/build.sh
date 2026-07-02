@@ -109,6 +109,11 @@ mkdir -p "$APP/Contents/Helpers"
 xcrun swiftc -O ../bin/screen-audio-record.swift -o "$APP/Contents/Helpers/screen-audio-record" \
     -framework ScreenCaptureKit -framework AVFoundation -framework CoreMedia \
     -framework CoreGraphics -framework AppKit
+# rec-audio must sit NEXT TO the recorder in the bundle so --auto-flatten can find it
+# (the recorder resolves rec-audio relative to its own executable path).
+echo "==> Compiling bundled rec-audio helper (Contents/Helpers/rec-audio)..."
+xcrun swiftc -O ../bin/rec-audio.swift -o "$APP/Contents/Helpers/rec-audio" \
+    -framework AVFoundation -framework CoreMedia
 
 # Prefer a stable signing identity over ad-hoc so TCC permissions (FDA, Apple
 # Events, etc.) survive rebuilds. TCC keys ad-hoc binaries by cdhash — which
@@ -122,10 +127,12 @@ if [ -n "$SIGN_ID" ]; then
     # app signature seals a valid helper. Same identity → helper inherits the app's
     # TCC screen-recording grant.
     codesign --force --sign "$SIGN_ID" "$APP/Contents/Helpers/screen-audio-record" 2>&1 | sed 's/^/    /'
+    codesign --force --sign "$SIGN_ID" "$APP/Contents/Helpers/rec-audio" 2>&1 | sed 's/^/    /'
     codesign --force --sign "$SIGN_ID" "$APP" 2>&1 | sed 's/^/    /'
 else
     echo "==> Ad-hoc codesign (no stable identity found — FDA will be lost on every rebuild)"
     codesign --force --sign - "$APP/Contents/Helpers/screen-audio-record" 2>&1 | sed 's/^/    /'
+    codesign --force --sign - "$APP/Contents/Helpers/rec-audio" 2>&1 | sed 's/^/    /'
     codesign --force --sign - "$APP" 2>&1 | sed 's/^/    /'
 fi
 

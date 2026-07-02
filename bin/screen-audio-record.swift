@@ -32,6 +32,7 @@ struct Options {
     var outPath = ""
     var list = false
     var reveal = false
+    var autoFlatten = false   // after stop, if the mic was used, also emit a YouTube-ready -flat.mov
 }
 
 func parseArgs() -> Options {
@@ -46,6 +47,7 @@ func parseArgs() -> Options {
         case "--fps":          o.fps = Int(it.next() ?? "60") ?? 60
         case "--out", "-o":    o.outPath = (it.next() as NSString?)?.expandingTildeInPath ?? ""
         case "--reveal":       o.reveal = true
+        case "--auto-flatten": o.autoFlatten = true
         case "--list", "-l":   o.list = true
         case "--help", "-h":   printUsage(); exit(0)
         default: FileHandle.standardError.write("unknown arg: \(a)\n".data(using: .utf8)!); exit(2)
@@ -66,6 +68,8 @@ func printUsage() {
       --fps <n>              frame rate (default 60)
       --out, -o <path>       output .mov (default: ./yyyy-MM-dd-HH-mm-ss.mov in the current folder)
       --reveal               after finalizing, reveal the file in Finder (open -R)
+      --auto-flatten         if the mic was used, also emit a YouTube-ready <name>-flat.mov
+                             (one track with system + mic mixed — YouTube plays only track 1)
 
     Press Ctrl-C to stop and finalize the file.
     Live mic toggle: send SIGUSR1 to this process — `kill -USR1 <pid>` — to turn the
@@ -99,6 +103,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     var sysAudioInput: AVAssetWriterInput!
     var micInput: AVAssetWriterInput?
     var micOn = false                 // whether mic samples are currently being written
+    var micEverOn = false             // did the mic capture ANY audio this session? (gates auto-flatten)
     var sessionStarted = false
     let lock = NSLock()
     let sampleQueue = DispatchQueue(label: "sar.samples")
@@ -170,6 +175,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
         // macOS 15+ native mic capture (no AVCaptureSession). Start on/off per --mic;
         // SIGUSR1 flips it live via updateConfiguration().
         micOn = opts.alsoMic
+        micEverOn = opts.alsoMic
         cfg.captureMicrophone = micOn
         self.cfg = cfg
 
@@ -288,6 +294,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
     /// the actual mic hardware capture so "off" means the mic is truly not listening.
     func toggleMic() {
         micOn.toggle()
+        if micOn { micEverOn = true }
         cfg.captureMicrophone = micOn
         let now = micOn
         if let s = stream {
@@ -297,6 +304,34 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
             }
         }
         FileHandle.standardError.write("🎤 mic \(micOn ? "ON" : "OFF")\n".data(using: .utf8)!)
+    }
+
+    /// Run `rec-audio flatten` (found alongside this binary) to mix system+mic into one
+    /// track → <stem>-flat.mov. Blocks until done (we're on the way to exit anyway).
+    /// Returns the flattened path on success, nil otherwise.
+    func makeYouTubeVersion(_ inPath: String) -> String? {
+        guard let exeDir = Bundle.main.executableURL?.deletingLastPathComponent() else { return nil }
+        let recAudio = exeDir.appendingPathComponent("rec-audio").path
+        guard FileManager.default.fileExists(atPath: recAudio) else {
+            FileHandle.standardError.write("auto-flatten: rec-audio not found next to the recorder — skipping YouTube version\n".data(using: .utf8)!)
+            return nil
+        }
+        let flatPath = (inPath as NSString).deletingPathExtension + "-flat.mov"
+        FileHandle.standardError.write("⧉ making YouTube version (system + mic mixed) → \((flatPath as NSString).lastPathComponent) …\n".data(using: .utf8)!)
+        let p = Process()
+        p.launchPath = recAudio
+        p.arguments = ["flatten", inPath, "-o", flatPath]
+        do { try p.run() } catch {
+            FileHandle.standardError.write("auto-flatten failed to launch: \(error.localizedDescription)\n".data(using: .utf8)!)
+            return nil
+        }
+        p.waitUntilExit()
+        if p.terminationStatus == 0 {
+            print("✓ YouTube version: \(flatPath)")
+            return flatPath
+        }
+        FileHandle.standardError.write("auto-flatten: rec-audio exited \(p.terminationStatus)\n".data(using: .utf8)!)
+        return nil
     }
 
     var finishing = false
@@ -313,11 +348,18 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate {
                     let ok = self.writer.status == .completed
                     if ok {
                         print("✓ saved \(self.opts.outPath)")
+                        // If asked, and the mic was actually used, also produce a YouTube-ready
+                        // single-mixed-track copy (YouTube/QuickTime play only the FIRST audio
+                        // track, so a 2-track file would lose the voice). Reveal that one.
+                        var revealTarget = self.opts.outPath
+                        if self.opts.autoFlatten && self.micEverOn,
+                           let flat = self.makeYouTubeVersion(self.opts.outPath) {
+                            revealTarget = flat
+                        }
                         if self.opts.reveal {
-                            // Reveal + select the file in Finder (opens its containing folder).
                             let p = Process()
                             p.launchPath = "/usr/bin/open"
-                            p.arguments = ["-R", self.opts.outPath]
+                            p.arguments = ["-R", revealTarget]
                             try? p.run()
                             p.waitUntilExit()
                         }
