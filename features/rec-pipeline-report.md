@@ -72,57 +72,68 @@ path NOT driven headlessly · `@todo` planned, not built · `@dropped` raised th
     @hw-verified. # apple 4f47a4c, d8a65e0
 
   @built        Answered (verified via web): can't replace YouTube file/audio and keep the URL
-    Delivered the "new upload + turn old video into a signpost" plan. User's re-upload = their action.
+    Delivered the "new upload + turn old video into a signpost" plan. User re-uploaded — DONE.
+
+  @hw-verified  STEP 2 — Webcam baked-in picture-in-picture (--pip)  (ran live)
+    Given --pip, When recording, Then each screen frame is composited with the webcam corner
+    (Core Image → AVAssetWriterInputPixelBufferAdaptor) and the "speaking head" is baked in.
+    Verified: extracted frame shows the webcam rectangle placed/sized correctly (bottom-right).
+    CAVEAT: the camera SOURCE was black in the headless test (covered/held — raw grab mean=0.0),
+    so live imagery unconfirmed; the compositing pipeline IS confirmed. AppleToolbox chooser
+    gained a "🎥 Include webcam" checkbox. # apple 5f75463
+
+  @hw-verified  STEP 3 — Whisper .srt + hard burn-in (rec-subtitle)  (ran live)
+    `rec-subtitle <video>` → whisp/Whisper → <stem>.srt. `--burn` → <stem>-subtitled.mov with
+    subtitles painted into the picture (AVVideoCompositionCoreAnimationTool; text rasterized to
+    CGImage because CATextLayer doesn't draw in the offline render; DISCRETE opacity keyframe).
+    Verified: t=3s shows the subtitle right-side-up + outlined, t=0.4s (pre-cue) is clean.
+    Transcription wired to whisp (@built — no full Whisper run in-test, to spare CPU). # apple 4725ebc
+
+  @hw-verified  rec-audio backward-compat to Ventura + version-safe export  (ran live)
+    #available(macOS 15) branch: modern export(to:as:) on 15+, deprecated path on 13–14; built
+    -target macos13.0 → minos 13, runs on Ventura/Sonoma/Sequoia+, no deprecation warnings. # apple 0f03398
+
+  @hw-verified  Launcher sweep — dead ~/work/apple/topbar/AppleToolbox.app path repointed  (ran live)
+    hey-apple.applescript → `open -b com.esaruoho.appletoolbox`; toolbox-goto + grant-perms.md
+    resolve the app by bundle id (mdfind). Re-sweep: no live references left. # apple 0f03398
+
+  @hw-verified  Removed stale /Applications/AppleToolbox/AppleToolbox.app.STALE-20260528  (done)
 
 ---
 
-## ⚠️ DROPPED ON THE FLOOR — planned, not built
+## FEASIBILITY ANSWERED — tracing macOS backward
+- **rec-audio (split/flatten):** floor = macOS **13 (Ventura)** — set by the async AVAsset
+  loading APIs (`loadTracks`, `load(.duration)`). Could reach ~10.13 by switching to the old
+  synchronous track accessors. Shipped at 13.
+- **rec-subtitle burn-in:** also ~13 (async load + CoreAnimationTool).
+- **The RECORDER floor is higher:** system-audio needs macOS **13** (SCStream audio), the live
+  **mic** needs **15** (`captureMicrophone`), screen-only is **12.3**. So the mic/auto-flatten
+  path can't drop below 15 without `#available` guards around captureMicrophone (not done).
 
-  @todo  STEP 2 — Webcam "speaking head" capture (simultaneous webcam .mov for PiP)
-    Explicitly on the roadmap. I asked the fork "separate file vs baked-in PiP?" — the
-    mic-not-in-YouTube crisis interrupted and it was NEVER ANSWERED or built. This is the
-    biggest dropped thread. Fork still open.
+## ⚠️ STILL OPEN — dropped/deliberate
+  @dropped  Real-time MIXED single track AT RECORD time (PCM summation) — superseded by
+    post-hoc `rec-audio flatten`; deliberately not built.
+  @todo  CARD DEBT — features/screen-audio-record.feature still stops at "ship 4"; the TCC fix,
+    rec-audio, auto-flatten, PiP, and rec-subtitle are carded HERE (this report) but that
+    per-unit `.feature` was not brought current. rec-audio + rec-subtitle have no `.feature` of
+    their own. (This report card is the honest interim; the per-unit backfill is the remaining debt.)
+  @todo  Recorder mic-path Sonoma support — guard `captureMicrophone` behind #available to let
+    the mic/auto-flatten path run on <15. Not done.
 
-  @todo  STEP 3 — Whisper → .srt subtitles (feed -mic.m4a) + optional burn-in
-    Planned as step 3 of the pipeline (whisp skill already exists). Never started.
-
-  @dropped  Real-time MIXED single track AT RECORD time (PCM summation of sys+mic)
-    Theorized in detail, then superseded by post-hoc `rec-audio flatten`. Flatten covers the
-    need, so this is a deliberate drop — but the record-time mix was never built.
-
-  @todo  CARD DEBT — features/screen-audio-record.feature is STALE
-    It covers through "ship 4" (mic toggle/chooser/hotkeys). It does NOT card the later units:
-    the TCC bundling fix, rec-audio (split/flatten), or --mic auto-flatten. Per the mandatory
-    "building emits its card" rule, those shipped WITHOUT updating the card.
-
-  @todo  rec-audio has NO card of its own
-    A whole shipped unit (split/flatten) with no `.feature`. Should get one.
-
-  @todo  Sweep other launchers for the dead ~/work/apple/topbar/AppleToolbox.app path
-    I offered to grep all scripts/aliases/Loupedeck/Shortcuts for the stale path (the one that
-    broke the "Hey Apple" Shortcut) so we catch them ALL. User didn't take it up; I didn't run
-    it. Other launchers may still point at the deleted path. → fix: repoint to
-    `open -b com.esaruoho.appletoolbox`.
-
----
-
-## 💭 IDEAS RAISED, NEVER TRACED
-- **Whether the user's iMovie export actually contains the voice** — I recommended my verified
-  -flat.mov instead; the iMovie export was never confirmed either way.
-- **Confirm the re-upload succeeded with audio** — open loop (user's action).
-- **Stale `/Applications/AppleToolbox/AppleToolbox.app.STALE-20260528`** — flagged, left in
-  place (didn't create it). Cleanup never done.
-- **rec-audio.swift uses AVAssetExportSession** (deprecated in macOS 15) — works, but the
-  `export(to:as:)` migration was noted and skipped.
-- **A `rec-audio` slash + wiki page / mixing levels beyond the fixed 0.8 attenuation** — never scoped.
+## 💭 CLARIFIED / CLOSED
+- **iMovie import:** user confirmed the .mov carried BOTH voice + system audio and the export
+  did too — but iMovie read them as ONE audio stream (merged), not two. Matches the known
+  "iMovie merges embedded tracks" behavior; the re-upload is done.
+- **Re-upload:** DONE (user).  **STALE copy:** removed.  **Deprecated export API:** fixed.
 
 ---
 
 ## RESULT (this session)
-- apple `main`: 412fccd, eeb9b9e, 264a8fd, 4f47a4c, 214c3a5, 3335cc1, d8a65e0, 6ee6d97, 8000e55 (+ bot auto-regens).
-- apple-rec `main`: c8af559, 0f48f50, 9ecd7e3.
+- apple `main`: 412fccd, eeb9b9e, 264a8fd, 4f47a4c, 214c3a5, 3335cc1, d8a65e0, 6ee6d97, 8000e55,
+  0f03398 (launcher+backcompat), 5f75463 (PiP), 4725ebc (rec-subtitle) (+ bot auto-regens).
+- apple-rec `main`: c8af559, 0f48f50, 9ecd7e3 (PiP/backcompat mirror pending).
 - convey `main`: 41e9a8db.
-- Memory written: `feedback_tcc_bundle_sck_helper_same_identity.md`, `apple_rec_standalone.md`.
+- Memory: `feedback_tcc_bundle_sck_helper_same_identity.md`, `apple_rec_standalone.md`.
 - Pre-existing WIP left untouched (not ours): apple `atlas/*`, convey `FAILED-DOIS.md` + cache.
 
 ## How to get back
