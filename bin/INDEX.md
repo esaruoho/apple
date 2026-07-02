@@ -1,4 +1,4 @@
-# CLI Tools Index — 285 tools in bin/
+# CLI Tools Index — 286 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -202,6 +202,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `read-aloud` — (no description) — `bin/read-aloud`
 `rec` — one-word screen + system-audio recorder. — `bin/rec`
 `rec-audio` — (no description) — `bin/rec-audio`
+`rec-subtitle` — (no description) — `bin/rec-subtitle`
 `release-submit` — (no description) — `bin/release-submit`
 `release-worker` — (no description) — `bin/release-worker`
 `render-tag-icon.swift` — render a colored SF-Symbol tag icon as a .icns file. — `bin/render-tag-icon.swift`
