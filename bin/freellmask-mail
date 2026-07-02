@@ -617,6 +617,15 @@ def wiki_context(question, k_pages=8):
 # Spaces are ADJACENT and bleed at the edges (health↔spirituality via mindfulness/hypnosis); v0
 # routes to ONE primary space and records adjacency for later edge-aware retrieval.
 SPACE_MEM_ROOT = Path.home()/"work"/"comms"/"queue"/"fa-spaces-memory"   # on-Mini, Syncthing-shared, survives across email threads
+# cloudcity-llm@ is a PUBLIC inbox — anyone can email it. A space marked `private:True` draws on Esa's
+# PRIVATE corpus (~/work/health diary, ~/work/hyp), so it must ONLY serve the OWNER. For any other
+# sender the private corpus + lens are suppressed (a plain general answer is given, no private data
+# emailed to a stranger). Owner addresses are env-overridable.
+OWNER_ADDRS = set(a.strip().lower() for a in os.environ.get(
+    "FREELLMASK_OWNER_ADDRS","esaruoho@gmail.com,esaruoho@icloud.com").split(",") if a.strip())
+def _is_owner(sender):
+    s=(sender or "").lower()
+    return any(a in s for a in OWNER_ADDRS)
 SPACECARDS = {
   "envoy-protocol": {"label":"ENVOY / Penpal protocol","mode":"protocol","personas":False,"headings":False,
       "retrieval":False,"memory_ns":"peers/cybe/envoy","adjacent":[],
@@ -632,13 +641,13 @@ SPACECARDS = {
                   "awakening","tarot","alchemy","channeled","hilarion"]},
   "health": {"label":"Health / body / mental-health / family","mode":"answer","personas":False,
       "headings":False,"retrieval":"skill","skill_dir":"~/work/health","memory_ns":"esa/health",
-      "adjacent":["spirituality","hyp"],"senders":[],
+      "private":True,"adjacent":["spirituality","hyp"],"senders":[],
       "keywords":["health","inflammation","intestine","gut","microbiome","dysbiosis","diet","nutrition",
                   "sleep","anxiety","stress","depression","cortisol","ayurveda","alzheimer","mindfulness",
                   "mental","emotion","wellbeing","symptom","medical","doctor","supplement","fasting"]},
   "hyp": {"label":"Hypnosis / Ericksonian / McNeilly (hyp skill)","mode":"answer","personas":False,
       "headings":False,"retrieval":"skill","skill_dir":"~/work/hyp","memory_ns":"esa/hyp",
-      "adjacent":["health","spirituality"],"senders":[],
+      "private":True,"adjacent":["health","spirituality"],"senders":[],
       "keywords":["hypnosis","hypnotic","hypnotherapy","self-hypnosis","hypno","induction","trance",
                   "deepener","suggestion","fractionation","elman","ericksonian","erickson","mcneilly",
                   "milton model","post-hypnotic","solution-focused"]},
@@ -1167,9 +1176,16 @@ def poll_once(verbose=True):
                 pass                                    # free-energy: keep the wiki context (wctx) as-is
             elif card.get("retrieval") == "skill" and card.get("skill_dir"):
                 # SKILL-BACKED space (apple/health/hyp): retrieve from ~/work/<skill> + use its lens.
-                try: wctx, sslugs, lens = skill_context(question, card["skill_dir"])
-                except Exception as e:
-                    wctx=""; print(f"  skill context error [{space}]: {e}")
+                # PRIVACY GATE: a `private` space (health/hyp) draws on Esa's PRIVATE corpus, so it only
+                # serves the OWNER. A non-owner gets a plain answer with the private corpus SUPPRESSED —
+                # no private diary/health data is ever emailed to a stranger from the public inbox.
+                if card.get("private") and not _is_owner(full.get("from")):
+                    wctx=""; lens=""; sslugs=[]
+                    if verbose: print(f"  🔒 private space [{space}] + non-owner sender → corpus suppressed (plain answer)")
+                else:
+                    try: wctx, sslugs, lens = skill_context(question, card["skill_dir"])
+                    except Exception as e:
+                        wctx=""; print(f"  skill context error [{space}]: {e}")
             else:
                 wctx = ""                               # plain space: no free-energy RAG leakage
             if verbose: print(f"  → researching [{space}·{why}]: {full.get('subject','(no subject)')[:50]} from {full.get('from','?')}"
