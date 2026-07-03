@@ -204,7 +204,7 @@ def _is_failure_answer(t):
     if len(tl)>900: return False
     return bool(_FAILURE_RE.search(tl))
 
-def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint="", lens=""):
+def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint="", lens="", model_override=""):
     """Answer an email via FreeLLMAPI, GATED for clean output. The WIKI CONTEXT (if any) and the
     VIEWPOINT AUGMENT the answer — they NEVER gate it. The model uses the wiki + attachments + its
     OWN knowledge and ALWAYS gives a full answer; it must not refuse for lack of wiki coverage."""
@@ -215,7 +215,12 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "DO NOT invent specifics you are not sure of — exact command flags, API names, version numbers, file "
           "schemas, measured figures, or dates. If you don't KNOW the exact detail (e.g. a brand-new command's "
           "flags), say so plainly and say how to verify it (run `--help`, check the docs) rather than presenting a "
-          "plausible-looking guess as fact. Better an honest 'I'm not certain of the exact syntax' than a confident fabrication.")
+          "plausible-looking guess as fact. Better an honest 'I'm not certain of the exact syntax' than a confident fabrication. "
+          "SPECIFICALLY FOR COMMANDS/CLI: never show an EXAMPLE invocation containing flags/options you have not "
+          "verified — no `--format json`, `--output`, `--project` etc. for a command whose real flags you cannot "
+          "confirm, even if you label it 'example'. Show ONLY the bare verified command (e.g. `xcrun agent skills "
+          "export`) and tell the user to run `<command> --help` for the actual flags. Zero invented flags, not "
+          "plausible-looking ones.")
     if viewpoint:   # in-corpus (free-energy) → think out loud + speak in three voices, ONE call, no extra roundtrip
         struct=("\n\nYour reply MUST contain ALL FIVE of the following markdown headings, in this EXACT order and "
           "spelling. The FIRST line of your reply MUST be the heading '## Thought about it' — never open with the "
@@ -242,7 +247,9 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     # attachment that would be clipped for nemotron triggers the escalation.
     raw_len = len(question or "") + len(thread_context or "") + len(attachments or "") + len(wiki_ctx or "")
     big = raw_len > BIG_CTX_CHARS
-    chosen_model = BIG_MODEL if big else FM_MODEL
+    # model precedence: big-context always escalates to the 1M-window model; else a space's model
+    # override (e.g. apple → gemini for instruction-following on 'no invented flags'); else nemotron.
+    chosen_model = BIG_MODEL if big else (model_override or FM_MODEL)
     att_cap  = BIG_ATT_CAP  if big else SMALL_ATT_CAP
     wiki_cap = BIG_WIKI_CAP if big else SMALL_WIKI_CAP
     user=(f"PRIOR CONVERSATION (oldest first):\n{thread_context}\n\n" if thread_context else "") + \
@@ -681,6 +688,7 @@ SPACECARDS = {
   "apple": {"label":"Apple / macOS automation / AppleScript tooling (apple skill)","mode":"answer",
       "personas":False,"headings":False,"retrieval":"skill","skill_dir":"~/work/apple","memory_ns":"esa/apple",
       "adjacent":["admin","music"],"senders":[],
+      "model":"gemini-2.5-flash",   # CLI/technical space: nemotron fabricates command flags; gemini obeys "zero unverified flags". Low volume → quota fine.
       "keywords":["applescript","apple script","osascript","asobjc","appletoolbox","apple toolbox",
                   "applebar","loupedeck","streamdeck","contour shuttle","macos automation","system events",
                   "shortcuts","app intents","url scheme","sdef","scripting dictionary","finder","sal soghoian",
@@ -1350,7 +1358,8 @@ def poll_once(verbose=True):
                               + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else "")
                               + (f" [+skill:{len(sslugs)}]" if sslugs else "") + (" [+lens]" if lens else ""))
             try:
-                answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp, lens=lens)
+                answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp, lens=lens,
+                                           model_override=card.get("model",""))
             except Exception as e:
                 print(f"  research failed for {mid}: {e}"); continue
             if answer is REQUEUE_NO_THINKING or answer is REQUEUE_FAILED:
