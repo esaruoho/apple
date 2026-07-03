@@ -75,21 +75,24 @@ func which(_ name: String) -> String? {
 /// Transcribe locally. Prefer Esa's whisp wrapper if present; otherwise fall back to the
 /// public openai-whisper `whisper` CLI (so the standalone works with just `pip install
 /// openai-whisper`). Returns the <inputstem>.srt path in outStem's directory.
-func transcribe(_ audioOrVideo: String, model: String?, outStem: String) -> String {
+func transcribe(_ audioOrVideo: String, model: String?, lang: String, outStem: String) -> String {
     let outDir = (outStem as NSString).deletingLastPathComponent
     let inStem = ((audioOrVideo as NSString).lastPathComponent as NSString).deletingPathExtension
     let whisp = ("~/work/whisp/whisp" as NSString).expandingTildeInPath
     let p = Process(); p.launchPath = "/bin/bash"
+    // Force the language (default en) — Whisper's auto-detect misfires on short/accented clips
+    // (e.g. calling English "Finnish" and transcribing in Finnish). Pass "auto" to let it detect.
+    let langArgs = (lang.lowercased() == "auto") ? [] : ["--language", lang]
     if FileManager.default.fileExists(atPath: whisp) {
-        note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent) via whisp (Whisper)…")
-        var args = [whisp, "--out", outDir]
+        note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent) via whisp (Whisper, lang=\(lang))…")
+        var args = [whisp, "--out", outDir] + langArgs
         if let model { args += ["--model", model] }
         args.append(audioOrVideo)
         p.arguments = ["-lc", shquote(args)]
     } else if let w = which("whisper") {
-        note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent) via whisper (openai-whisper)…")
+        note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent) via whisper (openai-whisper, lang=\(lang))…")
         let args = [w, audioOrVideo, "--model", model ?? "base",
-                    "--output_format", "srt", "--output_dir", outDir, "--fp16", "False"]
+                    "--output_format", "srt", "--output_dir", outDir, "--fp16", "False"] + langArgs
         p.arguments = ["-lc", shquote(args)]
     } else {
         die("no transcription engine — install openai-whisper (`pip install openai-whisper`) or ~/work/whisp/whisp")
@@ -119,10 +122,10 @@ func miniAvailable() -> Bool {
 /// transcription if the transcript doesn't return in time — never hangs then dies. The Mini
 /// worker names outputs by title (not the input stem) and can be queued behind other jobs, so
 /// this is genuinely best-effort; local is the reliable path.
-func transcribeOnMini(_ audio: String, model: String?, stem: String) -> String {
+func transcribeOnMini(_ audio: String, model: String?, lang: String, stem: String) -> String {
     let submit = ("~/work/whisp-transcripts/whisp-submit" as NSString).expandingTildeInPath
     guard FileManager.default.fileExists(atPath: submit) else {
-        note("Mini whisp-submit not found — transcribing locally"); return transcribe(audio, model: model, outStem: stem + ".srt")
+        note("Mini whisp-submit not found — transcribing locally"); return transcribe(audio, model: model, lang: lang, outStem: stem + ".srt")
     }
     let inStem = ((audio as NSString).lastPathComponent as NSString).deletingPathExtension
     note("⧉ submitting to the Mini (whisp-submit)…")
@@ -144,7 +147,7 @@ func transcribeOnMini(_ audio: String, model: String?, stem: String) -> String {
         Thread.sleep(forTimeInterval: 5)
     }
     note("   Mini didn't return in time — transcribing locally instead")
-    return transcribe(audio, model: model, outStem: stem + ".srt")
+    return transcribe(audio, model: model, lang: lang, outStem: stem + ".srt")
 }
 
 func findSRT(named stem: String, under dir: String) -> String? {
@@ -291,6 +294,7 @@ let doBurn = args.contains("--burn")
 // Default is LOCAL (reliable). --mini is an explicit opt-in that itself falls back to local.
 let useMini = args.contains("--mini")
 let model = opt("--model")
+let lang = opt("--lang") ?? "en"   // default English; pass --lang auto to auto-detect
 let micAudio = opt("--mic")
 let stem = (videoPath as NSString).deletingPathExtension
 
@@ -299,9 +303,9 @@ var srt = opt("--srt") ?? (stem + ".srt")
 if !FileManager.default.fileExists(atPath: srt) {
     let source = micAudio ?? videoPath
     if useMini {
-        srt = transcribeOnMini(source, model: model, stem: stem)
+        srt = transcribeOnMini(source, model: model, lang: lang, stem: stem)
     } else {
-        let produced = transcribe(source, model: model, outStem: stem + ".srt")
+        let produced = transcribe(source, model: model, lang: lang, outStem: stem + ".srt")
         // whisp/whisper name by the SOURCE stem; normalize to <video-stem>.srt for predictability.
         if produced != stem + ".srt" { try? FileManager.default.removeItem(atPath: stem + ".srt"); try? FileManager.default.copyItem(atPath: produced, toPath: stem + ".srt") }
         srt = stem + ".srt"

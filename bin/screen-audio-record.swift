@@ -41,6 +41,7 @@ struct Options {
     var pipCamera: String?    // camera name substring (default: front/built-in)
     var burn = false          // after stop, transcribe + burn subtitles (one-command pipeline)
     var burnMini = false      // OPT-IN: route transcription to the Mini (default is local + reliable)
+    var burnLang = "en"       // subtitle language (default English; "auto" to auto-detect)
 }
 
 func parseArgs() -> Options {
@@ -64,6 +65,7 @@ func parseArgs() -> Options {
         case "--pip-camera":   o.pipCamera = it.next()
         case "--burn", "--burn-local": o.burn = true            // transcribe LOCALLY + burn (default)
         case "--burn-mini":    o.burn = true; o.burnMini = true // opt-in: route to the Mini
+        case "--burn-lang":    o.burnLang = it.next() ?? "en"   // subtitle language (default en)
         case "--list", "-l":   o.list = true
         case "--help", "-h":   printUsage(); exit(0)
         default: FileHandle.standardError.write("unknown arg: \(a)\n".data(using: .utf8)!); exit(2)
@@ -93,6 +95,7 @@ func printUsage() {
       --pip-camera <name>    camera name substring (default: built-in / front camera)
       --burn                 on stop: transcribe LOCALLY + burn subtitles → -subtitled.mov
       --burn-mini            opt-in: route transcription to the Mini (falls back to local)
+      --burn-lang <code>     subtitle language (default en; "auto" to auto-detect)
 
     Press Ctrl-C to stop and finalize the file.
     Live mic toggle: send SIGUSR1 to this process — `kill -USR1 <pid>` — to turn the
@@ -519,7 +522,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         FileHandle.standardError.write("⧉ transcribing + burning subtitles (\(opts.burnMini ? "via the Mini" : "locally")) — this can take a minute…\n".data(using: .utf8)!)
         let p = Process()
         p.launchPath = tool
-        var a = [inPath, "--burn"]
+        var a = [inPath, "--burn", "--lang", opts.burnLang]
         if opts.burnMini { a.append("--mini") }
         p.arguments = a
         do { try p.run() } catch {
