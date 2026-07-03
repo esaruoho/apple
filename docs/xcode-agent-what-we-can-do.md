@@ -56,10 +56,24 @@ iterate.
   contends with the fleet on the Mini. Realistic sweet spot: a **free local SwiftUI scaffolding +
   best-practices assistant**, escalating to gemini (free tier) for hard problems.
 
-## Build roadmap
-1. ✅ `fa-apple-skills` — on-demand export → private KB fold.
-2. ✅ apple email-space is Xcode-skill-aware (reads the bundles).
-3. ▢ `convey xcode-agent` — MCP client over `xcrun mcpbridge`, brain-pluggable (freellmapi/MLX/FM);
-   read-only first (introspect), then read-write (edit/scaffold).
-4. ▢ ACP `cloudcity` agent so `xcrun agent cloudcity` runs our free brain in Xcode's sandbox.
-5. ▢ chat→SwiftUI-app scaffolder on the Mini, skill-guided, $0 default + gemini escalation.
+## Build roadmap + VERIFIED outcomes (2026-07-04)
+1. ✅ `fa-apple-skills` — on-demand export → private KB fold. WORKS.
+2. ✅ apple email-space is Xcode-skill-aware (reads the bundles). WORKS.
+3. ⚠️ `xcode-agent` — MCP client over `xcrun mcpbridge`: BUILT + handshake works headless
+   (server "xcode-tools" v25245.3). BUT **`tools/list` returns 0 even with a project open + first-launch
+   done**. Apple **gates the Xcode MCP tools to agents Xcode itself launches** (claude/codex/gemini via
+   `xcrun agent`), NOT to external MCP clients. So an external free-brain agent can't use the tools.
+4. ❌ ACP `cloudcity` agent — NOT feasible. Agent list is hardcoded (claude/claude-ext/codex/gemini/
+   mock-agent); launch config (binary path, tokens, env) is **fetched from a running Xcode** and set in
+   Xcode's GUI — no static registration. (`xcrun agent claude` can't even find the installed claude CLI
+   because the path is Xcode-config-driven.) mock-agent refuses CLI launch.
+5. ✅ `swiftgen` — chat→SwiftUI-app scaffolder, skill-guided, $0 default + gemini escalation. WORKS
+   (not gated — pure codegen via freellmapi + the private Apple lens).
+
+## The honest bottom line
+- **Free chat→app scaffolding + best-practices review WORKS** (`swiftgen`, `$0`, Apple-guided). This is
+  the real, usable win.
+- **Driving Xcode's LIVE MCP tools with our own free brain is BLOCKED by Apple's design** — the tools are
+  reserved for Xcode-launched, hardcoded agents (claude/codex/gemini, with YOUR API keys). Not routable.
+- One native-ish path (future, hacky): configure the `gemini` agent in Xcode's GUI pointed at a `gemini`
+  CLI shim that hits freellmapi. Requires Xcode GUI config + a live agent session. Not worth it now.
