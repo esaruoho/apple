@@ -1,4 +1,4 @@
-# CLI Tools Index — 280 tools in bin/
+# CLI Tools Index — 287 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -90,6 +90,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
 `fa-analyze` — (no description) — `bin/fa-analyze`
 `fa-gdrive-analysis-mailer` — (no description) — `bin/fa-gdrive-analysis-mailer`
+`fa-lint-loop` — (no description) — `bin/fa-lint-loop`
 `fa-paper` — (no description) — `bin/fa-paper`
 `fa-paper-watch.sh` — fa-paper-watch — keep the living papers folded into the wiki, zero-token, on every edit. — `bin/fa-paper-watch.sh`
 `fa-transcript-feed` — (no description) — `bin/fa-transcript-feed`

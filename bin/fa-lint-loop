@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""fa-lint-loop — SUPERVISED self-email lint loop.
+
+Karpathy's 'lint → ask → file back', but MEDIATED BY THE REAL EMAIL BOT and HUMAN-GATED:
+  1. lint the wiki → propose N gap-filling questions   (via `fa-wiki grow --dry`)
+  2. EMAIL each question to cloudcity-llm@ (the real bot: space routing, viewpoint, anti-fabrication)
+  3. collect the bot's answers (BCC'd to Esa, so you SEE what's going on live)
+  4. save each Q+A as a PENDING suggestion — NOT ingested. You review, then accept.
+  5. accept folds the answers into the graph, zero-token.
+
+  fa-lint-loop [--graph kb/graph/free-energy] [--n 5] [--space free-energy]
+  fa-lint-loop --accept <pending-dir>          # fold reviewed answers into the graph
+
+Pending answers land in:  ~/work/comms/queue/fa-lint-pending/<timestamp>/   (Syncthing-synced)
+"""
+import sys, os, re, time, json, subprocess, importlib.util
+from importlib.machinery import SourceFileLoader
+from pathlib import Path
+
+HOME=Path.home()
+CONVEY=HOME/"work"/"convey"
+PENDING_ROOT=HOME/"work"/"comms"/"queue"/"fa-lint-pending"
+SENDER="cloudcity-foundationmodels@agentmail.to"
+BOT="cloudcity-llm@agentmail.to"
+
+def _fm():
+    loader=SourceFileLoader("fmmail", str(HOME/"work"/"apple"/"bin"/"freellmask-mail"))
+    spec=importlib.util.spec_from_loader("fmmail", loader)
+    m=importlib.util.module_from_spec(spec); sys.modules["fmmail"]=m
+    try: loader.exec_module(m)
+    except SystemExit: pass
+    return m
+
+def slugify(s): return re.sub(r"[^a-z0-9]+","-",(s or "q").lower()).strip("-")[:70]
+
+def gen_questions(graph, n):
+    """Ask fa-wiki grow (dry) for n gap-filling questions."""
+    out=subprocess.run(["python3", str(HOME/"work"/"apple"/"bin"/"fa-wiki"), "grow",
+                        "--graph", graph, "--n", str(n), "--dry"],
+                       capture_output=True, text=True, timeout=300)
+    qs=[]
+    for ln in (out.stdout or "").splitlines():
+        m=re.match(r'^\s*\?\s+(.+?)\s*$', ln)
+        if m: qs.append(m.group(1))
+    return qs[:n]
+
+def accept(pending_dir, graph):
+    """Fold reviewed Q+A pages into the graph (zero-token, via fa-paper ingest)."""
+    d=Path(pending_dir)
+    files=sorted(d.glob("*.md")) if d.is_dir() else [d]
+    corpus=graph.split("/")[-1]
+    n=0
+    for f in files:
+        r=subprocess.run(["python3", str(HOME/"work"/"apple"/"bin"/"fa-paper"), str(f),
+                          "--corpus", corpus], capture_output=True, text=True, timeout=120)
+        print(r.stdout.strip() or r.stderr.strip()); n+=1
+    print(f"\naccepted {n} lint answer(s) → {corpus}")
+
+def main():
+    a=sys.argv[1:]
+    graph="kb/graph/free-energy"
+    if "--graph" in a: graph=a[a.index("--graph")+1]
+    if a and a[0]=="--accept":
+        accept(a[1], graph); return
+    n=int(a[a.index("--n")+1]) if "--n" in a else 5
+    space=a[a.index("--space")+1] if "--space" in a else "free-energy"
+    fm=_fm(); k=fm.am_key()
+
+    print(f"[fa-lint-loop] linting {graph} → proposing {n} gap questions…", flush=True)
+    qs=gen_questions(graph, n)
+    if not qs:
+        print("[fa-lint-loop] no new questions — the wiki is caught up (ingest more sources to open gaps)."); return
+    for q in qs: print(f"  ? {q}", flush=True)
+
+    stamp=time.strftime("%Y%m%d-%H%M%S")
+    pend=PENDING_ROOT/stamp; pend.mkdir(parents=True, exist_ok=True)
+    jobs=[]
+    for q in qs:
+        subj=f"[lint] {q[:60]}"
+        body=f"[space:{space}]\n\n{q}"     # explicit space tag → routes to the free-energy brain
+        fm.http(f"{fm.AM_BASE}/inboxes/{fm.enc(SENDER)}/messages/send", k, "POST",
+                {"to":[BOT], "subject":subj, "text":body})
+        jobs.append({"q":q, "subj":subj.lower(), "answer":None})
+        print(f"  → emailed: {subj}", flush=True); time.sleep(3)
+
+    print(f"[fa-lint-loop] {len(jobs)} questions emailed to the bot. Collecting answers (up to ~8 min)…", flush=True)
+    deadline=time.time()+8*60
+    while time.time()<deadline and any(j["answer"] is None for j in jobs):
+        time.sleep(15)
+        lst=fm.http(f"{fm.AM_BASE}/inboxes/{fm.enc(SENDER)}/messages?limit=30", k)
+        for m in (lst.get("messages",lst.get("data",[])) if isinstance(lst,dict) else []):
+            s=(m.get("subject") or "").lower(); frm=(m.get("from") or "").lower()
+            if BOT.split("@")[0] not in frm: continue
+            for j in jobs:
+                if j["answer"] is None and j["subj"][:40] in s:
+                    full=fm.http(f"{fm.AM_BASE}/inboxes/{fm.enc(SENDER)}/messages/{fm.enc(m['message_id'])}", k)
+                    j["answer"]=full.get("text") or ""
+                    print(f"  ✓ answered: {j['q'][:60]}", flush=True)
+    # save PENDING suggestion pages (human-gated — NOT ingested)
+    saved=0
+    for j in jobs:
+        if not j["answer"]: continue
+        # strip the trailing quoted original + AgentMail footer so an accepted page ingests clean
+        clean=re.split(r'\n-{2,}\s*\nSent via AgentMail|\nOn .+ wrote:\s*\n', j["answer"])[0].strip()
+        slug=slugify(j["q"])
+        page=(f"---\nname: {j['q']}\nslug: {slug}\nkind: lint-answer\nconfidence: 0.6\n"
+              f"updated: {time.strftime('%Y-%m-%d')}\nsource: fa-lint-loop {stamp}\n---\n\n"
+              f"## Question\n{j['q']}\n\n## Answer (bot, pending review)\n{clean}\n")
+        (pend/f"{slug}.md").write_text(page); saved+=1
+    unanswered=[j["q"] for j in jobs if not j["answer"]]
+    print(f"\n[fa-lint-loop] DONE. {saved} answer(s) saved PENDING at:\n  {pend}")
+    if unanswered: print(f"  ({len(unanswered)} not answered in time — will re-queue on next run)")
+    print(f"\nReview them (also BCC'd to your inbox), then accept the good ones:")
+    print(f"  fa-lint-loop --accept {pend} --graph {graph}")
+
+if __name__=="__main__": main()
