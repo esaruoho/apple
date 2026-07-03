@@ -14,10 +14,14 @@ Use Bash to execute (one call, then stop):
 
 - `/rec` — whole screen + all system audio → `./<timestamp>.mov` (current folder)
 - `/rec --app Renoise` — screen + ONLY that app's audio
-- `/rec --mic` — start with the microphone recording too (2nd track)
+- `/rec --mic` — start with the microphone recording too (2nd track) + auto YouTube -flat.mov
+- `/rec --pip` — bake the webcam in as a **circle** in the corner (speaking head)
+- `/rec --mic --pip --burn` — the whole pipeline in one command: record → flatten →
+  transcribe (on the Mini) → burn subtitles → `-subtitled.mov` (add `--burn-local` to
+  transcribe on this mac instead)
 - `/rec --reveal` — reveal + select the finished file in Finder
-- `/rec --out ~/foo.mov` — custom path
-- `/rec --list` — displays + audible app names
+- `/rec --pip-square` / `--pip-corner tl|tr|bl|br` / `--pip-scale 0.16` — PiP tweaks
+- `/rec --out ~/foo.mov` — custom path · `/rec --list` — displays + audible app names
 
 Press **Ctrl-C** to stop and finalize. Toggle the **mic on/off mid-recording** with
 `kill -USR1 $(pgrep -n screen-audio-record)`. Thin wrapper over

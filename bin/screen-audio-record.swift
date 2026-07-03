@@ -36,8 +36,11 @@ struct Options {
     var autoFlatten = false   // after stop, if the mic was used, also emit a YouTube-ready -flat.mov
     var pip = false           // bake the webcam into a corner of the screen (picture-in-picture)
     var pipCorner = "br"      // br|bl|tr|tl
-    var pipScale = 0.26       // webcam width as a fraction of the screen width
+    var pipScale = 0.16       // webcam size as a fraction of the screen width (circle diameter)
+    var pipShape = "circle"   // circle (default) | square
     var pipCamera: String?    // camera name substring (default: front/built-in)
+    var burn = false          // after stop, transcribe + burn subtitles (one-command pipeline)
+    var burnLocal = false     // transcribe on THIS mac instead of routing to the Mini
 }
 
 func parseArgs() -> Options {
@@ -55,8 +58,12 @@ func parseArgs() -> Options {
         case "--auto-flatten": o.autoFlatten = true
         case "--pip", "--camera": o.pip = true
         case "--pip-corner":   o.pipCorner = it.next() ?? "br"
-        case "--pip-scale":    o.pipScale = Double(it.next() ?? "0.26") ?? 0.26
+        case "--pip-scale":    o.pipScale = Double(it.next() ?? "0.16") ?? 0.16
+        case "--pip-shape":    o.pipShape = it.next() ?? "circle"
+        case "--pip-square":   o.pipShape = "square"
         case "--pip-camera":   o.pipCamera = it.next()
+        case "--burn":         o.burn = true   // transcribe + burn subtitles on stop
+        case "--burn-local":   o.burn = true; o.burnLocal = true
         case "--list", "-l":   o.list = true
         case "--help", "-h":   printUsage(); exit(0)
         default: FileHandle.standardError.write("unknown arg: \(a)\n".data(using: .utf8)!); exit(2)
@@ -81,8 +88,11 @@ func printUsage() {
                              (one track with system + mic mixed — YouTube plays only track 1)
       --pip, --camera        bake the webcam into a corner of the recording (speaking head)
       --pip-corner <c>       br | bl | tr | tl  (default br = bottom-right)
-      --pip-scale <f>        webcam width as a fraction of screen width (default 0.26)
+      --pip-shape <s>        circle (default) | square       --pip-square = square
+      --pip-scale <f>        webcam size as a fraction of screen width (default 0.16)
       --pip-camera <name>    camera name substring (default: built-in / front camera)
+      --burn                 on stop: transcribe (on the Mini) + burn subtitles → -subtitled.mov
+      --burn-local           like --burn but transcribe on THIS mac (faster, hot; offline)
 
     Press Ctrl-C to stop and finalize the file.
     Live mic toggle: send SIGUSR1 to this process — `kill -USR1 <pid>` — to turn the
@@ -336,23 +346,47 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
 
         cameraLock.lock(); let cam = latestCameraBuffer; cameraLock.unlock()
         if let cam = cam {
-            var camImg = CIImage(cvPixelBuffer: cam)
-            let camW = camImg.extent.width, camH = camImg.extent.height
-            if camW > 0 && camH > 0 {
-                let targetW = baseW * CGFloat(opts.pipScale)
-                let scale = targetW / camW
-                let targetH = camH * scale
-                let margin = baseW * 0.02
-                camImg = camImg.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
+            let camImg = CIImage(cvPixelBuffer: cam)
+            let ext = camImg.extent
+            if ext.width > 0 && ext.height > 0 {
+                let margin = baseW * 0.025
+                let overlay: CIImage, ow: CGFloat, oh: CGFloat
+                if opts.pipShape == "square" {
+                    let targetW = baseW * CGFloat(opts.pipScale)
+                    let s = targetW / ext.width
+                    overlay = camImg.transformed(by: CGAffineTransform(scaleX: s, y: s))
+                        .transformed(by: CGAffineTransform(translationX: -ext.origin.x * s, y: -ext.origin.y * s))
+                    ow = targetW; oh = ext.height * s
+                } else {
+                    // Circle (default): center-crop the camera to a square, scale to the target
+                    // diameter, then mask to a circle so it takes far less space than a rectangle.
+                    let side = min(ext.width, ext.height)
+                    let d = baseW * CGFloat(opts.pipScale)
+                    let s = d / side
+                    let sq = camImg
+                        .cropped(to: CGRect(x: ext.midX - side / 2, y: ext.midY - side / 2, width: side, height: side))
+                        .transformed(by: CGAffineTransform(translationX: -(ext.midX - side / 2), y: -(ext.midY - side / 2)))
+                        .transformed(by: CGAffineTransform(scaleX: s, y: s))
+                    let mask = CIFilter(name: "CIRadialGradient", parameters: [
+                        "inputCenter": CIVector(x: d / 2, y: d / 2),
+                        "inputRadius0": d / 2 - 2, "inputRadius1": d / 2,
+                        "inputColor0": CIColor(red: 1, green: 1, blue: 1, alpha: 1),
+                        "inputColor1": CIColor(red: 0, green: 0, blue: 0, alpha: 0),
+                    ])?.outputImage?.cropped(to: CGRect(x: 0, y: 0, width: d, height: d)) ?? CIImage.empty()
+                    overlay = sq.applyingFilter("CIBlendWithMask", parameters: [
+                        kCIInputBackgroundImageKey: CIImage.empty(),
+                        kCIInputMaskImageKey: mask,
+                    ])
+                    ow = d; oh = d
+                }
                 let x: CGFloat, y: CGFloat   // CIImage origin is bottom-left
                 switch opts.pipCorner {
-                case "bl": x = margin;                    y = margin
-                case "tl": x = margin;                    y = baseH - targetH - margin
-                case "tr": x = baseW - targetW - margin;  y = baseH - targetH - margin
-                default:   x = baseW - targetW - margin;  y = margin   // br
+                case "bl": x = margin;              y = margin
+                case "tl": x = margin;              y = baseH - oh - margin
+                case "tr": x = baseW - ow - margin; y = baseH - oh - margin
+                default:   x = baseW - ow - margin; y = margin   // br
                 }
-                camImg = camImg.transformed(by: CGAffineTransform(translationX: x, y: y))
-                image = camImg.composited(over: image)
+                image = overlay.transformed(by: CGAffineTransform(translationX: x, y: y)).composited(over: image)
             }
         }
         ctx.render(image, to: dst)
@@ -472,6 +506,36 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         return nil
     }
 
+    /// Run `rec-subtitle --burn` (found alongside this binary) on the finished video to
+    /// transcribe + hard-burn subtitles. Transcription routes to the Mini unless --burn-local.
+    /// Blocks (transcription can take minutes). Returns the -subtitled.mov path on success.
+    func makeSubtitledVersion(_ inPath: String) -> String? {
+        guard let exeDir = Bundle.main.executableURL?.deletingLastPathComponent() else { return nil }
+        let tool = exeDir.appendingPathComponent("rec-subtitle").path
+        guard FileManager.default.fileExists(atPath: tool) else {
+            FileHandle.standardError.write("--burn: rec-subtitle not found next to the recorder — skipping\n".data(using: .utf8)!)
+            return nil
+        }
+        FileHandle.standardError.write("⧉ transcribing + burning subtitles (\(opts.burnLocal ? "local" : "on the Mini")) — this can take a few minutes…\n".data(using: .utf8)!)
+        let p = Process()
+        p.launchPath = tool
+        var a = [inPath, "--burn"]
+        if !opts.burnLocal { a.append("--mini") }
+        p.arguments = a
+        do { try p.run() } catch {
+            FileHandle.standardError.write("--burn failed to launch rec-subtitle: \(error.localizedDescription)\n".data(using: .utf8)!)
+            return nil
+        }
+        p.waitUntilExit()
+        let subbed = (inPath as NSString).deletingPathExtension + "-subtitled.mov"
+        if p.terminationStatus == 0 && FileManager.default.fileExists(atPath: subbed) {
+            print("✓ subtitled: \(subbed)")
+            return subbed
+        }
+        FileHandle.standardError.write("--burn: rec-subtitle exited \(p.terminationStatus)\n".data(using: .utf8)!)
+        return nil
+    }
+
     var finishing = false
     func finish() {
         lock.lock(); if finishing { lock.unlock(); return }; finishing = true; lock.unlock()
@@ -494,6 +558,9 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                         if self.opts.autoFlatten && self.micEverOn,
                            let flat = self.makeYouTubeVersion(self.opts.outPath) {
                             revealTarget = flat
+                        }
+                        if self.opts.burn, let subbed = self.makeSubtitledVersion(revealTarget) {
+                            revealTarget = subbed
                         }
                         if self.opts.reveal {
                             let p = Process()

@@ -64,7 +64,7 @@ func transcribe(_ audioOrVideo: String, model: String?, outStem: String) -> Stri
     note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent) via whisp (Whisper)…")
     let p = Process()
     p.launchPath = "/bin/bash"
-    var args = [whisp, "--output-dir", outDir]
+    var args = [whisp, "--out", outDir]
     if let model { args += ["--model", model] }
     args.append(audioOrVideo)
     p.arguments = ["-lc", args.map { "'\($0.replacingOccurrences(of: "'", with: "'\\''"))'" }.joined(separator: " ")]
@@ -76,6 +76,48 @@ func transcribe(_ audioOrVideo: String, model: String?, outStem: String) -> Stri
     let srt = (outDir as NSString).appendingPathComponent(inStem + ".srt")
     guard FileManager.default.fileExists(atPath: srt) else { die("whisp produced no .srt at \(srt)") }
     return srt
+}
+
+/// Route transcription to the always-on Mac Mini via the Syncthing whisp pipeline
+/// (whisp-submit drops the file into ~/work/comms/queue/whisp-inbox; the Mini worker
+/// transcribes and the .srt returns via git/Syncthing). Keeps heavy Whisper off THIS mac.
+/// @built — the round-trip depends on the Mini worker; poll locations are best-effort.
+func transcribeOnMini(_ audio: String, stem: String) -> String {
+    let submit = ("~/work/whisp-transcripts/whisp-submit" as NSString).expandingTildeInPath
+    guard FileManager.default.fileExists(atPath: submit) else {
+        die("whisp-submit not found — use --burn-local to transcribe on this mac")
+    }
+    let inStem = ((audio as NSString).lastPathComponent as NSString).deletingPathExtension
+    note("⧉ submitting to the Mini (whisp-submit) — transcribing off-device to keep this mac cool…")
+    let p = Process(); p.launchPath = submit; p.arguments = [audio]
+    do { try p.run() } catch { die("failed to launch whisp-submit: \(error.localizedDescription)") }
+    p.waitUntilExit()
+    if p.terminationStatus != 0 { die("whisp-submit exited \(p.terminationStatus)") }
+    let dirs = [("~/work/whisp-transcripts/transcripts" as NSString).expandingTildeInPath,
+                ("~/work/comms/queue/whisp-results" as NSString).expandingTildeInPath]
+    note("   waiting for the transcript to come back from the Mini (Ctrl-C to give up)…")
+    let deadline = Date(timeIntervalSinceNow: 1800)   // 30 min
+    while Date() < deadline {
+        for dir in dirs {
+            if let hit = findSRT(named: inStem, under: dir) {
+                let dst = stem + ".srt"
+                try? FileManager.default.removeItem(atPath: dst)
+                try? FileManager.default.copyItem(atPath: hit, toPath: dst)
+                note("   ✓ transcript returned from the Mini")
+                return dst
+            }
+        }
+        Thread.sleep(forTimeInterval: 5)
+    }
+    die("timed out (30 min) waiting for the Mini transcript — check the Mini whisp-worker, or re-run with --burn-local")
+}
+
+func findSRT(named stem: String, under dir: String) -> String? {
+    guard let en = FileManager.default.enumerator(atPath: dir) else { return nil }
+    for case let f as String in en where f.hasSuffix(".srt") && (f as NSString).lastPathComponent.hasPrefix(stem) {
+        return (dir as NSString).appendingPathComponent(f)
+    }
+    return nil
 }
 
 // MARK: - burn-in (Core Animation)
@@ -117,7 +159,10 @@ func renderTextImage(_ text: String, width: CGFloat, height: CGFloat, fontSize: 
 
 func burn(video: String, srtPath: String, outPath: String) {
     let cues = parseSRT(srtPath)
-    guard !cues.isEmpty else { die("no cues in \(srtPath)") }
+    guard !cues.isEmpty else {
+        note("no subtitle cues (silent/short audio?) — kept the .srt, skipped burn")
+        return
+    }
     let asset = AVURLAsset(url: URL(fileURLWithPath: video))
     guard let vTrack = sync({ try await asset.loadTracks(withMediaType: .video) }).first else { die("no video track") }
     let natural = sync { try await vTrack.load(.naturalSize) }
@@ -208,18 +253,24 @@ let videoPath = (video as NSString).expandingTildeInPath
 args.removeFirst()
 func opt(_ name: String) -> String? { if let i = args.firstIndex(of: name), i + 1 < args.count { return (args[i+1] as NSString).expandingTildeInPath }; return nil }
 let doBurn = args.contains("--burn")
+let useMini = args.contains("--mini")   // route transcription to the Mac Mini (keep CPU off this mac)
 let model = opt("--model")
 let micAudio = opt("--mic")
 let stem = (videoPath as NSString).deletingPathExtension
 
-// Get the .srt: use --srt if given, else an existing sidecar, else transcribe.
+// Get the .srt: use --srt if given, else an existing sidecar, else transcribe
+// (on the Mini with --mini, otherwise on this mac).
 var srt = opt("--srt") ?? (stem + ".srt")
 if !FileManager.default.fileExists(atPath: srt) {
     let source = micAudio ?? videoPath
-    let produced = transcribe(source, model: model, outStem: stem + ".srt")
-    // whisp names by the SOURCE stem; normalize to <video-stem>.srt for predictability.
-    if produced != stem + ".srt" { try? FileManager.default.removeItem(atPath: stem + ".srt"); try? FileManager.default.copyItem(atPath: produced, toPath: stem + ".srt") }
-    srt = stem + ".srt"
+    if useMini {
+        srt = transcribeOnMini(source, stem: stem)
+    } else {
+        let produced = transcribe(source, model: model, outStem: stem + ".srt")
+        // whisp names by the SOURCE stem; normalize to <video-stem>.srt for predictability.
+        if produced != stem + ".srt" { try? FileManager.default.removeItem(atPath: stem + ".srt"); try? FileManager.default.copyItem(atPath: produced, toPath: stem + ".srt") }
+        srt = stem + ".srt"
+    }
 }
 print("✓ \(srt)")
 
