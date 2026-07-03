@@ -1,4 +1,4 @@
-# CLI Tools Index — 281 tools in bin/
+# CLI Tools Index — 287 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
