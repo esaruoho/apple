@@ -41,10 +41,14 @@
 #     mirrored to standalone PUBLIC repo esaruoho/apple-rec (~/work/apple-rec) —
 #     self-bootstrapping rec + build.sh + README + MIT LICENSE. Standalone canonical
 #     on divergence (same rule as apple-energy / sessions).
-#   Ship 4 (this commit): live mic toggle (SIGUSR1 + SCStream.updateConfiguration),
+#   Ship 4 (commit 4f47a4c): live mic toggle (SIGUSR1 + SCStream.updateConfiguration),
 #     --mic start state, --reveal (open -R). AppleToolbox: ⌃⌥⌘R start/stop toggle with a
-#     Sound-only / Sound+Mic chooser (NSAlert), ⌃⌥⌘M live mic toggle, files → ~/Movies
-#     with --reveal. Mirror + docs updated.
+#     Sound-only / Sound+Mic chooser (NSAlert), ⌃⌥⌘M live mic toggle, files → ~/Movies.
+#   Ship 5 (5f75463, 1705700): --pip webcam picture-in-picture (Core Image over SCK →
+#     pixel-buffer adaptor), CIRCLE by default (CIRadialGradient mask, 0.16 of width);
+#     --burn one-command pipeline (chains rec-audio flatten + rec-subtitle burn on stop,
+#     transcription on the Mini by default / --burn-local here). AppleToolbox chooser gained
+#     a "🎥 Include webcam" checkbox. Full detail: features/rec-pipeline-report.md.
 #   Live build machine: macOS 15.6.1 (24G90), display 1512x982 @2x.
 # ============================================================================
 
@@ -182,6 +186,24 @@ Feature: Record screen + system audio to one .mov with no loopback driver
     # cite: toggleRecordMic() + id=10 hotkey + rebuildMenu() mic row
     # @built: same as above — SIGUSR1 delivery is @hw-verified via CLI; the AppleToolbox
     # kill() path + keypress were not GUI-driven this session.
+
+  @hw-verified
+  Scenario: --pip bakes the webcam into a corner as a circle  (ran live)
+    Given --pip (default shape circle, --pip-square for a rectangle)
+    When recording, Then each screen frame is composited with the webcam corner via Core Image
+      (center-crop → CIRadialGradient circular mask) and appended through an
+      AVAssetWriterInputPixelBufferAdaptor; degrades to screen-only if no camera/access
+    And a live run showed a circular speaking-head in the corner at 0.16 of screen width
+    # cite: setupCamera() + compositePiP(); verified: extracted frame shows the circle (live face)
+
+  @built
+  Scenario: --burn runs the whole pipeline in one command
+    Given --burn (or --burn-local)
+    When recording stops (after auto-flatten)
+    Then makeSubtitledVersion() shells to the co-located rec-subtitle --burn (+ --mini unless
+      --burn-local) → <name>-subtitled.mov, revealed if --reveal
+    # cite: makeSubtitledVersion(); @built — mirrors the @hw-verified auto-flatten chain; the
+    # transcribe→burn was verified via rec-subtitle directly, not through this spawn.
 
   @note
   Scenario: Sequoia re-prompts screen-recording permission

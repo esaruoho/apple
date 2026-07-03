@@ -317,7 +317,24 @@ The on-device agentic tool-calling loop on the Mini's MLX brain  —  10 scenari
   triad: .session✓  transcript✗  RESULT✓
   honesty: 10/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Record screen + system audio to one .mov with no loopback driver  —  14 scenarios   (features/screen-audio-record.feature)
+Post-process a screen recording's audio (split / flatten)  —  4 scenarios   (features/rec-audio.feature)
+  - [@hw-verified] split writes each audio track to its own .m4a  (ran live)
+  - [@hw-verified] flatten mixes all audio into one track, video passthrough  (ran 
+  - [@hw-verified] version-safe export runs on Ventura+ with no deprecation warning
+  - [@hw-verified] rec --mic auto-runs flatten to make a YouTube-ready file  (ran l
+  triad: .session✗  transcript✗  RESULT✓
+  honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
+Subtitle a screen recording (.srt sidecar + burn-in)  —  5 scenarios   (features/rec-subtitle.feature)
+  - [@hw-verified] transcribe → .srt sidecar via whisp (Whisper)  (ran live)
+  - [@hw-verified] --burn hard-paints the subtitles into the video  (ran live)
+  - [@hw-verified] version-safe burn export (Ventura+)  (ran live)
+  - [@built] --mini routes transcription to the Mac Mini (keeps CPU off this 
+  - [@built] one-command pipeline — rec --mic --pip --burn
+  triad: .session✗  transcript✗  RESULT✓
+  honesty: 5/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
+Record screen + system audio to one .mov with no loopback driver  —  16 scenarios   (features/screen-audio-record.feature)
   - [@hw-verified] single-app audio isolation captures screen + only that app's sou
   - [@hw-verified] Ctrl-C stops cleanly and finalizes a playable file  (ran live)
   - [@hw-verified] --list enumerates displays and audible apps  (ran live)
@@ -331,9 +348,11 @@ Record screen + system audio to one .mov with no loopback driver  —  14 scenar
   - [@hw-verified] --reveal opens the file in Finder on finalize  (ran live)
   - [@built] AppleToolbox ⌃⌥⌘R start/stop with a Sound-only vs Sound+Mic choo
   - [@built] AppleToolbox ⌃⌥⌘M toggles the mic live during a recording
+  - [@hw-verified] --pip bakes the webcam into a corner as a circle  (ran live)
+  - [@built] --burn runs the whole pipeline in one command
   - [(no grade)] Sequoia re-prompts screen-recording permission
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 13/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 15/16 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Desktop & Dock visibility from the command bar  —  3 scenarios   (features/shell-toggles.feature)
   - [@verified] "hide … desktop" and "hide the dock" route to their actions
