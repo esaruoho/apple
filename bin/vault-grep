@@ -240,7 +240,14 @@ def rank_against(qv, vectors):
 
 
 def load_caches_under(root):
-    """Load every cache line whose `f` is inside <root>."""
+    """Load every cache line whose `f` is inside <root>.
+
+    Fast path: each cache file is per-source-file (every row shares the same
+    `f`), so we peek the FIRST line, and if its `f` isn't under <root> we skip
+    the whole file without reading it. This turns an O(entire 23GB cache) scan
+    into O(one small read per cache file) — vital when <root> is a handful of
+    files but the shared cache holds a million vectors. Falls back to reading
+    the file fully if the first line is unparseable (never skips erroneously)."""
     root_abs = os.path.abspath(root) + os.sep
     texts, vectors, files, lines = [], [], [], []
     if not os.path.isdir(CACHE_DIR):
@@ -251,7 +258,21 @@ def load_caches_under(root):
         try:
             with open(os.path.join(CACHE_DIR, cn), "r",
                      encoding="utf-8", errors="replace") as f:
-                for ln in f:
+                first = f.readline()
+                fd = None
+                try:
+                    fd = json.loads(first) if first.strip() else None
+                except Exception:
+                    fd = None
+                # Peek: if the first row parses and its `f` isn't under root,
+                # skip this whole cache file (all its rows share that `f`).
+                if fd is not None:
+                    fp0 = fd.get("f", "")
+                    if fp0 and not fp0.startswith(root_abs):
+                        continue
+                # Process the first line (already read) then the rest.
+                pending = [first] if first else []
+                for ln in _chain(pending, f):
                     try: d = json.loads(ln)
                     except Exception: continue
                     fp = d.get("f", "")
@@ -264,6 +285,12 @@ def load_caches_under(root):
         except OSError:
             continue
     return texts, vectors, files, lines
+
+
+def _chain(*iterables):
+    for it in iterables:
+        for x in it:
+            yield x
 
 
 # ──────────────────── consolidated matrix cache ────────────────────

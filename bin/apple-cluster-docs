@@ -16,6 +16,7 @@ Usage:
                                   [--min-lines N]   skip docs with fewer prose lines (default 5)
                                   [--ext .md,.txt]
                                   [--out path.md]   write report
+                                  [--json]          emit clusters as JSON (machine-readable; for convey survey)
                                   [--quiet]
 """
 import json
@@ -39,7 +40,7 @@ def parse_args():
     if not a or a[0] in ("-h","--help"):
         print(__doc__); sys.exit(0)
     root = None; k = 8; min_lines = 5; out = None
-    exts = vg.DEFAULT_EXTS; quiet = False
+    exts = vg.DEFAULT_EXTS; quiet = False; as_json = False
     i = 0
     while i < len(a):
         x = a[i]
@@ -51,10 +52,11 @@ def parse_args():
         if x == "--ext" and i+1 < len(a):
             exts = tuple("."+e.strip().lstrip(".") for e in a[i+1].split(","))
             i += 2; continue
+        if x == "--json": as_json = True; quiet = True; i += 1; continue
         if x == "--quiet": quiet = True; i += 1; continue
         i += 1
     if not root: vg.die("usage: apple-cluster-docs --root <dir> [--k N]")
-    return root, k, min_lines, exts, out, quiet
+    return root, k, min_lines, exts, out, quiet, as_json
 
 
 def vec_add(a, b): return [x+y for x,y in zip(a,b)]
@@ -62,7 +64,7 @@ def vec_scale(a, s): return [x*s for x in a]
 
 
 def main():
-    root, k, min_lines, exts, out_path, quiet = parse_args()
+    root, k, min_lines, exts, out_path, quiet, as_json = parse_args()
     if not os.path.isdir(root):
         vg.die(f"not a dir: {root}")
 
@@ -147,6 +149,7 @@ def main():
     md = [f"# Document clusters under {os.path.basename(rel_root)}\n",
           f"`apple-cluster-docs` (NLEmbedding centroids + k-medoids), {time.strftime('%Y-%m-%d %H:%M')}.\n",
           f"{n_docs} docs · k={k} clusters · min {min_lines} prose lines per doc.\n"]
+    clusters_json = []   # structured mirror of the markdown (for --json / convey survey)
     for c_pos, c_idx in enumerate(cluster_order, 1):
         members = clusters[c_idx]
         med = docs[medoid_idx[c_idx]]
@@ -163,6 +166,13 @@ def main():
         rep_text = (best_line[0] if best_line else "—")[:120]
         rep_file = relpath(best_line[1]) if best_line else "—"
         rep_line = best_line[2] if best_line else 0
+        clusters_json.append({
+            "cluster": c_pos,
+            "size": len(members),
+            "medoid": relpath(med["file"]),
+            "rep_line": {"text": rep_text, "file": rep_file, "line": rep_line},
+            "members": [relpath(docs[di]["file"]) for di in members],
+        })
         md.append(f"\n## Cluster {c_pos}  ·  {len(members)} docs  ·  medoid: `{relpath(med['file'])}`\n")
         md.append(f"  Representative line ({rep_file}:{rep_line}):\n  > _{rep_text}_\n\n  Members:\n")
         # Limit displayed members
@@ -171,6 +181,13 @@ def main():
             md.append(f"- `{relpath(d['file'])}` ({d['n']} lines)\n")
         if len(members) > 25:
             md.append(f"- … {len(members)-25} more\n")
+
+    if as_json:
+        print(json.dumps({
+            "root": rel_root, "k": k, "min_lines": min_lines,
+            "n_docs": n_docs, "clusters": clusters_json,
+        }, indent=2))
+        return
 
     text = "".join(md)
     if out_path:
