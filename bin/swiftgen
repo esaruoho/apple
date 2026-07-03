@@ -54,32 +54,75 @@ def apple_lens(topic_hint=""):
     blob="\n\n".join(parts)
     return blob[:60000]   # gemini/nemotron both hold this comfortably
 
+FILEFMT=("Output each file as EXACTLY this (no JSON, no markdown fences — raw code between the markers, so "
+  "quotes/backslashes need no escaping):\n>>>>FILE: <relative/path>\n<full file content>\n<<<<END\n"
+  "After all files, optionally one line: NOTES: <1-2 lines what to do next>.")
+
+# We own Package.swift (deterministic): a SwiftUI @main App as an SPM executable needs -parse-as-library
+# and NO main.swift, or it fails to compile. The model only writes the Swift SOURCES.
+PACKAGE_TMPL=('// swift-tools-version:6.0\nimport PackageDescription\nlet package = Package(\n'
+  '  name: "{name}",\n  platforms: [.macOS(.v14)],\n'
+  '  targets: [ .executableTarget(name: "{name}", path: "Sources/{name}",\n'
+  '             swiftSettings: [.unsafeFlags(["-parse-as-library"])]) ]\n)\n')
+
 SCAFFOLD_SYS=("You are a senior SwiftUI engineer scaffolding a NEW SwiftUI app. Follow the APPLE SWIFTUI "
   "GUIDANCE provided (it supersedes prior knowledge): prefer @Observable over ObservableObject, correct "
   "@State/@Binding, stable ForEach identity, @MainActor + Equatable on models, avoid soft-deprecated APIs "
-  "(no NavigationView — use NavigationStack). Output ONLY a JSON object, no prose, no markdown fences:\n"
-  '{"files":[{"path":"Sources/<App>/File.swift","content":"..."}], "notes":"1-3 lines: what to do next"}\n'
-  "Include: the @main App entry, a ContentView, an @Observable model, and a Package.swift that builds an "
-  "executable target with the swift-tools SwiftUI setup. Keep it small, correct, idiomatic. Do NOT invent "
-  "APIs — if unsure of an exact API, use the plainest correct one.")
+  "(no NavigationView — use NavigationStack). Generate ONLY the Swift SOURCE files under Sources/<AppName>/: "
+  "the @main App entry (a `struct <AppName>: App`), a ContentView, and an @Observable model. Do NOT write "
+  "Package.swift and do NOT write a main.swift — the build harness provides Package.swift. Small, correct, "
+  "idiomatic. Do NOT invent APIs — if unsure, use the plainest correct one.\n\n"+FILEFMT)
 
 REVIEW_SYS=("You are reviewing SwiftUI code against APPLE'S OWN best-practice guidance (provided; it supersedes "
   "prior knowledge). List concrete issues: soft-deprecated APIs, @State/@Observable/@Binding misuse, unstable "
   "ForEach identity, @Entry closure/class pitfalls, localization. For each: the problem, the fix, and which "
   "Apple reference it comes from. Be specific; cite line snippets. If it's already good, say so.")
 
+FIX_SYS=("You are fixing SwiftUI/Swift COMPILE errors. Given the current files and the `swift build` output, "
+  "output the FULL corrected content of every file you change, using the file format below. Fix the ACTUAL "
+  "errors the compiler reports; do not invent APIs (use the plainest correct one). Follow the Apple SwiftUI "
+  "guidance if provided.\n\n"+FILEFMT)
+
+def assert_scaffold(out, name):
+    """Own the SPM scaffold deterministically: correct Package.swift (-parse-as-library) + no main.swift."""
+    for junk in ("Package.swift","main.swift",f"Sources/{name}/main.swift"):
+        jp=out/junk
+        if jp.exists():
+            try: jp.unlink()
+            except Exception: pass
+    (out/"Package.swift").write_text(PACKAGE_TMPL.format(name=name))
+
+def build_and_fix(out, fix_model, lens, name, max_iters=3):
+    """swift build → feed errors back to the model → rewrite broken files → rebuild, until green."""
+    for it in range(max_iters+1):
+        assert_scaffold(out, name)   # the fixer must never re-break Package.swift / add main.swift
+        r=subprocess.run(["swift","build"], cwd=str(out), capture_output=True, text=True)
+        if r.returncode==0:
+            print(f"[swiftgen] ✅ build OK (after {it} fix pass{'' if it==1 else 'es'})"); return True
+        errs=(r.stdout+r.stderr)
+        if it==max_iters:
+            print(f"[swiftgen] ❌ still failing after {it} fix passes. Last errors:\n{errs[-1200:]}"); return False
+        print(f"[swiftgen] build failed → fix pass {it+1}/{max_iters} (via {fix_model})…", flush=True)
+        cur=[{"path":str(p.relative_to(out)),"content":p.read_text(errors='ignore')} for p in sorted(out.rglob('*.swift'))]
+        user=((f"APPLE SWIFTUI GUIDANCE:\n{lens[:18000]}\n\n" if lens else "")+
+              f"`swift build` errors:\n{errs[-4000:]}\n\nCURRENT FILES:\n{json.dumps(cur)[:42000]}")
+        text,used=call(fix_model, FIX_SYS, user, 6000)
+        obj=parse_files(text)
+        if not obj or not obj.get("files"): print("  (fixer returned no manifest — stopping)"); return False
+        for fdef in obj["files"]:
+            p=out/fdef["path"]; p.parent.mkdir(parents=True, exist_ok=True); p.write_text(fdef.get("content",""))
+            print(f"    fixed {fdef['path']}")
+    return False
+
 def parse_files(text):
-    m=re.search(r'\{.*"files".*\}', text, re.S)
-    if not m: return None
-    try: return json.loads(m.group(0))
-    except Exception:
-        # tolerate trailing junk: trim to last closing brace
-        s=m.group(0)
-        for i in range(len(s),0,-1):
-            if s[i-1]=='}':
-                try: return json.loads(s[:i])
-                except Exception: continue
-        return None
+    """Parse the delimited file format (robust to code with quotes/backslashes)."""
+    files=[]
+    for m in re.finditer(r'>>>>\s*FILE:\s*(.+?)[ \t]*\n(.*?)\n<<<<\s*END', text, re.S):
+        path=m.group(1).strip().strip('`"')
+        if path: files.append({"path":path,"content":m.group(2)})
+    if not files: return None
+    nm=re.search(r'(?m)^\s*NOTES:\s*(.+)$', text)
+    return {"files":files, "notes": (nm.group(1).strip() if nm else "")}
 
 def choose_model(desc, override):
     if override and override!="auto": return override
@@ -110,16 +153,19 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     written=[]
     for fdef in obj["files"]:
+        if Path(fdef["path"]).name in ("Package.swift","main.swift"): continue   # we own these
         p=out/fdef["path"]; p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(fdef.get("content","")); written.append(fdef["path"])
+    assert_scaffold(out, name)   # write our correct Package.swift, strip any stray main.swift
     print(f"[swiftgen] wrote {len(written)} files (via {used}):")
     for w in written: print(f"    {w}")
     if obj.get("notes"): print(f"[swiftgen] notes: {obj['notes']}")
     if "--build" in a:
-        print("[swiftgen] swift build …", flush=True)
-        r=subprocess.run(["swift","build"], cwd=out, capture_output=True, text=True)
-        print((r.stdout+r.stderr)[-1500:])
-        print(f"[swiftgen] build {'OK ✓' if r.returncode==0 else 'FAILED — iterate: swiftgen --review the offending file'}")
+        # Fixes escalate to gemini (more reliable at code than nemotron), regardless of the gen model.
+        fix_model=a[a.index("--fix-model")+1] if "--fix-model" in a else BIG_MODEL
+        iters=int(a[a.index("--fix")+1]) if "--fix" in a else 3
+        print(f"[swiftgen] building + auto-fixing (up to {iters} passes, fixer={fix_model})…", flush=True)
+        build_and_fix(out, fix_model, lens, name, max_iters=iters)
     print(f"\nOpen in Xcode:  open {out}")
 
 if __name__=="__main__": main()
