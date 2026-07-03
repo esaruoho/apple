@@ -115,34 +115,36 @@ func miniAvailable() -> Bool {
 /// (whisp-submit drops the file into ~/work/comms/queue/whisp-inbox; the Mini worker
 /// transcribes and the .srt returns via git/Syncthing). Keeps heavy Whisper off THIS mac.
 /// @built — the round-trip depends on the Mini worker; poll locations are best-effort.
-func transcribeOnMini(_ audio: String, stem: String) -> String {
+/// Best-effort Mini routing (--mini). Submits, polls briefly, and FALLS BACK to local
+/// transcription if the transcript doesn't return in time — never hangs then dies. The Mini
+/// worker names outputs by title (not the input stem) and can be queued behind other jobs, so
+/// this is genuinely best-effort; local is the reliable path.
+func transcribeOnMini(_ audio: String, model: String?, stem: String) -> String {
     let submit = ("~/work/whisp-transcripts/whisp-submit" as NSString).expandingTildeInPath
     guard FileManager.default.fileExists(atPath: submit) else {
-        die("whisp-submit not found — use --burn-local to transcribe on this mac")
+        note("Mini whisp-submit not found — transcribing locally"); return transcribe(audio, model: model, outStem: stem + ".srt")
     }
     let inStem = ((audio as NSString).lastPathComponent as NSString).deletingPathExtension
-    note("⧉ submitting to the Mini (whisp-submit) — transcribing off-device to keep this mac cool…")
+    note("⧉ submitting to the Mini (whisp-submit)…")
     let p = Process(); p.launchPath = submit; p.arguments = [audio]
-    do { try p.run() } catch { die("failed to launch whisp-submit: \(error.localizedDescription)") }
-    p.waitUntilExit()
-    if p.terminationStatus != 0 { die("whisp-submit exited \(p.terminationStatus)") }
+    do { try p.run(); p.waitUntilExit() } catch {}
     let dirs = [("~/work/whisp-transcripts/transcripts" as NSString).expandingTildeInPath,
                 ("~/work/comms/queue/whisp-results" as NSString).expandingTildeInPath]
-    note("   waiting for the transcript to come back from the Mini (Ctrl-C to give up)…")
-    let deadline = Date(timeIntervalSinceNow: 1800)   // 30 min
+    note("   waiting up to 3 min for the Mini transcript, then falling back to local…")
+    let deadline = Date(timeIntervalSinceNow: 180)   // short — never hang the user
     while Date() < deadline {
         for dir in dirs {
             if let hit = findSRT(named: inStem, under: dir) {
                 let dst = stem + ".srt"
                 try? FileManager.default.removeItem(atPath: dst)
                 try? FileManager.default.copyItem(atPath: hit, toPath: dst)
-                note("   ✓ transcript returned from the Mini")
-                return dst
+                note("   ✓ transcript returned from the Mini"); return dst
             }
         }
         Thread.sleep(forTimeInterval: 5)
     }
-    die("timed out (30 min) waiting for the Mini transcript — check the Mini whisp-worker, or re-run with --burn-local")
+    note("   Mini didn't return in time — transcribing locally instead")
+    return transcribe(audio, model: model, outStem: stem + ".srt")
 }
 
 func findSRT(named stem: String, under dir: String) -> String? {
@@ -286,20 +288,19 @@ let videoPath = (video as NSString).expandingTildeInPath
 args.removeFirst()
 func opt(_ name: String) -> String? { if let i = args.firstIndex(of: name), i + 1 < args.count { return (args[i+1] as NSString).expandingTildeInPath }; return nil }
 let doBurn = args.contains("--burn")
-let useMini = args.contains("--mini")   // route transcription to the Mac Mini (keep CPU off this mac)
+// Default is LOCAL (reliable). --mini is an explicit opt-in that itself falls back to local.
+let useMini = args.contains("--mini")
 let model = opt("--model")
 let micAudio = opt("--mic")
 let stem = (videoPath as NSString).deletingPathExtension
 
-// Get the .srt: use --srt if given, else an existing sidecar, else transcribe
-// (on the Mini with --mini, otherwise on this mac).
+// Get the .srt: use --srt if given, else an existing sidecar, else transcribe.
 var srt = opt("--srt") ?? (stem + ".srt")
 if !FileManager.default.fileExists(atPath: srt) {
     let source = micAudio ?? videoPath
-    if useMini && miniAvailable() {
-        srt = transcribeOnMini(source, stem: stem)
+    if useMini {
+        srt = transcribeOnMini(source, model: model, stem: stem)
     } else {
-        if useMini { note("Mini whisp pipeline not found here — transcribing locally instead") }
         let produced = transcribe(source, model: model, outStem: stem + ".srt")
         // whisp/whisper name by the SOURCE stem; normalize to <video-stem>.srt for predictability.
         if produced != stem + ".srt" { try? FileManager.default.removeItem(atPath: stem + ".srt"); try? FileManager.default.copyItem(atPath: produced, toPath: stem + ".srt") }
