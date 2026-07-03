@@ -211,7 +211,11 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     base=("You are a research assistant answering an email. Markdown (## headings, **bold**, bullets). "
           "Ground claims in fact (don't invent). Use the WIKI CONTEXT and ATTACHMENTS if provided AND your "
           "OWN knowledge to give a FULL answer. NEVER refuse or say 'the wiki/pages do not cover this' — "
-          "if the wiki is incomplete, answer from your own knowledge anyway. If a follow-up, use the prior conversation.")
+          "if the wiki is incomplete, answer from your own knowledge anyway. If a follow-up, use the prior conversation. "
+          "DO NOT invent specifics you are not sure of — exact command flags, API names, version numbers, file "
+          "schemas, measured figures, or dates. If you don't KNOW the exact detail (e.g. a brand-new command's "
+          "flags), say so plainly and say how to verify it (run `--help`, check the docs) rather than presenting a "
+          "plausible-looking guess as fact. Better an honest 'I'm not certain of the exact syntax' than a confident fabrication.")
     if viewpoint:   # in-corpus (free-energy) → think out loud + speak in three voices, ONE call, no extra roundtrip
         struct=("\n\nYour reply MUST contain ALL FIVE of the following markdown headings, in this EXACT order and "
           "spelling. The FIRST line of your reply MUST be the heading '## Thought about it' — never open with the "
@@ -378,6 +382,24 @@ def html_to_text(h):
     h=re.sub(r'<[^>]+>',' ',h)
     return re.sub(r'\n{3,}','\n\n', _htmlmod.unescape(h)).strip()
 
+def _og_meta(html):
+    """Pull og:/twitter:/description meta — where social sites (Threads, X, Instagram, Facebook) put
+    the ACTUAL post text for link previews, even when the page body is JS-only and html_to_text yields
+    nothing. This is what lets the bot READ a Threads/X link instead of hallucinating about it."""
+    if not html: return ""
+    out=[]
+    for prop in ("og:title","og:description","twitter:title","twitter:description"):
+        m=(re.search(r'<meta[^>]+(?:property|name)=["\']'+re.escape(prop)+r'["\'][^>]+content=["\'](.*?)["\']', html, re.I|re.S)
+           or re.search(r'<meta[^>]+content=["\'](.*?)["\'][^>]+(?:property|name)=["\']'+re.escape(prop)+r'["\']', html, re.I|re.S))
+        if m:
+            v=_htmlmod.unescape(m.group(1)).strip()
+            if v and v not in out: out.append(v)
+    m=re.search(r'<meta[^>]+name=["\']description["\'][^>]+content=["\'](.*?)["\']', html, re.I|re.S)
+    if m:
+        v=_htmlmod.unescape(m.group(1)).strip()
+        if v and v not in out: out.append(v)
+    return "\n".join(out)
+
 def strip_signature(text):
     """Drop the email signature so the model doesn't 'research' a name/phone/Patreon URL.
     Cuts at a TRAILING sig delimiter (--, — , __, 'Sent via/from'), then trims trailing contact lines.
@@ -484,9 +506,13 @@ def fetch_url_content(body, verbose=False):
                 blocks.append(f"--- PDF from URL: {u} ---\n{txt[:MAX_CHARS] if txt else '[no text found]'}")
                 if verbose: print(f"    · url-pdf {u}: {len(txt)} chars")
             elif "text/html" in ct or "text/plain" in ct or not ct:
-                txt=html_to_text(data.decode("utf-8","ignore"))
+                html_s=data.decode("utf-8","ignore")
+                og=_og_meta(html_s)                    # social/link-preview text (Threads/X/IG post body)
+                body_txt=html_to_text(html_s)
+                # For JS-only social pages the body is empty/login-wall → the og: meta IS the content.
+                txt=("\n".join(x for x in (og, body_txt) if x)).strip() or og or body_txt
                 if txt: blocks.append(f"--- Page: {u} ---\n{txt[:MAX_CHARS]}")
-                if verbose: print(f"    · url-page {u}: {len(txt)} chars")
+                if verbose: print(f"    · url-page {u}: {len(txt)} chars (og:{len(og)})")
         except Exception as e:
             if verbose: print(f"    · url {u}: {e}")
         if len(blocks)>=5: break
@@ -561,6 +587,12 @@ def make_pdf_b64(markdown, title="freellmask"):
 # ── read the compiled LLM-wiki first (one memory across email + wiki) ──────────
 WIKI_GRAPHS = Path.home()/"work"/"convey"/"kb"/"graph"
 WIKI_CORPORA = [c.strip() for c in os.environ.get("FREELLMASK_WIKI","free-energy,ontology,papers,transcripts").split(",")]
+# URL-structural + ultra-generic tokens that must NOT count as free-energy keywords (they inflate
+# scores and make a bare link/off-topic mail match the wiki spuriously).
+_WIKI_JUNK = {"http","https","www","com","org","net","html","htm","php","aspx","post","posts","threads",
+    "status","watch","share","index","page","view","click","here","more","link","html","utm","amp",
+    "this","that","with","from","have","your","yours","about","which","their","would","could","there",
+    "were","they","them","what","when","where","will","into","been","also","such","than","then","some"}
 def _best_window(text, qw, size=2600):
     """Return the ~size-char window of `text` densest in the query words — so a long paper
     surfaces its RELEVANT section, not just its intro."""
@@ -592,7 +624,11 @@ def wiki_context(question, k_pages=8):
     concept/device ontology + your live fluid-dynamics paper) and returns (context_text, [slugs])
     of the most relevant pages, or ('', []). AUGMENTS research; never gates it."""
     if not question: return "", []
-    qw=set(re.findall(r'[a-z]{4,}', question.lower()))
+    # URLs are NOT keywords: a bare link (threads/x/youtube) must never match free-energy pages and
+    # summon the viewpoint. Strip URLs, then drop URL-structural junk tokens. (The bug: a Threads link
+    # scored >=6 on eclipse-gravity pages via 'post'/'com'/'www' and confabulated an over-unity answer.)
+    qtext=re.sub(r'https?://\S+',' ', question)
+    qw=set(re.findall(r'[a-z]{4,}', qtext.lower())) - _WIKI_JUNK
     if not qw: return "", []
     scored=[]
     for corpus in WIKI_CORPORA:
@@ -647,7 +683,9 @@ SPACECARDS = {
       "adjacent":["admin","music"],"senders":[],
       "keywords":["applescript","apple script","osascript","asobjc","appletoolbox","apple toolbox",
                   "applebar","loupedeck","streamdeck","contour shuttle","macos automation","system events",
-                  "shortcuts","app intents","url scheme","sdef","scripting dictionary","finder","sal soghoian"]},
+                  "shortcuts","app intents","url scheme","sdef","scripting dictionary","finder","sal soghoian",
+                  "xcode","xcrun","agent skills","swiftui","swift package","ios/macos","macos app","app development",
+                  "iphone","ipados","cocoa","objective-c","spm","tccutil"]},
   "finances": {"label":"Finances / money / admin-money","mode":"answer","personas":False,"headings":False,
       "retrieval":False,"memory_ns":"esa/finances","adjacent":["music","admin"],"senders":[],
       "keywords":["invoice","tax","vat","budget","income","expense","salary","payment","bank","loan","kela",
@@ -1274,15 +1312,19 @@ def poll_once(verbose=True):
         else:
             # WIKI AUGMENTS, never gates: pull relevant wiki pages as CONTEXT (no LLM, no refusal),
             # apply the free-energy VIEWPOINT only for in-corpus topics, then ALWAYS research fully.
+            # Route + retrieve on the FETCHED content too (a bare URL alone tells us nothing; the page
+            # text is what says "Apple xcrun agent skills" vs "eclipse gravity"). Without this a link
+            # was routed on its URL string alone → mis-routed to free-energy → confabulated.
+            route_text = "\n".join(x for x in (question, extra) if x)
             wctx, wslugs = ("", [])
-            if question:
-                try: wctx, wslugs = wiki_context(question)
+            if route_text.strip():
+                try: wctx, wslugs = wiki_context(route_text)
                 except Exception as e: print(f"  wiki context error: {e}")
             # ROUTE to a role-space; the free-energy VIEWPOINT (Russell/Bearden/Hilarion five-heading
             # template) + free-energy RAG fire ONLY when the routed space IS free-energy. Every other
             # space (dad/health/spirituality/finances/music/admin/general) gets a plain answer with the
             # free-energy persona SUPPRESSED — so a parenting question never comes back as a Tesla coil.
-            space, why = route_space(full.get("from"), full.get("subject"), raw_body, wslugs)
+            space, why = route_space(full.get("from"), full.get("subject"), route_text, wslugs)
             card = SPACECARDS.get(space, {})
             in_fe = (space == "free-energy")
             vp = VIEWPOINT if in_fe else ""
