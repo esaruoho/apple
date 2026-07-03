@@ -205,6 +205,32 @@ Feature: Record screen + system audio to one .mov with no loopback driver
     # cite: makeSubtitledVersion(); @built — mirrors the @hw-verified auto-flatten chain; the
     # transcribe→burn was verified via rec-subtitle directly, not through this spawn.
 
+  @hw-verified
+  Scenario: on-stop summary reports the recording length and mic status  (ran live)
+    Given a recording (any mode)
+    When it stops (Ctrl-C, q+Enter, or SIGINT)
+    Then the recorder prints "✓ saved <path>  ·  length M:SS[· mic recorded]", where the length
+      is (lastPTS − firstPTS) of the video timeline tracked during capture — not a re-read of the
+      file — and " · mic recorded" appears only if the mic was ever hot this session
+    And an 18s smoke capture printed "✓ saved ./smoke.mov  ·  length 0:18"
+    # cite: firstPTS/lastPTS tracked in stream(_:didOutputSampleBuffer:of:) + formatDuration() +
+    #       finish() print; @hw-verified via scratchpad smoke.mov
+
+  @hw-verified
+  Scenario: start banner states plainly whether the mic is recording  (ran live)
+    Given the recorder just started
+    Then it prints "🎤 microphone: ON — your voice IS being recorded" (mic hot, e.g. recburn)
+      or "🎤 microphone: off — system audio only (kill -USR1 <pid> to turn on)"
+    # cite: micLine in startCapture callback; @hw-verified (smoke run showed the off line)
+
+  @built
+  Scenario: q + Enter stops the recording as an alternative to Ctrl-C
+    Given a recording running in a TTY
+    When the user types q (or "quit"/"stop") + Enter
+    Then a background stdin reader calls finish(); on non-TTY stdin (AppleToolbox launch) the
+      reader hits EOF and no-ops, leaving Ctrl-C / SIGUSR1 as the controls
+    # cite: installQuitWatcher(); @built — SIGINT path is @hw-verified, the keypress path is logic-only
+
   @note
   Scenario: Sequoia re-prompts screen-recording permission
     Given macOS 15 asks weekly / after reboot for screen recording + screenshots

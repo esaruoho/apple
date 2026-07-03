@@ -69,3 +69,20 @@ Feature: Subtitle a screen recording (.srt sidecar + burn-in)
     # cite: screen-audio-record.swift makeSubtitledVersion(); @built — mirrors the @hw-verified
     # makeYouTubeVersion chain; the end-to-end record→transcribe→burn was verified via rec-subtitle
     # directly (whisp tiny), not through the recorder's --burn spawn.
+
+  @built
+  Scenario: transcription shows progress and elapsed time
+    Given transcribe() is about to run Whisper
+    Then it prints "transcribing <file> of M:SS audio — whisper model=…, lang=…" (the total media
+      length, via mediaSeconds(), so Whisper's streamed [mm:ss] segment timestamps read as
+      progress toward a known end), passes --verbose True so every decoded line streams live, and
+      on completion prints "✓ transcribed N subtitle lines in M:SS" (wall-clock since launch)
+    # cite: transcribe() — mediaSeconds() + clock() + t0/Date() + --verbose True; @built (logic
+    # verified at compile; the streamed segments are Whisper's own stdout, inherited by the child)
+
+  @built
+  Scenario: burn-in reports its export time
+    Given burn() is about to export
+    Then it prints "burning N subtitles into <file> (M:SS video)…" then on success
+      "✓ <out>  ·  burned in M:SS" (wall-clock of the export)
+    # cite: burn() — clock(CMTimeGetSeconds(dur)) + t0/Date()

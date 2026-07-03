@@ -325,16 +325,18 @@ Post-process a screen recording's audio (split / flatten)  —  4 scenarios   (f
   triad: .session✗  transcript✗  RESULT✓
   honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Subtitle a screen recording (.srt sidecar + burn-in)  —  5 scenarios   (features/rec-subtitle.feature)
+Subtitle a screen recording (.srt sidecar + burn-in)  —  7 scenarios   (features/rec-subtitle.feature)
   - [@hw-verified] transcribe → .srt sidecar via whisp (Whisper)  (ran live)
   - [@hw-verified] --burn hard-paints the subtitles into the video  (ran live)
   - [@hw-verified] version-safe burn export (Ventura+)  (ran live)
   - [@built] --mini routes transcription to the Mac Mini (keeps CPU off this 
   - [@built] one-command pipeline — rec --mic --pip --burn
+  - [@built] transcription shows progress and elapsed time
+  - [@built] burn-in reports its export time
   triad: .session✗  transcript✗  RESULT✓
-  honesty: 5/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 7/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Record screen + system audio to one .mov with no loopback driver  —  16 scenarios   (features/screen-audio-record.feature)
+Record screen + system audio to one .mov with no loopback driver  —  19 scenarios   (features/screen-audio-record.feature)
   - [@hw-verified] single-app audio isolation captures screen + only that app's sou
   - [@hw-verified] Ctrl-C stops cleanly and finalizes a playable file  (ran live)
   - [@hw-verified] --list enumerates displays and audible apps  (ran live)
@@ -350,9 +352,12 @@ Record screen + system audio to one .mov with no loopback driver  —  16 scenar
   - [@built] AppleToolbox ⌃⌥⌘M toggles the mic live during a recording
   - [@hw-verified] --pip bakes the webcam into a corner as a circle  (ran live)
   - [@built] --burn runs the whole pipeline in one command
+  - [@hw-verified] on-stop summary reports the recording length and mic status  (ra
+  - [@hw-verified] start banner states plainly whether the mic is recording  (ran l
+  - [@built] q + Enter stops the recording as an alternative to Ctrl-C
   - [(no grade)] Sequoia re-prompts screen-recording permission
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 15/16 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 18/19 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Desktop & Dock visibility from the command bar  —  3 scenarios   (features/shell-toggles.feature)
   - [@verified] "hide … desktop" and "hide the dock" route to their actions

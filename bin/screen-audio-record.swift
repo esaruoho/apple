@@ -100,7 +100,8 @@ func printUsage() {
       --burn-lang <code>     subtitle language (default en; "auto" to auto-detect)
       --burn-model <name>    whisper model (default small.en; e.g. medium.en, large-v3)
 
-    Press Ctrl-C to stop and finalize the file.
+    Press Ctrl-C (or type q + Enter) to stop and finalize the file.
+    On stop it prints the final recording length and whether the mic was recorded.
     Live mic toggle: send SIGUSR1 to this process — `kill -USR1 <pid>` — to turn the
     microphone on/off mid-recording (the mic goes to its own track, so muting just
     stops writing mic samples). The AppleToolbox ⌃⌥⌘M shortcut does this for you.
@@ -110,6 +111,14 @@ func printUsage() {
 func err(_ s: String) -> Never {
     FileHandle.standardError.write((s + "\n").data(using: .utf8)!)
     exit(1)
+}
+
+/// Human-readable length, e.g. 5s → "0:05", 95s → "1:35", 3725s → "1:02:05".
+func formatDuration(_ secs: Double) -> String {
+    guard secs.isFinite, secs > 0 else { return "0:00" }
+    let t = Int(secs.rounded())
+    let h = t / 3600, m = (t % 3600) / 60, s = t % 60
+    return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
 }
 
 // MARK: - Recorder
@@ -142,6 +151,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     var micOn = false                 // whether mic samples are currently being written
     var micEverOn = false             // did the mic capture ANY audio this session? (gates auto-flatten)
     var sessionStarted = false
+    var firstPTS: CMTime?             // first & last video timestamps → final recording length
+    var lastPTS: CMTime = .zero
     let lock = NSLock()
     let sampleQueue = DispatchQueue(label: "sar.samples")
 
@@ -233,11 +244,20 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
             if let error { err("startCapture: \(error.localizedDescription)") }
             guard let self else { return }
             let scope = self.opts.appName.map { "app \"\($0)\"" } ?? "whole display + all system audio"
-            let mic = self.micOn ? " + mic ON" : " (mic off)"
-            FileHandle.standardError.write("● recording \(scope)\(mic) → \(self.opts.outPath)\n  Ctrl-C to stop · SIGUSR1 (kill -USR1 \(ProcessInfo.processInfo.processIdentifier)) toggles mic\n".data(using: .utf8)!)
+            let pid = ProcessInfo.processInfo.processIdentifier
+            let micLine = self.micOn
+                ? "🎤 microphone: ON — your voice IS being recorded (own track)"
+                : "🎤 microphone: off — system audio only (kill -USR1 \(pid) to turn on)"
+            FileHandle.standardError.write("""
+            ● recording \(scope) → \(self.opts.outPath)
+            \(micLine)
+              stop & finalize: Ctrl-C  (or type q + Enter)   ·   toggle mic: kill -USR1 \(pid)
+
+            """.data(using: .utf8)!)
         }
 
         installSignalHandler()
+        installQuitWatcher()
     }
 
     func setupWriter(width: Int, height: Int) {
@@ -301,12 +321,19 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                   let status = SCFrameStatus(rawValue: raw), status == .complete else { return }
         }
 
+        let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
         lock.lock()
         if !sessionStarted {
-            writer.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
+            writer.startSession(atSourceTime: pts)
             sessionStarted = true
         }
         lock.unlock()
+
+        // Track the video timeline so we can report the final recording length on stop.
+        if type == .screen {
+            if firstPTS == nil { firstPTS = pts }
+            lastPTS = pts
+        }
 
         switch type {
         case .screen:
@@ -467,6 +494,21 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         objc_setAssociatedObject(self, "sigusr1", micSrc, .OBJC_ASSOCIATION_RETAIN)
     }
 
+    /// Allow `q` + Enter as a friendly alternative to Ctrl-C. Reads stdin on a background
+    /// thread; on EOF (stdin not a TTY, e.g. launched by AppleToolbox) it simply exits the
+    /// loop and leaves Ctrl-C / SIGUSR1 as the controls.
+    func installQuitWatcher() {
+        DispatchQueue.global(qos: .background).async { [weak self] in
+            while let line = readLine(strippingNewline: true) {
+                let c = line.trimmingCharacters(in: .whitespaces).lowercased()
+                if c == "q" || c == "quit" || c == "stop" {
+                    DispatchQueue.main.async { self?.finish() }
+                    return
+                }
+            }
+        }
+    }
+
     /// Flip the mic between ON and OFF mid-recording. The append gate (micOn) is the
     /// source of truth for what lands in the file; updateConfiguration() also starts/stops
     /// the actual mic hardware capture so "off" means the mic is truly not listening.
@@ -557,7 +599,9 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                 self.writer.finishWriting {
                     let ok = self.writer.status == .completed
                     if ok {
-                        print("✓ saved \(self.opts.outPath)")
+                        let secs = self.firstPTS != nil ? CMTimeGetSeconds(self.lastPTS - self.firstPTS!) : 0
+                        let micNote = self.micEverOn ? " · mic recorded" : ""
+                        print("✓ saved \(self.opts.outPath)  ·  length \(formatDuration(secs))\(micNote)")
                         // If asked, and the mic was actually used, also produce a YouTube-ready
                         // single-mixed-track copy (YouTube/QuickTime play only the FIRST audio
                         // track, so a 2-track file would lose the voice). Reveal that one.

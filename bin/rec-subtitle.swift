@@ -22,6 +22,22 @@ import AppKit
 func die(_ s: String) -> Never { FileHandle.standardError.write((s + "\n").data(using: .utf8)!); exit(1) }
 func note(_ s: String) { FileHandle.standardError.write((s + "\n").data(using: .utf8)!) }
 
+/// mm:ss (or h:mm:ss) for reporting lengths / elapsed times.
+func clock(_ secs: Double) -> String {
+    guard secs.isFinite, secs > 0 else { return "0:00" }
+    let t = Int(secs.rounded()); let h = t / 3600, m = (t % 3600) / 60, s = t % 60
+    return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
+}
+
+/// Length of a media file in seconds (0 if it can't be read) — used to tell the user how
+/// much audio Whisper has to chew through, so its streaming [mm:ss] timestamps read as progress.
+func mediaSeconds(_ path: String) -> Double {
+    let asset = AVURLAsset(url: URL(fileURLWithPath: path))
+    let d = sync { try await asset.load(.duration) }
+    let s = CMTimeGetSeconds(d)
+    return s.isFinite ? s : 0
+}
+
 func sync<T>(_ op: @escaping () async throws -> T) -> T {
     let sem = DispatchSemaphore(value: 0); var out: Result<T, Error>!
     Task { do { out = .success(try await op()) } catch { out = .failure(error) }; sem.signal() }
@@ -88,15 +104,23 @@ func transcribe(_ audioOrVideo: String, model: String?, lang: String, outStem: S
     // Force the language (default en) — Whisper's auto-detect misfires on short/accented clips
     // (e.g. calling English "Finnish"). Pass lang "auto" to let it detect.
     let langArgs = (lang.lowercased() == "auto") ? [] : ["--language", lang]
-    note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent) — whisper model=\(chosen), lang=\(lang)…")
-    let args = [w, audioOrVideo, "--model", chosen,
+    let total = mediaSeconds(audioOrVideo)
+    let ofLen = total > 0 ? " of \(clock(total)) audio" : ""
+    note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent)\(ofLen) — whisper model=\(chosen), lang=\(lang)")
+    note("   (Whisper prints each line as it decodes; its [mm:ss] timestamps show how far it is)")
+    // --verbose True streams every decoded segment to the terminal → live progress.
+    let args = [w, audioOrVideo, "--model", chosen, "--verbose", "True",
                 "--output_format", "srt", "--output_dir", outDir, "--fp16", "False"] + langArgs
+    let t0 = Date()
     let p = Process(); p.launchPath = "/bin/bash"; p.arguments = ["-lc", shquote(args)]
     do { try p.run() } catch { die("failed to launch whisper: \(error.localizedDescription)") }
     p.waitUntilExit()
     if p.terminationStatus != 0 { die("whisper exited \(p.terminationStatus)") }
     let srt = (outDir as NSString).appendingPathComponent(inStem + ".srt")
     guard FileManager.default.fileExists(atPath: srt) else { die("no .srt produced at \(srt)") }
+    let elapsed = Date().timeIntervalSince(t0)
+    let n = parseSRT(srt).count
+    note("✓ transcribed \(n) subtitle line\(n == 1 ? "" : "s") in \(clock(elapsed))")
     return srt
 }
 
@@ -259,7 +283,8 @@ func burn(video: String, srtPath: String, outPath: String) {
     try? FileManager.default.removeItem(at: out)
     guard let export = AVAssetExportSession(asset: comp, presetName: AVAssetExportPresetHighestQuality) else { die("export session") }
     export.videoComposition = vc
-    note("⧉ burning \(cues.count) subtitles into \((outPath as NSString).lastPathComponent) …")
+    note("⧉ burning \(cues.count) subtitles into \((outPath as NSString).lastPathComponent) (\(clock(CMTimeGetSeconds(dur))) video)…")
+    let t0 = Date()
     if #available(macOS 15.0, *) {
         sync { try await export.export(to: out, as: .mov) }
     } else {
@@ -269,7 +294,7 @@ func burn(video: String, srtPath: String, outPath: String) {
         sem.wait()
         if export.status != .completed { die("burn export failed: \(export.error?.localizedDescription ?? "unknown")") }
     }
-    print("✓ \(outPath)")
+    print("✓ \(outPath)  ·  burned in \(clock(Date().timeIntervalSince(t0)))")
 }
 
 // MARK: - main
