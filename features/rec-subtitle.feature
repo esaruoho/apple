@@ -86,3 +86,15 @@ Feature: Subtitle a screen recording (.srt sidecar + burn-in)
     Then it prints "burning N subtitles into <file> (M:SS video)…" then on success
       "✓ <out>  ·  burned in M:SS" (wall-clock of the export)
     # cite: burn() — clock(CMTimeGetSeconds(dur)) + t0/Date()
+
+  @hw-verified
+  Scenario: subtitle glyphs keep their counters open (no more muddy a/e)  (ran live)
+    Given a subtitle line containing a, e, o, g, 8
+    When renderTextImage rasterizes it
+    Then it draws the black glyphs at 16 points around a circle of radius ≈4.5% of the glyph
+      size, then the white glyphs on top — an OUTSIDE-only outline. The centered
+      `.strokeWidth: -4.0` stroke (which grew inward and closed the counters into mud) is gone.
+    And a frame extracted from a re-burned video shows "Good evening…" with every a/e/o/g/d/b
+      counter open and crisp
+    # cite: subtitleAttr() + renderTextImage() offset-composite; @hw-verified via ffmpeg frame
+    #       grab + the hidden `rec-subtitle --render-sample "…" out.png` dev tool

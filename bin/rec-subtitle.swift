@@ -179,13 +179,16 @@ func findSRT(named stem: String, under dir: String) -> String? {
 
 // MARK: - burn-in (Core Animation)
 
-func attributed(_ s: String, fontSize: CGFloat) -> NSAttributedString {
-    let style = NSMutableParagraphStyle(); style.alignment = .center
+/// Subtitle glyphs in one solid colour, NO stroke. The readability outline is built
+/// separately (see renderTextImage) by offset-compositing — a centered `.strokeWidth`
+/// stroke is what closed up the counters (the enclosed holes) of a/e/o/g and made them mud.
+func subtitleAttr(_ s: String, fontSize: CGFloat, color: NSColor) -> NSAttributedString {
+    let style = NSMutableParagraphStyle()
+    style.alignment = .center
+    style.lineBreakMode = .byWordWrapping
     return NSAttributedString(string: s, attributes: [
         .font: NSFont.systemFont(ofSize: fontSize, weight: .semibold),
-        .foregroundColor: NSColor.white,
-        .strokeColor: NSColor.black,
-        .strokeWidth: -4.0,               // negative = stroke AND fill (outline for readability)
+        .foregroundColor: color,
         .paragraphStyle: style,
     ])
 }
@@ -193,23 +196,43 @@ func attributed(_ s: String, fontSize: CGFloat) -> NSAttributedString {
 /// Render a subtitle line to a CGImage. CATextLayer text does NOT draw inside the offline
 /// AVVideoCompositionCoreAnimationTool render, so we rasterize the text ourselves and hand a
 /// plain CALayer the image — that composites reliably.
+///
+/// The outline is drawn by compositing the black glyphs at N points around a small circle,
+/// then painting the white glyphs on top. Unlike a centered `.strokeWidth` stroke (which grows
+/// INWARD and swallows letter counters), this only adds ink OUTSIDE the glyph, so the holes in
+/// a/e/o/g stay open and crisp.
 func renderTextImage(_ text: String, width: CGFloat, height: CGFloat, fontSize: CGFloat) -> CGImage? {
     let scale: CGFloat = 2
     let w = max(1, Int(width * scale)), h = max(1, Int(height * scale))
     guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: 0,
                               space: CGColorSpaceCreateDeviceRGB(),
                               bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+    ctx.setShouldAntialias(true); ctx.setShouldSmoothFonts(true)
     // Bottom-up context (flipped:false) so the resulting CGImage displays right-side-up when
     // set as a CALayer's contents (CGContext bitmaps are bottom-origin).
     let ns = NSGraphicsContext(cgContext: ctx, flipped: false)
     NSGraphicsContext.saveGraphicsState(); NSGraphicsContext.current = ns
-    let attr = attributed(text, fontSize: fontSize * scale)
-    let inset = 12 * scale
-    let bounds = attr.boundingRect(with: NSSize(width: CGFloat(w) - inset * 2, height: CGFloat(h)),
-                                   options: [.usesLineFragmentOrigin, .usesFontLeading])
+
+    let fs = fontSize * scale
+    let inset = 14.0 * scale
+    let maxW = CGFloat(w) - inset * 2
+    let opts: NSString.DrawingOptions = [.usesLineFragmentOrigin, .usesFontLeading]
+    let white = subtitleAttr(text, fontSize: fs, color: .white)
+    let black = subtitleAttr(text, fontSize: fs, color: .black)
+    let bounds = white.boundingRect(with: NSSize(width: maxW, height: CGFloat(h)), options: opts)
     let ty = max(inset, (CGFloat(h) - bounds.height) / 2)
-    attr.draw(with: NSRect(x: inset, y: ty, width: CGFloat(w) - inset * 2, height: bounds.height),
-              options: [.usesLineFragmentOrigin, .usesFontLeading])
+    let rect = NSRect(x: inset, y: ty, width: maxW, height: bounds.height)
+
+    // Outline: thin enough (≈4.5% of glyph size) to leave counters open, dense enough (16 points)
+    // to read as a smooth ring rather than a star. This is the anti-mud fix.
+    let ow = max(1.5, fs * 0.045)
+    let n = 16
+    for i in 0..<n {
+        let a = CGFloat(i) / CGFloat(n) * 2 * .pi
+        black.draw(with: rect.offsetBy(dx: cos(a) * ow, dy: sin(a) * ow), options: opts)
+    }
+    white.draw(with: rect, options: opts)
+
     NSGraphicsContext.restoreGraphicsState()
     return ctx.makeImage()
 }
@@ -298,6 +321,30 @@ func burn(video: String, srtPath: String, outPath: String) {
 }
 
 // MARK: - main
+
+// Hidden dev tool: render one subtitle line onto a mid-grey backdrop → PNG, so the glyph
+// rendering (counters of a/e, outline weight) can be eyeballed headlessly without a full burn.
+//   rec-subtitle --render-sample "some text with a and e" out.png
+if CommandLine.arguments.dropFirst().first == "--render-sample" {
+    let a = Array(CommandLine.arguments.dropFirst())
+    let text = a.count > 1 ? a[1] : "already like that. As you can see — a, e, o, g, 8."
+    let outPng = (a.count > 2 ? a[2] : "sample.png") as NSString
+    let bw = 1500, bh = 220
+    guard let bg = CGContext(data: nil, width: bw, height: bh, bitsPerComponent: 8, bytesPerRow: 0,
+                             space: CGColorSpaceCreateDeviceRGB(),
+                             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { die("ctx") }
+    bg.setFillColor(CGColor(red: 0.30, green: 0.36, blue: 0.46, alpha: 1))
+    bg.fill(CGRect(x: 0, y: 0, width: bw, height: bh))
+    if let img = renderTextImage(text, width: CGFloat(bw), height: CGFloat(bh), fontSize: CGFloat(bh) * 0.42) {
+        bg.draw(img, in: CGRect(x: 0, y: 0, width: bw, height: bh))
+    }
+    guard let out = bg.makeImage() else { die("makeImage") }
+    let rep = NSBitmapImageRep(cgImage: out)
+    guard let data = rep.representation(using: .png, properties: [:]) else { die("png encode") }
+    try? data.write(to: URL(fileURLWithPath: outPng.expandingTildeInPath))
+    note("wrote \(outPng.expandingTildeInPath)")
+    exit(0)
+}
 
 var args = Array(CommandLine.arguments.dropFirst())
 guard let video = args.first, !video.hasPrefix("-") else {

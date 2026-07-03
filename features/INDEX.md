@@ -325,7 +325,7 @@ Post-process a screen recording's audio (split / flatten)  —  4 scenarios   (f
   triad: .session✗  transcript✗  RESULT✓
   honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Subtitle a screen recording (.srt sidecar + burn-in)  —  7 scenarios   (features/rec-subtitle.feature)
+Subtitle a screen recording (.srt sidecar + burn-in)  —  8 scenarios   (features/rec-subtitle.feature)
   - [@hw-verified] transcribe → .srt sidecar via whisp (Whisper)  (ran live)
   - [@hw-verified] --burn hard-paints the subtitles into the video  (ran live)
   - [@hw-verified] version-safe burn export (Ventura+)  (ran live)
@@ -333,8 +333,9 @@ Subtitle a screen recording (.srt sidecar + burn-in)  —  7 scenarios   (featur
   - [@built] one-command pipeline — rec --mic --pip --burn
   - [@built] transcription shows progress and elapsed time
   - [@built] burn-in reports its export time
+  - [@hw-verified] subtitle glyphs keep their counters open (no more muddy a/e)  (r
   triad: .session✗  transcript✗  RESULT✓
-  honesty: 7/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 8/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Record screen + system audio to one .mov with no loopback driver  —  19 scenarios   (features/screen-audio-record.feature)
   - [@hw-verified] single-app audio isolation captures screen + only that app's sou
