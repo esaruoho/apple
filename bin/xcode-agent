@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""xcode-agent — talk to a real Xcode project via `xcrun mcpbridge` (Xcode's MCP tool service),
+driven by a FREE brain (freellmapi: nemotron/gemini). Flagship #3.
+
+`xcrun mcpbridge` is an MCP (JSON-RPC 2.0 over stdio) server named "xcode-tools". This is an MCP
+CLIENT for it + an agent loop. READ-ONLY by default (XcodeGlob/XcodeGrep/XcodeRead/XcodeLS/
+GetTargetBuildSettings); pass --allow-write to permit XcodeUpdate.
+
+  xcode-agent --tools                          list the tools mcpbridge exposes
+  xcode-agent --ask "what build settings are unsafe here?" [--model gemini-2.5-flash]
+  xcode-agent --call XcodeGlob '{"pattern":"**/*.swift"}'   raw single tool call
+
+Must run ON A MACHINE WITH XCODE 27 (the Mini). The Xcode TOOLS need a running Xcode with an open
+project; if none, tools/list is empty — open a project in Xcode first (the handshake works headless).
+"""
+import sys, os, re, json, subprocess, threading, time, urllib.request, urllib.error
+from pathlib import Path
+
+HOST=os.environ.get("FM_FREE_HOST","http://cloudcitymacmini:3001/v1")
+KEY_FILE=Path.home()/".fm-free.key"
+READ_ONLY_TOOLS={"XcodeGlob","XcodeGrep","XcodeRead","XcodeLS","GetTargetBuildSettings","GetRuntimeIssues"}
+
+class MCP:
+    """Minimal MCP stdio client for `xcrun mcpbridge`."""
+    def __init__(self):
+        self.p=subprocess.Popen(["xcrun","mcpbridge"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL, text=True, bufsize=1)
+        self._id=0; self._resp={}; self._lock=threading.Lock()
+        threading.Thread(target=self._reader, daemon=True).start()
+    def _reader(self):
+        for ln in self.p.stdout:
+            ln=ln.strip()
+            if not ln: continue
+            try: d=json.loads(ln)
+            except Exception: continue
+            if "id" in d:
+                with self._lock: self._resp[d["id"]]=d
+    def _send(self, obj): self.p.stdin.write(json.dumps(obj)+"\n"); self.p.stdin.flush()
+    def _rpc(self, method, params=None, timeout=25):
+        self._id+=1; i=self._id
+        self._send({"jsonrpc":"2.0","id":i,"method":method,**({"params":params} if params is not None else {})})
+        t0=time.time()
+        while time.time()-t0<timeout:
+            with self._lock:
+                if i in self._resp: return self._resp.pop(i)
+            time.sleep(0.05)
+        return {"error":{"message":f"timeout waiting for {method}"}}
+    def notify(self, method, params=None):
+        self._send({"jsonrpc":"2.0","method":method,**({"params":params} if params is not None else {})})
+    def initialize(self):
+        r=self._rpc("initialize",{"protocolVersion":"2024-11-05","capabilities":{},
+                                  "clientInfo":{"name":"xcode-agent","version":"0.1"}})
+        self.notify("notifications/initialized")
+        return r
+    def tools(self):
+        r=self._rpc("tools/list")
+        return (r.get("result") or {}).get("tools",[])
+    def call(self, name, args):
+        r=self._rpc("tools/call",{"name":name,"arguments":args}, timeout=90)
+        if "error" in r: return f"[tool error: {r['error'].get('message')}]"
+        content=(r.get("result") or {}).get("content",[])
+        return "\n".join(c.get("text","") for c in content if c.get("type")=="text") or json.dumps(r.get("result"))
+    def close(self):
+        try: self.p.terminate()
+        except Exception: pass
+
+def brain(model, system, user, max_tokens=1500):
+    k=os.environ.get("FM_FREE_KEY","") or (KEY_FILE.read_text().strip() if KEY_FILE.exists() else "")
+    body=json.dumps({"model":model,"messages":[{"role":"system","content":system},
+                     {"role":"user","content":user}],"max_tokens":max_tokens,"temperature":0.2}).encode()
+    req=urllib.request.Request(HOST.rstrip('/')+"/chat/completions", data=body, method="POST",
+        headers={"Authorization":f"Bearer {k}","Content-Type":"application/json"})
+    with urllib.request.urlopen(req, timeout=180) as r: d=json.load(r)
+    return d["choices"][0]["message"]["content"], d.get("model",model)
+
+def main():
+    a=sys.argv[1:]
+    if not a: sys.exit(__doc__)
+    if subprocess.run(["xcrun","--find","agent"],capture_output=True).returncode!=0:
+        sys.exit("xcode-agent: `xcrun mcpbridge` not found — needs Xcode 27 (run on the Mini).")
+    m=MCP(); init=m.initialize()
+    srv=(init.get("result") or {}).get("serverInfo",{})
+    tools=m.tools()
+    if a[0]=="--tools":
+        print(f"MCP server: {srv.get('name')} v{srv.get('version')}  ·  {len(tools)} tools")
+        for t in tools: print(f"  - {t['name']}: {(t.get('description') or '')[:90]}")
+        if not tools: print("  (no tools — open a project in Xcode on this machine, then retry)")
+        m.close(); return
+    if not tools:
+        m.close(); sys.exit("xcode-agent: 0 tools exposed — Xcode has no open project. Open a project in "
+                            "Xcode on this machine (the handshake works, but the tools operate on a live project).")
+    allow_write="--allow-write" in a
+    model=a[a.index("--model")+1] if "--model" in a else "gemini-2.5-flash"
+    if a[0]=="--call":
+        name=a[1]; args=json.loads(a[2]) if len(a)>2 else {}
+        print(m.call(name,args)); m.close(); return
+    if a[0]=="--ask":
+        q=a[1]
+        usable=[t for t in tools if allow_write or t["name"] in READ_ONLY_TOOLS]
+        tool_desc="\n".join(f"- {t['name']}: {(t.get('description') or '')[:120]}  args-schema:{json.dumps(t.get('inputSchema',{}))[:200]}" for t in usable)
+        sysm=("You are an assistant answering questions about a real Xcode project by CALLING TOOLS. "
+              "On each turn either call ONE tool or give the final answer.\n"
+              "To call a tool, output EXACTLY one line: `CALL <ToolName> <json-args>`\n"
+              "When you have enough info, output: `ANSWER:` followed by the answer.\n"
+              "Never invent file contents or build settings — read them via tools. Read-only tools only "
+              f"(no edits) unless told otherwise.\n\nAVAILABLE TOOLS:\n{tool_desc}")
+        transcript=f"QUESTION: {q}\n"
+        for step in range(8):
+            out,used=brain(model, sysm, transcript)
+            mcall=re.search(r'(?m)^\s*CALL\s+(\w+)\s+(\{.*\})\s*$', out)
+            ans=re.search(r'(?s)ANSWER:\s*(.+)', out)
+            if mcall and not ans:
+                name=mcall.group(1)
+                try: args=json.loads(mcall.group(2))
+                except Exception: args={}
+                print(f"  → {name} {args}", flush=True)
+                res=m.call(name,args)[:4000]
+                transcript+=f"\nCALL {name} {json.dumps(args)}\nRESULT:\n{res}\n"
+                continue
+            if ans:
+                print(f"\n{ans.group(1).strip()}\n\n(via {used}, $0, {step} tool call(s))"); break
+            transcript+=f"\n(assistant said: {out[:200]})\n"
+        else:
+            print("(agent did not converge in 8 steps)")
+        m.close(); return
+    m.close(); sys.exit(__doc__)
+
+if __name__=="__main__": main()
