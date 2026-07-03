@@ -1,0 +1,72 @@
+#!/usr/bin/env python3
+"""fa-apple-skills — export Apple's Xcode 27 agent skills ON DEMAND and fold them into a PRIVATE KB.
+
+Runs `xcrun agent skills export` (needs Xcode 27 — i.e. the Mini) and:
+  1. writes the SKILL.md bundles to  ~/work/apple/references/xcode27-agent-skills/  (GITIGNORED — Apple
+     pre-release content NEVER touches public git; the apple email-space's skill_context reads them here)
+  2. folds each SKILL.md into the PRIVATE convey graph corpus  kb/graph/apple-skills  (entities/*.md are
+     gitignored → private), zero-token, deduped by slug — so convey/the graph can query them too.
+
+Run this ON THE MINI (co-located with Xcode + the bot). On-demand now; schedulable as a Boot pane later.
+
+  fa-apple-skills            export + fold
+  fa-apple-skills --list     show what's currently folded
+"""
+import sys, os, re, subprocess, time
+from pathlib import Path
+HOME=Path.home()
+XCODE_SKILLS=HOME/"work"/"apple"/"references"/"xcode27-agent-skills"   # gitignored (private)
+CONVEY=HOME/"work"/"convey"
+CORPUS="apple-skills"
+ENTS=CONVEY/"kb"/"graph"/CORPUS/"entities"
+
+def slugify(s): return re.sub(r"[^a-z0-9]+","-",(s or "skill").lower()).strip("-")[:80]
+def fm_val(t,k):
+    m=re.search(rf'^{k}:\s*["\']?(.+?)["\']?\s*$', t, re.M); return m.group(1).strip() if m else ""
+
+def export():
+    if subprocess.run(["xcrun","--find","agent"],capture_output=True).returncode!=0:
+        sys.exit("fa-apple-skills: `xcrun agent` not found — needs Xcode 27 (run on the Mini).")
+    XCODE_SKILLS.mkdir(parents=True, exist_ok=True)
+    r=subprocess.run(["xcrun","agent","skills","export","--output-dir",str(XCODE_SKILLS),"--replace-existing"],
+                     capture_output=True, text=True, timeout=180)
+    print(r.stdout.strip() or r.stderr.strip())
+    return sorted(XCODE_SKILLS.glob("*/SKILL.md"))
+
+def fold(skill_mds):
+    ENTS.mkdir(parents=True, exist_ok=True)
+    n=0
+    for sm in skill_mds:
+        text=sm.read_text(errors="ignore")
+        name=fm_val(text,"name") or sm.parent.name
+        slug=slugify(name)
+        # gather the bundle's reference files too (the real depth lives there)
+        refs=sorted((sm.parent/"references").glob("*.md")) if (sm.parent/"references").exists() else []
+        body=[f"---\nname: {name}\nslug: {slug}\nkind: apple-skill\nconfidence: 1.0\n"
+              f"updated: {time.strftime('%Y-%m-%d')}\nsource: xcode27 agent skills export ({sm.parent.name})\n"
+              f"private: true\n---\n", "## SKILL.md", text.strip(), ""]
+        for rf in refs:
+            body += [f"## reference: {rf.name}", rf.read_text(errors='ignore').strip(), ""]
+        (ENTS/f"{slug}.md").write_text("\n".join(body)); n+=1
+        print(f"  + [[{slug}]]  ({len(refs)} refs)")
+    # build the private DreamGraph (dream_graph.json is git-tracked in convey, but this corpus's
+    # ENTITY PAGES are gitignored; skip committing — keep it fully local/private).
+    try:
+        sys.path.insert(0,str(CONVEY)); from convey.graph import DreamGraph
+        dg=DreamGraph(base=CONVEY/"kb"/"graph"/CORPUS); res=dg.build()
+        nn=len(res.get('nodes',[])) if isinstance(res.get('nodes'),list) else res.get('nodes',0)
+        print(f"[fa-apple-skills] folded {n} skill(s) → {CORPUS} ({nn} nodes, $0, PRIVATE)")
+    except Exception as e:
+        print(f"[fa-apple-skills] folded {n} skill(s) (graph build skipped: {e})")
+
+def main():
+    if "--list" in sys.argv[1:]:
+        for p in sorted(ENTS.glob("*.md")): print("  ", p.stem)
+        return
+    mds=export()
+    if not mds: sys.exit("fa-apple-skills: export produced no SKILL.md bundles.")
+    fold(mds)
+    print("\nPrivate: bundles in ~/work/apple/references/xcode27-agent-skills/ (gitignored) feed the apple "
+          "email-space; the apple-skills graph corpus feeds convey. Nothing pushed to public git.")
+
+if __name__=="__main__": main()
