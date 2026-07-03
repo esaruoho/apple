@@ -72,34 +72,29 @@ func which(_ name: String) -> String? {
     return (s?.isEmpty == false) ? s : nil
 }
 
-/// Transcribe locally. Prefer Esa's whisp wrapper if present; otherwise fall back to the
-/// public openai-whisper `whisper` CLI (so the standalone works with just `pip install
-/// openai-whisper`). Returns the <inputstem>.srt path in outStem's directory.
+/// Transcribe with the openai-whisper `whisper` CLI directly (clean + predictable, no wrapper
+/// side-effects). Models cache ONCE, globally, in ~/.cache/whisper — never per-directory, so
+/// running this from ~/Downloads or anywhere reuses the same cached model. Returns the
+/// <inputstem>.srt path in outStem's directory.
 func transcribe(_ audioOrVideo: String, model: String?, lang: String, outStem: String) -> String {
     let outDir = (outStem as NSString).deletingLastPathComponent
     let inStem = ((audioOrVideo as NSString).lastPathComponent as NSString).deletingPathExtension
-    let whisp = ("~/work/whisp/whisp" as NSString).expandingTildeInPath
-    let p = Process(); p.launchPath = "/bin/bash"
-    // Force the language (default en) — Whisper's auto-detect misfires on short/accented clips
-    // (e.g. calling English "Finnish" and transcribing in Finnish). Pass "auto" to let it detect.
-    let langArgs = (lang.lowercased() == "auto") ? [] : ["--language", lang]
-    if FileManager.default.fileExists(atPath: whisp) {
-        note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent) via whisp (Whisper, lang=\(lang))…")
-        var args = [whisp, "--out", outDir] + langArgs
-        if let model { args += ["--model", model] }
-        args.append(audioOrVideo)
-        p.arguments = ["-lc", shquote(args)]
-    } else if let w = which("whisper") {
-        note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent) via whisper (openai-whisper, lang=\(lang))…")
-        let args = [w, audioOrVideo, "--model", model ?? "base",
-                    "--output_format", "srt", "--output_dir", outDir, "--fp16", "False"] + langArgs
-        p.arguments = ["-lc", shquote(args)]
-    } else {
-        die("no transcription engine — install openai-whisper (`pip install openai-whisper`) or ~/work/whisp/whisp")
+    guard let w = which("whisper") else {
+        die("`whisper` not found — `pip install openai-whisper` (or run install-deps.sh) to enable subtitles")
     }
-    do { try p.run() } catch { die("failed to launch transcription: \(error.localizedDescription)") }
+    // Proper default model: small.en for English (accurate + fast), multilingual small otherwise.
+    // NOT tiny — that was only for speed-tests. Bump to medium.en / large-v3 via --model.
+    let chosen = model ?? (lang.lowercased() == "en" ? "small.en" : "small")
+    // Force the language (default en) — Whisper's auto-detect misfires on short/accented clips
+    // (e.g. calling English "Finnish"). Pass lang "auto" to let it detect.
+    let langArgs = (lang.lowercased() == "auto") ? [] : ["--language", lang]
+    note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent) — whisper model=\(chosen), lang=\(lang)…")
+    let args = [w, audioOrVideo, "--model", chosen,
+                "--output_format", "srt", "--output_dir", outDir, "--fp16", "False"] + langArgs
+    let p = Process(); p.launchPath = "/bin/bash"; p.arguments = ["-lc", shquote(args)]
+    do { try p.run() } catch { die("failed to launch whisper: \(error.localizedDescription)") }
     p.waitUntilExit()
-    if p.terminationStatus != 0 { die("transcription exited \(p.terminationStatus)") }
+    if p.terminationStatus != 0 { die("whisper exited \(p.terminationStatus)") }
     let srt = (outDir as NSString).appendingPathComponent(inStem + ".srt")
     guard FileManager.default.fileExists(atPath: srt) else { die("no .srt produced at \(srt)") }
     return srt

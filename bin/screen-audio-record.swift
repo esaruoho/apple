@@ -42,6 +42,7 @@ struct Options {
     var burn = false          // after stop, transcribe + burn subtitles (one-command pipeline)
     var burnMini = false      // OPT-IN: route transcription to the Mini (default is local + reliable)
     var burnLang = "en"       // subtitle language (default English; "auto" to auto-detect)
+    var burnModel: String?    // whisper model (default: rec-subtitle picks small.en / small)
 }
 
 func parseArgs() -> Options {
@@ -66,6 +67,7 @@ func parseArgs() -> Options {
         case "--burn", "--burn-local": o.burn = true            // transcribe LOCALLY + burn (default)
         case "--burn-mini":    o.burn = true; o.burnMini = true // opt-in: route to the Mini
         case "--burn-lang":    o.burnLang = it.next() ?? "en"   // subtitle language (default en)
+        case "--burn-model":   o.burnModel = it.next()          // whisper model (default small.en)
         case "--list", "-l":   o.list = true
         case "--help", "-h":   printUsage(); exit(0)
         default: FileHandle.standardError.write("unknown arg: \(a)\n".data(using: .utf8)!); exit(2)
@@ -96,6 +98,7 @@ func printUsage() {
       --burn                 on stop: transcribe LOCALLY + burn subtitles → -subtitled.mov
       --burn-mini            opt-in: route transcription to the Mini (falls back to local)
       --burn-lang <code>     subtitle language (default en; "auto" to auto-detect)
+      --burn-model <name>    whisper model (default small.en; e.g. medium.en, large-v3)
 
     Press Ctrl-C to stop and finalize the file.
     Live mic toggle: send SIGUSR1 to this process — `kill -USR1 <pid>` — to turn the
@@ -523,6 +526,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         let p = Process()
         p.launchPath = tool
         var a = [inPath, "--burn", "--lang", opts.burnLang]
+        if let m = opts.burnModel { a += ["--model", m] }
         if opts.burnMini { a.append("--mini") }
         p.arguments = a
         do { try p.run() } catch {
