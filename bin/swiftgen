@@ -78,6 +78,34 @@ REVIEW_SYS=("You are reviewing SwiftUI code against APPLE'S OWN best-practice gu
   "ForEach identity, @Entry closure/class pitfalls, localization. For each: the problem, the fix, and which "
   "Apple reference it comes from. Be specific; cite line snippets. If it's already good, say so.")
 
+MENUBAR_SYS=("You are a senior macOS engineer scaffolding a menu-bar-only SwiftUI app. Use SwiftUI's "
+  "`MenuBarExtra` scene (macOS 13+) as the ONLY scene — NO WindowGroup. The @main App has `var body: some "
+  "Scene { MenuBarExtra(...) { <menu content> } }`. Put recording/logic in an `@MainActor @Observable final "
+  "class` controller owned via `@State`. For shelling out to a tool, use `Foundation.Process` (executableURL "
+  "= URL(fileURLWithPath:), arguments:[...]); to stop, keep the Process and call `.interrupt()` (SIGINT). Use "
+  "`FileManager.default.urls(for:.downloadsDirectory,...)` for ~/Downloads. Menu items are Buttons; disable "
+  "with `.disabled(...)`. Follow the APPLE SWIFTUI GUIDANCE if provided. Generate ONLY Swift sources under "
+  "Sources/<AppName>/ (the @main App + the controller). No Package.swift, no main.swift, no Info.plist.\n\n"+FILEFMT)
+
+def bundle_app(out, name):
+    """Wrap the built SPM binary into a real menu-bar .app (Info.plist LSUIElement=true → no dock icon)."""
+    binp=out/".build"/"debug"/name
+    if not binp.exists(): print(f"[swiftgen] no built binary at {binp}"); return None
+    app=out/f"{name}.app"; macos=app/"Contents"/"MacOS"; macos.mkdir(parents=True, exist_ok=True)
+    import shutil as _sh; _sh.copy2(binp, macos/name)
+    (app/"Contents"/"Info.plist").write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" '
+        '"http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict>\n'
+        f'  <key>CFBundleExecutable</key><string>{name}</string>\n'
+        f'  <key>CFBundleIdentifier</key><string>com.esaruoho.{name.lower()}</string>\n'
+        f'  <key>CFBundleName</key><string>{name}</string>\n'
+        '  <key>CFBundlePackageType</key><string>APPL</string>\n'
+        '  <key>CFBundleShortVersionString</key><string>0.1</string>\n'
+        '  <key>LSMinimumSystemVersion</key><string>14.0</string>\n'
+        '  <key>LSUIElement</key><true/>\n</dict></plist>\n')
+    print(f"[swiftgen] bundled → {app}  (menu-bar app, LSUIElement)")
+    return app
+
 FIX_SYS=("You are fixing SwiftUI/Swift COMPILE errors. Given the current files and the `swift build` output, "
   "output the FULL corrected content of every file you change, using the file format below. Fix the ACTUAL "
   "errors the compiler reports; do not invent APIs (use the plainest correct one). Follow the Apple SwiftUI "
@@ -141,12 +169,14 @@ def main():
     desc=a[0]
     out=Path(a[a.index("--out")+1]).expanduser() if "--out" in a else Path.home()/"Desktop"/"swiftgen-app"
     name=a[a.index("--name")+1] if "--name" in a else "ScaffoldApp"
+    kind=a[a.index("--kind")+1] if "--kind" in a else "app"
     model=choose_model(desc, a[a.index("--model")+1] if "--model" in a else None)
+    if kind=="menubar" and "--model" not in a: model=BIG_MODEL   # menu-bar logic is fiddly → gemini
     lens=apple_lens(desc)
-    print(f"[swiftgen] '{desc[:60]}' → {out}  (model {model}{' · Apple-guided' if lens else ' · NO apple lens'})", flush=True)
+    print(f"[swiftgen] '{desc[:55]}' → {out}  (kind={kind}, model {model}{' · Apple-guided' if lens else ''})", flush=True)
     user=(f"App name: {name}\nApp description: {desc}\n\nAPPLE SWIFTUI GUIDANCE (authoritative):\n{lens}"
           if lens else f"App name: {name}\nApp description: {desc}")
-    text,used=call(model, SCAFFOLD_SYS, user)
+    text,used=call(model, MENUBAR_SYS if kind=="menubar" else SCAFFOLD_SYS, user)
     obj=parse_files(text)
     if not obj or not obj.get("files"):
         sys.exit(f"swiftgen: model did not return a valid file manifest (via {used}). Raw head:\n{text[:400]}")
@@ -165,7 +195,11 @@ def main():
         fix_model=a[a.index("--fix-model")+1] if "--fix-model" in a else BIG_MODEL
         iters=int(a[a.index("--fix")+1]) if "--fix" in a else 3
         print(f"[swiftgen] building + auto-fixing (up to {iters} passes, fixer={fix_model})…", flush=True)
-        build_and_fix(out, fix_model, lens, name, max_iters=iters)
+        ok=build_and_fix(out, fix_model, lens, name, max_iters=iters)
+        if ok and kind=="menubar":
+            app=bundle_app(out, name)
+            if app and "--run" in a:
+                subprocess.run(["open", str(app)]); print(f"[swiftgen] launched {app.name} — look in the menu bar.")
     print(f"\nOpen in Xcode:  open {out}")
 
 if __name__=="__main__": main()
