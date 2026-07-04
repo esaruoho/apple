@@ -569,7 +569,7 @@ def run_picker(stdscr, folder):
         vn = sum(1 for r in rows if r.provider == "converse")
         disp = folder.replace(HOME, "~", 1) if folder.startswith(HOME) else folder
         header = f" sessions · {disp}   C:{cn} G:{gn} X:{xn} F:{fn} V:{vn}"
-        footer = " ↑/↓ · ⏎ resume · n claude · c copilot · x codex · f fm-chat · v converse · q quit"
+        footer = " ↑/↓ select · ⏎ resume · n claude · c copilot · x codex · f fm-chat · v converse · q quit · auto-refresh"
         try:
             stdscr.addnstr(0, 0, header.ljust(w), w, curses.color_pair(2) | curses.A_BOLD)
             stdscr.addnstr(h - 1, 0, footer.ljust(w), w - 1, curses.color_pair(3))
