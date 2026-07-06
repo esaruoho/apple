@@ -43,6 +43,7 @@ struct Options {
     var burnMini = false      // OPT-IN: route transcription to the Mini (default is local + reliable)
     var burnLang = "en"       // subtitle language (default English; "auto" to auto-detect)
     var burnModel: String?    // whisper model (default: rec-subtitle picks small.en / small)
+    var burnPrompt: String?   // vocabulary bias → rec-subtitle --prompt → whisper --initial_prompt
 }
 
 func parseArgs() -> Options {
@@ -68,6 +69,7 @@ func parseArgs() -> Options {
         case "--burn-mini":    o.burn = true; o.burnMini = true // opt-in: route to the Mini
         case "--burn-lang":    o.burnLang = it.next() ?? "en"   // subtitle language (default en)
         case "--burn-model":   o.burnModel = it.next()          // whisper model (default small.en)
+        case "--burn-prompt":  o.burnPrompt = it.next()         // vocabulary bias (proper nouns)
         case "--list", "-l":   o.list = true
         case "--help", "-h":   printUsage(); exit(0)
         default: FileHandle.standardError.write("unknown arg: \(a)\n".data(using: .utf8)!); exit(2)
@@ -569,6 +571,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         p.launchPath = tool
         var a = [inPath, "--burn", "--lang", opts.burnLang]
         if let m = opts.burnModel { a += ["--model", m] }
+        if let pr = opts.burnPrompt { a += ["--prompt", pr] }
         if opts.burnMini { a.append("--mini") }
         p.arguments = a
         do { try p.run() } catch {

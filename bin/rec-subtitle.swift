@@ -92,7 +92,7 @@ func which(_ name: String) -> String? {
 /// side-effects). Models cache ONCE, globally, in ~/.cache/whisper — never per-directory, so
 /// running this from ~/Downloads or anywhere reuses the same cached model. Returns the
 /// <inputstem>.srt path in outStem's directory.
-func transcribe(_ audioOrVideo: String, model: String?, lang: String, outStem: String) -> String {
+func transcribe(_ audioOrVideo: String, model: String?, lang: String, outStem: String, prompt: String? = nil) -> String {
     let outDir = (outStem as NSString).deletingLastPathComponent
     let inStem = ((audioOrVideo as NSString).lastPathComponent as NSString).deletingPathExtension
     guard let w = which("whisper") else {
@@ -109,8 +109,11 @@ func transcribe(_ audioOrVideo: String, model: String?, lang: String, outStem: S
     note("⧉ transcribing \((audioOrVideo as NSString).lastPathComponent)\(ofLen) — whisper model=\(chosen), lang=\(lang)")
     note("   (Whisper prints each line as it decodes; its [mm:ss] timestamps show how far it is)")
     // --verbose True streams every decoded segment to the terminal → live progress.
+    // --initial_prompt biases Whisper toward domain vocabulary (proper nouns it would otherwise
+    // guess phonetically, e.g. "Renoise", "Paketti", "Esa Ruoho"). Only added when provided.
+    let promptArgs = (prompt?.isEmpty == false) ? ["--initial_prompt", prompt!] : []
     let args = [w, audioOrVideo, "--model", chosen, "--verbose", "True",
-                "--output_format", "srt", "--output_dir", outDir, "--fp16", "False"] + langArgs
+                "--output_format", "srt", "--output_dir", outDir, "--fp16", "False"] + langArgs + promptArgs
     let t0 = Date()
     let p = Process(); p.launchPath = "/bin/bash"; p.arguments = ["-lc", shquote(args)]
     do { try p.run() } catch { die("failed to launch whisper: \(error.localizedDescription)") }
@@ -141,10 +144,10 @@ func miniAvailable() -> Bool {
 /// transcription if the transcript doesn't return in time — never hangs then dies. The Mini
 /// worker names outputs by title (not the input stem) and can be queued behind other jobs, so
 /// this is genuinely best-effort; local is the reliable path.
-func transcribeOnMini(_ audio: String, model: String?, lang: String, stem: String) -> String {
+func transcribeOnMini(_ audio: String, model: String?, lang: String, stem: String, prompt: String? = nil) -> String {
     let submit = ("~/work/whisp-transcripts/whisp-submit" as NSString).expandingTildeInPath
     guard FileManager.default.fileExists(atPath: submit) else {
-        note("Mini whisp-submit not found — transcribing locally"); return transcribe(audio, model: model, lang: lang, outStem: stem + ".srt")
+        note("Mini whisp-submit not found — transcribing locally"); return transcribe(audio, model: model, lang: lang, outStem: stem + ".srt", prompt: prompt)
     }
     let inStem = ((audio as NSString).lastPathComponent as NSString).deletingPathExtension
     note("⧉ submitting to the Mini (whisp-submit)…")
@@ -166,7 +169,7 @@ func transcribeOnMini(_ audio: String, model: String?, lang: String, stem: Strin
         Thread.sleep(forTimeInterval: 5)
     }
     note("   Mini didn't return in time — transcribing locally instead")
-    return transcribe(audio, model: model, lang: lang, outStem: stem + ".srt")
+    return transcribe(audio, model: model, lang: lang, outStem: stem + ".srt", prompt: prompt)
 }
 
 func findSRT(named stem: String, under dir: String) -> String? {
@@ -361,6 +364,7 @@ let doBurn = args.contains("--burn")
 // Default is LOCAL (reliable). --mini is an explicit opt-in that itself falls back to local.
 let useMini = args.contains("--mini")
 let model = opt("--model")
+let prompt = opt("--prompt")       // optional vocabulary bias → whisper --initial_prompt
 let lang = opt("--lang") ?? "en"   // default English; pass --lang auto to auto-detect
 let micAudio = opt("--mic")
 let stem = (videoPath as NSString).deletingPathExtension
@@ -370,9 +374,9 @@ var srt = opt("--srt") ?? (stem + ".srt")
 if !FileManager.default.fileExists(atPath: srt) {
     let source = micAudio ?? videoPath
     if useMini {
-        srt = transcribeOnMini(source, model: model, lang: lang, stem: stem)
+        srt = transcribeOnMini(source, model: model, lang: lang, stem: stem, prompt: prompt)
     } else {
-        let produced = transcribe(source, model: model, lang: lang, outStem: stem + ".srt")
+        let produced = transcribe(source, model: model, lang: lang, outStem: stem + ".srt", prompt: prompt)
         // whisp/whisper name by the SOURCE stem; normalize to <video-stem>.srt for predictability.
         if produced != stem + ".srt" { try? FileManager.default.removeItem(atPath: stem + ".srt"); try? FileManager.default.copyItem(atPath: produced, toPath: stem + ".srt") }
         srt = stem + ".srt"
