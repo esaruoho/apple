@@ -13,23 +13,36 @@ For each .md page under wiki/:
 Categories are top-level subdirs. README.md and INDEX.md (this output) are excluded.
 
 Usage:
-    python3 bin/wiki-index.py            # write wiki/INDEX.md
-    python3 bin/wiki-index.py --stdout   # print to stdout
+    python3 bin/wiki-index.py                 # write ./wiki/INDEX.md (default: apple wiki)
+    python3 bin/wiki-index.py --stdout        # print to stdout
+    python3 bin/wiki-index.py <wiki-dir>      # target another wiki/ (e.g. merlib-dump/wiki)
+    python3 bin/wiki-index.py <wiki-dir> --stdout
 """
 import re, sys, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-WIKI = ROOT / "wiki"
+DEFAULT_WIKI = ROOT / "wiki"
 
-CATEGORY_ORDER = ["devices", "entities", "concepts", "lessons", "operations", "compiled"]
+CATEGORY_ORDER = ["devices", "entities", "people", "concepts", "lessons", "operations", "compiled"]
 CATEGORY_TAGLINE = {
     "devices":    "one page per device family — Mac, iPhone, iPad, Watch, AirPods, TV, Vision, HomePod",
     "entities":   "one page per thing — person, app, package",
+    "people":     "one page per person — the figure, the work, the claims",
     "concepts":   "how X works — atlases, principles, patterns",
     "lessons":    "didactic / narrative — runbooks and curriculum",
     "operations": "active project state — current work, status, plans",
     "compiled":   "auto-generated, do not hand-edit",
 }
+
+
+def resolve_wiki() -> pathlib.Path:
+    """First non-flag argv token is an optional target wiki dir; else the apple default."""
+    for arg in sys.argv[1:]:
+        if arg.startswith("-"):
+            continue
+        p = pathlib.Path(arg).expanduser().resolve()
+        return p if p.name == "wiki" else (p / "wiki" if (p / "wiki").is_dir() else p)
+    return DEFAULT_WIKI
 
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.S)
 H1 = re.compile(r"(?m)^# (.+)$")
@@ -94,12 +107,15 @@ def extract(path: pathlib.Path) -> tuple[str, str]:
     # Title
     h1 = H1.search(body)
     title = (h1.group(1).strip() if h1 else meta.get("name", path.stem))
-    # Description
-    desc = meta.get("description") or first_paragraph(body) or ""
+    # Description — apple pages use `description:`, merlib pages use `one_liner:`
+    desc = meta.get("description") or meta.get("one_liner") or first_paragraph(body) or ""
+    if len(desc) > 200:
+        desc = desc[:197].rstrip() + "..."
     return title, desc
 
 
 def main():
+    WIKI = resolve_wiki()
     pages_by_cat: dict[str, list[tuple[str, str, str]]] = {c: [] for c in CATEGORY_ORDER}
     extras: dict[str, list[tuple[str, str, str]]] = {}
 
@@ -155,7 +171,7 @@ def main():
     if "--stdout" in sys.argv:
         sys.stdout.write(output)
     else:
-        out_path = WIKI / "INDEX.md"
+        out_path = resolve_wiki() / "INDEX.md"
         out_path.write_text(output)
         n = output.count("\n- ")
         print(f"wrote {out_path} ({n} entries, {len(output.splitlines())} lines)")
