@@ -132,6 +132,7 @@ final class GuidanceModel: ObservableObject {
     @Published var toast: String?
     @Published var auto = true
     @Published var expandedTTYs: Set<String> = []
+    @Published var composingTTYs: Set<String> = []
     @Published var columns: Int = max(1, UserDefaults.standard.integer(forKey: "guidance.columns")) {
         didSet { UserDefaults.standard.set(columns, forKey: "guidance.columns") }
     }
@@ -196,7 +197,7 @@ final class GuidanceModel: ObservableObject {
         // Don't reorder the list out from under you while a card is open (reading
         // or composing) — that's how a Send can land on the wrong session.
         // Manual ⌘R / ↻ always refreshes.
-        if !manual && !expandedTTYs.isEmpty { return }
+        if !manual && (!expandedTTYs.isEmpty || !composingTTYs.isEmpty) { return }
         reloading = true
         loading = true
         DispatchQueue.global(qos: .utility).async {
@@ -338,6 +339,11 @@ final class GuidanceModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
             if self.toast == msg { self.toast = nil }
         }
+    }
+
+    func setComposing(tty: String, active: Bool) {
+        if active { composingTTYs.insert(tty) }
+        else { composingTTYs.remove(tty) }
     }
 }
 
@@ -584,6 +590,7 @@ struct AgentRow: View {
     let agent: Agent
     @State private var expanded = false
     @State private var draft = ""
+    @State private var draftTTY = ""
     @State private var showSchedule = false
     @State private var pingText = ""
     @State private var pingDate = Date().addingTimeInterval(300)
@@ -612,7 +619,10 @@ struct AgentRow: View {
                alignment: .topLeading)
         .background(RoundedRectangle(cornerRadius: 10).fill(Color(NSColor.controlBackgroundColor)))
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.22), lineWidth: 1))
-        .onDisappear { model.expandedTTYs.remove(agent.tty) }
+        .onDisappear {
+            model.expandedTTYs.remove(agent.tty)
+            model.setComposing(tty: agent.tty, active: false)
+        }
     }
 
     private var headerRow: some View {
@@ -674,6 +684,13 @@ struct AgentRow: View {
         VStack(alignment: .leading, spacing: 6) {
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(alignment: .leading, spacing: 6) {
+                    if !agent.focus.isEmpty {
+                        Text("LATEST")
+                            .font(.system(size: 9)).bold().foregroundColor(.secondary).tracking(1)
+                        mdText(agent.focus).font(.system(size: 11, weight: .semibold))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     if !s.recap.isEmpty {
                         Text("WHAT WAS DONE (agent's own words)")
                             .font(.system(size: 9)).bold().foregroundColor(.secondary).tracking(1)
@@ -700,9 +717,19 @@ struct AgentRow: View {
                 TextField("write a line to this session…", text: $draft)
                     .textFieldStyle(.roundedBorder).font(.caption)
                     .onSubmit(send)
+                    .onChange(of: draft) { _, newValue in
+                        if newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            if !draftTTY.isEmpty { model.setComposing(tty: draftTTY, active: false) }
+                            draftTTY = ""
+                        } else if draftTTY.isEmpty {
+                            draftTTY = agent.tty
+                            model.setComposing(tty: draftTTY, active: true)
+                        }
+                    }
                 Button("Send", action: send)
                     .controlSize(.small)
                     .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .help("Send this line to the session. ⇧-click to also bring its terminal to the front.")
             }
         }
         .padding(8)
@@ -779,14 +806,24 @@ struct AgentRow: View {
     private func send() {
         let line = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !line.isEmpty else { return }
-        let short = agent.tty.replacingOccurrences(of: "/dev/", with: "")
+        // ⇧-click Send (or ⇧-Return) = send AND bring that terminal to the front,
+        // so you watch the line land. Capture the modifier at click time — by the
+        // time the confirm sheet closes, shift is long released.
+        let alsoFront = NSEvent.modifierFlags.contains(.shift)
+        let targetTTY = draftTTY.isEmpty ? agent.tty : draftTTY
+        let targetAgent = model.agents.first { $0.tty == targetTTY } ?? agent
+        let short = targetTTY.replacingOccurrences(of: "/dev/", with: "")
         let alert = NSAlert()
-        alert.messageText = "Send to \(agent.tool) · \(short) · \(agent.space)?"
+        alert.messageText = "Send to \(targetAgent.tool) · \(short) · \(targetAgent.space)?"
         alert.informativeText = "“\(line)”\n\nThis writes the line into the iTerm session with THAT tty and submits it. Check it's the right one — this is how a message ends up in the wrong Claude."
+            + (alsoFront ? "\n\n⇧ held → its terminal window will be brought to the front." : "")
         alert.addButton(withTitle: "Send")
         alert.addButton(withTitle: "Cancel")
         guard alert.runModal() == .alertFirstButtonReturn else { return }
-        model.write(tty: agent.tty, text: line)
+        if alsoFront { model.front(tty: targetTTY) }
+        model.write(tty: targetTTY, text: line)
+        model.setComposing(tty: targetTTY, active: false)
         draft = ""
+        draftTTY = ""
     }
 }

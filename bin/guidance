@@ -37,6 +37,8 @@ CODEX_SESSIONS = os.path.expanduser("~/.codex/sessions")
 TAIL_BYTES = 64 * 1024          # never read more than this from a transcript
 LSOF_TIMEOUT = 6                # seconds; bounded so a stuck lsof can't hang us
 _CODEX_META_CACHE = {}
+GUIDANCE_STATE = os.path.expanduser("~/.config/guidance")
+SEND_LOG = os.path.join(GUIDANCE_STATE, "send.log")
 
 
 # ─────────────────────── process discovery (ps only) ───────────────────────
@@ -500,7 +502,11 @@ def synopsize(events):
 def snapshot_claude(events):
     cwd, focus, files = parse_transcript(events)
     branch = next((e.get("gitBranch") for e in reversed(events) if e.get("gitBranch")), "")
-    return cwd, focus, files, synopsize(events), branch
+    syn = synopsize(events)
+    if focus and focus not in syn["recap"]:
+        syn["recap"].append(focus)
+    syn["recap"] = syn["recap"][-8:]
+    return cwd, focus, files, syn, branch
 
 
 def snapshot_copilot(events):
@@ -560,6 +566,9 @@ def snapshot_copilot(events):
         "commits": uniq(commits),
         "recap": recap[-6:],
     }
+    if focus and focus not in syn["recap"]:
+        syn["recap"].append(focus)
+    syn["recap"] = syn["recap"][-8:]
     return "", focus, files, syn, ""
 
 
@@ -627,6 +636,9 @@ def snapshot_codex(events):
         "commits": uniq(commits),
         "recap": recap[-6:],
     }
+    if focus and focus not in syn["recap"]:
+        syn["recap"].append(focus)
+    syn["recap"] = syn["recap"][-8:]
     return cwd, focus, files, syn, ""
 
 
@@ -825,10 +837,14 @@ _WRITE_OSA = r'''on run argv
   set theTTY to item 1 of argv
   set theText to item 2 of argv
   tell application "iTerm2"
+    activate
     repeat with w in windows
       repeat with tb in tabs of w
         repeat with s in sessions of tb
           if (tty of s) is theTTY then
+            select w
+            tell w to select tb
+            select s
             tell s to write text theText
             return "ok"
           end if
@@ -839,39 +855,69 @@ _WRITE_OSA = r'''on run argv
   return "notfound"
 end run'''
 
+def send_log(tty, text, result):
+    try:
+        os.makedirs(GUIDANCE_STATE, exist_ok=True)
+        safe = text.replace("\n", "\\n")[:200]
+        with open(SEND_LOG, "a") as f:
+            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} tty={tty} result={result} text={safe!r}\n")
+    except Exception:
+        pass
+
 def write_to_session(tty, text, dry_run=False):
     tty_full = tty if tty.startswith("/dev/") else f"/dev/{tty}"
     if not os.path.exists(tty_full):
+        send_log(tty_full, text, "notfound")
         return "notfound"
     name = iterm_names().get(tty_full, tty_full.replace("/dev/", ""))
     if dry_run:
+        send_log(tty_full, text, f"dry:{name}")
         return f"dry:{name}"
     try:
         r = subprocess.run(["osascript", "-e", _WRITE_OSA, tty_full, text],
                            capture_output=True, text=True, timeout=8)
     except Exception as e:
-        return f"error:{e}"
+        result = f"error:{e}"
+        send_log(tty_full, text, result)
+        return result
     if r.returncode != 0:
-        return f"error:{(r.stderr or '').strip()[:140]}"
+        result = f"error:{(r.stderr or '').strip()[:140]}"
+        send_log(tty_full, text, result)
+        return result
     status = r.stdout.strip()
     if status == "ok":
-        return f"ok:{name}"
+        result = f"ok:{name}"
+        send_log(tty_full, text, result)
+        return result
     if status == "notfound":
+        send_log(tty_full, text, "notfound")
         return "notfound"
-    return f"error:{status or 'unknown osascript response'}"
+    result = f"error:{status or 'unknown osascript response'}"
+    send_log(tty_full, text, result)
+    return result
 
 
 # Bring one session's iTerm2 window/tab to the front. One AppleEvent, on click.
+# Reliability note (2026-07-06): with multiple tabs, a single window→tab→session
+# select often DOESN'T land the focus — iTerm needs the tab+session select to be
+# repeated after it has switched windows. So we select once, activate the app,
+# then "go there" a second time (Esa's "two-go-theres"). `select` on the session
+# also selects its enclosing tab/window, but doing all three explicitly + twice
+# is what makes it dependable across tabs.
 _FRONT_OSA = '''on run argv
   set theTTY to item 1 of argv
   tell application "iTerm2"
-    activate
     repeat with w in windows
       repeat with tb in tabs of w
         repeat with s in sessions of tb
           if (tty of s) is theTTY then
             select w
-            tell w to select tb
+            select tb
+            select s
+            activate
+            delay 0.12
+            select w
+            select tb
             select s
             return "ok"
           end if
@@ -887,7 +933,7 @@ def front_session(tty):
     tty_full = tty if tty.startswith("/dev/") else f"/dev/{tty}"
     try:
         r = subprocess.run(["osascript", "-e", _FRONT_OSA, tty_full],
-                           capture_output=True, text=True, timeout=8)
+                           capture_output=True, text=True, timeout=20)
     except Exception as e:
         return f"error:{e}"
     if r.returncode != 0:
