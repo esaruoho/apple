@@ -104,17 +104,36 @@ enum GuidanceSource {
         p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
         p.arguments = ["python3", GuidanceConfig.bin, "--json"]
         let outPipe = Pipe()
+        let errPipe = Pipe()
+        var output = Data()
         p.standardOutput = outPipe
-        p.standardError = Pipe()
+        p.standardError = errPipe
         do {
             let done = DispatchSemaphore(value: 0)
+            let lock = NSLock()
+            outPipe.fileHandleForReading.readabilityHandler = { handle in
+                let chunk = handle.availableData
+                guard !chunk.isEmpty else { return }
+                lock.lock()
+                output.append(chunk)
+                lock.unlock()
+            }
+            errPipe.fileHandleForReading.readabilityHandler = { _ in }
             p.terminationHandler = { _ in done.signal() }
             try p.run()
             if done.wait(timeout: .now() + 15) == .timedOut {
                 p.terminate()
+                outPipe.fileHandleForReading.readabilityHandler = nil
+                errPipe.fileHandleForReading.readabilityHandler = nil
                 return nil
             }
-            let data = outPipe.fileHandleForReading.readDataToEndOfFile()
+            outPipe.fileHandleForReading.readabilityHandler = nil
+            errPipe.fileHandleForReading.readabilityHandler = nil
+            let rest = outPipe.fileHandleForReading.readDataToEndOfFile()
+            lock.lock()
+            output.append(rest)
+            let data = output
+            lock.unlock()
             return try JSONDecoder().decode(GuidanceData.self, from: data)
         } catch { return nil }
     }
@@ -655,11 +674,18 @@ struct AgentRow: View {
                     // Prominent "schedule a timed ping to THIS session" button —
                     // one per card, on the right so it's always visible.
                     Button { showSchedule.toggle() } label: {
-                        Image(systemName: "clock.badge.plus")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 6).padding(.vertical, 3)
-                            .background(RoundedRectangle(cornerRadius: 5).fill(Color.accentColor))
+                        // `clock.badge.plus` is MISSING on some macOS builds and
+                        // renders blank (a bare blue pill). Compose the same idea
+                        // from symbols that always exist: a clock + a small plus,
+                        // with a text "Ping" so it's unmistakable regardless.
+                        HStack(spacing: 2) {
+                            Image(systemName: "clock").font(.system(size: 11, weight: .semibold))
+                            Image(systemName: "plus").font(.system(size: 8, weight: .bold))
+                            Text("Ping").font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6).padding(.vertical, 3)
+                        .background(RoundedRectangle(cornerRadius: 5).fill(Color.accentColor))
                     }
                     .buttonStyle(.plain)
                     .help("Schedule a timed message to this session")
