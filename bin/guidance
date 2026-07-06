@@ -34,11 +34,12 @@ SID_RE = re.compile(r"--resume(?:=|\s+)([0-9a-fA-F-]{36})")
 PROJECTS = os.path.expanduser("~/.claude/projects")
 COPILOT_HOME = os.path.expanduser("~/.copilot")
 CODEX_SESSIONS = os.path.expanduser("~/.codex/sessions")
-TAIL_BYTES = 64 * 1024          # never read more than this from a transcript
+TAIL_BYTES = 256 * 1024         # never read more than this from a transcript
 LSOF_TIMEOUT = 6                # seconds; bounded so a stuck lsof can't hang us
 _CODEX_META_CACHE = {}
 GUIDANCE_STATE = os.path.expanduser("~/.config/guidance")
 SEND_LOG = os.path.join(GUIDANCE_STATE, "send.log")
+MAX_MESSAGE_CHARS = 12000       # expanded card "LATEST" payload cap
 
 
 # ─────────────────────── process discovery (ps only) ───────────────────────
@@ -316,6 +317,17 @@ def first_line(text, limit=600):
     return ""
 
 
+def full_message(text, limit=MAX_MESSAGE_CHARS):
+    if not isinstance(text, str):
+        return ""
+    text = text.strip()
+    if not text:
+        return ""
+    if len(text) <= limit:
+        return text
+    return text[:limit].rstrip() + "\n\n[…truncated in Guidance.app…]"
+
+
 def parse_patch_paths(patch):
     out = []
     if not isinstance(patch, str):
@@ -416,7 +428,7 @@ def parse_transcript(events):
         for block in reversed(content):
             t = _text_of(block)
             if t:
-                focus = t.split("\n")[0][:600]
+                focus = full_message(t)
                 break
         if focus:
             break
@@ -549,7 +561,7 @@ def snapshot_copilot(events):
         t = ev.get("type")
         data = ev.get("data", {}) if isinstance(ev.get("data"), dict) else {}
         if t == "assistant.message":
-            focus = first_line(data.get("content", ""), 600)
+            focus = full_message(data.get("content", ""))
             if focus:
                 break
         if t == "tool.execution_start":
@@ -615,7 +627,7 @@ def snapshot_codex(events):
         t = ev.get("type")
         payload = ev.get("payload", {}) if isinstance(ev.get("payload"), dict) else {}
         if t == "event_msg" and payload.get("type") == "agent_message":
-            focus = first_line(payload.get("message", ""), 600)
+            focus = full_message(payload.get("message", ""))
             if focus:
                 break
         if t == "response_item" and payload.get("type") == "function_call":
@@ -1068,6 +1080,32 @@ def schedule_cancel(sid):
     return found
 
 
+def schedule_dismiss(sid):
+    """Remove ONE entry from the store outright (any status) — the ✕ on a
+    resolved row. Pending pings are canceled first via schedule_cancel; this is
+    for making sent/failed/canceled rows disappear."""
+    with _Lock():
+        items = _load_schedule()
+        new = [it for it in items if it["id"] != sid]
+        found = len(new) != len(items)
+        if found:
+            _save_schedule(new)
+    _sched_log(f"dismiss {sid} ({'ok' if found else 'not-found'})")
+    return found
+
+
+def schedule_clear_resolved():
+    """Drop every non-pending entry (sent/failed/canceled). Keeps pending ones."""
+    with _Lock():
+        items = _load_schedule()
+        keep = [it for it in items if it.get("status") == "pending"]
+        removed = len(items) - len(keep)
+        if removed:
+            _save_schedule(keep)
+    _sched_log(f"clear-resolved removed {removed}")
+    return removed
+
+
 def schedule_run_due():
     """Send every pending ping whose time has arrived. Lock held across the
     whole pass so a concurrent caller can't send the same ping again."""
@@ -1144,6 +1182,16 @@ def schedule_cli(argv):
         ok = schedule_cancel(argv[1])
         print("ok" if ok else "not-found-or-not-pending")
         return 0 if ok else 1
+    if sub == "dismiss":
+        if len(argv) < 2:
+            print("usage: guidance schedule dismiss <id>"); return 2
+        ok = schedule_dismiss(argv[1])
+        print("ok" if ok else "not-found")
+        return 0 if ok else 1
+    if sub == "clear":
+        n = schedule_clear_resolved()
+        print(f"cleared {n}")
+        return 0
     if sub == "add":
         opts = {"--tty": "", "--at": "", "--text": "", "--tool": "",
                 "--space": "", "--name": "", "--note": ""}

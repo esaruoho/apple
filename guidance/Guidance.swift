@@ -307,6 +307,32 @@ final class GuidanceModel: ObservableObject {
         }
     }
 
+    /// Run a fire-and-forget `guidance schedule <args…>` then refresh. Used for
+    /// dismiss (remove one resolved row) and clear (remove all resolved rows).
+    private func scheduleCmd(_ args: [String], toast: String) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+            p.arguments = ["python3", GuidanceConfig.bin, "schedule"] + args
+            p.standardOutput = Pipe(); p.standardError = Pipe()
+            do {
+                let done = DispatchSemaphore(value: 0)
+                p.terminationHandler = { _ in done.signal() }
+                try p.run()
+                if done.wait(timeout: .now() + 8) == .timedOut { p.terminate() }
+            } catch { }
+            DispatchQueue.main.async {
+                self.flash(toast)
+                self.reload(manual: true)
+            }
+        }
+    }
+
+    /// ✕ on a resolved row — remove that one ping from the store.
+    func scheduleDismiss(_ id: String) { scheduleCmd(["dismiss", id], toast: "dismissed") }
+    /// Clear all sent/failed/canceled rows.
+    func scheduleClearResolved() { scheduleCmd(["clear"], toast: "cleared history") }
+
     /// Send ONE line to ONE session — shells `guidance write <tty> <text>`, which
     /// targets the matching iTerm session by tty. Called only from a button/Return in a card.
     /// Never on a timer, never batched. Fails loud (distinct toasts per outcome).
@@ -443,7 +469,17 @@ struct ScheduledPingsBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(model.pendingPings) { ping in pendingRow(ping) }
-            ForEach(model.recentPings.prefix(3)) { ping in recentRow(ping) }
+            ForEach(model.recentPings.prefix(5)) { ping in recentRow(ping) }
+            if !model.recentPings.isEmpty {
+                HStack {
+                    Spacer()
+                    Button { model.scheduleClearResolved() } label: {
+                        Text("Clear history").font(.system(size: 10))
+                    }
+                    .buttonStyle(.plain).foregroundColor(.accentColor)
+                    .help("Remove all sent / failed / canceled rows")
+                }
+            }
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 14)
@@ -501,6 +537,14 @@ struct ScheduledPingsBar: View {
                 .lineLimit(1).truncationMode(.tail)
             Spacer(minLength: 0)
             Text(ping.status).font(.system(size: 9)).foregroundColor(color)
+            Button {
+                model.scheduleDismiss(ping.id)
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .foregroundColor(.secondary).font(.system(size: 11))
+            }
+            .buttonStyle(.plain)
+            .help("Dismiss this from the history")
         }
         .opacity(0.85)
     }
@@ -671,27 +715,6 @@ struct AgentRow: View {
                     if !ago(agent.last_ts).isEmpty {
                         Text(ago(agent.last_ts)).font(.system(size: 10)).foregroundColor(.secondary)
                     }
-                    // Prominent "schedule a timed ping to THIS session" button —
-                    // one per card, on the right so it's always visible.
-                    Button { showSchedule.toggle() } label: {
-                        // `clock.badge.plus` is MISSING on some macOS builds and
-                        // renders blank (a bare blue pill). Compose the same idea
-                        // from symbols that always exist: a clock + a small plus,
-                        // with a text "Ping" so it's unmistakable regardless.
-                        HStack(spacing: 2) {
-                            Image(systemName: "clock").font(.system(size: 11, weight: .semibold))
-                            Image(systemName: "plus").font(.system(size: 8, weight: .bold))
-                            Text("Ping").font(.system(size: 10, weight: .semibold))
-                                .lineLimit(1)
-                        }
-                        .fixedSize()          // never wrap/compress — stays one small pill in 4-col
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 6).padding(.vertical, 3)
-                        .background(RoundedRectangle(cornerRadius: 5).fill(Color.accentColor))
-                    }
-                    .buttonStyle(.plain)
-                    .help("Schedule a timed message to this session")
-                    .popover(isPresented: $showSchedule, arrowEdge: .bottom) { schedulePopover }
                     Image(systemName: isOpen ? "chevron.up" : "chevron.down")
                         .font(.system(size: 10)).foregroundColor(.secondary)
                 }
@@ -758,6 +781,25 @@ struct AgentRow: View {
                     .controlSize(.small)
                     .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty)
                     .help("Send this line to the session. ⇧-click to also bring its terminal to the front.")
+                // Schedule this line for later, right next to Send. Icon-only in
+                // the narrow 4-column layout; clock + "Ping" when there's room.
+                Button {
+                    let d = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !d.isEmpty { pingText = d }   // prefill the popover with what you typed
+                    showSchedule.toggle()
+                } label: {
+                    if model.columns >= 4 {
+                        Image(systemName: "clock")
+                    } else {
+                        HStack(spacing: 3) {
+                            Image(systemName: "clock")
+                            Text("Ping")
+                        }
+                    }
+                }
+                .controlSize(.small)
+                .help("Schedule this line to send at a specific time instead of now.")
+                .popover(isPresented: $showSchedule, arrowEdge: .bottom) { schedulePopover }
             }
         }
         .padding(8)
