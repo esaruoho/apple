@@ -1,4 +1,4 @@
-# CLI Tools Index — 292 tools in bin/
+# CLI Tools Index — 284 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -126,6 +126,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `gen-features-index.py` — (no description) — `bin/gen-features-index.py`
 `gen-skill-indexes.py` — (no description) — `bin/gen-skill-indexes.py`
 `ghc` — GitHub Clone + Claude — `bin/ghc`
+`guidance` — (no description) — `bin/guidance`
 `health-export` — (no description) — `bin/health-export`
 `hertsi` — (no description) — `bin/hertsi`
 `hey-sal` — (no description) — `bin/hey-sal`
