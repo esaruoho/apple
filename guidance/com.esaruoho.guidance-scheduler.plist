@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.esaruoho.guidance-scheduler</string>
+
+  <!-- Fire any due scheduled pings. run-due is lock-guarded and idempotent:
+       it sends each ping exactly once, so running this every 30s alongside the
+       Guidance.app tick and a one-shot backup script can never double-send. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/env</string>
+    <string>python3</string>
+    <string>/Users/esaruoho/work/apple/bin/guidance</string>
+    <string>schedule</string>
+    <string>run-due</string>
+  </array>
+
+  <key>StartInterval</key>
+  <integer>30</integer>
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/Users/esaruoho/.config/guidance/launchd.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/esaruoho/.config/guidance/launchd.err.log</string>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+</dict>
+</plist>

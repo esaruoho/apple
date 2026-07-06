@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""schedule-ping — schedule a message to be typed AND submitted into a specific
+terminal session at a specific time.
+
+It's a friendly front-end to `guidance schedule`. The message is delivered by
+Guidance.app's tick (and a launchd agent / backup poke) via one AppleEvent to
+iTerm2 — text typed, then a separate Enter, so it actually submits (not left
+sitting in the input box).
+
+USAGE
+  schedule-ping                         Interactive: pick a terminal, time, message.
+  schedule-ping list                    Show all scheduled pings.
+  schedule-ping cancel <id>             Cancel a pending ping.
+
+  schedule-ping --to codex --at 01:14 --text "continue the work"
+  schedule-ping --tty ttys017 --at +5m --text "hello"
+  schedule-ping --pick 3 --at "13:30" --text "lunch reminder"
+
+TIME (--at)
+  HH:MM      24h clock, today — rolls to tomorrow if already past
+  +Nm/+Nh/+Ns   relative, e.g. +5m, +2h, +90s
+  <epoch>    unix seconds
+  "YYYY-MM-DD HH:MM"
+
+--to <text>  matches the agent whose tool/space/name contains <text> (e.g. "codex").
+--pick <n>   pick by the number shown in `schedule-ping` / the interactive list.
+"""
+import json
+import os
+import subprocess
+import sys
+import time
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+GUIDANCE = os.path.join(HERE, "guidance")
+
+
+def g(*args):
+    """Run the guidance CLI and return (rc, stdout)."""
+    r = subprocess.run(["python3", GUIDANCE, *args],
+                       capture_output=True, text=True)
+    return r.returncode, r.stdout.strip()
+
+
+def agents():
+    _, out = g("--json")
+    try:
+        data = json.loads(out)
+    except Exception:
+        return []
+    return [a for a in data.get("agents", []) if a.get("tool") in ("claude", "codex", "copilot")]
+
+
+def fmt_when(epoch):
+    return time.strftime("%H:%M:%S", time.localtime(epoch))
+
+
+def print_agents(rows):
+    if not rows:
+        print("  (no claude / codex / copilot terminals running right now)")
+        return
+    print(f"  {'#':>2}  {'TOOL':<7} {'SPACE':<22} {'TTY':<10} FOCUS")
+    for i, a in enumerate(rows, 1):
+        tty = a["tty"].replace("/dev/", "")
+        focus = (a.get("focus") or "")[:44]
+        print(f"  {i:>2}  {a['tool']:<7} {a.get('space',''):<22} {tty:<10} {focus}")
+
+
+def resolve_target(rows, to=None, pick=None, tty=None):
+    if tty:
+        return tty if tty.startswith("/dev/") else f"/dev/{tty}", None, None, None
+    if pick is not None:
+        if pick < 1 or pick > len(rows):
+            return None, None, None, None
+        a = rows[pick - 1]
+        return a["tty"], a["tool"], a.get("space", ""), a.get("name", "")
+    if to:
+        tl = to.lower()
+        matches = [a for a in rows if tl in a.get("tool", "").lower()
+                   or tl in a.get("space", "").lower()
+                   or tl in a.get("name", "").lower()]
+        if len(matches) == 1:
+            a = matches[0]
+            return a["tty"], a["tool"], a.get("space", ""), a.get("name", "")
+        if len(matches) > 1:
+            print(f"'{to}' matches {len(matches)} terminals — be more specific or use --pick:")
+            print_agents(matches)
+            return None, None, None, None
+        print(f"no running terminal matches '{to}'.")
+        return None, None, None, None
+    return None, None, None, None
+
+
+def add(tty, when, text, tool="", space="", name=""):
+    rc, out = g("schedule", "add", "--tty", tty, "--at", when, "--text", text,
+                "--tool", tool, "--space", space, "--name", name)
+    if rc != 0:
+        print(f"✗ couldn't schedule: {out}")
+        return 1
+    try:
+        e = json.loads(out)
+    except Exception:
+        print(out)
+        return 0
+    if "error" in e:
+        print(f"✗ {e['error']}")
+        return 1
+    tgt = e.get("space") or e["tty"].replace("/dev/", "")
+    rel = e["fire_epoch"] - int(time.time())
+    print(f"✓ scheduled → {e.get('tool','')} · {tgt}")
+    print(f"  at {fmt_when(e['fire_epoch'])}  (in {rel//60}m{rel%60:02d}s)")
+    print(f"  “{e['text']}”")
+    print(f"  id {e['id']}   (cancel: schedule-ping cancel {e['id']})")
+    return 0
+
+
+def interactive():
+    rows = agents()
+    print("Running terminals:")
+    print_agents(rows)
+    if not rows:
+        return 1
+    try:
+        sel = input("\nWhich terminal? [number]  ").strip()
+        idx = int(sel)
+        if idx < 1 or idx > len(rows):
+            print("out of range."); return 1
+        a = rows[idx - 1]
+        when = input("Send at?  (HH:MM, +5m, +2h)  ").strip()
+        text = input("Message to send:  ").strip()
+    except (EOFError, KeyboardInterrupt, ValueError):
+        print("\ncancelled."); return 1
+    if not when or not text:
+        print("need both a time and a message."); return 1
+    print()
+    return add(a["tty"], when, text, a["tool"], a.get("space", ""), a.get("name", ""))
+
+
+def parse_opts(argv):
+    opts = {"--to": None, "--pick": None, "--tty": None, "--at": None, "--text": None}
+    i = 0
+    while i < len(argv):
+        if argv[i] in opts and i + 1 < len(argv):
+            opts[argv[i]] = argv[i + 1]; i += 2
+        else:
+            i += 1
+    return opts
+
+
+def main():
+    argv = sys.argv[1:]
+    if argv and argv[0] in ("-h", "--help", "help"):
+        print(__doc__); return 0
+    if argv and argv[0] == "list":
+        _, out = g("schedule", "list"); print(out); return 0
+    if argv and argv[0] == "cancel":
+        if len(argv) < 2:
+            print("usage: schedule-ping cancel <id>"); return 2
+        rc, out = g("schedule", "cancel", argv[1]); print(out); return rc
+    if not argv:
+        return interactive()
+
+    o = parse_opts(argv)
+    if not o["--at"] or not o["--text"]:
+        print("need --at and --text (or run `schedule-ping` with no args to pick interactively).")
+        print("see: schedule-ping --help")
+        return 2
+    rows = agents()
+    tty, tool, space, name = resolve_target(
+        rows, to=o["--to"],
+        pick=int(o["--pick"]) if o["--pick"] and o["--pick"].isdigit() else None,
+        tty=o["--tty"])
+    if not tty:
+        if not (o["--to"] or o["--pick"] or o["--tty"]):
+            print("say which terminal: --to <name> | --pick <n> | --tty <ttys###>\n")
+            print("Running terminals:"); print_agents(rows)
+        return 2
+    return add(tty, o["--at"], o["--text"], tool or "", space or "", name or "")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

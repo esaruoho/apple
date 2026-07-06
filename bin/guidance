@@ -1,0 +1,1172 @@
+#!/usr/bin/env python3
+"""guidance — see every AI agent running in every terminal, safely.
+
+SAFETY DESIGN (this tool caused a system wedge on 2026-07-05 and was rebuilt):
+  • Core data (which agents, what they've done) comes from `ps` + the tail of
+    Claude's own local transcripts. No AppleEvents needed for any of that.
+  • AppleEvents are used in exactly ONE bounded, on-demand way — NEVER on a
+    timer and NEVER scraping buffer text:
+      (1) session NAMES: one names-only osascript per manual refresh;
+      (2) fronting a session's window/tab on your click.
+  • Every osascript/subprocess is timeout-bounded. Transcript reads are capped at
+    the last 64 KB. There is no loop, no timer, no daemon in this file.
+  • It stores nothing and sends nothing over the network.
+The 2026-07-05 wedge was a 4-SECOND TIMER firing un-timed-out full-buffer scrapes
+that piled up into resource exhaustion. None of those three factors exist here.
+
+Usage:
+  guidance            # print the board once
+  guidance --json     # machine-readable {agents, collisions} for Guidance.app
+"""
+import glob
+import json
+import os
+import re
+import sqlite3
+import subprocess
+import sys
+import time
+import shlex
+from collections import defaultdict
+
+AGENT_TOOLS = {"claude", "codex", "copilot"}
+SID_RE = re.compile(r"--resume(?:=|\s+)([0-9a-fA-F-]{36})")
+PROJECTS = os.path.expanduser("~/.claude/projects")
+COPILOT_HOME = os.path.expanduser("~/.copilot")
+CODEX_SESSIONS = os.path.expanduser("~/.codex/sessions")
+TAIL_BYTES = 64 * 1024          # never read more than this from a transcript
+LSOF_TIMEOUT = 6                # seconds; bounded so a stuck lsof can't hang us
+_CODEX_META_CACHE = {}
+
+
+# ─────────────────────── process discovery (ps only) ───────────────────────
+
+def agents_from_ps():
+    """Every agent process, from one `ps` call. No AppleEvents."""
+    try:
+        r = subprocess.run(["ps", "-axo", "tty=,pid=,command="],
+                           capture_output=True, text=True, timeout=10)
+    except Exception:
+        return []
+    agents = []
+    for line in r.stdout.splitlines():
+        parts = line.strip().split(None, 2)
+        if len(parts) < 3:
+            continue
+        tty, pid, cmd = parts
+        if tty.startswith("?"):          # no controlling terminal — skip
+            continue
+        # The tool is usually the first word's basename (`claude`, `codex`).
+        # But codex is often launched through a node shim
+        # (`node .../bin/codex`), so the first word is `node` — check the next
+        # few tokens' basenames too before giving up.
+        toks = cmd.split()
+        tool = ""
+        for tok in toks[:4]:
+            b = tok.split("/")[-1]
+            if b in AGENT_TOOLS:
+                tool = b
+                break
+        if not tool:
+            continue
+        sid_m = SID_RE.search(cmd)
+        agents.append({
+            "tty": f"/dev/{tty}", "pid": pid, "tool": tool,
+            "cmd": cmd[:100], "session_id": sid_m.group(1) if sid_m else "",
+        })
+    # One tty = one iTerm session = one agent. A tool like codex spawns both a
+    # node shim and a native binary on the same tty; keep just the first so the
+    # board shows one card per session. Prefer an entry that carries a session id.
+    by_tty = {}
+    for a in agents:
+        prev = by_tty.get(a["tty"])
+        if prev is None or (not prev["session_id"] and a["session_id"]):
+            by_tty[a["tty"]] = a
+    return list(by_tty.values())
+
+
+def lsof_bounded(pid, want_jsonl=False):
+    """Return (cwd, jsonl_path). Bounded by a hard timeout. Fallback only."""
+    cwd, jsonl = "", ""
+    try:
+        r = subprocess.run(["lsof", "-p", pid, "-Fn"],
+                           capture_output=True, text=True, timeout=LSOF_TIMEOUT)
+    except Exception:
+        return cwd, jsonl
+    names = [ln[1:] for ln in r.stdout.splitlines() if ln.startswith("n")]
+    # lsof -Fn lists the cwd among file names; the .jsonl transcript too if open.
+    for n in names:
+        if want_jsonl and n.endswith(".jsonl") and "/.claude/projects/" in n:
+            jsonl = n
+    return cwd, jsonl
+
+
+def lsof_cwd(pid):
+    try:
+        r = subprocess.run(["lsof", "-a", "-p", pid, "-d", "cwd", "-Fn"],
+                           capture_output=True, text=True, timeout=LSOF_TIMEOUT)
+        for ln in r.stdout.splitlines():
+            if ln.startswith("n"):
+                return ln[1:]
+    except Exception:
+        pass
+    return ""
+
+
+# ─────────────────────── transcript reading (bounded) ───────────────────────
+
+def transcript_for(session_id):
+    if not session_id:
+        return ""
+    hits = glob.glob(os.path.join(PROJECTS, "*", f"{session_id}.jsonl"))
+    return hits[0] if hits else ""
+
+
+def copilot_session_db():
+    p = os.path.join(COPILOT_HOME, "session-store.db")
+    return p if os.path.exists(p) else ""
+
+
+def copilot_sessions():
+    db = copilot_session_db()
+    if not db:
+        return []
+    try:
+        con = sqlite3.connect(db)
+        cur = con.cursor()
+        rows = cur.execute(
+            "SELECT id, COALESCE(cwd, ''), COALESCE(updated_at, '') "
+            "FROM sessions ORDER BY updated_at DESC"
+        ).fetchall()
+        con.close()
+    except Exception:
+        return []
+    out = []
+    for sid, cwd, updated in rows:
+        out.append({"session_id": sid, "cwd": cwd, "updated_at": updated})
+    return out
+
+
+def copilot_events_for(session_id):
+    if not session_id:
+        return ""
+    p = os.path.join(COPILOT_HOME, "session-state", session_id, "events.jsonl")
+    return p if os.path.exists(p) else ""
+
+
+def newest_unclaimed_copilot_events(cwd, claimed):
+    if not cwd:
+        return ""
+    resolved = os.path.realpath(cwd)
+    for row in copilot_sessions():
+        rcwd = os.path.realpath(row["cwd"]) if row["cwd"] else ""
+        p = copilot_events_for(row["session_id"])
+        if rcwd == resolved and p and p not in claimed:
+            return p
+    return ""
+
+
+def codex_session_files():
+    return sorted(
+        glob.glob(os.path.join(CODEX_SESSIONS, "**", "*.jsonl"), recursive=True),
+        key=lambda p: os.path.getmtime(p),
+        reverse=True,
+    )
+
+
+def _read_first_json(path):
+    try:
+        with open(path, "r", errors="replace") as f:
+            line = f.readline().strip()
+        return json.loads(line) if line.startswith("{") else {}
+    except Exception:
+        return {}
+
+
+def codex_session_meta(path):
+    if path in _CODEX_META_CACHE:
+        return _CODEX_META_CACHE[path]
+    meta = _read_first_json(path).get("payload", {}) if path else {}
+    _CODEX_META_CACHE[path] = meta if isinstance(meta, dict) else {}
+    return _CODEX_META_CACHE[path]
+
+
+def codex_session_for(session_id):
+    if not session_id:
+        return ""
+    hits = glob.glob(os.path.join(CODEX_SESSIONS, "**", f"*{session_id}.jsonl"), recursive=True)
+    return hits[0] if hits else ""
+
+
+def newest_unclaimed_codex_session(cwd, claimed):
+    if not cwd:
+        return ""
+    resolved = os.path.realpath(cwd)
+    for p in codex_session_files():
+        if p in claimed:
+            continue
+        meta = codex_session_meta(p)
+        mcwd = os.path.realpath(meta.get("cwd", "")) if meta.get("cwd") else ""
+        if mcwd == resolved:
+            return p
+    return ""
+
+
+def project_dir_for(cwd):
+    """Claude names project dirs by replacing '/' and '.' in the cwd with '-'."""
+    return os.path.join(PROJECTS, re.sub(r"[/.]", "-", cwd))
+
+
+def newest_unclaimed_transcript(cwd, claimed):
+    """For a session with no --resume id: its transcript is the most recently
+    written .jsonl in its cwd's project dir that another agent hasn't taken."""
+    d = project_dir_for(cwd)
+    try:
+        files = [os.path.join(d, f) for f in os.listdir(d) if f.endswith(".jsonl")]
+    except Exception:
+        return ""
+    files = [f for f in files if f not in claimed]
+    if not files:
+        return ""
+    files.sort(key=lambda f: os.path.getmtime(f), reverse=True)
+    return files[0]
+
+
+def iterm_names():
+    """{tty: session_name} via ONE bounded osascript. Names ONLY — never buffer
+    text. Runs once per manual refresh, never in a loop. Empty on any failure."""
+    script = r'''tell application "iTerm2"
+      set out to ""
+      repeat with w in windows
+        repeat with t in tabs of w
+          repeat with s in sessions of t
+            set tt to ""
+            try
+              set tt to (tty of s)
+            end try
+            set nm to ""
+            try
+              set nm to (name of s)
+            end try
+            set out to out & tt & "\t" & nm & linefeed
+          end repeat
+        end repeat
+      end repeat
+      return out
+    end tell'''
+    names = {}
+    try:
+        r = subprocess.run(["osascript", "-e", script],
+                           capture_output=True, text=True, timeout=8)
+    except Exception:
+        return names
+    for line in r.stdout.splitlines():
+        if "\t" in line:
+            tty, _, nm = line.partition("\t")
+            tty = tty.strip()
+            if tty.startswith("/dev/"):
+                names[tty] = nm.strip()
+    return names
+
+
+def read_tail_lines(path):
+    """Last complete JSONL lines from the final TAIL_BYTES of a file. Bounded."""
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as f:
+            if size > TAIL_BYTES:
+                f.seek(size - TAIL_BYTES)
+            chunk = f.read()
+    except Exception:
+        return []
+    text = chunk.decode("utf-8", errors="replace")
+    lines = text.split("\n")
+    if size > TAIL_BYTES and lines:
+        lines = lines[1:]            # drop the partial first line
+    out = []
+    for ln in lines:
+        ln = ln.strip()
+        if not ln.startswith("{"):
+            continue
+        try:
+            out.append(json.loads(ln))
+        except Exception:
+            continue
+    return out
+
+
+def uniq(xs):
+    seen, out = set(), []
+    for x in xs:
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out
+
+
+def first_line(text, limit=600):
+    if not isinstance(text, str):
+        return ""
+    for line in text.splitlines():
+        line = line.strip()
+        if line:
+            return line[:limit]
+    return ""
+
+
+def parse_patch_paths(patch):
+    out = []
+    if not isinstance(patch, str):
+        return out
+    for line in patch.splitlines():
+        m = re.match(r"\*\*\* (?:Update|Add|Delete) File: (.+)$", line.strip())
+        if m:
+            out.append(m.group(1))
+    return out
+
+
+def is_file_path(path):
+    if not isinstance(path, str) or not path:
+        return False
+    if os.path.isfile(path):
+        return True
+    if path.startswith("/"):
+        name = os.path.basename(path)
+        if "." in name:
+            return True
+        if name in {"Makefile", "Dockerfile", "README", "README.md", "TODO.md",
+                    "CLAUDE.md", "LICENSE", "build.sh"}:
+            return True
+    return False
+
+
+def command_paths(cmd, cwd=""):
+    if not isinstance(cmd, str) or not cmd.strip():
+        return []
+    try:
+        tokens = shlex.split(cmd)
+    except Exception:
+        return []
+    out = []
+    for tok in tokens:
+        tok = tok.strip().rstrip(";,)]")
+        if not tok or tok.startswith("-") or tok in {"&&", "||", ";", "|"}:
+            continue
+        if tok.startswith("/"):
+            if os.path.isfile(tok):
+                out.append(tok)
+            continue
+        if cwd and not any(tok.startswith(p) for p in ("$", "~", "{", "(", "*")):
+            p = os.path.realpath(os.path.join(cwd, tok))
+            if os.path.isfile(p):
+                out.append(p)
+    return uniq(out)
+
+
+def tool_focus(name, args, cmd_key="command"):
+    name = str(name or "")
+    args = args if isinstance(args, dict) else {}
+    cmd = (args.get(cmd_key) or "").strip()
+    if cmd:
+        return f"{name}: {cmd[:80]}"
+    for key in ("file_path", "path", "notebook_path"):
+        fp = args.get(key)
+        if isinstance(fp, str) and fp:
+            return f"{name}: {os.path.basename(fp)}"
+    patch_paths = parse_patch_paths(args.get("patch"))
+    if patch_paths:
+        return f"{name}: {os.path.basename(patch_paths[0])}"
+    return name
+
+
+def _text_of(block):
+    if isinstance(block, dict):
+        if block.get("type") == "text":
+            return (block.get("text") or "").strip()
+        if block.get("type") == "tool_use":
+            name = block.get("name", "tool")
+            inp = block.get("input", {}) if isinstance(block.get("input"), dict) else {}
+            tgt = inp.get("file_path") or inp.get("path") or inp.get("notebook_path")
+            if name == "Bash":
+                tgt = (inp.get("command") or "")[:50]
+            if tgt:
+                return f"{name}: {os.path.basename(str(tgt)) if '/' in str(tgt) else tgt}"
+            return name
+    return ""
+
+
+def parse_transcript(events):
+    """Return (cwd, focus, files) from parsed transcript events. Read-only."""
+    cwd, focus = "", ""
+    files = []
+    for ev in events:                      # cwd: last one wins
+        c = ev.get("cwd")
+        if c:
+            cwd = c
+    # focus: last assistant text/tool_use, scanning from the end
+    for ev in reversed(events):
+        if ev.get("type") != "assistant":
+            continue
+        msg = ev.get("message", {})
+        content = msg.get("content") if isinstance(msg, dict) else None
+        if not isinstance(content, list):
+            continue
+        for block in reversed(content):
+            t = _text_of(block)
+            if t:
+                focus = t.split("\n")[0][:600]
+                break
+        if focus:
+            break
+    # files: file paths touched in recent tool_use blocks
+    for ev in events[-40:]:
+        if ev.get("type") != "assistant":
+            continue
+        msg = ev.get("message", {})
+        content = msg.get("content") if isinstance(msg, dict) else None
+        if not isinstance(content, list):
+            continue
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "tool_use":
+                inp = block.get("input", {})
+                if isinstance(inp, dict):
+                    fp = inp.get("file_path") or inp.get("notebook_path")
+                    if fp:
+                        files.append(fp)
+    seen, uniq = set(), []
+    for f in reversed(files):
+        if f not in seen:
+            seen.add(f); uniq.append(f)
+        if len(uniq) >= 5:
+            break
+    return cwd, focus, list(reversed(uniq))
+
+
+def space_of(cwd):
+    if not cwd:
+        return "?"
+    parts = cwd.rstrip("/").split("/")
+    return "/".join(parts[-2:]) if len(parts) >= 2 else cwd
+
+
+# ─────────────── "what did we do" — ZERO-token extraction ───────────────
+# No model call, no round-trip. We read the agent's own transcript and pull out
+# what actually happened: files touched, commands run, commits, and the agent's
+# own recap sentences. This is extraction, not summarization — it costs nothing.
+
+def synopsize(events):
+    edited, wrote, readf, cmds, commits, recap = [], [], [], [], [], []
+    turns = 0
+    for ev in events:
+        if ev.get("type") != "assistant":
+            continue
+        turns += 1
+        msg = ev.get("message", {})
+        content = msg.get("content") if isinstance(msg, dict) else None
+        if not isinstance(content, list):
+            continue
+        for b in content:
+            if not isinstance(b, dict):
+                continue
+            if b.get("type") == "text":
+                line = (b.get("text") or "").strip().split("\n")[0]
+                if len(line) > 12:
+                    recap.append(line[:600])
+            elif b.get("type") == "tool_use":
+                name = b.get("name", "")
+                inp = b.get("input", {}) if isinstance(b.get("input"), dict) else {}
+                fp = inp.get("file_path") or inp.get("notebook_path")
+                if name in ("Edit", "MultiEdit") and fp:
+                    edited.append(fp)
+                elif name == "Write" and fp:
+                    wrote.append(fp)
+                elif name == "Read" and fp:
+                    readf.append(fp)
+                elif name == "Bash":
+                    c = (inp.get("command") or "").strip()
+                    if c:
+                        cmds.append(c)
+                        if "git commit" in c or "git push" in c:
+                            commits.append(c.split("\n")[0][:80])
+
+    return {
+        "turns": turns,
+        "edited": uniq(edited), "wrote": uniq(wrote), "read": uniq(readf),
+        "commands": len(cmds), "commits": uniq(commits),
+        "recap": recap[-6:],
+    }
+
+
+def snapshot_claude(events):
+    cwd, focus, files = parse_transcript(events)
+    branch = next((e.get("gitBranch") for e in reversed(events) if e.get("gitBranch")), "")
+    return cwd, focus, files, synopsize(events), branch
+
+
+def snapshot_copilot(events):
+    focus = ""
+    readf, edited, wrote, cmds, commits, recap = [], [], [], [], [], []
+    turns = 0
+    for ev in events:
+        t = ev.get("type")
+        data = ev.get("data", {}) if isinstance(ev.get("data"), dict) else {}
+        if t == "assistant.message":
+            line = first_line(data.get("content", ""))
+            if line:
+                turns += 1
+                recap.append(line)
+        elif t == "tool.execution_start":
+            name = data.get("toolName", "")
+            args = data.get("arguments", {}) if isinstance(data.get("arguments"), dict) else {}
+            fp = args.get("file_path") or args.get("notebook_path")
+            path = args.get("path")
+            if name == "bash":
+                cmd = (args.get("command") or "").strip()
+                if cmd:
+                    cmds.append(cmd)
+                    readf.extend(command_paths(cmd))
+                    if "git commit" in cmd or "git push" in cmd:
+                        commits.append(cmd.split("\n")[0][:80])
+            elif name == "view":
+                if is_file_path(path):
+                    readf.append(path)
+            elif name == "apply_patch":
+                for p in parse_patch_paths(args.get("patch")):
+                    edited.append(p)
+            elif name in {"edit", "multi_edit"} and fp:
+                edited.append(fp)
+            elif name in {"create", "write"} and fp:
+                wrote.append(fp)
+            elif name == "read" and fp:
+                readf.append(fp)
+    for ev in reversed(events):
+        t = ev.get("type")
+        data = ev.get("data", {}) if isinstance(ev.get("data"), dict) else {}
+        if t == "assistant.message":
+            focus = first_line(data.get("content", ""), 600)
+            if focus:
+                break
+        if t == "tool.execution_start":
+            focus = tool_focus(data.get("toolName", ""), data.get("arguments", {}))[:600]
+            if focus:
+                break
+    files = uniq((wrote + edited + readf))[-5:]
+    syn = {
+        "turns": turns,
+        "edited": uniq(edited),
+        "wrote": uniq(wrote),
+        "read": uniq(readf),
+        "commands": len(cmds),
+        "commits": uniq(commits),
+        "recap": recap[-6:],
+    }
+    return "", focus, files, syn, ""
+
+
+def snapshot_codex(events):
+    cwd, focus = "", ""
+    readf, edited, wrote, cmds, commits, recap = [], [], [], [], [], []
+    turns = 0
+    for ev in events:
+        t = ev.get("type")
+        payload = ev.get("payload", {}) if isinstance(ev.get("payload"), dict) else {}
+        if t == "session_meta":
+            cwd = payload.get("cwd", "") or cwd
+        elif t == "event_msg":
+            if payload.get("type") == "agent_message":
+                turns += 1
+                line = first_line(payload.get("message", ""))
+                if line:
+                    recap.append(line)
+        elif t == "response_item":
+            if payload.get("type") != "function_call":
+                continue
+            name = payload.get("name", "")
+            try:
+                args = json.loads(payload.get("arguments") or "{}")
+            except Exception:
+                args = {}
+            if name == "exec_command":
+                cmd = (args.get("cmd") or "").strip()
+                workdir = args.get("workdir") or cwd
+                if cmd:
+                    cmds.append(cmd)
+                    readf.extend(command_paths(cmd, cwd=workdir))
+                    if "git commit" in cmd or "git push" in cmd:
+                        commits.append(cmd.split("\n")[0][:80])
+            elif name in {"write_file", "create_file"}:
+                fp = args.get("file_path") or args.get("path")
+                if fp:
+                    wrote.append(fp)
+            elif name in {"edit_file", "apply_patch"}:
+                fp = args.get("file_path") or args.get("path")
+                if fp:
+                    edited.append(fp)
+    for ev in reversed(events):
+        t = ev.get("type")
+        payload = ev.get("payload", {}) if isinstance(ev.get("payload"), dict) else {}
+        if t == "event_msg" and payload.get("type") == "agent_message":
+            focus = first_line(payload.get("message", ""), 600)
+            if focus:
+                break
+        if t == "response_item" and payload.get("type") == "function_call":
+            try:
+                args = json.loads(payload.get("arguments") or "{}")
+            except Exception:
+                args = {}
+            focus = tool_focus(payload.get("name", ""), args, cmd_key="cmd")[:600]
+            if focus:
+                break
+    files = uniq((wrote + edited + readf))[-5:]
+    syn = {
+        "turns": turns,
+        "edited": uniq(edited),
+        "wrote": uniq(wrote),
+        "read": uniq(readf),
+        "commands": len(cmds),
+        "commits": uniq(commits),
+        "recap": recap[-6:],
+    }
+    return cwd, focus, files, syn, ""
+
+
+def tool_of_events(events):
+    for ev in events[:3]:
+        if ev.get("type") == "session_meta":
+            return "codex"
+    for ev in events[:10]:
+        t = ev.get("type", "")
+        if t.startswith("assistant.") or t.startswith("tool.") or t.startswith("session."):
+            return "copilot"
+    return "claude"
+
+
+def snapshot_for(tool, events):
+    if tool == "copilot":
+        return snapshot_copilot(events)
+    if tool == "codex":
+        return snapshot_codex(events)
+    return snapshot_claude(events)
+
+
+def load_full(path):
+    """Read a FULL transcript — one file, on demand only (never in the board loop)."""
+    out = []
+    try:
+        with open(path, "r", errors="replace") as f:
+            for ln in f:
+                ln = ln.strip()
+                if ln.startswith("{"):
+                    try:
+                        out.append(json.loads(ln))
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+    return out
+
+
+def report_markdown(events, tty=""):
+    tool = tool_of_events(events)
+    cwd, _, _, syn, branch = snapshot_for(tool, events)
+    base = lambda p: os.path.basename(p)
+    L = [f"# What did we do — {space_of(cwd)}"]
+    meta = [cwd or "?", f"branch {branch}" if branch else "", f"{syn['turns']} turns",
+            f"{syn['commands']} commands", tty.replace('/dev/', '')]
+    L.append("· ".join(m for m in meta if m))
+    if syn["recap"]:
+        L.append("\n## Recap (the agent's own words)")
+        L += [f"- {r}" for r in syn["recap"]]
+    if syn["commits"]:
+        L.append("\n## Commits / pushes")
+        L += [f"- `{c}`" for c in syn["commits"]]
+    if syn["wrote"]:
+        L.append("\n## Files written")
+        L += [f"- {base(f)}" for f in syn["wrote"]]
+    if syn["edited"]:
+        L.append("\n## Files edited")
+        L += [f"- {base(f)}" for f in syn["edited"]]
+    if syn["read"]:
+        L.append(f"\n## Files read ({len(syn['read'])})")
+        L += [f"- {base(f)}" for f in syn["read"][:15]]
+    return "\n".join(L)
+
+
+def resolve_transcript(arg):
+    """arg = a tty (ttysNNN), a 36-char session id, or a transcript path."""
+    if arg.endswith(".jsonl") and os.path.exists(arg):
+        return arg
+    if re.fullmatch(r"[0-9a-fA-F-]{36}", arg):
+        return transcript_for(arg) or copilot_events_for(arg) or codex_session_for(arg)
+    tty = arg if arg.startswith("/dev/") else f"/dev/{arg}"
+    for a in agents_from_ps():
+        if a["tty"] == tty:
+            t = (transcript_for(a["session_id"])
+                 or copilot_events_for(a["session_id"])
+                 or codex_session_for(a["session_id"]))
+            if not t:
+                _, t = lsof_bounded(a["pid"], want_jsonl=True)
+            return t
+    return ""
+
+
+# ─────────────────────── assemble ───────────────────────
+
+def collect():
+    agents = agents_from_ps()
+    names = iterm_names()
+    claimed = {"claude": set(), "copilot": set(), "codex": set()}
+
+    # Pass 1: agents launched with --resume map to their transcript by id (exact).
+    for a in agents:
+        if a["tool"] == "copilot":
+            t = copilot_events_for(a["session_id"]) if a["session_id"] else ""
+        elif a["tool"] == "codex":
+            t = codex_session_for(a["session_id"]) if a["session_id"] else ""
+        else:
+            t = transcript_for(a["session_id"]) if a["session_id"] else ""
+        a["_tpath"] = t
+        a["_mapped"] = "id" if t else "none"
+        if t:
+            claimed[a["tool"]].add(t)
+
+    # Pass 2: no-id agents map to the newest unclaimed transcript in their cwd.
+    # This gets the right cwd, but if several no-id agents share a folder the
+    # tty<->transcript pairing among them is a best guess ("cwd", not "id").
+    for a in agents:
+        if a["_tpath"]:
+            continue
+        cwd = lsof_cwd(a["pid"])
+        a["_cwd"] = cwd
+        t = ""
+        if a["tool"] == "claude" and cwd:
+            t = newest_unclaimed_transcript(cwd, claimed["claude"])
+        elif a["tool"] == "copilot" and cwd:
+            t = newest_unclaimed_copilot_events(cwd, claimed["copilot"])
+        elif a["tool"] == "codex" and cwd:
+            t = newest_unclaimed_codex_session(cwd, claimed["codex"])
+        if t:
+            claimed[a["tool"]].add(t)
+            a["_mapped"] = "cwd"
+        a["_tpath"] = t
+
+    out = []
+    for a in agents:
+        cwd, focus, files = "", "", []
+        events = read_tail_lines(a["_tpath"]) if a["_tpath"] else []
+        if events:
+            cwd, focus, files, syn, _branch = snapshot_for(a["tool"], events)
+        else:
+            syn = {"turns": 0, "edited": [], "wrote": [], "read": [],
+                   "commands": 0, "commits": [], "recap": []}
+        if not cwd:
+            cwd = a.get("_cwd") or lsof_cwd(a["pid"])
+        last_ts = 0
+        if a["_tpath"]:
+            try:
+                last_ts = int(os.path.getmtime(a["_tpath"]))
+            except Exception:
+                last_ts = 0
+        out.append({
+            "tty": a["tty"], "pid": a["pid"], "tool": a["tool"], "cmd": a["cmd"],
+            "session_id": a["session_id"], "cwd": cwd, "space": space_of(cwd),
+            "name": names.get(a["tty"], ""), "mapped": a.get("_mapped", "none"),
+            "last_ts": last_ts, "focus": focus, "files": files, "synopsis": syn,
+        })
+    return out
+
+
+def find_collisions(agents):
+    collisions = []
+    by_space = defaultdict(list)
+    for a in agents:
+        by_space[a["space"]].append(a["tty"])
+    for space, ttys in by_space.items():
+        if space != "?" and len(ttys) > 1:
+            collisions.append({"kind": "space", "key": space, "ttys": ttys, "count": len(ttys)})
+    by_file = defaultdict(list)
+    for a in agents:
+        for f in a["files"]:
+            by_file[f].append(a["tty"])
+    for f, ttys in by_file.items():
+        uniq = sorted(set(ttys))
+        if len(uniq) > 1:
+            collisions.append({"kind": "file", "key": f, "ttys": uniq, "count": len(uniq)})
+    return collisions
+
+
+def board(agents, collisions):
+    if not agents:
+        return "No agent processes found (looked for claude / codex / copilot via ps)."
+    space_coll = {c["key"] for c in collisions if c["kind"] == "space"}
+    lines = [f"{'':2}{'TOOL':<8} {'SPACE':<22} {'TTY':<13} FOCUS", "-" * 92]
+    for a in sorted(agents, key=lambda x: (x["tool"], x["space"])):
+        flag = "⚠ " if a["space"] in space_coll else "  "
+        lines.append(f"{flag}{a['tool']:<8} {a['space']:<22} {a['tty']:<13} {a['focus']}")
+    lines.append("-" * 92)
+    lines.append(f"{len(agents)} agents")
+    for c in collisions:
+        if c["kind"] == "space":
+            lines.append(f"⚠ space: {c['key']} — {c['count']} agents ({', '.join(t.replace('/dev/','') for t in c['ttys'])})")
+        else:
+            lines.append(f"⚠ SAME FILE: {c['key']} — {c['count']} agents")
+    if not collisions:
+        lines.append("no collisions")
+    return "\n".join(lines)
+
+
+# ─────────────── click-to-write — targeted iTerm input, on demand only ───────────────
+# Guidance targets the iTerm2 session whose `tty` exactly matches /dev/ttysNNN and
+# asks iTerm2 to write one submitted line into that session. Writing directly to
+# /dev/ttysNNN from another process only writes to the terminal device; it is not
+# equivalent to keyboard input for full-screen TUIs like codex / claude / copilot.
+# NEVER on a timer, never in a loop, only on explicit `guidance write ...`.
+_WRITE_OSA = r'''on run argv
+  set theTTY to item 1 of argv
+  set theText to item 2 of argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with tb in tabs of w
+        repeat with s in sessions of tb
+          if (tty of s) is theTTY then
+            tell s to write text theText
+            return "ok"
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end tell
+  return "notfound"
+end run'''
+
+def write_to_session(tty, text, dry_run=False):
+    tty_full = tty if tty.startswith("/dev/") else f"/dev/{tty}"
+    if not os.path.exists(tty_full):
+        return "notfound"
+    name = iterm_names().get(tty_full, tty_full.replace("/dev/", ""))
+    if dry_run:
+        return f"dry:{name}"
+    try:
+        r = subprocess.run(["osascript", "-e", _WRITE_OSA, tty_full, text],
+                           capture_output=True, text=True, timeout=8)
+    except Exception as e:
+        return f"error:{e}"
+    if r.returncode != 0:
+        return f"error:{(r.stderr or '').strip()[:140]}"
+    status = r.stdout.strip()
+    if status == "ok":
+        return f"ok:{name}"
+    if status == "notfound":
+        return "notfound"
+    return f"error:{status or 'unknown osascript response'}"
+
+
+# Bring one session's iTerm2 window/tab to the front. One AppleEvent, on click.
+_FRONT_OSA = '''on run argv
+  set theTTY to item 1 of argv
+  tell application "iTerm2"
+    activate
+    repeat with w in windows
+      repeat with tb in tabs of w
+        repeat with s in sessions of tb
+          if (tty of s) is theTTY then
+            select w
+            tell w to select tb
+            select s
+            return "ok"
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end tell
+  return "notfound"
+end run'''
+
+
+def front_session(tty):
+    tty_full = tty if tty.startswith("/dev/") else f"/dev/{tty}"
+    try:
+        r = subprocess.run(["osascript", "-e", _FRONT_OSA, tty_full],
+                           capture_output=True, text=True, timeout=8)
+    except Exception as e:
+        return f"error:{e}"
+    if r.returncode != 0:
+        return f"error:{(r.stderr or '').strip()[:140]}"
+    return r.stdout.strip() or "notfound"
+
+
+# ─────────────── scheduled pings — fire ONE line at a set time ───────────────
+# A durable, visible timer: "at 01:14, send this line to this session." The
+# store is a plain JSON file. run-due sends any ping whose time has passed,
+# holding an exclusive lock across the whole send so that no matter how many
+# things call run-due (the app tick, a launchd agent, a one-shot script), each
+# ping is sent EXACTLY once. There is still no daemon and no loop in this file —
+# something external calls run-due; the lock makes that safe.
+
+import fcntl
+import errno
+
+SCHED_DIR = os.path.expanduser("~/.config/guidance")
+SCHED_FILE = os.path.join(SCHED_DIR, "schedule.json")
+SCHED_LOCK = os.path.join(SCHED_DIR, "schedule.lock")
+SCHED_LOG = os.path.join(SCHED_DIR, "schedule.log")
+MAX_ATTEMPTS = 30               # ~ retry window if the session is briefly gone
+
+
+def _sched_log(msg):
+    try:
+        os.makedirs(SCHED_DIR, exist_ok=True)
+        with open(SCHED_LOG, "a") as f:
+            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {msg}\n")
+    except Exception:
+        pass
+
+
+class _Lock:
+    """Exclusive file lock so two run-due callers can't double-send."""
+    def __init__(self):
+        self.fh = None
+
+    def __enter__(self):
+        os.makedirs(SCHED_DIR, exist_ok=True)
+        self.fh = open(SCHED_LOCK, "w")
+        fcntl.flock(self.fh, fcntl.LOCK_EX)
+        return self
+
+    def __exit__(self, *a):
+        try:
+            fcntl.flock(self.fh, fcntl.LOCK_UN)
+            self.fh.close()
+        except Exception:
+            pass
+
+
+def _load_schedule():
+    try:
+        with open(SCHED_FILE) as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except Exception:
+        return []
+
+
+def _save_schedule(items):
+    os.makedirs(SCHED_DIR, exist_ok=True)
+    tmp = SCHED_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(items, f, indent=2)
+    os.replace(tmp, SCHED_FILE)
+
+
+def parse_when(s):
+    """Accept an epoch, 'HH:MM', '+Nm/h/s', or 'YYYY-MM-DD HH:MM[:SS]'.
+    Returns an int epoch (in the future for HH:MM) or None."""
+    s = (s or "").strip()
+    if not s:
+        return None
+    if re.fullmatch(r"\d{9,}", s):                     # bare epoch
+        return int(s)
+    m = re.fullmatch(r"\+(\d+)\s*([smh])", s)          # relative +Nm
+    if m:
+        n = int(m.group(1))
+        mult = {"s": 1, "m": 60, "h": 3600}[m.group(2)]
+        return int(time.time()) + n * mult
+    m = re.fullmatch(r"(\d{1,2}):(\d{2})", s)          # HH:MM today/tomorrow
+    if m:
+        hh, mm = int(m.group(1)), int(m.group(2))
+        now = time.localtime()
+        t = list(now)
+        t[3], t[4], t[5] = hh, mm, 0
+        cand = int(time.mktime(time.struct_time(tuple(t))))
+        if cand <= int(time.time()):
+            cand += 86400
+        return cand
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M"):
+        try:
+            return int(time.mktime(time.strptime(s, fmt)))
+        except Exception:
+            continue
+    return None
+
+
+def schedule_add(tty, when, text, tool="", space="", name="", note=""):
+    fire = parse_when(when)
+    if fire is None:
+        return {"error": f"could not parse time {when!r}"}
+    tty_full = tty if tty.startswith("/dev/") else f"/dev/{tty}"
+    entry = {
+        "id": f"sch_{int(time.time())}_{os.urandom(3).hex()}",
+        "tty": tty_full, "text": text,
+        "fire_epoch": fire, "created_epoch": int(time.time()),
+        "tool": tool, "space": space, "name": name, "note": note,
+        "status": "pending", "attempts": 0, "result": "", "fired_epoch": 0,
+    }
+    with _Lock():
+        items = _load_schedule()
+        items.append(entry)
+        _save_schedule(items)
+    _sched_log(f"add {entry['id']} -> {tty_full} @ {fire} '{text[:60]}'")
+    return entry
+
+
+def schedule_cancel(sid):
+    with _Lock():
+        items = _load_schedule()
+        found = False
+        for it in items:
+            if it["id"] == sid and it["status"] == "pending":
+                it["status"] = "canceled"
+                found = True
+        _save_schedule(items)
+    _sched_log(f"cancel {sid} ({'ok' if found else 'not-pending'})")
+    return found
+
+
+def schedule_run_due():
+    """Send every pending ping whose time has arrived. Lock held across the
+    whole pass so a concurrent caller can't send the same ping again."""
+    sent, failed = [], []
+    with _Lock():
+        items = _load_schedule()
+        now = int(time.time())
+        changed = False
+        for it in items:
+            if it.get("status") != "pending" or it.get("fire_epoch", 0) > now:
+                continue
+            it["attempts"] = it.get("attempts", 0) + 1
+            res = write_to_session(it["tty"], it["text"])
+            it["result"] = res
+            changed = True
+            if res.startswith("ok:"):
+                it["status"] = "sent"
+                it["fired_epoch"] = int(time.time())
+                sent.append(it["id"])
+                _sched_log(f"SENT {it['id']} -> {it['tty']} ({res})")
+            elif it["attempts"] >= MAX_ATTEMPTS:
+                it["status"] = "failed"
+                it["fired_epoch"] = int(time.time())
+                failed.append(it["id"])
+                _sched_log(f"FAILED {it['id']} -> {it['tty']} after {it['attempts']} tries ({res})")
+            else:
+                _sched_log(f"retry {it['id']} attempt {it['attempts']} ({res})")
+        if changed:
+            _save_schedule(items)
+    return {"sent": sent, "failed": failed}
+
+
+def schedule_list_json():
+    return _load_schedule()
+
+
+def schedule_board():
+    items = _load_schedule()
+    pending = [i for i in items if i["status"] == "pending"]
+    if not items:
+        return "no scheduled pings."
+    lines = ["SCHEDULED PINGS", "-" * 72]
+    now = int(time.time())
+    for it in sorted(items, key=lambda x: x["fire_epoch"]):
+        when = time.strftime("%H:%M:%S", time.localtime(it["fire_epoch"]))
+        rel = it["fire_epoch"] - now
+        rels = f"in {rel//60}m{rel%60:02d}s" if rel > 0 else f"{-rel}s ago"
+        st = it["status"]
+        tgt = it.get("space") or it["tty"].replace("/dev/", "")
+        lines.append(f"[{st:8}] {when} ({rels:>10}) {it.get('tool',''):>6} {tgt:20} “{it['text'][:40]}”")
+    lines.append("-" * 72)
+    lines.append(f"{len(pending)} pending, {len(items)} total")
+    return "\n".join(lines)
+
+
+def schedule_cli(argv):
+    """`guidance schedule <add|list|cancel|run-due> ...`"""
+    if not argv:
+        print(schedule_board()); return 0
+    sub = argv[0]
+    if sub == "run-due":
+        r = schedule_run_due()
+        print(json.dumps(r))
+        return 0
+    if sub == "list":
+        if "--json" in argv:
+            print(json.dumps(schedule_list_json(), indent=2))
+        else:
+            print(schedule_board())
+        return 0
+    if sub == "cancel":
+        if len(argv) < 2:
+            print("usage: guidance schedule cancel <id>"); return 2
+        ok = schedule_cancel(argv[1])
+        print("ok" if ok else "not-found-or-not-pending")
+        return 0 if ok else 1
+    if sub == "add":
+        opts = {"--tty": "", "--at": "", "--text": "", "--tool": "",
+                "--space": "", "--name": "", "--note": ""}
+        i = 1
+        while i < len(argv) - 1:
+            if argv[i] in opts:
+                opts[argv[i]] = argv[i + 1]
+                i += 2
+            else:
+                i += 1
+        if not opts["--tty"] or not opts["--at"] or not opts["--text"]:
+            print("usage: guidance schedule add --tty <tty> --at <epoch|HH:MM|+Nm> --text <msg> [--tool --space --name --note]")
+            return 2
+        entry = schedule_add(opts["--tty"], opts["--at"], opts["--text"],
+                             tool=opts["--tool"], space=opts["--space"],
+                             name=opts["--name"], note=opts["--note"])
+        print(json.dumps(entry))
+        return 0 if "error" not in entry else 1
+    print(f"unknown schedule subcommand: {sub}")
+    return 2
+
+
+def main():
+    # `guidance schedule ...` — durable, visible timed pings.
+    if len(sys.argv) > 1 and sys.argv[1] == "schedule":
+        sys.exit(schedule_cli(sys.argv[2:]))
+
+    # `guidance write <tty> <text> [--dry-run]` — send ONE line to ONE session.
+    if len(sys.argv) > 1 and sys.argv[1] == "write":
+        rest = [a for a in sys.argv[2:] if a != "--dry-run"]
+        dry = "--dry-run" in sys.argv
+        if len(rest) < 2:
+            print("usage: guidance write <tty> <text> [--dry-run]")
+            sys.exit(2)
+        res = write_to_session(rest[0], " ".join(rest[1:]), dry_run=dry)
+        print(res)
+        sys.exit(0 if res.startswith(("ok:", "dry:")) else 1)
+
+    # `guidance front <tty>` — bring that session's iTerm2 window to the front.
+    if len(sys.argv) > 1 and sys.argv[1] == "front":
+        if len(sys.argv) < 3:
+            print("usage: guidance front <tty>")
+            sys.exit(2)
+        res = front_session(sys.argv[2])
+        print(res)
+        sys.exit(0 if res == "ok" else 1)
+
+    # `guidance report <tty|session-id|path>` — full "what did we do" for ONE
+    # session. Reads that one file on demand (never in a loop). Zero tokens.
+    if len(sys.argv) > 1 and sys.argv[1] == "report":
+        if len(sys.argv) < 3:
+            print("usage: guidance report <tty|session-id|path>")
+            return
+        path = resolve_transcript(sys.argv[2])
+        if not path:
+            print(f"no transcript found for {sys.argv[2]}")
+            return
+        print(report_markdown(load_full(path), tty=sys.argv[2]))
+        return
+
+    agents = collect()
+    collisions = find_collisions(agents)
+    if "--json" in sys.argv:
+        print(json.dumps({"generated": int(time.time()),
+                          "agents": agents, "collisions": collisions,
+                          "schedule": schedule_list_json()}, indent=2))
+    else:
+        print(board(agents, collisions))
+
+
+if __name__ == "__main__":
+    main()
