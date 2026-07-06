@@ -1,4 +1,4 @@
-# Workflows Index — 304 scripts across 34 apps
+# Workflows Index — 303 scripts across 34 apps
 
 **Grep this file to find the right script without scanning every app.**
 Grep by trigger keyword (`grep airdrop`), by app name (`^## finder`), or by description token.
@@ -308,12 +308,11 @@ Re-seed trigger headers after adding scripts: `python3 bin/seed-script-triggers.
 `script-editor-open-dictionary` — Open the scripting dictionary browser — triggers: open, dictionary, scripting, browser — `scripts/workflows/script-editor/script-editor-open-dictionary.applescript`
 `script-editor-run` — Run the front Script Editor document — triggers: run, front, script, editor, document — `scripts/workflows/script-editor/script-editor-run.applescript`
 
-## shortcuts (4)
+## shortcuts (3)
 
 `shortcuts-list-shortcuts` — List all available Shortcuts — triggers: list, available, shortcuts — `scripts/workflows/shortcuts/shortcuts-list-shortcuts.applescript`
 `shortcuts-run-shortcut-with-input` — Run a Shortcut with text input — triggers: run, shortcut, input, text — `scripts/workflows/shortcuts/shortcuts-run-shortcut-with-input.applescript`
 `shortcuts-run-shortcut` — Run a named Shortcut — triggers: run, shortcut, named — `scripts/workflows/shortcuts/shortcuts-run-shortcut.applescript`
-`shortcuts-search-shortcuts` — Search for a Shortcut by name and run it — triggers: search, shortcut, name, run — `scripts/workflows/shortcuts/shortcuts-search-shortcuts.applescript`
 
 ## system-events (40)
 
