@@ -682,7 +682,9 @@ struct AgentRow: View {
                             Image(systemName: "clock").font(.system(size: 11, weight: .semibold))
                             Image(systemName: "plus").font(.system(size: 8, weight: .bold))
                             Text("Ping").font(.system(size: 10, weight: .semibold))
+                                .lineLimit(1)
                         }
+                        .fixedSize()          // never wrap/compress — stays one small pill in 4-col
                         .foregroundColor(.white)
                         .padding(.horizontal, 6).padding(.vertical, 3)
                         .background(RoundedRectangle(cornerRadius: 5).fill(Color.accentColor))
