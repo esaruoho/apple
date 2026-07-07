@@ -722,11 +722,15 @@ struct FleetApp: App {
         }
         .windowStyle(.titleBar)
         .defaultSize(width: 760, height: 620)
+        .commands {
+            AppHelpCommand(appName: "Fleet")   // shared Help + donate (see shared/SupportHelp.swift)
+        }
     }
 }
 
 struct FleetView: View {
     @EnvironmentObject var model: FleetModel
+    @State private var showHelp = false
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -754,6 +758,9 @@ struct FleetView: View {
             set: { if !$0 { model.runResult = nil } })) {
             RunOutputView().environmentObject(model)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .showAppHelp)) { _ in
+            showHelp = true
+        }
     }
 
     private var header: some View {
@@ -771,6 +778,19 @@ struct FleetView: View {
             Button { model.refreshLocal(); model.refreshSyncthing() } label: {
                 Image(systemName: "arrow.clockwise")
             }.buttonStyle(.borderless)
+            Button { showHelp.toggle() } label: { Image(systemName: "questionmark.circle") }
+                .buttonStyle(.borderless)
+                .help("What is Fleet?")
+                .popover(isPresented: $showHelp, arrowEdge: .bottom) {
+                    AppHelpView(
+                        appName: "Fleet",
+                        tagline: "This Mac and every peer Mac on your network, side by side — each machine’s card, live status, and one-click routing.",
+                        usage: [
+                            ("display", "Click VIEW on a peer to open Screen Sharing (wakes it first if asleep)."),
+                            ("paperplane.fill", "Click a skill chip (ocr, whisp, voicebox…) to route a file to that machine."),
+                            ("arrow.clockwise", "↻ refreshes local status + Syncthing peers."),
+                        ])
+                }
         }
         .padding(.horizontal, 14).padding(.vertical, 9)
     }

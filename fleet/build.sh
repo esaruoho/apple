@@ -13,7 +13,7 @@ rm -rf "$APP"
 
 echo "==> Compiling Swift (SwiftUI + Network)..."
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-xcrun swiftc -O -parse-as-library Fleet.swift -o "$APP/Contents/MacOS/$NAME" \
+xcrun swiftc -O -parse-as-library Fleet.swift ../shared/SupportHelp.swift -o "$APP/Contents/MacOS/$NAME" \
     -framework SwiftUI \
     -framework AppKit \
     -framework Network

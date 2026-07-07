@@ -15,6 +15,19 @@ Project-specific instructions for sessions in `/Users/esaruoho/work/apple/`. **S
 
 **Why (2026-06-12):** while debugging wedged FM I repeatedly `nohup`'d `fm-worker`/`fm-service` and bounded read-only probes with `nohup … & kill`. Robust wins over brittle. Companions: `~/.claude/CLAUDE.md`, `comms/CLAUDE.md`, `convey/CLAUDE.md`, `~/.claude/skills/cloudcity/skill.md`.
 
+## 🔴 GROUND RULE: EVERY APP SHIPS THE SHARED HELP + DONATE PANEL
+
+**Every Apple-native app we make — Guidance, Fleet, Converse, Recburn, AppleToolbox, and every future one — ships the SAME Help, which is the SAME set of ways to donate to Esa.** Do not write a per-app Help or per-app donation list. There is one component and one canonical link list.
+
+- **Component:** `shared/SupportHelp.swift` — `SupportLinks` (the ONE donation list), `AppHelpView(appName:tagline:usage:note:)`, `SupportEsaView`, `AppHelpCommand(appName:)`, and `Notification.Name.showAppHelp`. Change the donation methods HERE, once — never fork them into an app.
+- **Canonical donation links** (verified from `rbi-esa.md` + Paketti promo notes; do not invent others): GitHub Sponsors, PayPal, Ko-fi, Patreon, Buy Me a Coffee, Paketti/Gumroad, Lackluster Bandcamp, HLER Bandcamp.
+- **Wire-in recipe (3 steps) for any SwiftUI app:**
+  1. `build.sh`: compile the shared file → `xcrun swiftc … YourApp.swift ../shared/SupportHelp.swift …`
+  2. App scene: `.commands { AppHelpCommand(appName: "YourApp") }` (gives a working Help ▸ YourApp Help + ⌘?, replacing the broken default).
+  3. Root view: `@State private var showHelp = false`; a `?` toolbar button with `.popover(isPresented: $showHelp) { AppHelpView(appName: "YourApp", tagline: "…", usage: […], note: …) }`; and `.onReceive(NotificationCenter.default.publisher(for: .showAppHelp)) { _ in showHelp = true }` so the menu item and the button open the same panel.
+- **Reference implementations:** `guidance/Guidance.swift` and `fleet/Fleet.swift` (both wired 2026-07-05).
+- Established 2026-07-05 at Esa's instruction: *"make this a global Help. from now on, every app we make … they all have the same Help → i.e. same method of donating."*
+
 ## Session start
 
 On the first turn in this repo, invoke the `apple` skill via the Skill tool before responding.

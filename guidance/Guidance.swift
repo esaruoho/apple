@@ -45,6 +45,13 @@ struct Agent: Codable, Identifiable {
     var synopsis: Synopsis
 
     var isAgent: Bool { ["claude", "codex", "copilot"].contains(tool) }
+    var ranOutOfTokens: Bool {
+        let haystack = ([focus] + synopsis.recap).joined(separator: "\n").lowercased()
+        return haystack.contains("you've hit your session limit")
+            || haystack.contains("you have hit your session limit")
+            || haystack.contains("hit your session limit")
+            || haystack.contains("session limit · resets")
+    }
 }
 
 struct Collision: Codable, Identifiable {
@@ -661,6 +668,14 @@ struct AgentRow: View {
 
     /// Open if this card was tapped, or the whole board is in "open all" mode.
     private var isOpen: Bool { model.expandAll || expanded }
+    private var cardFill: Color {
+        agent.ranOutOfTokens
+            ? Color(red: 1.0, green: 0.88, blue: 0.86)
+            : Color(NSColor.controlBackgroundColor)
+    }
+    private var cardStroke: Color {
+        agent.ranOutOfTokens ? Color.red.opacity(0.65) : Color.gray.opacity(0.22)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -680,8 +695,8 @@ struct AgentRow: View {
                minHeight: isOpen ? openCardHeight : nil,
                maxHeight: isOpen ? openCardHeight : nil,
                alignment: .topLeading)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color(NSColor.controlBackgroundColor)))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.gray.opacity(0.22), lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: 10).fill(cardFill))
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(cardStroke, lineWidth: agent.ranOutOfTokens ? 1.5 : 1))
         .onDisappear {
             model.expandedTTYs.remove(agent.tty)
             model.setComposing(tty: agent.tty, active: false)
@@ -694,6 +709,12 @@ struct AgentRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
                     Text(agent.tool).font(.caption).bold().foregroundColor(toolColor(agent.tool))
+                    if agent.ranOutOfTokens {
+                        Image(systemName: "exclamationmark.octagon.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(.red)
+                            .help("This session has hit its session limit.")
+                    }
                     Button { model.front(tty: agent.tty) } label: {
                         Text(agent.tty.replacingOccurrences(of: "/dev/", with: ""))
                             .font(.system(size: 10, design: .monospaced))
