@@ -1,4 +1,4 @@
-# CLI Tools Index — 293 tools in bin/
+# CLI Tools Index — 285 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -31,7 +31,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
 `apple-translate` — Apple Translation framework via a hidden SwiftUI host. — `bin/apple-translate`
 `apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
-`applelist` — apple.sh — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/applelist`
 `archof` — the architecture of ANY git repo, whitelabeled. — `bin/archof`
 `ask` — Voice Dictation + Claude — `bin/ask`
 `asobjc-tag-demo.applescript` — asobjc-tag-demo.applescript — `bin/asobjc-tag-demo.applescript`
@@ -68,7 +67,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `convergence` — (no description) — `bin/convergence`
 `converse` — (no description) — `bin/converse`
-`convey` — (no description) — `bin/convey`
 `create-image` — image-create — generate an image with Apple's on-device Image Playground. — `bin/create-image`
 `describe-submit` — scene-describe an image via the Mac Mini's local VLM (Ollama), — `bin/describe-submit`
 `describe-worker` — (no description) — `bin/describe-worker`
@@ -91,7 +89,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `esarmbp` — (no description) — `bin/esarmbp`
 `extract-icons.sh` — Extract Apple app icons as PNG for Loupedeck Live — `bin/extract-icons.sh`
 `fa-analyze` — (no description) — `bin/fa-analyze`
-`fa-apple-skills` — (no description) — `bin/fa-apple-skills`
 `fa-gdrive-analysis-mailer` — (no description) — `bin/fa-gdrive-analysis-mailer`
 `fa-lint-loop` — (no description) — `bin/fa-lint-loop`
 `fa-paper` — (no description) — `bin/fa-paper`
@@ -129,7 +126,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `gen-features-index.py` — (no description) — `bin/gen-features-index.py`
 `gen-skill-indexes.py` — (no description) — `bin/gen-skill-indexes.py`
 `ghc` — GitHub Clone + Claude — `bin/ghc`
-`git-feature-wall` — ZERO-TOKEN Apple-keynote "feature wall" from ANY git repo. — `bin/git-feature-wall`
 `guidance` — (no description) — `bin/guidance`
 `health-export` — (no description) — `bin/health-export`
 `hertsi` — (no description) — `bin/hertsi`
@@ -216,7 +212,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-index-download-targets.py` — (no description) — `bin/sal-index-download-targets.py`
 `sal-mirror.py` — (no description) — `bin/sal-mirror.py`
 `sal-paketti-demo.sh` — 60-second live demo of the Hey Sal × Paketti chain. — `bin/sal-paketti-demo.sh`
-`sal-qr` — (no description) — `bin/sal-qr`
 `sal-recover-downloads.py` — (no description) — `bin/sal-recover-downloads.py`
 `sal-resolve-podcast-mp3s.py` — (no description) — `bin/sal-resolve-podcast-mp3s.py`
 `sal-siri-install.sh` — Phase 6 — Install Sal's Siri-on-Mac router files into the user library. — `bin/sal-siri-install.sh`
@@ -224,7 +219,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-siri-match.py` — (no description) — `bin/sal-siri-match.py`
 `sal-siri-on-mac-rebuild.py` — (no description) — `bin/sal-siri-on-mac-rebuild.py`
 `sal-siri-read-recent-turns.py` — (no description) — `bin/sal-siri-read-recent-turns.py`
-`sal-take-photo` — (no description) — `bin/sal-take-photo`
 `sal-transcribe-podcasts.sh` — orchestrator for Sal Soghoian Apple Podcasts. — `bin/sal-transcribe-podcasts.sh`
 `sal-transcribe-youtube.sh` — submits the 16 Sal YouTube interviews to whisp — `bin/sal-transcribe-youtube.sh`
 `say-karaoke` — speak text + emit each word's char range as spoken (karaoke highlight). — `bin/say-karaoke`
@@ -237,8 +231,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `send-to-media-editor` — (no description) — `bin/send-to-media-editor`
 `sentiment-map-svg` — (no description) — `bin/sentiment-map-svg`
 `sessions` — (no description) — `bin/sessions`
-`sessions-recover` — (no description) — `bin/sessions-recover`
-`sgrep` — (no description) — `bin/sgrep`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`
 `slideshow.py` — (no description) — `bin/slideshow.py`
