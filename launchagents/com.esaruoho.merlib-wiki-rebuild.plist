@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.esaruoho.merlib-wiki-rebuild</string>
+
+  <!-- Regenerate the merlib wiki (pages -> INDEX -> view) whenever a canonical
+       ontology file changes. Read-only on ontology; writes wiki/ (which is NOT
+       watched, so no feedback loop). Generation is idempotent, so only changed
+       pages are rewritten. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/esaruoho/work/apple/bin/wiki-rebuild.sh</string>
+    <string>/Users/esaruoho/work/merlib-dump</string>
+  </array>
+
+  <!-- Watch the three canonical files directly (WatchPaths on a directory misses
+       in-place edits; on files it catches them). New *additions*.yaml still need a
+       deliberate `wiki-rebuild.sh --merge`, so they are intentionally not watched. -->
+  <key>WatchPaths</key>
+  <array>
+    <string>/Users/esaruoho/work/merlib-dump/ontology/people.yaml</string>
+    <string>/Users/esaruoho/work/merlib-dump/ontology/concepts.yaml</string>
+    <string>/Users/esaruoho/work/merlib-dump/ontology/devices.yaml</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <!-- Debounce: launchd will not relaunch more often than this. -->
+  <key>ThrottleInterval</key>
+  <integer>15</integer>
+
+  <key>StandardOutPath</key>
+  <string>/Users/esaruoho/Library/Logs/merlib-wiki-rebuild.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/esaruoho/Library/Logs/merlib-wiki-rebuild.log</string>
+</dict>
+</plist>

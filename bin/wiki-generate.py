@@ -243,7 +243,7 @@ def main():
         titles[cat] = {s: title_of(v, s) for s, v in d.items()}
         present[cat] = set(d.keys())
 
-    created = updated = skipped = scrubbed = 0
+    created = updated = unchanged = skipped = scrubbed = 0
     for fn, cat, kind in SPEC:
         if cat not in data:
             continue
@@ -255,20 +255,23 @@ def main():
             dest = outdir / (slug + ".md")
             if dest.exists() and not is_generated(dest):
                 skipped += 1; continue           # curated → never touch
-            if dry:
-                created += 1; continue
-            outdir.mkdir(parents=True, exist_ok=True)
-            existed = dest.exists()
-            dest.write_text(render(cat, kind, slug, entry, titles, present))
-            if existed:
-                updated += 1
+            content = render(cat, kind, slug, entry, titles, present)
+            if dest.exists():
+                if dest.read_text() == content:  # idempotent: no churn, no Syncthing storm
+                    unchanged += 1; continue
+                if dry:
+                    updated += 1; continue
+                dest.write_text(content); updated += 1
             else:
-                created += 1
+                if dry:
+                    created += 1; continue
+                outdir.mkdir(parents=True, exist_ok=True)
+                dest.write_text(content); created += 1
 
-    print("%s: people=%d devices=%d concepts=%d | created=%d updated=%d curated-preserved=%d kortela-skipped=%d" % (
+    print("%s: people=%d devices=%d concepts=%d | created=%d updated=%d unchanged=%d curated-preserved=%d kortela-skipped=%d" % (
         "DRY-RUN" if dry else "WROTE",
         len(present.get("people", [])), len(present.get("devices", [])), len(present.get("concepts", [])),
-        created, updated, skipped, scrubbed))
+        created, updated, unchanged, skipped, scrubbed))
 
 
 if __name__ == "__main__":
