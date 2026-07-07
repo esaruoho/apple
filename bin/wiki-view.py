@@ -190,7 +190,7 @@ def build():
     pages = {}
     for path in sorted(WIKI.rglob("*.md")):
         rel = path.relative_to(WIKI)
-        if rel.name in {"INDEX.md", "README.md", "log.md"} or len(rel.parts) < 2:
+        if rel.name in {"INDEX.md", "README.md", "log.md"} or rel.name.endswith(".lesser.md") or len(rel.parts) < 2:
             continue
         cat = rel.parts[0]
         slug = path.stem

@@ -121,8 +121,8 @@ def main():
 
     for path in sorted(WIKI.rglob("*.md")):
         rel = path.relative_to(WIKI)
-        if rel.name in {"INDEX.md", "README.md", "log.md"}:
-            continue
+        if rel.name in {"INDEX.md", "README.md", "log.md"} or rel.name.endswith(".lesser.md"):
+            continue  # .lesser.md = subordinate fm-mlx takes, not canonical pages
         parts = rel.parts
         if len(parts) < 2:
             continue  # top-level files (none expected)
