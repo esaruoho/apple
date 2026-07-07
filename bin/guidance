@@ -1359,7 +1359,7 @@ def schedule_cli(argv):
         n = schedule_clear_resolved()
         print(f"cleared {n}")
         return 0
-    if sub == "add":
+    if sub in {"add", "ensure"}:
         opts = {"--tty": "", "--at": "", "--text": "", "--tool": "",
                 "--space": "", "--name": "", "--note": ""}
         i = 1
@@ -1370,11 +1370,12 @@ def schedule_cli(argv):
             else:
                 i += 1
         if not opts["--tty"] or not opts["--at"] or not opts["--text"]:
-            print("usage: guidance schedule add --tty <tty> --at <epoch|HH:MM|+Nm> --text <msg> [--tool --space --name --note]")
+            print(f"usage: guidance schedule {sub} --tty <tty> --at <epoch|HH:MM|+Nm> --text <msg> [--tool --space --name --note]")
             return 2
-        entry = schedule_add(opts["--tty"], opts["--at"], opts["--text"],
-                             tool=opts["--tool"], space=opts["--space"],
-                             name=opts["--name"], note=opts["--note"])
+        fn = schedule_ensure if sub == "ensure" else schedule_add
+        entry = fn(opts["--tty"], opts["--at"], opts["--text"],
+                   tool=opts["--tool"], space=opts["--space"],
+                   name=opts["--name"], note=opts["--note"])
         print(json.dumps(entry))
         return 0 if "error" not in entry else 1
     print(f"unknown schedule subcommand: {sub}")

@@ -43,15 +43,21 @@ struct Agent: Codable, Identifiable {
     var focus: String
     var files: [String]
     var synopsis: Synopsis
+    var session_limit: Bool?
+    var session_limit_reset_epoch: Int?
+    var session_limit_reset_text: String?
 
     var isAgent: Bool { ["claude", "codex", "copilot"].contains(tool) }
     var ranOutOfTokens: Bool {
+        if session_limit == true { return true }
         let haystack = ([focus] + synopsis.recap).joined(separator: "\n").lowercased()
         return haystack.contains("you've hit your session limit")
             || haystack.contains("you have hit your session limit")
             || haystack.contains("hit your session limit")
             || haystack.contains("session limit · resets")
     }
+    var resetEpoch: Int { session_limit_reset_epoch ?? 0 }
+    var autoContinueEpoch: Int { resetEpoch > 0 ? resetEpoch + 60 : 0 }
 }
 
 struct Collision: Codable, Identifiable {
@@ -165,6 +171,13 @@ final class GuidanceModel: ObservableObject {
     @Published var expandAll: Bool = UserDefaults.standard.bool(forKey: "guidance.expandAll") {
         didSet { UserDefaults.standard.set(expandAll, forKey: "guidance.expandAll") }
     }
+    @Published var autoContinueLimits: Bool = {
+        let k = "guidance.autoContinueLimits"
+        if UserDefaults.standard.object(forKey: k) == nil { return true }
+        return UserDefaults.standard.bool(forKey: k)
+    }() {
+        didSet { UserDefaults.standard.set(autoContinueLimits, forKey: "guidance.autoContinueLimits") }
+    }
 
     private var reloading = false
     private var timer: Timer?
@@ -242,6 +255,7 @@ final class GuidanceModel: ObservableObject {
                 self.collisions = d.collisions
                 self.schedule = d.schedule ?? []
                 self.generated = d.generated
+                if self.autoContinueLimits { self.ensureAutoContinues(for: d.agents) }
             }
         }
     }
@@ -293,6 +307,41 @@ final class GuidanceModel: ObservableObject {
                 self.reload(manual: true)
             }
         }
+    }
+
+    /// Idempotently queue "please continue the work" after a parsed session-limit
+    /// reset. The CLI dedupes, so calling this on every refresh is safe.
+    func ensureAutoContinues(for agents: [Agent]) {
+        let targets = agents.filter { $0.ranOutOfTokens && $0.autoContinueEpoch > 0 }
+        guard !targets.isEmpty else { return }
+        DispatchQueue.global(qos: .utility).async {
+            for a in targets {
+                let note = "auto-continue-session-limit:\(a.tty):\(a.resetEpoch)"
+                let p = Process()
+                p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+                p.arguments = ["python3", GuidanceConfig.bin, "schedule", "ensure",
+                               "--tty", a.tty,
+                               "--at", String(a.autoContinueEpoch),
+                               "--text", "please continue the work",
+                               "--tool", a.tool,
+                               "--space", a.space,
+                               "--name", a.name,
+                               "--note", note]
+                p.standardOutput = Pipe(); p.standardError = Pipe()
+                do {
+                    let done = DispatchSemaphore(value: 0)
+                    p.terminationHandler = { _ in done.signal() }
+                    try p.run()
+                    if done.wait(timeout: .now() + 8) == .timedOut { p.terminate() }
+                } catch { }
+            }
+        }
+    }
+
+    func ensureAutoContinue(for agent: Agent) {
+        ensureAutoContinues(for: [agent])
+        flash("auto-continue queued")
+        reload(manual: true)
     }
 
     func scheduleCancel(_ id: String) {
@@ -616,6 +665,14 @@ struct GuidanceView: View {
             }
             .buttonStyle(.borderless)
             .help(model.expandAll ? "All cards open (post-it wall) — click to collapse" : "Open all cards (post-it wall)")
+            Button { model.autoContinueLimits.toggle() } label: {
+                Image(systemName: model.autoContinueLimits ? "clock.badge.checkmark.fill" : "clock.badge.checkmark")
+            }
+            .buttonStyle(.borderless)
+            .foregroundColor(model.autoContinueLimits ? .accentColor : .secondary)
+            .help(model.autoContinueLimits
+                  ? "Auto-continue session-limit cards one minute after their reset time"
+                  : "Auto-continue session-limit cards is off")
             Spacer()
             // Single merged label + a fixed-size spinner slot, so the header
             // never reflows/jumps when a refresh starts or finishes.
@@ -714,6 +771,17 @@ struct AgentRow: View {
                             .font(.system(size: 10))
                             .foregroundColor(.red)
                             .help("This session has hit its session limit.")
+                        if agent.autoContinueEpoch > 0 {
+                            Button {
+                                model.ensureAutoContinue(for: agent)
+                            } label: {
+                                Text("continue \(hhmmss(agent.autoContinueEpoch))")
+                                    .font(.system(size: 10, weight: .semibold))
+                            }
+                            .buttonStyle(.plain)
+                            .foregroundColor(.accentColor)
+                            .help("Queue “please continue the work” one minute after the reset time")
+                        }
                     }
                     Button { model.front(tty: agent.tty) } label: {
                         Text(agent.tty.replacingOccurrences(of: "/dev/", with: ""))
