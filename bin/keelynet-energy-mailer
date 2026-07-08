@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+"""keelynet-energy-mailer — analyze each KeelyNet ENERGY file and EMAIL it, one at a time.
+
+For every file in keelynet/ENERGY/, produce a grounded analysis from BOTH brains:
+  - freellmapi (Mini gateway :3001, nemotron-3-super-120b) = the main analysis
+  - fm-mlx     (Mini MLX :8080, Qwen3-4B)                   = a shorter "lesser take"
+…and send it as one HTML email via AgentMail. Idempotent + resumable (state file), so it
+can be stopped/restarted and never re-mails a file. Sequential, one email per file.
+
+  keelynet-energy-mailer --limit 1        # send the next 1 (test)
+  keelynet-energy-mailer --all            # send all remaining
+  keelynet-energy-mailer --to X --limit 5
+
+Archive discipline baked into the prompt: claims tagged Claimed; absence of verification stated
+factually; NO mainstream-dismissal verdicts ("pseudoscientific"/"debunked"/"violates thermodynamics");
+open-system framing (which reservoir + is capture demonstrated); grounded strictly in the text.
+Keys: ~/.agentmail.key, ~/.fm-free.key. Never in git.
+"""
+import json, os, re, sys, time, html as _html, urllib.parse, urllib.request
+from pathlib import Path
+
+HOME = Path.home()
+SRCDIR = HOME/"work"/"merlib-dump"/"keelynet"/"ENERGY"
+STATE  = Path(os.environ.get("KEELYNET_MAILER_STATE", HOME/"work"/"comms"/"queue"/"keelynet-energy-mailer-state.json"))
+TO     = os.environ.get("KEELYNET_MAILER_TO", "esaruoho@gmail.com")
+
+FM_HOST   = "http://cloudcitymacmini:3001/v1/chat/completions"     # freellmapi gateway
+FM_MODEL  = os.environ.get("KEELYNET_FM_MODEL", "nemotron-3-super-120b")
+MLX_HOST  = "http://cloudcitymacmini:8080/v1/chat/completions"     # fm-mlx
+MLX_MODEL = "mlx-community/Qwen3-4B-Instruct-2507-8bit"
+AM_BASE   = "https://api.agentmail.to/v0"
+INBOX     = "cloudcity-llm@agentmail.to"
+SCRUB     = re.compile(r"kortela", re.I)
+
+MAIN_SYS = ("You are a senior free-energy archivist analyzing ONE KeelyNet primary text file "
+            "(BBS-era ASCII, often fragmentary). Produce a grounded analysis (~400 words): (1) what "
+            "this document is (kind, author/date if stated); (2) the people, devices, and central "
+            "claims; (3) archive relevance and cross-connections a researcher would draw. DISCIPLINE: "
+            "tag claims as Claimed; state absence of verification factually; do NOT add mainstream-"
+            "dismissal verdicts ('pseudoscientific', 'debunked', 'violates thermodynamics'); use open-"
+            "system framing — the honest question is which reservoir and whether capture is demonstrated, "
+            "never 'is it real'. Ground STRICTLY in the provided text; invent nothing; if the text is "
+            "fragmentary or garbled, say so. Output Markdown with ## headings.")
+LESSER_SYS = ("You are a local model writing a short 'lesser take' (~180 words) — a plain-language second "
+              "reading of the same KeelyNet file, explicitly subordinate to the main analysis. Same "
+              "discipline: grounded, Claimed, no dismissal verdicts. Output plain paragraphs.")
+
+def key(env, path):
+    k = os.environ.get(env, "")
+    if not k and Path(path).expanduser().exists(): k = Path(path).expanduser().read_text().strip()
+    return k
+
+def chat(host, model, sysmsg, user, bearer=None, timeout=300, max_tokens=900):
+    hdr = {"Content-Type": "application/json"}
+    if bearer: hdr["Authorization"] = "Bearer " + bearer
+    body = {"model": model, "temperature": 0.3, "max_tokens": max_tokens,
+            "messages": [{"role": "system", "content": sysmsg},
+                         {"role": "user", "content": user}]}
+    req = urllib.request.Request(host, data=json.dumps(body).encode(), headers=hdr)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.load(r)["choices"][0]["message"]["content"].strip()
+
+def md_to_html(md):
+    out = []
+    for block in re.split(r"\n\s*\n", md.strip()):
+        b = block.strip()
+        h = re.match(r"^(#{1,4})\s+(.*)$", b)
+        if h:
+            lvl = len(h.group(1)); out.append("<h%d>%s</h%d>" % (lvl+1, _inline(h.group(2)), lvl+1)); continue
+        if all(re.match(r"^\s*[-*]\s+", ln) for ln in b.splitlines()):
+            items = "".join("<li>%s</li>" % _inline(re.sub(r"^\s*[-*]\s+", "", ln)) for ln in b.splitlines())
+            out.append("<ul>%s</ul>" % items); continue
+        out.append("<p>%s</p>" % _inline(b).replace("\n", "<br>"))
+    return "\n".join(out)
+
+def _inline(t):
+    t = _html.escape(t)
+    t = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
+    t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
+    return t
+
+def send_email(subject, text, html_body):
+    k = key("AGENTMAIL_API_KEY", "~/.agentmail.key")
+    if not k: sys.exit("no AgentMail key")
+    url = "%s/inboxes/%s/messages/send" % (AM_BASE, urllib.parse.quote(INBOX, safe="@"))
+    body = json.dumps({"to": [TO], "subject": subject, "text": text, "html": html_body}).encode()
+    req = urllib.request.Request(url, data=body, method="POST",
+                                 headers={"Content-Type": "application/json", "Authorization": "Bearer " + k})
+    with urllib.request.urlopen(req, timeout=90) as r:
+        return json.load(r)
+
+def load_state():
+    if STATE.exists():
+        try: return set(json.loads(STATE.read_text()).get("done", []))
+        except Exception: return set()
+    return set()
+
+def save_state(done):
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    STATE.write_text(json.dumps({"done": sorted(done)}, indent=0))
+
+def main():
+    limit = None
+    if "--all" not in sys.argv:
+        for i, a in enumerate(sys.argv):
+            if a == "--limit" and i+1 < len(sys.argv): limit = int(sys.argv[i+1])
+        if limit is None: limit = 1
+    fmk = key("FM_FREE_KEY", "~/.fm-free.key")
+    done = load_state()
+    files = sorted(p for p in SRCDIR.glob("*.md"))
+    todo = [p for p in files if p.name not in done]
+    print("KeelyNet ENERGY mailer → %s | %d files, %d done, %d remaining%s" %
+          (TO, len(files), len(done), len(todo), "" if limit is None else " (this run: %d)" % limit))
+    sent = 0
+    for p in todo:
+        if limit is not None and sent >= limit: break
+        name = p.stem
+        text = p.read_text(errors="replace")
+        if SCRUB.search(text):
+            print("  SKIP %s (kortela)" % name); done.add(p.name); save_state(done); continue
+        t0 = time.time()
+        try:
+            main_an = chat(FM_HOST, FM_MODEL, MAIN_SYS, "KeelyNet file: %s.md\n\n%s" % (name, text[:14000]),
+                           bearer=fmk, max_tokens=1100)
+        except Exception as e:
+            print("  FAIL %s freellmapi: %s" % (name, e)); break
+        try:
+            lesser = chat(MLX_HOST, MLX_MODEL, LESSER_SYS, "KeelyNet file: %s.md\n\n%s" % (name, text[:6000]),
+                          max_tokens=500)
+        except Exception as e:
+            lesser = "(fm-mlx lesser take unavailable: %s)" % e
+        for v in ("main_an", "lesser"):
+            if SCRUB.search(locals()[v]):
+                if v == "main_an": main_an = SCRUB.sub("[redacted]", main_an)
+                else: lesser = SCRUB.sub("[redacted]", lesser)
+        dt = time.time() - t0
+        subject = "KeelyNet ENERGY — %s" % name
+        text_body = ("KeelyNet ENERGY file: %s.md\nSource: keelynet/ENERGY/%s.md\n"
+                     "Analysis: freellmapi (%s) + fm-mlx lesser take (Qwen3-4B). Claimed/unverified.\n\n"
+                     "=== FREELLMAPI ANALYSIS ===\n%s\n\n=== FM-MLX LESSER TAKE ===\n%s\n"
+                     % (name, name, FM_MODEL, main_an, lesser))
+        html_body = (
+            "<div style='font-family:-apple-system,Segoe UI,sans-serif;max-width:680px'>"
+            "<p style='color:#888;font-size:12px'>KeelyNet ENERGY · <code>keelynet/ENERGY/%s.md</code> · "
+            "freellmapi <b>%s</b> + fm-mlx lesser (Qwen3-4B) · <b>Claimed / unverified</b></p>"
+            "<h2>%s</h2>%s<hr>"
+            "<h3 style='color:#888'>fm-mlx lesser take</h3>%s"
+            "<p style='color:#aaa;font-size:11px'>Generated on the Mac Mini (freellmapi :3001 + MLX :8080), "
+            "zero-cloud-cost brains where local. Grounded in the source file; not independently verified.</p></div>"
+            % (name, FM_MODEL, _html.escape(name), md_to_html(main_an), md_to_html(lesser)))
+        try:
+            res = send_email(subject, text_body, html_body)
+        except Exception as e:
+            print("  FAIL %s send: %s" % (name, e)); break
+        done.add(p.name); save_state(done); sent += 1
+        print("  SENT %-14s %5.1fs  (main %dw, lesser %dw)  msg=%s"
+              % (name, dt, len(main_an.split()), len(lesser.split()), (res or {}).get("message_id", "?")))
+    print("done: %d sent this run, %d/%d total" % (sent, len(done), len(files)))
+
+if __name__ == "__main__":
+    main()
