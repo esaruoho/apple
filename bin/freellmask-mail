@@ -806,11 +806,28 @@ def _email_owner_approval(k, sender_frm, sender_em, space, subj, preview, pend_i
     except Exception as e:
         print(f"  approval email failed: {e}"); return False
 
+def _llm_classify_space(subject, body):
+    """The accurate fallback for 'which space?' — ask the FreeLLMAPI brain to pick ONE space id from
+    the SpaceCard vocabulary, used ONLY when keyword scoring is inconclusive (so no cost on clearly-
+    routed mail). Same brain the convey soft legs use to emit their SPACE hint. Returns a valid id
+    or '' (never raises into routing). Gated + cheap: 8 tokens, temp 0, content clipped."""
+    ids=list(SPACECARDS.keys())
+    txt=f"Subject: {subject or ''}\n\n{(body or '')[:6000]}"
+    sysm=("Classify this message into exactly ONE space. Reply with ONLY one id from this list, nothing "
+          "else: "+", ".join(ids)+".")
+    try:
+        out,_=_fm_call([{"role":"system","content":sysm},{"role":"user","content":txt}],
+                       max_tokens=8, temperature=0)
+    except Exception:
+        return ""
+    m=re.search(r'([a-z][a-z\-]+)', (out or "").lower())
+    return m.group(1) if (m and m.group(1) in SPACECARDS) else ""
+
 def route_space(sender, subject, body, wslugs=None):
     """Pick ONE primary space. Explicit signals win (sender identity, [space:X] tag, a penpal block);
-    then keyword scoring; then the free-energy WIKI match (the pre-existing behaviour); else general.
-    NEVER silently defaults to free-energy — free-energy only wins when it is the routed space.
-    Returns (space_id, reason)."""
+    then strong keyword scoring; then — when keywords are INCONCLUSIVE — an LLM classifier (the same
+    space brain convey's soft legs use); then the free-energy WIKI match; else general. NEVER silently
+    defaults to free-energy — it only wins when routed. Returns (space_id, reason)."""
     s=(sender or "").lower(); text=f"{subject or ''}\n{body or ''}".lower()
     mtag=re.search(r'(?:\[space:|x-space:\s*|space=)\s*([a-z\-]+)', text)
     if mtag and mtag.group(1) in SPACECARDS: return mtag.group(1), "explicit-tag"
@@ -822,6 +839,10 @@ def route_space(sender, subject, body, wslugs=None):
         sc=sum(1 for w in (card.get("keywords") or []) if w in text)
         if sc>best_s: best, best_s = sid, sc
     if best and best_s>=2: return best, f"keywords:{best}({best_s})"
+    # keyword scoring inconclusive → ASK the brain (fixes 'realizing what space to access'), gated.
+    if os.environ.get("FREELLMASK_MAIL_LLM_ROUTE","1")!="0":
+        llm=_llm_classify_space(subject, body)
+        if llm: return llm, "llm-classify"
     if wslugs: return "free-energy", "wiki-match"
     if best and best_s>=1: return best, f"keywords:{best}({best_s})"
     return "general", "default"
