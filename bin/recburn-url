@@ -1,0 +1,15 @@
+#!/bin/bash
+# recburn-url — the guaranteed-portable control seam for RecBurn.app.
+#
+# Drives the app's recburn:// URL scheme, which RecBurn.app routes through the ONE handler
+# (RecBurnController.handleURL). Use this from a Shortcuts "Run Shell Script" action, an
+# Automator Quick Action, a Loupedeck/Stream Deck button, or the terminal:
+#
+#   recburn-url            # toggle: start if idle, stop + finalize if recording
+#   recburn-url start      # start a recording
+#   recburn-url stop       # stop + finalize
+#   recburn-url 'start?mic=1&burn=1&pip=1&corner=br'   # start with overrides
+#
+# No arguments defaults to toggle — ideal for a single hardware button or hotkey.
+action="${1:-toggle}"
+exec /usr/bin/open "recburn://${action}"

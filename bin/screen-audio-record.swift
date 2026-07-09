@@ -46,6 +46,25 @@ struct Options {
     var burnPrompt: String?   // vocabulary bias → rec-subtitle --prompt → whisper --initial_prompt
 }
 
+// MARK: - Typed handoff manifest
+//
+// The recorder is the pipeline's orchestrator: it alone knows every artifact it produced
+// (base capture, flattened YouTube version, .srt, subtitled video) and which one is final.
+// Instead of downstream consumers (RecBurn.app, a Shortcut, a Service) scraping the human
+// "✓ …" prose off stdout — brittle the day the wording changes — the recorder emits a typed
+// manifest: a sidecar `<base-stem>.recburn.json` AND a single sentinel stdout line
+// `RECBURN-MANIFEST: <path>`. Structured data flows between actions; nobody greps prose.
+struct RecBurnManifest: Codable {
+    var schema = "recburn/1"
+    var base: String          // the raw ScreenCaptureKit capture (always present)
+    var flat: String?         // YouTube-ready single-track mix (only if --auto-flatten + mic used)
+    var subtitled: String?    // hard-burned-subtitle video (only if --burn succeeded)
+    var srt: String?          // soft caption sidecar (only if --burn produced one)
+    var final: String         // the artifact to reveal / hand off (subtitled ?? flat ?? base)
+    var lengthSeconds: Double
+    var micRecorded: Bool
+}
+
 func parseArgs() -> Options {
     var o = Options()
     var it = CommandLine.arguments.dropFirst().makeIterator()
@@ -588,6 +607,21 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         return nil
     }
 
+    /// Write the typed handoff: a `<base-stem>.recburn.json` sidecar (durable, re-readable by
+    /// any consumer — the app, a Shortcut, a Service) plus one sentinel stdout line pointing at
+    /// it. This replaces stdout-prose scraping as the machine-readable result of the pipeline.
+    func writeManifest(_ m: RecBurnManifest) {
+        let path = (m.base as NSString).deletingPathExtension + ".recburn.json"
+        let enc = JSONEncoder(); enc.outputFormatting = [.prettyPrinted, .sortedKeys]
+        guard let data = try? enc.encode(m) else { return }
+        do {
+            try data.write(to: URL(fileURLWithPath: path))
+            print("RECBURN-MANIFEST: \(path)")
+        } catch {
+            FileHandle.standardError.write("manifest: could not write \(path): \(error.localizedDescription)\n".data(using: .utf8)!)
+        }
+    }
+
     var finishing = false
     func finish() {
         lock.lock(); if finishing { lock.unlock(); return }; finishing = true; lock.unlock()
@@ -609,13 +643,23 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                         // single-mixed-track copy (YouTube/QuickTime play only the FIRST audio
                         // track, so a 2-track file would lose the voice). Reveal that one.
                         var revealTarget = self.opts.outPath
+                        var flatOut: String?, subOut: String?, srtOut: String?
                         if self.opts.autoFlatten && self.micEverOn,
                            let flat = self.makeYouTubeVersion(self.opts.outPath) {
-                            revealTarget = flat
+                            revealTarget = flat; flatOut = flat
                         }
-                        if self.opts.burn, let subbed = self.makeSubtitledVersion(revealTarget) {
-                            revealTarget = subbed
+                        if self.opts.burn {
+                            let subInput = revealTarget   // rec-subtitle names the .srt off THIS stem
+                            if let subbed = self.makeSubtitledVersion(subInput) {
+                                subOut = subbed; revealTarget = subbed
+                                let srt = (subInput as NSString).deletingPathExtension + ".srt"
+                                if FileManager.default.fileExists(atPath: srt) { srtOut = srt }
+                            }
                         }
+                        // Emit the typed handoff so consumers never parse the prose above.
+                        self.writeManifest(RecBurnManifest(
+                            base: self.opts.outPath, flat: flatOut, subtitled: subOut, srt: srtOut,
+                            final: revealTarget, lengthSeconds: secs, micRecorded: self.micEverOn))
                         if self.opts.reveal {
                             let p = Process()
                             p.launchPath = "/usr/bin/open"
