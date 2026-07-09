@@ -19,12 +19,15 @@ USAGE:
   recburn-youtube --latest         # upload the last finished recording (reads last.recburn.json)
   recburn-youtube --auth           # just run the OAuth flow and cache the token, then exit
 """
-import argparse, json, os, sys, time, urllib.parse, urllib.request, urllib.error, webbrowser, http.server, threading, socket
+import argparse, datetime, json, os, sys, time, urllib.parse, urllib.request, urllib.error, webbrowser, http.server, threading, socket
 
 CFG_DIR   = os.path.expanduser("~/.config/recburn")
 CLIENT    = os.environ.get("RECBURN_YT_CLIENT", os.path.join(CFG_DIR, "youtube_client.json"))
 TOKEN     = os.path.join(CFG_DIR, "youtube_token.json")
-SCOPE     = "https://www.googleapis.com/auth/youtube.upload"
+# youtube.upload uploads the video; youtube.force-ssl is required to attach a caption track
+# (captions.insert). Adding force-ssl means any token cached under the old upload-only scope must
+# be re-authorized once (delete youtube_token.json or run --auth).
+SCOPE     = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl"
 LAST_MANIFEST = os.path.expanduser("~/Library/Application Support/RecBurn/last.recburn.json")
 CHUNK     = 8 * 1024 * 1024   # 8 MiB (must be a multiple of 256 KiB for resumable PUTs)
 
@@ -150,12 +153,53 @@ def _upload(path, meta, access):
     die("upload ended without a final response")
 
 
+def _insert_caption(video_id, srt_path, lang, name, access):
+    """Attach an .srt as a real, selectable caption track (captions.insert, multipart)."""
+    boundary = "recburnCaptionBoundary7e1f"
+    meta = json.dumps({"snippet": {"videoId": video_id, "language": lang, "name": name, "isDraft": False}}).encode()
+    with open(srt_path, "rb") as f:
+        srt = f.read()
+    body = (("--%s\r\n" % boundary).encode()
+            + b"Content-Type: application/json; charset=UTF-8\r\n\r\n" + meta + b"\r\n"
+            + ("--%s\r\n" % boundary).encode()
+            + b"Content-Type: application/octet-stream\r\n\r\n" + srt + b"\r\n"
+            + ("--%s--\r\n" % boundary).encode())
+    req = urllib.request.Request(
+        "https://www.googleapis.com/upload/youtube/v3/captions?part=snippet&uploadType=multipart",
+        data=body, method="POST")
+    req.add_header("Authorization", "Bearer " + access)
+    req.add_header("Content-Type", "multipart/related; boundary=%s" % boundary)
+    req.add_header("Content-Length", str(len(body)))
+    try:
+        with urllib.request.urlopen(req) as r:
+            json.load(r)
+        print("recburn-youtube: attached caption track (%s)" % lang, file=sys.stderr)
+        return True
+    except urllib.error.HTTPError as e:
+        print("recburn-youtube: caption upload failed HTTP %d: %s"
+              % (e.code, e.read().decode(errors="replace")), file=sys.stderr)
+        return False
+
+
+def _default_title(path):
+    """A readable default title from the file's timestamp, not the raw filename stem."""
+    try:
+        ts = datetime.datetime.fromtimestamp(os.path.getmtime(path))
+        return "Screen recording — " + ts.strftime("%Y-%m-%d %H:%M")
+    except OSError:
+        return os.path.splitext(os.path.basename(path))[0]
+
+
 def main():
     ap = argparse.ArgumentParser(description="Upload a RecBurn recording to YouTube.")
     ap.add_argument("--file"); ap.add_argument("--latest", action="store_true")
     ap.add_argument("--title"); ap.add_argument("--description", default="Recorded with RecBurn.")
     ap.add_argument("--privacy", default="unlisted", choices=["unlisted", "private", "public"])
-    ap.add_argument("--tags", default=""); ap.add_argument("--auth", action="store_true")
+    ap.add_argument("--category", default="28", help="YouTube categoryId (default 28 = Science & Technology)")
+    ap.add_argument("--tags", default="")
+    ap.add_argument("--captions", help="path to an .srt to attach as a caption track")
+    ap.add_argument("--caption-lang", default="en"); ap.add_argument("--no-captions", action="store_true")
+    ap.add_argument("--auth", action="store_true")
     a = ap.parse_args()
 
     if a.auth:
@@ -163,25 +207,34 @@ def main():
 
     path = a.file
     title = a.title
+    captions = a.captions
     if a.latest or not path:
         if not os.path.exists(LAST_MANIFEST):
             die("no --file and no last.recburn.json — record something first, or pass --file")
         m = json.load(open(LAST_MANIFEST))
         path = path or m.get("final")
-        title = title or os.path.splitext(os.path.basename(m.get("final", "recording")))[0]
+        captions = captions or m.get("srt")          # attach the manifest's subtitle track if present
     if not path or not os.path.exists(path):
         die("file not found: %s" % path)
-    title = title or os.path.splitext(os.path.basename(path))[0]
+    title = title or _default_title(path)             # readable timestamp title, not the filename stem
 
-    meta = {"snippet": {"title": title, "description": a.description, "categoryId": "28",
+    meta = {"snippet": {"title": title, "description": a.description, "categoryId": a.category,
                         "tags": [t for t in a.tags.split(",") if t]},
             "status": {"privacyStatus": a.privacy, "selfDeclaredMadeForKids": False}}
     access = _access_token()
-    print("recburn-youtube: uploading %s (%s)…" % (os.path.basename(path), a.privacy), file=sys.stderr)
+    print("recburn-youtube: uploading %s as \"%s\" (%s)…" % (os.path.basename(path), title, a.privacy), file=sys.stderr)
     res = _upload(path, meta, access)
     vid = res.get("id")
     if not vid:
         die("no video id in response: %s" % json.dumps(res)[:300])
+
+    # Attach the .srt as a selectable caption track (in addition to any burned-in subtitles).
+    if captions and not a.no_captions:
+        if os.path.exists(captions):
+            _insert_caption(vid, captions, a.caption_lang, "English" if a.caption_lang == "en" else a.caption_lang, access)
+        else:
+            print("recburn-youtube: caption file not found, skipping: %s" % captions, file=sys.stderr)
+
     print("https://youtu.be/%s" % vid)   # last line = the URL (captured by the Publish intent)
 
 

@@ -168,8 +168,23 @@ Feature: Trigger recburn from anywhere through one seam, and hand off a typed re
   @built
   Scenario: Publish to YouTube is a first-class chainable action
     Given a video file value (e.g. from Stop-and-Return)
-    When the "Publish RecBurn Recording to YouTube" intent runs (params: file, title?, privacy)
+    When the "Publish RecBurn Recording to YouTube" intent runs (params: file, subtitleFile?, title?,
+      description?, category menu, privacy menu)
     Then it locates recburn-youtube (bundled in Contents/MacOS first), shells to it with a real PATH,
       and returns the printed youtu.be URL as a String for the next action
     # cite: PublishToYouTubeIntent.upload(); helper bundled in the app (verified in Contents/MacOS).
     # @built — the shell-out path compiles + resolves; not run against a live upload this session.
+
+  @built
+  Scenario: sane upload defaults — unlisted, timestamp title, category, caption track
+    Given a recording to publish
+    Then privacy defaults to UNLISTED (never auto-public); the title defaults to a readable
+      "Screen recording — YYYY-MM-DD HH:MM" from the file mtime (not the filename stem); category
+      defaults to Science & Technology (--category settable); and when an .srt is present it is
+      attached as a selectable caption track via captions.insert (--latest auto-attaches the
+      manifest srt; --no-captions skips)
+    And the OAuth scope includes youtube.force-ssl (required for captions), so any prior upload-only
+      token must be re-authorized once
+    # cite: recburn-youtube _default_title/_insert_caption/main + SCOPE; py-compiles, CLI verified.
+    # @built — a live upload + caption attach was NOT run (no OAuth client provisioned this session).
+    # @note YouTube forces API uploads from an UNAUDITED project to private regardless of privacyStatus.
