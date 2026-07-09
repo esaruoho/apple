@@ -221,10 +221,10 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "confirm, even if you label it 'example'. Show ONLY the bare verified command (e.g. `xcrun agent skills "
           "export`) and tell the user to run `<command> --help` for the actual flags. Zero invented flags, not "
           "plausible-looking ones.")
-    if viewpoint:   # in-corpus (free-energy) → think out loud + speak in three voices, ONE call, no extra roundtrip
-        struct=("\n\nYour reply MUST contain ALL FIVE of the following markdown headings, in this EXACT order and "
+    if viewpoint:   # in-corpus (free-energy) → think out loud + speak in four voices, ONE call, no extra roundtrip
+        struct=("\n\nYour reply MUST contain ALL SIX of the following markdown headings, in this EXACT order and "
           "spelling. The FIRST line of your reply MUST be the heading '## Thought about it' — never open with the "
-          "answer, never omit the thinking section, never rename it. A reply missing any of these five headings is "
+          "answer, never omit the thinking section, never rename it. A reply missing any of these six headings is "
           "rejected and regenerated.\n"
           "## Thought about it\n(4-7 sentences of GENUINE reasoning — how you're approaching it, what connects "
           "across the sources, where the tension is. Think out loud, here only.)\n"
@@ -233,6 +233,13 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "interchange of two opposed lights, giving and re-giving, all motion spiral/vortular, no dead matter, love as the balancing act)\n"
           "## In Tom Bearden's tone\n(2-4 sentences in Bearden's cadence: scalar/longitudinal EM potentials, "
           "energy from the active vacuum, asymmetric regauging, the dipole's broken symmetry as a negentropy source)\n"
+          "## In Ilya Prigogine's tone\n(2-4 sentences in Prigogine's cadence — measured, humane, precise, a Nobel "
+          "laureate bridging physics and meaning: entropy changes for two reasons only, dS = d_eS + d_iS, and far "
+          "from equilibrium the second law is not the enemy of order but its ENGINE — an open system fed by a flow "
+          "exports entropy and self-organises into a dissipative structure, order paid for by the throughput, not "
+          "stolen from nothing. He AFFIRMS open-system order and COP>1 fed by a real reservoir, and DISTINGUISHES "
+          "it from a perpetuum mobile, which the second law still forbids — that honest boundary is the point, "
+          "never dropped.)\n"
           "## In Hilarion's tone\n(2-4 sentences in the Hilarion channel's cadence: one living substance, "
           "consciousness as ground, gentle didactic cosmology — everything a modulation of the one energy)")
         sysm=viewpoint+"\n\n"+base+struct
@@ -912,7 +919,7 @@ def compose_protocol_reply(full, body, to_email):
     """DETERMINISTIC clean_protocol reply for the envoy-protocol space: one status line + one
     penpal-protocol-v0 block composed IN CODE (schema-valid by construction — real IDs, allowed
     evidence type, plain-string claims), and NOTHING else. No LLM persona, no wiki, no scratchpad,
-    no forced five-heading template — so nemotron token-salad can't contaminate the protocol channel
+    no forced six-heading template — so nemotron token-salad can't contaminate the protocol channel
     and Penpal Gate 2 passes deterministically. Also services the memory gates: a 'declared memory
     bootstrap' rule is WRITTEN to the peers/cybe/envoy namespace, and a 'memory retrieval test'
     READS it back (source: persistent_memory) — Gates 6 & 7. Returns (text, html)."""
@@ -1322,7 +1329,7 @@ def poll_once(verbose=True):
         elif is_protocol_space(full.get("from"), full.get("subject"), raw_body):
             # ENVOY / Penpal space → a DETERMINISTIC clean_protocol reply (code-composed schema-valid
             # penpal block, no persona, no wiki, no scratchpad). This is Staffan's long-requested
-            # clean_protocol mode: the free-energy five-heading template is BYPASSED entirely here.
+            # clean_protocol mode: the free-energy six-heading template is BYPASSED entirely here.
             _who=full.get("from") or ""; _mm=re.search(r"<([^>]+)>", _who)
             _to=(_mm.group(1) if _mm else _who).strip() or BCC
             ptext, phtml = compose_protocol_reply(full, raw_body, _to)
@@ -1349,7 +1356,7 @@ def poll_once(verbose=True):
             if route_text.strip():
                 try: wctx, wslugs = wiki_context(route_text)
                 except Exception as e: print(f"  wiki context error: {e}")
-            # ROUTE to a role-space; the free-energy VIEWPOINT (Russell/Bearden/Hilarion five-heading
+            # ROUTE to a role-space; the free-energy VIEWPOINT (Russell/Bearden/Prigogine/Hilarion six-heading
             # template) + free-energy RAG fire ONLY when the routed space IS free-energy. Every other
             # space (dad/health/spirituality/finances/music/admin/general) gets a plain answer with the
             # free-energy persona SUPPRESSED — so a parenting question never comes back as a Tesla coil.
