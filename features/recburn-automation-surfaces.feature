@@ -11,9 +11,14 @@
 #                   resolution (manifest → printed paths → dir-scan); handleURL() router.
 #                 RecBurnApp.swift         — kAEGetURL Apple-Event handler; ServiceProvider
 #                   (NSServices toggle/start/stop) + NSUpdateDynamicServices().
-#                 RecBurnShortcuts.swift   — App Intents (Toggle/Start/Stop) + AppShortcuts,
-#                   thin shims that open recburn:// .
+#                 RecBurnShortcuts.swift   — App Intents: control shims (Record/Stop/Toggle over
+#                   recburn://) + VALUE verbs (Get Latest / Stop-and-Return → RecBurnRecording
+#                   entity; Publish to YouTube) that make the pipeline a chainable link.
+#                 RecBurnController.pump()  — persists the completed manifest to a single
+#                   ~/Library/Application Support/RecBurn/last.recburn.json (chain source of truth).
 #               SEAM: Engine/recburn-url (open "recburn://$action"), mirrored to apple/bin.
+#               UPLOAD: Engine/recburn-youtube (pure Python stdlib — OAuth loopback + resumable
+#                   chunked upload, YouTube Data API v3), mirrored to apple/bin.
 #               build.sh — Info.plist gains CFBundleURLTypes(recburn) + NSServices trio;
 #                 installs recburn-url alongside rec/recburn.
 #   Thinkspace: features/recburn-automation-surfaces.session.md (the spawning conversation).
@@ -36,6 +41,10 @@
 #   @note         a documented boundary, not an executable claim.
 #
 # RESULT
+#   Ship 1 (2026-07-09): manifest handoff + recburn:// seam + Shortcuts/Services/URL.
+#   Ship 2 (2026-07-09): chainable value intents (RecBurnRecording entity, Get-Latest +
+#     Stop-and-Return) + "Record" title + Publish-to-YouTube intent + recburn-youtube uploader
+#     (Engine/recburn-youtube, mirrored to apple/bin, bundled in Contents/MacOS).
 #   Deployed to BOTH repos on 2026-07-09 (engine source identical in each; app lives in apple-rec).
 #     apple-rec (canonical): screen-audio-record.swift manifest, RecBurnController/App/Shortcuts,
 #       Engine/recburn-url, build.sh (URL scheme + NSServices), README + STATUS.
@@ -119,3 +128,48 @@ Feature: Trigger recburn from anywhere through one seam, and hand off a typed re
     Given the capture/flatten/transcribe/burn engine is owned by the screen-audio-record card
     Then nothing here re-encodes video, spawns rec-audio/rec-subtitle differently, or changes flags;
       the only engine change is additive (manifest emission), so terminal `rec`/`recburn` behave as before
+
+  @built
+  Scenario: the app persists the completed recording to one stable manifest for chaining
+    Given a recording finished and pump() resolved the final artifact (after any video-first remux)
+    Then it writes ~/Library/Application Support/RecBurn/last.recburn.json — the single source of
+      truth for "the latest finished recording" that the value intents read
+    # cite: RecBurnController.pump() last.recburn.json block; @built — logic verified, awaits a live
+    # recording to confirm the file is written with the remuxed final path.
+
+  @built
+  Scenario: value intents return the recording as chainable Shortcuts values
+    Given last.recburn.json exists
+    When "Get Latest RecBurn Recording" (instant) or "Stop Recording and Return File" (stops, then
+      polls last.recburn.json until a newer completion whose final exists, ~20min budget) runs
+    Then it returns a RecBurnRecording AppEntity exposing file (IntentFile), durationSeconds,
+      hasSubtitles, subtitleFile, micRecorded — so the next action (e.g. Publish to YouTube) chains
+    # cite: RecBurnShortcuts RecBurnRecording + GetLatest/StopAndReturn intents; compiles clean,
+    # intent titles present in the built binary. @built — not driven through Shortcuts this session.
+
+  @hw-verified
+  Scenario: "Record" is the start action's title  (compiled + verified in binary)
+    Given the Start intent
+    Then its title is "Record" (not "Record my screen") with Siri phrases "Record with RecBurn" /
+      "RecBurn record" — kept short so the verb is understandable
+    # cite: StartRecBurnIntent.title + AppShortcut phrases; verified via strings on the binary.
+
+  @built
+  Scenario: recburn-youtube uploads a recording and returns its URL
+    Given a Google OAuth Desktop client at ~/.config/recburn/youtube_client.json
+    When `recburn-youtube --latest` (or --file / the Publish intent) runs
+    Then it runs the OAuth installed-app loopback flow (cached to youtube_token.json), then a
+      resumable CHUNKED upload (8 MiB, Content-Range, 308-between-chunks) via YouTube Data API v3,
+      and prints https://youtu.be/<id> on its last line (captured by the Publish intent)
+    # cite: Engine/recburn-youtube; @built — py-compiles, CLI + no-arg/error paths run; a real OAuth
+    # + upload was NOT performed (no client provisioned this session). OAuth loopback + resumable
+    # chunking are correct-by-construction, untested end-to-end. See STATUS "run-verified" gap.
+
+  @built
+  Scenario: Publish to YouTube is a first-class chainable action
+    Given a video file value (e.g. from Stop-and-Return)
+    When the "Publish RecBurn Recording to YouTube" intent runs (params: file, title?, privacy)
+    Then it locates recburn-youtube (bundled in Contents/MacOS first), shells to it with a real PATH,
+      and returns the printed youtu.be URL as a String for the next action
+    # cite: PublishToYouTubeIntent.upload(); helper bundled in the app (verified in Contents/MacOS).
+    # @built — the shell-out path compiles + resolves; not run against a live upload this session.

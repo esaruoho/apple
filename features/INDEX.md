@@ -337,7 +337,7 @@ Subtitle a screen recording (.srt sidecar + burn-in)  —  8 scenarios   (featur
   triad: .session✗  transcript✗  RESULT✓
   honesty: 8/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Trigger recburn from anywhere through one seam, and hand off a typed result  —  8 scenarios   (features/recburn-automation-surfaces.feature)
+Trigger recburn from anywhere through one seam, and hand off a typed result  —  13 scenarios   (features/recburn-automation-surfaces.feature)
   - [@hw-verified] the engine emits a typed manifest that round-trips into the app'
   - [@built] on stop the engine writes <stem>.recburn.json and prints its pat
   - [@built] the app reads the manifest instead of scraping prose, with a two
@@ -346,8 +346,13 @@ Trigger recburn from anywhere through one seam, and hand off a typed result  —
   - [@built] App Intents surface Toggle/Start/Stop to Shortcuts + Siri
   - [@hw-verified] recburn-url is the portable seam for hardware buttons + shell  (
   - [(no grade)] this card adds entrances + an exit, not new capture mechanics
+  - [@built] the app persists the completed recording to one stable manifest 
+  - [@built] value intents return the recording as chainable Shortcuts values
+  - [@hw-verified] "Record" is the start action's title  (compiled + verified in bi
+  - [@built] recburn-youtube uploads a recording and returns its URL
+  - [@built] Publish to YouTube is a first-class chainable action
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 7/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 12/13 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Record screen + system audio to one .mov with no loopback driver  —  19 scenarios   (features/screen-audio-record.feature)
   - [@hw-verified] single-app audio isolation captures screen + only that app's sou

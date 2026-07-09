@@ -50,7 +50,33 @@ robust. and … tell me what would sal add to this molecule."
   carries the URL scheme + NSServices (plutil -lint OK); bundle re-registered (lsregister -f);
   manifest strings present in the rebuilt binary; the manifest Codable contract round-trips both ways.
 
-## Deploy
+## Deploy (Ship 1)
 Engine source mirrored identical into `apple/bin` and `apple-rec/Engine`; apple/bin binary rebuilt;
 app + build.sh + README + STATUS in apple-rec (canonical); `recburn-url` in both. Direct-push to main
 in each repo, no PR.
+
+## Turn 3 — Ship 2 (chaining + YouTube)
+Esa: (1) I'd left 9 tasks stuck on `pending` — called out, fixed. (2) "RecBurn to upload to YouTube
+would be fantastic." (3) The start phrase should be **"Record"**, not "Record my screen" — keep it
+understandable. (4) "make the intents return the artifact, make manifest metadata as chainable
+shortcuts values."
+
+Decisions:
+- **Chain source of truth.** The app persists the completed manifest to a single
+  `~/Library/Application Support/RecBurn/last.recburn.json` on stop (written only on a real result,
+  after any video-first remux). The value intents read that — no "newest file" guessing.
+- **Return an entity, not just a file.** `RecBurnRecording: AppEntity` exposes file / durationSeconds
+  / hasSubtitles / subtitleFile / micRecorded, so downstream actions can branch on the metadata —
+  that's "manifest metadata as chainable values." `Get Latest` (instant) + `Stop and Return File`
+  (stops, polls the manifest until the pipeline finishes, ~20min budget) are the chain entry points.
+- **"Record"** is the start intent's title; Siri phrase "Record with RecBurn" (App Intents phrases
+  must contain the app-name token, so the bare verb lives in the title/shortTitle).
+- **YouTube = pure stdlib.** `recburn-youtube` does OAuth installed-app loopback + resumable chunked
+  upload with urllib/http.server — no Google SDK, matching the no-third-party ethos. Chose it over a
+  Swift/URLSession port for speed-of-correctness. The Publish intent shells to it (bundled in
+  Contents/MacOS). Needs the user's one-time Google Desktop OAuth client — documented, not shippable.
+
+Honest gaps (turn 3): App Intents compile + titles are in the binary; `recburn-youtube` py-compiles
+and its CLI/error paths run. NOT run-verified: a live recording writing last.recburn.json, the entity
+returning through Shortcuts, and a real OAuth + upload (no client provisioned). Correct-by-
+construction, untested end-to-end — see STATUS.md "run-verified" gap.
