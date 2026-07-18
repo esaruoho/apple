@@ -1,4 +1,4 @@
-# CLI Tools Index — 299 tools in bin/
+# CLI Tools Index — 290 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -31,7 +31,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-summarize` — text summarizer (LLM stub). — `bin/apple-summarize`
 `apple-translate` — Apple Translation framework via a hidden SwiftUI host. — `bin/apple-translate`
 `apple.sh` — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/apple.sh`
-`applelist` — apple.sh — zero-roundtrip launcher for the 304 workflows under scripts/workflows/. — `bin/applelist`
 `archof` — the architecture of ANY git repo, whitelabeled. — `bin/archof`
 `ask` — Voice Dictation + Claude — `bin/ask`
 `asobjc-tag-demo.applescript` — asobjc-tag-demo.applescript — `bin/asobjc-tag-demo.applescript`
@@ -42,7 +41,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `batch-import.sh` — Import all .shortcut files into Shortcuts.app — `bin/batch-import.sh`
 `bbs` — open the BBS Convey dashboard. — `bin/bbs`
 `bbs-to-eml` — (no description) — `bin/bbs-to-eml`
-`bedini-batch-status` — Bedini isolate batch progress: done vs queued vs in-flight — `bin/bedini-batch-status`
 `bootstrap-hey-sal.sh` — ONE-COMMAND install of the Hey Sal × Paketti stack. — `bin/bootstrap-hey-sal.sh`
 `bridge-doctor` — (no description) — `bin/bridge-doctor`
 `build-delete-now-shortcut.py` — (no description) — `bin/build-delete-now-shortcut.py`
@@ -66,11 +64,9 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `card` — report-card helper. Resolve a card by name, converse with it on the — `bin/card`
 `cc-here` — (no description) — `bin/cc-here`
 `cc-index` — (no description) — `bin/cc-index`
-`cloudcity-mlx-safety-test` — (no description) — `bin/cloudcity-mlx-safety-test`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `convergence` — (no description) — `bin/convergence`
 `converse` — (no description) — `bin/converse`
-`convey` — (no description) — `bin/convey`
 `create-image` — image-create — generate an image with Apple's on-device Image Playground. — `bin/create-image`
 `describe-submit` — scene-describe an image via the Mac Mini's local VLM (Ollama), — `bin/describe-submit`
 `describe-worker` — (no description) — `bin/describe-worker`
@@ -121,7 +117,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `fm-chat` — (no description) — `bin/fm-chat`
 `fm-converse` — (no description) — `bin/fm-converse`
 `fm-free` — ask the FreeLLMAPI aggregator (free-tier LLM providers) over Tailscale. — `bin/fm-free`
-`fm-mlx` — ask the CloudcityMacMini's MLX server over Tailscale. — `bin/fm-mlx`
+`fm-mlx` — ask the CloudcityMacMini's MLX server (Qwen3-4B) over Tailscale. — `bin/fm-mlx`
 `fm-submit` — (no description) — `bin/fm-submit`
 `fm-worker` — (no description) — `bin/fm-worker`
 `folder-memory` — (no description) — `bin/folder-memory`
@@ -131,7 +127,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `gen-features-index.py` — (no description) — `bin/gen-features-index.py`
 `gen-skill-indexes.py` — (no description) — `bin/gen-skill-indexes.py`
 `ghc` — GitHub Clone + Claude — `bin/ghc`
-`git-feature-wall` — ZERO-TOKEN Apple-keynote "feature wall" from ANY git repo. — `bin/git-feature-wall`
 `guidance` — (no description) — `bin/guidance`
 `health-export` — (no description) — `bin/health-export`
 `hertsi` — (no description) — `bin/hertsi`
@@ -152,7 +147,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `iphone-photo` — thin wrapper that execs the in-bundle binary so Bundle.main — `bin/iphone-photo`
 `iphone-screen` — grab a still of a USB-tethered iPhone's SCREEN via CoreMediaIO — `bin/iphone-screen`
 `keelynet-energy-mailer` — (no description) — `bin/keelynet-energy-mailer`
-`keelynet-energy-mailer-cloudcity-runner` — (no description) — `bin/keelynet-energy-mailer-cloudcity-runner`
 `list-vocal-shortcuts.py` — (no description) — `bin/list-vocal-shortcuts.py`
 `loom-status` — report progress of loom-mirror running on CloudcityMacMini — `bin/loom-status`
 `loupedeck-import-dictation-commands.py` — (no description) — `bin/loupedeck-import-dictation-commands.py`
@@ -222,7 +216,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-index-download-targets.py` — (no description) — `bin/sal-index-download-targets.py`
 `sal-mirror.py` — (no description) — `bin/sal-mirror.py`
 `sal-paketti-demo.sh` — 60-second live demo of the Hey Sal × Paketti chain. — `bin/sal-paketti-demo.sh`
-`sal-qr` — (no description) — `bin/sal-qr`
 `sal-recover-downloads.py` — (no description) — `bin/sal-recover-downloads.py`
 `sal-resolve-podcast-mp3s.py` — (no description) — `bin/sal-resolve-podcast-mp3s.py`
 `sal-siri-install.sh` — Phase 6 — Install Sal's Siri-on-Mac router files into the user library. — `bin/sal-siri-install.sh`
@@ -230,7 +223,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sal-siri-match.py` — (no description) — `bin/sal-siri-match.py`
 `sal-siri-on-mac-rebuild.py` — (no description) — `bin/sal-siri-on-mac-rebuild.py`
 `sal-siri-read-recent-turns.py` — (no description) — `bin/sal-siri-read-recent-turns.py`
-`sal-take-photo` — (no description) — `bin/sal-take-photo`
 `sal-transcribe-podcasts.sh` — orchestrator for Sal Soghoian Apple Podcasts. — `bin/sal-transcribe-podcasts.sh`
 `sal-transcribe-youtube.sh` — submits the 16 Sal YouTube interviews to whisp — `bin/sal-transcribe-youtube.sh`
 `say-karaoke` — speak text + emit each word's char range as spoken (karaoke highlight). — `bin/say-karaoke`
@@ -244,7 +236,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sentiment-map-svg` — (no description) — `bin/sentiment-map-svg`
 `sessions` — (no description) — `bin/sessions`
 `sessions-recover` — (no description) — `bin/sessions-recover`
-`sgrep` — (no description) — `bin/sgrep`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`
 `slideshow.py` — (no description) — `bin/slideshow.py`
