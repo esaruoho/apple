@@ -1170,6 +1170,7 @@ def poll_once(verbose=True):
                 re.sub(r'(?is)<(script|style|head).*?</\1>|<[^>]+>',' ', full.get("html")))).strip()
         question=clean_forwarded_body(strip_signature(raw_body))  # drop sig + de-quote/de-noise forwards
         answer=""                                               # defined for the forward path (reformat branch never sets it, but only fires with no atts)
+        is_penpal=False                                          # envoy/penpal (e.g. Francois) → always full-forward to Esa, not just BCC
         atts=full.get("attachments") or []
         att_text=extract_attachments(k, mid, atts, verbose) if atts else ""
         try: url_text=fetch_url_pdfs(raw_body, verbose)          # download + OCR any PDF linked by URL
@@ -1334,6 +1335,8 @@ def poll_once(verbose=True):
             _to=(_mm.group(1) if _mm else _who).strip() or BCC
             ptext, phtml = compose_protocol_reply(full, raw_body, _to)
             reply={"text":ptext, "html":phtml}
+            answer=ptext                                        # so the full-forward carries the penpal block
+            is_penpal=True                                      # Francois & co. → forward the whole exchange to Esa
             used="envoy-protocol (clean_protocol · deterministic penpal block)"
             if verbose: print(f"  🛰  envoy-protocol clean reply → {_to}")
         elif prior:
@@ -1425,7 +1428,7 @@ def poll_once(verbose=True):
         #  • otherwise → BCC Esa on the reply so he sees answers sent to other senders.
         from_esa = BCC and BCC.lower() in (full.get("from") or "").lower()
         forwarded=False
-        if atts and not from_esa:
+        if (atts or is_penpal) and not from_esa:               # penpal replies (Francois) always full-forward
             forwarded=forward_to_esa(k, full, mid, question, answer, atts)
         if BCC and not from_esa and not forwarded:
             reply["bcc"]=[BCC]
