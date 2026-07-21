@@ -23,12 +23,13 @@ import re, sys, pathlib
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DEFAULT_WIKI = ROOT / "wiki"
 
-CATEGORY_ORDER = ["devices", "entities", "people", "concepts", "lessons", "operations", "compiled"]
+CATEGORY_ORDER = ["devices", "entities", "people", "concepts", "eli3", "lessons", "operations", "compiled"]
 CATEGORY_TAGLINE = {
     "devices":    "one page per device family — Mac, iPhone, iPad, Watch, AirPods, TV, Vision, HomePod",
     "entities":   "one page per thing — person, app, package",
     "people":     "one page per person — the figure, the work, the claims",
     "concepts":   "how X works — atlases, principles, patterns",
+    "eli3":       "plain-language explainers — archive-grounded, MiniLM-retrieved, local-MLX-written",
     "lessons":    "didactic / narrative — runbooks and curriculum",
     "operations": "active project state — current work, status, plans",
     "compiled":   "auto-generated, do not hand-edit",
