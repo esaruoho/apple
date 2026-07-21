@@ -10,8 +10,15 @@
 # Idempotent. Backs up the nginx site, gates on `nginx -t`, auto-restores on failure.
 set -euo pipefail
 
-USER_NAME="${1:?usage: setup-finances-private.sh <username> <password>}"
-PASSWORD="${2:?usage: setup-finances-private.sh <username> <password>}"
+USER_NAME="${1:-esa}"
+PASSWORD="${2:-}"
+if [ -z "$PASSWORD" ]; then
+  # prompt (no echo) so the password never lands in shell history
+  read -rsp "Set the finances password (share this with your wife): " PASSWORD; echo
+  read -rsp "Confirm password: " PASSWORD2; echo
+  [ "$PASSWORD" = "$PASSWORD2" ] || { echo "passwords didn't match, aborting" >&2; exit 1; }
+  [ -z "$PASSWORD" ] && { echo "empty password, aborting" >&2; exit 1; }
+fi
 
 SITE="/etc/nginx/sites-available/www.esaruoho.org"
 HTPASSWD="/etc/nginx/.finances_htpasswd"
