@@ -1,4 +1,4 @@
-# CLI Tools Index — 299 tools in bin/
+# CLI Tools Index — 300 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -162,6 +162,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `machine-card` — (no description) — `bin/machine-card`
 `mail-flag-probe-envelope` — (no description) — `bin/mail-flag-probe-envelope`
 `mail-flag-worker` — (no description) — `bin/mail-flag-worker`
+`mail-free-energy-analysis` — (no description) — `bin/mail-free-energy-analysis`
 `mailgraph` — (no description) — `bin/mailgraph`
 `maps-directions` — open Apple Maps with a route to your OTHER anchor. — `bin/maps-directions`
 `md-to-clipboard` — render Markdown as rich text and put it on the — `bin/md-to-clipboard`

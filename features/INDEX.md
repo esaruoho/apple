@@ -222,6 +222,17 @@ Give a folder a voice — the per-folder sidecar triad  —  8 scenarios   (feat
   triad: .session✓  transcript✗  RESULT✓
   honesty: 6/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Free-energy lens voices are a shared switch  —  7 scenarios   (features/free-energy-lens-voices.feature)
+  - [@built] cloudcity-llm includes lens voices for free-energy routed mail
+  - [@built] cloudcity-llm suppresses lens voices when the switch is off
+  - [@built] KeelyNet batch emails can include the same lens voices
+  - [@built] KeelyNet can override the shared switch locally
+  - [@built] a requested single lens maps to the same vocabulary
+  - [@built] lens voice never weakens source fidelity
+  - [@built] off-topic mail does not summon the free-energy lens voices
+  triad: .session✗  transcript✗  RESULT✗
+  honesty: 7/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline  —  7 scenarios   (features/hey-sal-fold.feature)
   - [@verified] applebar://listen and applebar://open route to AppleBar's handle
   - [@built] listen mode wakes the bar and starts the shared on-device dictat
