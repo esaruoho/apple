@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# finances — one word for the whole finances flow.
+#
+#   finances            regenerate (fresh import) → publish to the private
+#                       https://esaruoho.org/finances/ → open it
+#   finances png        regenerate → copy a crisp image to the clipboard
+#   finances show       print the position in the terminal (balance/burn/runway/bills)
+#   finances <args…>    anything else passes straight to `convey finances`
+#                       (status · bills · report · hide/show · reimport · where)
+#
+# Thin wrapper over `convey finances` — no new logic, just the easy front door.
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+CONVEY="$HERE/convey"
+
+case "${1:-}" in
+  "")     exec "$CONVEY" finances report --publish --open ;;
+  png)    exec "$CONVEY" finances report --png ;;
+  show)   exec "$CONVEY" finances status ;;
+  *)      exec "$CONVEY" finances "$@" ;;
+esac
