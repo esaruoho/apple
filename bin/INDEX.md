@@ -1,4 +1,4 @@
-# CLI Tools Index — 301 tools in bin/
+# CLI Tools Index — 303 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -138,6 +138,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `hey-sal` — (no description) — `bin/hey-sal`
 `homepod-now` — (no description) — `bin/homepod-now`
 `html-to-pdf` — render HTML to a properly-formatted paginated PDF via WKWebView. — `bin/html-to-pdf`
+`html-to-png` — render HTML to a crisp PNG via WKWebView takeSnapshot. — `bin/html-to-png`
 `icloud-drop` — (no description) — `bin/icloud-drop`
 `image-create` — generate an image with Apple's on-device Image Playground. — `bin/image-create`
 `imessage` — (no description) — `bin/imessage`
@@ -246,6 +247,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sentiment-map-svg` — (no description) — `bin/sentiment-map-svg`
 `sessions` — (no description) — `bin/sessions`
 `sessions-recover` — (no description) — `bin/sessions-recover`
+`setup-finances-private.sh` — ONE-TIME setup of a private, password-protected — `bin/setup-finances-private.sh`
 `sgrep` — (no description) — `bin/sgrep`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`

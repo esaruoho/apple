@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# html-to-png — render HTML to a crisp PNG via WKWebView takeSnapshot.
+# Self-building (compiles html-to-png.swift to a cached binary), like html-to-pdf.
+#   html-to-png <input.html> <output.png>
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/html-to-png.swift"
+CACHE="$HOME/.cache/apple"
+BIN="$CACHE/html-to-png"
+mkdir -p "$CACHE"
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O "$SRC" -o "$BIN" -framework WebKit -framework AppKit -framework Foundation
+fi
+exec "$BIN" "$@"
