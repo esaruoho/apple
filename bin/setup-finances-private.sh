@@ -39,50 +39,69 @@ chown root:www-data "$HTPASSWD"
 chmod 640 "$HTPASSWD"
 echo "   wrote $HTPASSWD (user: $USER_NAME)"
 
-echo "== 3. nginx location block (idempotent) =="
-if grep -qF "$LOC_MARKER" "$SITE"; then
-  echo "   already present — leaving nginx config untouched."
-else
-  BACKUP="${SITE}.bak.$(date +%s)"
-  cp -a "$SITE" "$BACKUP"
-  echo "   backed up → $BACKUP"
-  # insert the location block just before the final closing brace of the `listen 443` server block
-  python3 - "$SITE" <<'PY'
+echo "== 3. nginx location block (self-correcting) =="
+BACKUP="${SITE}.bak.$(date +%s)"
+cp -a "$SITE" "$BACKUP"
+echo "   backed up -> $BACKUP"
+# Remove any existing (possibly misplaced) /finances/ location, then inject a correct one
+# into the server block that actually contains `listen 443`. Brace-aware; no substring traps.
+python3 - "$SITE" <<'PY'
 import sys, re
 path = sys.argv[1]
 src = open(path).read()
+
+def match_brace(s, open_idx):
+    depth = 0
+    for j in range(open_idx, len(s)):
+        if s[j] == '{': depth += 1
+        elif s[j] == '}':
+            depth -= 1
+            if depth == 0:
+                return j
+    raise AssertionError("unbalanced braces")
+
+# 1) strip every existing `location /finances/ { ... }` (fixes an earlier misplacement)
+while True:
+    m = re.search(r'\n[ \t]*location\s+/finances/\s*\{', src)
+    if not m:
+        break
+    brace = src.index('{', m.start())
+    end = match_brace(src, brace)
+    # swallow a trailing newline for tidiness
+    tail = end + 1
+    if tail < len(src) and src[tail] == '\n':
+        tail += 1
+    src = src[:m.start()+1] + src[tail:]
+
+# 2) find the ENCLOSING server block of `listen 443` (scan back for the unmatched `{`)
+pos = src.find('listen 443')
+assert pos != -1, "no `listen 443` found"
+depth = 0
+open_idx = None
+for k in range(pos, -1, -1):
+    c = src[k]
+    if c == '}':
+        depth += 1
+    elif c == '{':
+        if depth == 0:
+            open_idx = k
+            break
+        depth -= 1
+assert open_idx is not None, "could not find enclosing server block for listen 443"
+close_idx = match_brace(src, open_idx)
+
 block = """
     location /finances/ {
         alias /var/www/html/finances/;
-        auth_basic "Finances — private";
+        auth_basic "Finances (private)";
         auth_basic_user_file /etc/nginx/.finances_htpasswd;
         index index.html;
-        try_files $uri $uri/ =404;
     }
 """
-# find the server block that contains `listen 443` and inject before its matching closing brace
-m = re.search(r'server\s*\{', src)
-# locate the 443 server block start
-idx = src.find('listen 443')
-assert idx != -1, "no `listen 443` server block found"
-start = src.rfind('server', 0, idx)
-# walk braces from the first { after start to find the matching }
-i = src.find('{', start)
-depth = 0
-end = None
-for j in range(i, len(src)):
-    if src[j] == '{': depth += 1
-    elif src[j] == '}':
-        depth -= 1
-        if depth == 0:
-            end = j
-            break
-assert end is not None, "unbalanced braces"
-src = src[:end] + block + src[end:]
+src = src[:close_idx] + block + src[close_idx:]
 open(path, 'w').write(src)
-print("   injected location /finances/ into the 443 server block")
+print("   injected location /finances/ into the listen-443 server block (try_files removed)")
 PY
-fi
 
 echo "== 4. test + reload (auto-rollback on failure) =="
 if nginx -t; then
