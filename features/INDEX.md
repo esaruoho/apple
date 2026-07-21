@@ -283,7 +283,7 @@ An iPhone photo, on the Mac clipboard, the way you took it  —  4 scenarios   (
   triad: .session✗  transcript✗  RESULT✓
   honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-mailfe is a reusable Convey belt from source material to emailed analysis  —  12 scenarios   (features/mailfe-convey-belt.feature)
+mailfe is a reusable Convey belt from source material to emailed analysis  —  13 scenarios   (features/mailfe-convey-belt.feature)
   - [@built] the front door accepts stdin as a source
   - [@built] the front door accepts one local file
   - [@built] the extraction stage normalizes many file types to text
@@ -291,13 +291,14 @@ mailfe is a reusable Convey belt from source material to emailed analysis  —  
   - [@built] multiple sources can be combined into one packet
   - [@built] analysis is a stage, not the front door
   - [@built] visual material gets a treatment, not just OCR text
+  - [@built] source images are carried as email attachments
   - [@built] rendering turns Markdown into rich email HTML
   - [@built] delivery is an interchangeable output stage
   - [@built] the belt distinguishes analysis from transcription
   - [@built] the belt is reusable by other Convey front doors
   - [@todo] Convey names each stage as a first-class verb
   triad: .session✗  transcript✗  RESULT✓
-  honesty: 11/12 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 12/13 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 AppleBar parses markdown in its result pane  —  4 scenarios   (features/markdown-attributed.feature)
   - [@verified] headings, bold, code, and rules render (not raw markers)

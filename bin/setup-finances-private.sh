@@ -60,9 +60,9 @@ def match_brace(s, open_idx):
                 return j
     raise AssertionError("unbalanced braces")
 
-# 1) strip every existing `location /finances/ { ... }` (fixes an earlier misplacement)
+# 1) strip every existing /finances location (with or without slash / redirect) — self-heals
 while True:
-    m = re.search(r'\n[ \t]*location\s+/finances/\s*\{', src)
+    m = re.search(r'\n[ \t]*location\s+(=\s+)?/finances/?\s*\{', src)
     if not m:
         break
     brace = src.index('{', m.start())
@@ -91,6 +91,7 @@ assert open_idx is not None, "could not find enclosing server block for listen 4
 close_idx = match_brace(src, open_idx)
 
 block = """
+    location = /finances { return 301 /finances/; }
     location /finances/ {
         alias /var/www/html/finances/;
         auth_basic "Finances (private)";
