@@ -210,6 +210,19 @@ def render(cat, kind, slug, entry, titles, present):
             L.append(line)
         L.append("")
 
+    # Learn it simply — ELI3 / ELI5 / plain-language explainers (pedagogy projection)
+    expl = as_list(entry.get("explainers"))
+    if expl:
+        L.append("## Learn it simply")
+        for e in expl:
+            if isinstance(e, dict):
+                lbl = e.get("label", e.get("title", "explainer"))
+                pth = e.get("path", e.get("href", ""))
+                L.append("- [%s](%s)" % (lbl, pth) if pth else "- " + str(lbl))
+            else:
+                L.append("- " + str(e))
+        L.append("")
+
     srcs = as_list(entry.get("key_sources")) + as_list(entry.get("source"))
     if entry.get("primary_source"):
         srcs.append(str(entry["primary_source"]))
