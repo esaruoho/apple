@@ -44,6 +44,12 @@ VISION_OCR= Path.home()/"work"/"apple"/"bin"/"vision-ocr"                  # App
 MAX_ATT   = int(os.environ.get("FREELLMASK_MAIL_MAX_ATT_MB","25"))*1024*1024
 MAX_CHARS = int(os.environ.get("FREELLMASK_MAIL_MAX_ATT_CHARS","12000"))   # per-attachment text cap (free-tier context)
 
+def env_bool(name, default="1"):
+    return str(os.environ.get(name, default)).strip().lower() in {"1", "true", "yes", "on"}
+
+def lens_voices_enabled():
+    return env_bool("FREE_ENERGY_LENS_VOICES", "1")
+
 def _read_key(env, path):
     k = os.environ.get(env, "")
     if not k and Path(path).expanduser().exists(): k = Path(path).expanduser().read_text().strip()
@@ -221,7 +227,8 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "confirm, even if you label it 'example'. Show ONLY the bare verified command (e.g. `xcrun agent skills "
           "export`) and tell the user to run `<command> --help` for the actual flags. Zero invented flags, not "
           "plausible-looking ones.")
-    if viewpoint:   # in-corpus (free-energy) → think out loud + speak in four voices, ONE call, no extra roundtrip
+    voices_on = lens_voices_enabled()
+    if viewpoint and voices_on:   # in-corpus (free-energy) → think out loud + speak in four voices, ONE call, no extra roundtrip
         struct=("\n\nYour reply MUST contain ALL SIX of the following markdown headings, in this EXACT order and "
           "spelling. The FIRST line of your reply MUST be the heading '## Thought about it' — never open with the "
           "answer, never omit the thinking section, never rename it. A reply missing any of these six headings is "
@@ -243,6 +250,10 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "## In Hilarion's tone\n(2-4 sentences in the Hilarion channel's cadence: one living substance, "
           "consciousness as ground, gentle didactic cosmology — everything a modulation of the one energy)")
         sysm=viewpoint+"\n\n"+base+struct
+    elif viewpoint:
+        sysm=(viewpoint+"\n\n"+base+
+              " Output Markdown with a direct substantive answer. FREE_ENERGY_LENS_VOICES is off, "
+              "so do not add Walter Russell, Tom Bearden, Ilya Prigogine, or Hilarion tone sections.")
     else:           # off-corpus (e.g. parenting) → plain direct answer, no preamble, no tones
         sysm=base+" Output ONLY the final answer — no reasoning preamble; begin directly with the answer."
         if lens:    # a skill-backed space (apple/health/hyp) → frame the answer through the skill's lens
@@ -276,12 +287,12 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     # regenerate for the whole (enlarged) budget, and if it still won't comply this pass we return
     # REQUEUE_NO_THINKING so the poll loop leaves the email unseen and a later poll retries it fresh.
     def _missing_thinking(t):
-        if not viewpoint: return False
+        if not (viewpoint and voices_on): return False
         return re.search(r'(?im)^\s*#{1,3}\s*thought about it\b', t) is None
     NUDGE=("\n\nREMINDER: your previous reply omitted the required '## Thought about it' section. Begin THIS reply "
            "with the literal heading '## Thought about it' followed by 4-7 sentences of genuine reasoning, THEN the "
-           "'## Answer' and the three tone sections. Do not skip it.")
-    eff_tries = max(tries, 12) if viewpoint else max(1, tries)   # give the thinking heading room to land
+           "'## Answer' and the tone sections. Do not skip it.")
+    eff_tries = max(tries, 12) if (viewpoint and voices_on) else max(1, tries)   # give the thinking heading room to land
     has_content = bool((question or "").strip()) or bool((attachments or "").strip())
     used=chosen_model; cur=msgs; saw_failure=False
     for _ in range(eff_tries):
@@ -301,7 +312,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
         return ans, used                   # has the thinking heading (or off-corpus) → sendable
     if saw_failure:                        # kept bailing despite content → re-queue + debug-log, don't send
         return (REQUEUE_FAILED, used)
-    if viewpoint:                          # exhausted this pass without the heading → not sendable; re-queue
+    if viewpoint and voices_on:            # exhausted this pass without the heading → not sendable; re-queue
         return (REQUEUE_NO_THINKING, used)
     return ("I wasn't able to generate a reliable answer this time — the model returned an unusable "
             "response on every attempt. Please reply to this email to try again.", used)
@@ -1296,30 +1307,24 @@ def poll_once(verbose=True):
         reformat = is_pure_reformat(question) and not extra
         prior = prior_bot_answer(k, msgs, m.get("thread_id")) if reformat else None
         if video_only:
-            n=len(yt_urls)
-            if yt_note:
-                note=(f"📼 On it — **conveying {n} video{'s' if n>1 else ''}**: queued for transcription "
-                      f"on the convey→whisp belt. I won't guess at what it says. Once the transcript lands "
-                      f"I'll send you the analysis built from what is ACTUALLY in the video.")
-            else:
-                note=("📼 That video is already transcribed in the archive — nothing to re-convey. "
-                      "Reply \"analyze it\" and I'll write it up from the existing transcript.")
-            reply={"text":note, "html":md_to_inner_html(note)}
-            used="convey (video queued — no hallucinated answer)"
-            yt_note=""
-            # PART 2: record this video as PENDING analysis-email. When its transcript lands, the
-            # fa-video-analysis-mailer emails the analysis built from the REAL transcript (no guessing).
+            # Bare YouTube mail is a request to convey/analyse the video, not a chat question.
+            # Do not send an immediate "queued" ack: the useful reply is the later transcript-grounded
+            # analysis from fa-video-analysis-mailer once whisp has actually produced the transcript.
             try:
                 _who=full.get("from") or ""
                 _mm=re.search(r"<([^>]+)>", _who); _to=(_mm.group(1) if _mm else _who).strip() or BCC
                 _pend=Path.home()/"work"/"comms"/"queue"/"fa-video-pending.jsonl"
+                _pend.parent.mkdir(parents=True, exist_ok=True)
                 with _pend.open("a") as _pf:
                     for _u in yt_urls:
                         _pf.write(json.dumps({"url":_u,"to":_to,"subj":full.get("subject",""),
                                               "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
-                if verbose: print(f"  📝 pending video-analysis email → {_to} for {len(yt_urls)} video(s)")
+                if verbose: print(f"  📝 pending video-analysis email → {_to} for {len(yt_urls)} video(s); no immediate ack")
             except Exception as _e:
                 if verbose: print(f"  pending-write error: {_e}")
+            seen.add(mid); new+=1
+            st["seen"]=list(seen)[-500:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
+            continue
         elif gdrive_only:
             note=(f"📁 On it — **fetching your Google Drive** ({len(gd_urls)} link{'s' if len(gd_urls)>1 else ''}). "
                   f"The Mini is downloading now; I won't guess at the contents. Once the files land I'll OCR "
@@ -1432,8 +1437,19 @@ def poll_once(verbose=True):
             forwarded=forward_to_esa(k, full, mid, question, answer, atts)
         if BCC and not from_esa and not forwarded:
             reply["bcc"]=[BCC]
-        http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST", reply)
-        seen.add(mid); new+=1
+        # Mark handled BEFORE the reply POST. AgentMail can accept/send the reply and still make
+        # the client see an HTTP/JSON/timeout error; retrying that same inbound message causes
+        # duplicate replies. Prefer at-most-once email replies over mail storms.
+        seen.add(mid)
+        st["seen"]=list(seen)[-500:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
+        try:
+            http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST", reply)
+        except Exception as e:
+            debug_log("reply-send-error", mid, full.get("subject","(no subject)"),
+                      question=question, answer=reply.get("text",""), note=str(e))
+            if verbose: print(f"  ⚠ reply POST errored after marking seen: {e}")
+            continue
+        new+=1
         if verbose: print(f"  ✓ replied (model {used}, $0)" + (" [+pdf]" if "attachments" in reply else "")
                           + (" [fwd+att→esa]" if forwarded else (" [bcc]" if "bcc" in reply else "")))
     st["seen"]=list(seen)[-500:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
