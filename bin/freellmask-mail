@@ -373,6 +373,52 @@ def load_state():
     except Exception: return {"seen":[], "last_poll":None}
 def save_state(s): STATE.parent.mkdir(parents=True, exist_ok=True); STATE.write_text(json.dumps(s,indent=2))
 
+SEEN_CAP = int(os.environ.get("FREELLMASK_MAIL_SEEN_CAP", "5000"))
+
+class OrderedSeen:
+    """Insertion-ORDERED set of handled message-ids. `list(x)` yields oldest→newest, so `[-CAP:]`
+    keeps the NEWEST ones and evicts only genuinely old ones.
+
+    This used to be a plain `set` persisted as `list(seen)[-500:]` — and a set has NO order, so each
+    save kept an ARBITRARY 500 mids and silently evicted already-answered ones. The evicted mid was
+    still inside the newest-50 API listing, so the next poll answered it again… and again. That is the
+    2026-07-28 mail storm: 25 'Re: Schaffranke' replies to ONE inbound email in 45 minutes, 5 for
+    'I Spent 16 months…'. Never persist a set by slicing it."""
+    def __init__(self, it=()): self._d=dict.fromkeys(it or [])
+    def add(self, x): self._d[x]=None
+    def discard(self, x): self._d.pop(x, None)
+    def __contains__(self, x): return x in self._d
+    def __iter__(self): return iter(self._d)
+    def __len__(self): return len(self._d)
+
+# ── ANTI-LOOP LEDGER: an append-only record of every mid we have actually REPLIED to. Independent of
+# `seen` (which is capped and lives in a rewritable JSON), so even if the state file is lost, rolled
+# back by Syncthing, or truncated, a message that already got an answer can NEVER be answered twice.
+# Also gives a per-thread rate ceiling: a genuine mail storm is stopped at the source, whatever caused it.
+REPLIED   = Path(os.environ.get("FREELLMASK_MAIL_REPLIED", Path.home()/"work"/"comms"/"queue"/"freellmask-mail-replied.jsonl"))
+THREAD_MAX_PER_HOUR = int(os.environ.get("FREELLMASK_MAIL_THREAD_MAX_HOUR", "4"))
+
+def replied_load():
+    """(set of replied mids, {thread_id: [epoch,…]}). Best-effort — never raises into the poll loop."""
+    mids=set(); threads={}
+    try:
+        for line in REPLIED.read_text().splitlines():
+            try: r=json.loads(line)
+            except Exception: continue
+            if r.get("mid"): mids.add(r["mid"])
+            t=r.get("thread")
+            if t: threads.setdefault(t, []).append(float(r.get("t") or 0))
+    except Exception: pass
+    return mids, threads
+
+def replied_add(mid, thread, subject=""):
+    try:
+        REPLIED.parent.mkdir(parents=True, exist_ok=True)
+        with REPLIED.open("a") as f:
+            f.write(json.dumps({"mid":mid,"thread":thread,"subj":(subject or "")[:120],
+                                "t":time.time(),"ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
+    except Exception: pass
+
 DEBUG_LOG=Path(os.environ.get("FREELLMASK_MAIL_DEBUG", Path.home()/"work"/"comms"/"queue"/"freellmask-mail-debug.log"))
 def debug_log(kind, mid, subject="", question="", answer="", note=""):
     """Flagged, saved record of every degraded / re-queued / failed answer, so failures are VISIBLE and
@@ -1059,6 +1105,25 @@ def youtube_urls(text):
         if u not in seen: seen.add(u); out.append(u)
     return out
 
+_LINK_FILLER=(r'(?i)\b(fwd|fw|re|watch|see|this|that|these|those|video|vid|clip|youtube|yt|shorts?|'
+              r'link|url|please|pls|convey|transcribe|transcript|transcription|analyse|analyze|analysis|'
+              r'summar\w*|thoughts?|check|out|the|a|an|and|or|of|in|on|for|to|is|it|my|your|'
+              r'hey|hi|hello|moi|terve|kiitos|thanks?|cheers|sent|from|iphone|ipad|mail|esa|ruoho)\b')
+
+def _bare_link_body(body, subject=""):
+    """True when the email body carries NO actual request of its own — just the link (plus filler, a
+    signature, or a repeat of the subject/video title).
+
+    The SUBJECT is deliberately subtracted: for a shared YouTube mail the subject IS the video title, so
+    a title echoed in the body is not a question either. A title is never a request — treating one as a
+    question is what made the bot answer an untranscribed video (2026-07-28)."""
+    txt=strip_signature(body or '')          # a sig ("— Http://patreon.com/esaruoho") is not a request
+    txt=re.sub(r'(?i)\b(?:https?://|www\.)\S+', ' ', txt)   # case-INsensitive: Apple Mail capitalises "Http://"
+    txt=re.sub(_LINK_FILLER, ' ', txt)
+    subj_words={w for w in re.split(r'[^A-Za-z0-9]+', (subject or '').lower()) if len(w)>1}
+    words=[w for w in re.split(r'[^A-Za-z0-9]+', txt) if w and w.lower() not in subj_words]
+    return len(" ".join(words)) < 12
+
 _GD_RE = re.compile(r'https?://(?:drive|docs)\.google\.com/[^\s<>"\')\]]+', re.I)
 def gdrive_urls(text):
     """Google Drive / Docs links in an email body (folders, files, open?id=)."""
@@ -1157,7 +1222,8 @@ def whisp_autosubmit(urls, verbose=False):
 
 def poll_once(verbose=True):
     transcript_sweep(verbose)   # periodically feed new transcripts into the graph (non-blocking)
-    k=am_key(); st=load_state(); seen=set(st.get("seen",[]))
+    k=am_key(); st=load_state(); seen=OrderedSeen(st.get("seen",[]))
+    replied_mids, replied_threads = replied_load()
     listing=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=50", k)
     msgs=listing.get("messages", listing if isinstance(listing,list) else [])
     new=0
@@ -1167,6 +1233,21 @@ def poll_once(verbose=True):
         # only answer RECEIVED inbound mail — never our own sent replies (avoid loops)
         if "sent" in labels or m.get("from","").lower().find(INBOX.lower())>=0:
             seen.add(mid); continue
+        # ANTI-LOOP 1: already answered once, ever → never answer again, whatever `seen` says.
+        if mid in replied_mids:
+            print(f"  ⊘ already replied (ledger) — not answering again: mid={mid}")
+            seen.add(mid); continue
+        # ANTI-LOOP 2: per-thread ceiling. More than THREAD_MAX_PER_HOUR replies in this thread within
+        # the last hour = a storm, no matter the cause. Stop sending, log it, and mark handled.
+        _th=m.get("thread_id")
+        _recent=[t for t in replied_threads.get(_th, []) if time.time()-t < 3600]
+        if _th and len(_recent) >= THREAD_MAX_PER_HOUR:
+            print(f"  🛑 thread rate-limit ({len(_recent)}/h ≥ {THREAD_MAX_PER_HOUR}) — NOT replying: {(m.get('subject') or '')[:50]!r}")
+            debug_log("thread-rate-limit", mid, m.get("subject","") or "",
+                      note=f"{len(_recent)} replies to thread {_th} in the last hour; suppressed to stop a mail storm")
+            seen.add(mid)
+            st["seen"]=list(seen)[-SEEN_CAP:]; save_state(st)
+            continue
         full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
         # body: prefer extracted/plain text; fall back to HTML (forwards are often HTML-only)
         # AgentMail's `extracted_text` is USUALLY the clean body — but sometimes it extracts ONLY the
@@ -1240,6 +1321,13 @@ def poll_once(verbose=True):
                 if verbose: print(f"  🤖 chatgpt: hoovered+analysed {cg_done}/{len(cg_urls)}")
             except Exception as _e:
                 if verbose: print(f"  chatgpt trigger error: {_e}")
+        # Decide BARE-VIDEO from the BODY, *before* the thin-body fallback below can copy the SUBJECT
+        # into `question`. The subject of a shared YouTube mail IS the video title — never a question —
+        # and once the fallback made `question` = "Vapaan energian tuominen käytäntöön | Kanavoitu ohje
+        # Nikola Teslalta" the residue test saw a long "question" and dropped the bare-video gate. The
+        # model then answered a video it cannot watch, hedging "because we do not possess the full
+        # transcript…" — exactly the guess-reply the gate exists to prevent (2026-07-28).
+        body_is_bare = _bare_link_body(raw_body, full.get("subject"))
         # NEVER vanish silently. If body extraction/stripping left nothing, fall back to the UNstripped
         # body (strip_signature may have over-eaten it, the Jeane bug) then the SUBJECT ("Patent
         # Us8901943" is itself a real request). Only skip when there is GENUINELY nothing — and LOG it,
@@ -1288,14 +1376,7 @@ def poll_once(verbose=True):
         # content from wiki context (the 2026-07-01 BrunoVK/Don-Smith/eclipse confabulation). So:
         # convey it (queued above), reply with a CONFIRMATION only, and let the analysis follow LATER
         # from the REAL transcript once it lands. No guessing at what a video says before transcription.
-        video_only=False
-        if yt_urls and not extra:
-            residue=re.sub(r'https?://\S+',' ', question or '')
-            residue=re.sub(r'(?i)\b(fwd|fw|re|watch|see|this|that|these|those|video|vid|clip|youtube|yt|'
-                           r'link|url|please|pls|convey|transcribe|transcript|analyse|analyze|thoughts?|'
-                           r'check|out|the|a|an|and|for|to|hey|hi|hello|thanks?|cheers)\b',' ',residue)
-            residue=re.sub(r'[^A-Za-z0-9]+',' ',residue).strip()
-            if len(residue)<12: video_only=True
+        video_only = bool(yt_urls) and not extra and body_is_bare
         gdrive_only=False
         if gd_urls and not extra and not yt_urls:
             gres=re.sub(r'https?://\S+',' ', question or '')
@@ -1323,7 +1404,7 @@ def poll_once(verbose=True):
             except Exception as _e:
                 if verbose: print(f"  pending-write error: {_e}")
             seen.add(mid); new+=1
-            st["seen"]=list(seen)[-500:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
+            st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
             continue
         elif gdrive_only:
             note=(f"📁 On it — **fetching your Google Drive** ({len(gd_urls)} link{'s' if len(gd_urls)>1 else ''}). "
@@ -1441,7 +1522,11 @@ def poll_once(verbose=True):
         # the client see an HTTP/JSON/timeout error; retrying that same inbound message causes
         # duplicate replies. Prefer at-most-once email replies over mail storms.
         seen.add(mid)
-        st["seen"]=list(seen)[-500:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
+        st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
+        # Durable at-most-once record, written BEFORE the POST for the same reason `seen` is: a send
+        # that errors on the client side may still have gone out. The ledger outlives the state file.
+        replied_add(mid, m.get("thread_id"), full.get("subject",""))
+        replied_mids.add(mid); replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
         try:
             http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST", reply)
         except Exception as e:
@@ -1452,7 +1537,7 @@ def poll_once(verbose=True):
         new+=1
         if verbose: print(f"  ✓ replied (model {used}, $0)" + (" [+pdf]" if "attachments" in reply else "")
                           + (" [fwd+att→esa]" if forwarded else (" [bcc]" if "bcc" in reply else "")))
-    st["seen"]=list(seen)[-500:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
+    st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
     return new
 
 def main():
