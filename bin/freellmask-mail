@@ -411,13 +411,48 @@ def replied_load():
     except Exception: pass
     return mids, threads
 
-def replied_add(mid, thread, subject=""):
+def replied_seed(k, msgs):
+    """First run only: build the ledger from the inbox itself, so the fix takes effect immediately and
+    needs no file shipped between machines. Any RECEIVED message whose thread already contains a SENT
+    message that came AFTER it has evidently been answered → record it, so the newly-ordered `seen` (which
+    inherits a state file that had already lost mids) cannot re-answer the whole backlog once."""
+    if REPLIED.exists(): return 0
+    try:                                            # reach further back than the poll window for the seed
+        _big=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=200", k)
+        msgs=_big.get("messages", _big if isinstance(_big,list) else []) or msgs
+    except Exception: pass
+    sent_by_thread={}
+    for m in msgs:
+        if "sent" in (m.get("labels") or []):
+            sent_by_thread.setdefault(m.get("thread_id"), []).append(m.get("timestamp") or "")
+    n=0
+    for m in msgs:
+        if "sent" in (m.get("labels") or []): continue
+        ts=m.get("timestamp") or ""
+        if any(s > ts for s in sent_by_thread.get(m.get("thread_id"), [])):
+            # keep the ORIGINAL time, so seeded history doesn't trip the per-thread hourly ceiling
+            replied_add(m.get("message_id"), m.get("thread_id"), m.get("subject",""), t=_epoch(ts))
+            n+=1
+    if n: print(f"  🌱 seeded replied-ledger with {n} already-answered message(s)")
+    return n
+
+def replied_add(mid, thread, subject="", t=None):
     try:
         REPLIED.parent.mkdir(parents=True, exist_ok=True)
         with REPLIED.open("a") as f:
             f.write(json.dumps({"mid":mid,"thread":thread,"subj":(subject or "")[:120],
-                                "t":time.time(),"ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
+                                "t":float(t if t is not None else time.time()),
+                                "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
     except Exception: pass
+
+def _epoch(ts):
+    """AgentMail ISO timestamp → epoch seconds (0 if unparseable)."""
+    try:
+        import datetime
+        return datetime.datetime.strptime((ts or "")[:19], "%Y-%m-%dT%H:%M:%S").replace(
+            tzinfo=datetime.timezone.utc).timestamp()
+    except Exception:
+        return 0.0
 
 DEBUG_LOG=Path(os.environ.get("FREELLMASK_MAIL_DEBUG", Path.home()/"work"/"comms"/"queue"/"freellmask-mail-debug.log"))
 def debug_log(kind, mid, subject="", question="", answer="", note=""):
@@ -1223,8 +1258,9 @@ def whisp_autosubmit(urls, verbose=False):
 def poll_once(verbose=True):
     transcript_sweep(verbose)   # periodically feed new transcripts into the graph (non-blocking)
     k=am_key(); st=load_state(); seen=OrderedSeen(st.get("seen",[]))
-    replied_mids, replied_threads = replied_load()
     listing=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=50", k)
+    replied_seed(k, listing.get("messages", listing if isinstance(listing,list) else []))
+    replied_mids, replied_threads = replied_load()
     msgs=listing.get("messages", listing if isinstance(listing,list) else [])
     new=0
     for m in msgs:
