@@ -1,0 +1,80 @@
+#!/bin/bash
+# FEATURE-CARD >> ~/work/convey/features/convey-prism.feature
+#
+# prism — type `prism` and the canvas is in front of you.
+#
+# Esa, 2026-07-29: "make it so that i can type prism on the terminal and this will start and i can
+# start happening. and i can dropzone a pdf to it or a textfile or even a folder."
+#
+# The canvas must be SERVED (a static page cannot reach a brain), so this makes sure the convey serve
+# that already exists is running and then opens /canvas. It does NOT start a new daemon: it kickstarts
+# the existing LaunchAgent (com.convey.serve.editor), which is the one way this Mac runs that service.
+#
+#   prism                 open the canvas (starting the serve if it is down)
+#   prism <question>      skip the canvas: band the question in the terminal, open the fader
+#   prism --keeps         what you have marked valuable
+#   prism --runs          earlier bands
+#   prism --status        is the serve up, on which port
+set -euo pipefail
+
+PORT="${CONVEY_SERVE_PORT:-17600}"
+ALT_PORT=8675
+AGENT="com.convey.serve.editor"
+CONVEY="$HOME/work/apple/bin/convey"
+
+up() {  # up <port> — does a convey serve answer /canvas there?
+  curl -fsS -m 3 -o /dev/null "http://127.0.0.1:$1/canvas" 2>/dev/null
+}
+
+find_port() {
+  if up "$PORT"; then echo "$PORT"; return 0; fi
+  if up "$ALT_PORT"; then echo "$ALT_PORT"; return 0; fi
+  return 1
+}
+
+ensure_up() {
+  local p
+  if p="$(find_port)"; then echo "$p"; return 0; fi
+  # Not answering → kickstart the existing LaunchAgent. Never `nohup`, never a new daemon.
+  echo "· starting convey serve (LaunchAgent $AGENT)…" >&2
+  launchctl kickstart -k "gui/$(id -u)/$AGENT" >/dev/null 2>&1 || true
+  for _ in $(seq 1 20); do
+    sleep 1
+    if p="$(find_port)"; then echo "$p"; return 0; fi
+  done
+  return 1
+}
+
+case "${1:-}" in
+  --status)
+    if p="$(find_port)"; then
+      echo "convey serve: up on :$p    canvas → http://127.0.0.1:$p/canvas"
+    else
+      echo "convey serve: DOWN (run \`prism\` to start it, or \`convey serve --port $PORT\`)"
+      exit 1
+    fi
+    ;;
+  --keeps)
+    if p="$(ensure_up)"; then open "http://127.0.0.1:$p/keeps"; else exec "$CONVEY" keep --open; fi
+    ;;
+  --runs)
+    if p="$(ensure_up)"; then open "http://127.0.0.1:$p/prism"; else echo "serve is down" >&2; exit 1; fi
+    ;;
+  -h|--help)
+    sed -n '3,20p' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+  "")
+    if p="$(ensure_up)"; then
+      echo "🔷 canvas → http://127.0.0.1:$p/canvas"
+      open "http://127.0.0.1:$p/canvas"
+    else
+      echo "could not get a convey serve up on :$PORT or :$ALT_PORT." >&2
+      echo "try:  convey serve --port $PORT     (then run prism again)" >&2
+      exit 1
+    fi
+    ;;
+  *)
+    # A question typed straight after the verb: band it now, no canvas round-trip.
+    exec "$CONVEY" prism "$@"
+    ;;
+esac
