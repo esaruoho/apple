@@ -47,7 +47,7 @@ Plus LLM prefixes: `? <q>` (grounded in your learned rules), `chat <q>` / `conve
 ## Behaviour cards — graded Gherkin (parsed by `convey read features/*.feature`)
 
 ```
-Capture one application's audio to a .wav without a loopback driver  —  12 scenarios   (features/app-audio-record.feature)
+Capture one application's audio to a .wav without a loopback driver  —  13 scenarios   (features/app-audio-record.feature)
   - [@hw-verified] all-system tap writes a real, non-silent WAV  (ran live 2026-07-
   - [@hw-verified] app scoping really scopes — a silent app yields digital silence 
   - [@hw-verified] --out is a FILE only if it ends in .wav, otherwise a FOLDER  (ra
@@ -60,8 +60,9 @@ Capture one application's audio to a .wav without a loopback driver  —  12 sce
   - [@hw-verified] the picker lists apps and marks who is ACTUALLY making sound  (r
   - [@hw-verified] it survives a terminal that can't hide the cursor  (ran live 202
   - [@hw-verified] arrow keys + Enter produce a .wav  (ran live 2026-07-29, driven 
+  - [@hw-verified] Enter raises the picked app before the tap opens  (logic ran hea
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 12/12 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 13/13 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Read macOS energy & power telemetry from the command line  —  16 scenarios   (features/apple-energy.feature)
   - [@built] now prints a no-sudo snapshot of top apps by energy impact  (ran

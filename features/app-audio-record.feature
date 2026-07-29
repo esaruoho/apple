@@ -192,6 +192,21 @@ Feature: Capture one application's audio to a .wav without a loopback driver
     # Re-run under TERM=ansi after the curs_set fix: ↓ ↑ ⏎ → tapped Live, wrote
     # ansidrop/2026-07-29-14-21-21-Live.wav. keypad(True) makes arrows work on ansi too.
 
+  @hw-verified
+  Scenario: Enter raises the picked app before the tap opens  (logic ran headlessly 2026-07-29)
+    Given you picked an app because you intend to play something in it
+    When Enter is pressed
+    Then `/usr/bin/open -b <bundleID>` runs FIRST, then the recorder starts 0.5s later
+    And `--no-activate` skips the raise entirely
+    And with no --seconds it first prints "recording until Ctrl-C (click back to this
+      terminal to stop)", because raising the app takes focus off the terminal
+    # innards: bin/wav `main()` — the `if activate and not choice.get("all")` block
+    # HOW TESTED: subprocess/curses stubbed, asserting call ORDER and argv — the repo's
+    #   test-renderers-headlessly rule. A live run would have yanked focus off Esa
+    #   mid-session, so the actual window-raise is his one-keypress check, not mine.
+    # NOTE: this is user-requested activation via `open`, NOT System Events keystrokes —
+    #   nothing is typed into whatever was frontmost (see never-UI-hijack rule).
+
   @note
   Boundary: "playing" means an open output stream, not audible sound
     kAudioProcessPropertyIsRunningOutput is true for an app holding an output stream

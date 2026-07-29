@@ -10,6 +10,11 @@ green ●, refreshes ~2x/sec, and records the one you pick.
     wav                     pick from the live list, Enter records
     wav --seconds 20        Enter records exactly 20s (default: Ctrl-C to stop)
     wav --out ~/Music/grabs where the .wav lands (default: the current folder)
+    wav --after 5           5s countdown after the app is raised, so you can hit play
+    wav --no-activate       do NOT bring the picked app to the front
+
+Pressing Enter brings the picked app to the FRONT, then starts the tap — you picked
+it because you want to play something in it, so it lands under your hands.
 
 Keys:
     ↑/↓ or k/j    move            Enter    record the highlighted app
@@ -32,6 +37,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 RECORDER = os.path.join(HERE, "app-audio-record")
@@ -74,7 +80,7 @@ def safe_add(stdscr, y, x, text, width, attr=0):
         pass
 
 
-def picker(stdscr, seconds, outdir, show_all):
+def picker(stdscr, seconds, outdir, show_all, after=0):
     try:
         curses.curs_set(0)  # TERM=ansi and friends can't hide the cursor; 3.14 raises on ERR
     except curses.error:
@@ -107,7 +113,9 @@ def picker(stdscr, seconds, outdir, show_all):
 
         stdscr.erase()
         h, w = stdscr.getmaxyx()
-        head = f" wav — pick an app, Enter records   [{fmt_dur(seconds)}]  → {outdir or 'current folder'}"
+        cd = f" · {after}s countdown" if after else ""
+        head = (f" wav — pick an app, Enter raises it + records   "
+                f"[{fmt_dur(seconds)}{cd}]  → {outdir or 'current folder'}")
         safe_add(stdscr, 0, 0, head.ljust(w - 1), w - 1, pair(3) | curses.A_BOLD)
         legend = " ● = making sound right now    ↑↓ move · Enter record · a all-audio · p playing-only · +/- duration · q quit"
         safe_add(stdscr, 1, 0, legend.ljust(w - 1), w - 1, curses.A_DIM)
@@ -154,23 +162,28 @@ def picker(stdscr, seconds, outdir, show_all):
         elif key in (ord("-"), ord("_")):
             seconds = max(0, seconds - 5)
         elif key in (ord("a"),):
-            return {"all": True, "seconds": seconds}
+            return {"all": True, "seconds": seconds, "after": after}
         elif key in (curses.KEY_ENTER, 10, 13):
             if shown:
                 r = shown[sel]
-                return {"bundleID": r["bundleID"], "name": r["name"], "seconds": seconds}
+                return {"bundleID": r["bundleID"], "name": r["name"],
+                        "seconds": seconds, "after": after}
 
 
 def main():
     args = sys.argv[1:]
-    seconds, outdir, show_all = 0, "", False
+    seconds, outdir, show_all, activate, after = 0, "", False, True, 0
     i = 0
     while i < len(args):
         a = args[i]
         if a in ("--seconds", "-t") and i + 1 < len(args):
             i += 1; seconds = int(float(args[i]))
+        elif a in ("--after", "--delay") and i + 1 < len(args):
+            i += 1; after = int(float(args[i]))
         elif a in ("--out", "-o") and i + 1 < len(args):
             i += 1; outdir = os.path.expanduser(args[i])
+        elif a == "--no-activate":
+            activate = False
         elif a == "--all-procs":
             show_all = True
         elif a in ("--help", "-h"):
@@ -188,17 +201,35 @@ def main():
         return 1
 
     try:
-        choice = curses.wrapper(picker, seconds, outdir, show_all)
+        choice = curses.wrapper(picker, seconds, outdir, show_all, after)
     except KeyboardInterrupt:
         return 130
     if not choice:
         return 0
+
+    # Bring the picked app to the front BEFORE recording starts. You picked it because
+    # you want to play something in it — so put it under your hands. `open -b` activates
+    # a running app (and launches it if it somehow died between the list and the Enter).
+    # This is a user-requested activation, not simulated keystrokes: nothing is typed into
+    # whatever was frontmost. --no-activate opts out (e.g. capturing a background app you
+    # deliberately do not want raised).
+    if activate and not choice.get("all") and choice.get("bundleID"):
+        # Raising the app takes focus off this terminal, so an open-ended capture would
+        # leave you unable to Ctrl-C without clicking back. Say so once, up front.
+        if not choice.get("seconds"):
+            print(f"↑ raising {choice.get('name', choice['bundleID'])} — recording until Ctrl-C "
+                  f"(click back to this terminal to stop, or use --seconds N)")
+        subprocess.run(["/usr/bin/open", "-b", choice["bundleID"]],
+                       capture_output=True, timeout=10)
+        time.sleep(0.5)     # let the window actually come forward before the tap opens
 
     # Out of curses, into the real recorder — so its live level meter is what you watch.
     cmd = [RECORDER]
     cmd += ["--all"] if choice.get("all") else ["--app", choice["bundleID"]]
     if choice["seconds"]:
         cmd += ["--seconds", str(choice["seconds"])]
+    if choice.get("after"):
+        cmd += ["--after", str(choice["after"])]
     if outdir:
         cmd += ["--out", outdir]
     return subprocess.call(cmd)
