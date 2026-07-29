@@ -134,3 +134,55 @@ Also added, all from this same failure mode (never let a capture's outcome be a 
 
 Still `@built`, not verified: interactive Ctrl-C, and a real Schism *playing* capture —
 that one needs Esa at the keyboard with the tracker actually rolling.
+
+---
+
+## Round 3 — remembered combos + two MIDI buttons
+
+Esa: *"are you able to make it remember the previously selected apps so i can just press
+space after pressing wav to get the same result… the hope is that i can just have a
+midimapping that i can press to run the shortcut that starts this process of recording,
+and then sends it out. so two midi mappings would be amazing."*
+
+Two distinct requirements hiding in one sentence:
+1. **Memory + space** — a keyboard convenience inside the picker.
+2. **MIDI** — which means *no UI at all*. A MIDI mapping runs a shell command; there is no
+   terminal to arrow around in and no keypress to send. So `--last` / `--recent N` /
+   `--app … --then …` all had to become first-class no-UI paths, and `main()` was
+   refactored so the picker, `--last` and `--app` route through one shared `do_record()`
+   — a MIDI note and a keypress take an identical path.
+
+Also added `wav --stop`: an open-ended capture fired from a MIDI button has no terminal to
+press Esc in, so the recorder's pid is published to `~/.config/wav/current.pid` and --stop
+SIGINTs it (exactly what Ctrl-C sends, so the .wav finalises normally). That is the natural
+second button if the pair is start/stop rather than two destinations.
+
+History lives in `~/.config/wav/recent.json`, deduped on (source, destination), capped at 9.
+
+### I misdiagnosed a hang twice — the test harness was the bug
+
+The pty harness treated `read()` returning EOF as "still running", then killed the process
+and reported STILL RUNNING. But EOF on a pty master is exactly what a **clean exit**
+produces. I then chased a `<defunct>` process in `ps`, theorising about Popen and
+`proc.wait()` deadlocks — the defunct process was `wav` itself, already exited, waiting for
+my own harness to reap it. Nothing was ever wrong with the tool.
+
+The one genuine hang, earlier, was correct behaviour I'd set up wrong: the remembered combo
+was **open-ended**, so space started a capture that waited for a stop key I never sent.
+
+Lesson worth keeping: when a harness reports a hang, verify the harness's exit detection
+before touching the code under test. Two rounds of edits were nearly made to working code.
+
+### Verification
+
+- `--list-recent` / `--last` / `--recent N` / `--stop` with no history: correct messages, exit 1.
+- Explicit `--app ableton --seconds 2 --then none` run → history written with the right shape.
+- `--last` replays it; a second combo with a different destination produces two distinct
+  remembered entries (dedupe is on the PAIR, not the source).
+- Open-ended capture + `wav --stop` → 645376 bytes, exit 0, pidfile removed.
+- Picker through a pty: "again:" block renders, `[space]` fires the combo, exit 0.
+- Remembered output folder travels with a repeat; `--out` still overrides.
+
+All history testing used a throwaway `HOME`, so Esa's real `~/.config/wav` was never touched.
+Side effect worth noting: one `--then finder` test opened a Finder window revealing a file
+in the scratchpad.

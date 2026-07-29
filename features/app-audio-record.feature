@@ -274,6 +274,44 @@ Feature: Capture one application's audio to a .wav without a loopback driver
     # innards: `resolve_then()` + `run_then()`
     # NOTE: some DAWs only accept dragged files, so the refusal path is not theoretical.
 
+  @hw-verified
+  Scenario: combos are remembered — the second time is one keypress  (ran live 2026-07-29)
+    Given "Schism Tracker → Live" and "Schism Tracker → Renoise" are done over and over
+    When a source + destination is chosen
+    Then it is saved to ~/.config/wav/recent.json, most-recent-first, deduped on
+      (source, destination), capped at 9
+    And the picker shows an "again:" block above the app list, [space] for the most
+      recent and [2]..[9] for the rest
+    And a repeated combo brings its remembered OUTPUT FOLDER with it, unless --out overrides
+    # innards: bin/wav `load_recent()` / `save_recent()` / `recent_label()`, the recents
+    #          block in `picker()`, and the space/digit keys
+    # NOTE: a failed history write never kills a finished recording — the .wav is the
+    #       product, the history is a convenience.
+
+  @hw-verified
+  Scenario: two MIDI buttons — fire a combo with no UI at all  (ran live 2026-07-29)
+    Given a MIDI mapping can only run a shell command, with no terminal to type into
+    When `wav --last` (or `--recent 2`) runs
+    Then it replays that remembered combo directly — no curses, no picker, no keypress
+    And `wav --app "Schism" --then "Live" --seconds 30 --out ~/Music/grabs` is the fully
+      explicit form, which never opens the UI either
+    And `wav --list-recent` prints the combos with the numbers --recent takes
+    # innards: bin/wav `main()` — the `if repeat:` and `if app_spec:` blocks, both routed
+    #          through the SAME `do_record()` as the picker, so a MIDI note and a keypress
+    #          take an identical path
+
+  @hw-verified
+  Scenario: the second MIDI button stops an open-ended capture  (ran live 2026-07-29)
+    Given an open-ended capture started from a MIDI button has no terminal to press Esc in
+    When it starts, the recorder pid is published to ~/.config/wav/current.pid
+    And `wav --stop` sends SIGINT — exactly what Ctrl-C sends — so the .wav finalises
+      on its normal path
+    Then a 4s open-ended capture stopped this way wrote 645376 bytes and exited 0,
+      and the pidfile was cleaned up
+    And `wav --stop` with nothing running says "nothing recording" and exits 1,
+      clearing a stale pidfile if the process is gone
+    # innards: bin/wav `stop_running()` + the pidfile block in `do_record()`
+
   @note
   Boundary: "playing" means an open output stream, not audible sound
     kAudioProcessPropertyIsRunningOutput is true for an app holding an output stream

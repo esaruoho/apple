@@ -20,6 +20,17 @@ green ●, refreshes ~2x/sec, and records the one you pick.
 "record Renoise to Ableton Live" is one gesture. Skip the second screen entirely
 by passing --then. A silent grab is never handed onward.
 
+Every combo you pick is REMEMBERED. Next time, press space for the last one, or
+1-9 for an earlier one — no arrowing, no second screen. And the same combos are
+reachable with no UI at all, which is what a MIDI button needs:
+
+    wav --last                      repeat the most recent combo
+    wav --recent 2                  repeat the 2nd remembered combo
+    wav --list-recent               show them with their numbers
+    wav --stop                      end an open-ended capture (2nd MIDI button)
+    wav --app "Schism" --then "Live" --seconds 30 --out ~/Music/grabs
+                                    fully explicit, never opens the UI
+
 Pressing Enter brings the picked app to the FRONT, then starts the tap — you picked
 it because you want to play something in it, so it lands under your hands.
 
@@ -53,6 +64,50 @@ import time
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 RECORDER = os.path.join(HERE, "app-audio-record")
+
+CONFIG_DIR = os.path.expanduser("~/.config/wav")
+HISTORY = os.path.join(CONFIG_DIR, "recent.json")
+PIDFILE = os.path.join(CONFIG_DIR, "current.pid")
+MAX_RECENT = 9
+
+
+# ─── remembered combos ────────────────────────────────────────────────────────
+# "Schism Tracker → Live" and "Schism Tracker → Renoise" are the two things Esa
+# actually does, over and over. Remember them so the second time is one keypress
+# (space), and so a MIDI button can fire one with no UI at all (--last / --recent N).
+
+def load_recent():
+    try:
+        with open(HISTORY) as f:
+            rows = json.load(f)
+        return rows if isinstance(rows, list) else []
+    except Exception:
+        return []
+
+
+def save_recent(entry):
+    """Most-recent-first, deduped on (source, destination). Never let a bad write
+    kill a finished recording — the .wav is the product, history is a convenience."""
+    try:
+        rows = [r for r in load_recent()
+                if not (r.get("bundleID") == entry.get("bundleID")
+                        and r.get("all") == entry.get("all")
+                        and (r.get("then") or {}).get("name") == (entry.get("then") or {}).get("name"))]
+        rows.insert(0, entry)
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        tmp = HISTORY + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(rows[:MAX_RECENT], f, indent=2)
+        os.replace(tmp, HISTORY)
+    except Exception as e:
+        print(f"(couldn't save to recents: {e})", file=sys.stderr)
+
+
+def recent_label(r):
+    src = "all system audio" if r.get("all") else r.get("name", "?")
+    dst = (r.get("then") or {}).get("name", "nothing")
+    dur = fmt_dur(r.get("seconds", 0))
+    return f"{src} → {dst}   [{dur}]"
 
 def audio_procs(show_all=False):
     """CoreAudio's process list via the recorder (playing-first, already sorted).
@@ -214,6 +269,7 @@ def picker(stdscr, seconds, outdir, show_all, after=0, then_spec=None):
     sel = 0
     playing_only = False
     rows = audio_procs(show_all)
+    recents = load_recent()
 
     while True:
         shown = [r for r in rows if r["playing"]] if playing_only else rows
@@ -227,10 +283,20 @@ def picker(stdscr, seconds, outdir, show_all, after=0, then_spec=None):
         head = (f" wav — pick an app, Enter raises it + records   "
                 f"[{fmt_dur(seconds)}{cd}]  → {outdir or 'current folder'}")
         safe_add(stdscr, 0, 0, head.ljust(w - 1), w - 1, pair(3) | curses.A_BOLD)
-        legend = " ● = making sound right now    ↑↓ move · Enter record · a all-audio · p playing-only · +/- duration · q quit"
+        legend = (" ● = making sound right now    ↑↓ move · Enter record · a all-audio · "
+                  "p playing-only · +/- duration · q quit")
         safe_add(stdscr, 1, 0, legend.ljust(w - 1), w - 1, curses.A_DIM)
 
+        # Recents first: the whole point is that the SECOND time is one keypress.
         top = 3
+        if recents:
+            safe_add(stdscr, 2, 0, " again:".ljust(w - 1), w - 1, pair(3))
+            for i, r in enumerate(recents[:MAX_RECENT]):
+                key = "space" if i == 0 else str(i + 1)
+                safe_add(stdscr, top + i, 0,
+                         f"   [{key}]  {recent_label(r)}".ljust(w - 1), w - 1, pair(1))
+            top += len(recents[:MAX_RECENT]) + 1
+            safe_add(stdscr, top - 1, 0, " or pick a source:".ljust(w - 1), w - 1, pair(3))
         room = max(1, h - top - 1)
         first = max(0, min(sel - room // 2, max(0, len(shown) - room)))
         for i, r in enumerate(shown[first:first + room]):
@@ -260,6 +326,12 @@ def picker(stdscr, seconds, outdir, show_all, after=0, then_spec=None):
             continue
         if key in (ord("q"), 27):
             return None
+        if key == ord(" ") and recents:
+            return dict(recents[0], repeat=True)
+        if ord("1") <= key <= ord("9") and recents:
+            idx = key - ord("1")
+            if idx < len(recents):
+                return dict(recents[idx], repeat=True)
         if key in (curses.KEY_UP, ord("k")):
             sel = max(0, sel - 1)
         elif key in (curses.KEY_DOWN, ord("j")):
@@ -286,47 +358,31 @@ def picker(stdscr, seconds, outdir, show_all, after=0, then_spec=None):
                         "seconds": seconds, "after": after, "then": then}
 
 
-def main():
-    args = sys.argv[1:]
-    seconds, outdir, show_all, activate, after = 0, "", False, True, 0
-    then_spec = None
-    i = 0
-    while i < len(args):
-        a = args[i]
-        if a in ("--seconds", "-t") and i + 1 < len(args):
-            i += 1; seconds = int(float(args[i]))
-        elif a in ("--after", "--delay") and i + 1 < len(args):
-            i += 1; after = int(float(args[i]))
-        elif a in ("--out", "-o") and i + 1 < len(args):
-            i += 1; outdir = os.path.expanduser(args[i])
-        elif a == "--then" and i + 1 < len(args):
-            i += 1; then_spec = args[i]
-        elif a == "--no-activate":
-            activate = False
-        elif a == "--all-procs":
-            show_all = True
-        elif a in ("--help", "-h"):
-            print(__doc__); return 0
-        else:
-            print(f"unknown argument {a} — try --help", file=sys.stderr); return 1
-        i += 1
-
-    if not os.path.exists(RECORDER):
-        print(f"error: recorder not found at {RECORDER}", file=sys.stderr)
-        print("build it: swiftc -O -o bin/app-audio-record bin/app-audio-record.swift \\",
-              file=sys.stderr)
-        print("            -framework ScreenCaptureKit -framework AVFoundation \\", file=sys.stderr)
-        print("            -framework CoreMedia -framework CoreAudio -framework AppKit", file=sys.stderr)
+def stop_running():
+    """End an in-progress capture — the second MIDI button. SIGINT is exactly what
+    Ctrl-C sends, so the recorder finalises the .wav on its normal path."""
+    try:
+        with open(PIDFILE) as f:
+            pid = int(f.read().strip())
+    except Exception:
+        print("nothing recording", file=sys.stderr)
+        return 1
+    try:
+        os.kill(pid, 2)   # SIGINT
+        print(f"■ stopped (pid {pid})")
+        return 0
+    except ProcessLookupError:
+        print("nothing recording (stale pidfile)", file=sys.stderr)
+        try:
+            os.unlink(PIDFILE)
+        except OSError:
+            pass
         return 1
 
-    try:
-        choice = curses.wrapper(picker, seconds, outdir, show_all, after,
-                                resolve_then(then_spec))
-    except KeyboardInterrupt:
-        return 130
-    if not choice:
-        return 0
 
+def do_record(choice, outdir, activate):
+    """Run one source→then recording. Shared by the picker, --last and --app, so a MIDI
+    button and a keypress take exactly the same path."""
     # Bring the picked app to the front BEFORE recording starts. You picked it because
     # you want to play something in it — so put it under your hands. `open -b` activates
     # a running app (and launches it if it somehow died between the list and the Enter).
@@ -361,7 +417,25 @@ def main():
         manifest = os.path.join(tempfile.gettempdir(), f"wav-{os.getpid()}.json")
         cmd += ["--manifest", manifest]
 
-    rc = subprocess.call(cmd)
+    # Remember it, so next time is one keypress (space) or one MIDI note (--last).
+    save_recent({"bundleID": choice.get("bundleID", ""), "name": choice.get("name", ""),
+                 "all": bool(choice.get("all")), "seconds": choice.get("seconds", 0),
+                 "after": choice.get("after", 0), "then": then, "outdir": outdir})
+
+    # Publish the recorder's pid so `wav --stop` (a second MIDI button) can end an
+    # open-ended capture without a terminal in the loop.
+    proc = subprocess.Popen(cmd)
+    try:
+        os.makedirs(CONFIG_DIR, exist_ok=True)
+        with open(PIDFILE, "w") as f:
+            f.write(str(proc.pid))
+    except Exception:
+        pass
+    rc = proc.wait()
+    try:
+        os.unlink(PIDFILE)
+    except OSError:
+        pass
 
     if manifest and os.path.exists(manifest):
         try:
@@ -379,6 +453,107 @@ def main():
             else:
                 run_then(then, path)
     return rc
+
+
+def main():
+    args = sys.argv[1:]
+    seconds, outdir, show_all, activate, after = 0, "", False, True, 0
+    then_spec = None
+    repeat = 0          # --last / --recent N: fire a remembered combo, no UI
+    app_spec = None     # --app <name>: name the source outright, no UI
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("--seconds", "-t") and i + 1 < len(args):
+            i += 1; seconds = int(float(args[i]))
+        elif a in ("--after", "--delay") and i + 1 < len(args):
+            i += 1; after = int(float(args[i]))
+        elif a in ("--out", "-o") and i + 1 < len(args):
+            i += 1; outdir = os.path.expanduser(args[i])
+        elif a == "--then" and i + 1 < len(args):
+            i += 1; then_spec = args[i]
+        elif a == "--no-activate":
+            activate = False
+        elif a == "--all-procs":
+            show_all = True
+        elif a in ("--last", "--again"):
+            repeat = 1
+        elif a == "--recent" and i + 1 < len(args):
+            i += 1; repeat = int(args[i])
+        elif a in ("--app", "--source") and i + 1 < len(args):
+            i += 1; app_spec = args[i]
+        elif a == "--stop":
+            return stop_running()
+        elif a == "--list-recent":
+            rows = load_recent()
+            if not rows:
+                print("no remembered combos yet — run wav once and pick a source + destination")
+            for n, r in enumerate(rows, 1):
+                print(f"  [{'space' if n == 1 else n}]  {recent_label(r)}")
+            return 0
+        elif a in ("--help", "-h"):
+            print(__doc__); return 0
+        else:
+            print(f"unknown argument {a} — try --help", file=sys.stderr); return 1
+        i += 1
+
+    if not os.path.exists(RECORDER):
+        print(f"error: recorder not found at {RECORDER}", file=sys.stderr)
+        print("build it: swiftc -O -o bin/app-audio-record bin/app-audio-record.swift \\",
+              file=sys.stderr)
+        print("            -framework ScreenCaptureKit -framework AVFoundation \\", file=sys.stderr)
+        print("            -framework CoreMedia -framework CoreAudio -framework AppKit", file=sys.stderr)
+        return 1
+
+    # ── no-UI paths, for MIDI buttons and shell scripts ──────────────────────
+    if repeat:
+        rows = load_recent()
+        if not rows:
+            print("no remembered combos yet — run wav once and pick a source + destination",
+                  file=sys.stderr)
+            return 1
+        if repeat > len(rows):
+            print(f"only {len(rows)} remembered combo(s) — see wav --list-recent", file=sys.stderr)
+            return 1
+        choice = dict(rows[repeat - 1])
+        # Explicit flags still win over what was remembered.
+        if seconds:
+            choice["seconds"] = seconds
+        if then_spec is not None:
+            choice["then"] = resolve_then(then_spec)
+        print(f"⟳ {recent_label(choice)}")
+        return do_record(choice, outdir or choice.get("outdir", ""), activate)
+
+    if app_spec:
+        src = None
+        for r in audio_procs(show_all):
+            if (app_spec.lower() in (r.get("name") or "").lower()
+                    or app_spec.lower() in (r.get("bundleID") or "").lower()):
+                src = r
+                break
+        if not src:
+            print(f"no running app matches \"{app_spec}\" — try wav --list-recent or run wav",
+                  file=sys.stderr)
+            return 1
+        choice = {"bundleID": src["bundleID"], "name": src["name"], "seconds": seconds,
+                  "after": after, "then": resolve_then(then_spec) or {"kind": "none", "name": "nothing"}}
+        # A repeated combo brings its remembered folder with it (same as --last), unless
+    # an explicit --out overrides. Picking fresh keeps whatever --out said.
+    return do_record(choice, outdir or (choice.get("outdir", "") if choice.get("repeat") else ""),
+                     activate)
+
+    try:
+        choice = curses.wrapper(picker, seconds, outdir, show_all, after,
+                                resolve_then(then_spec))
+    except KeyboardInterrupt:
+        return 130
+    if not choice:
+        return 0
+
+    # A repeated combo brings its remembered folder with it (same as --last), unless
+    # an explicit --out overrides. Picking fresh keeps whatever --out said.
+    return do_record(choice, outdir or (choice.get("outdir", "") if choice.get("repeat") else ""),
+                     activate)
 
 
 if __name__ == "__main__":
