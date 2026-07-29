@@ -48,7 +48,8 @@ func printUsage() {
       --app <name>        capture ONLY this app's audio (name or bundle id, substring ok)
       --all               capture all system audio
       --seconds <n>       stop automatically after n seconds (default: run until Ctrl-C)
-      --out <path>        output .wav (default: ./<timestamp>-<app>.wav in the current folder)
+      --out <path>        a .wav FILE, or a FOLDER to drop <timestamp>-<app>.wav into
+                          (folder is created if missing; default: the current folder)
       --reveal            reveal the finished file in Finder
 
     The source app keeps playing normally — this is a parallel tap, not a reroute.
@@ -88,11 +89,30 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
     var finished = false
     var frames = 0
 
-    static func defaultOutPath(_ label: String) -> String {
+    static func stamped(_ label: String) -> String {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd-HH-mm-ss"
         let safe = label.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: " ", with: "-")
-        return FileManager.default.currentDirectoryPath + "/\(f.string(from: Date()))-\(safe).wav"
+        return "\(f.string(from: Date()))-\(safe).wav"
+    }
+
+    /// `--out` takes a FILE or a FOLDER. A folder (existing directory, or any path ending
+    /// in "/") gets a timestamped `<stamp>-<App>.wav` dropped inside it — "record a wavefile
+    /// to a specific folder" without inventing a filename every time. Empty = current folder.
+    static func resolveOutPath(_ given: String, label: String) -> String {
+        let name = stamped(label)
+        if given.isEmpty { return FileManager.default.currentDirectoryPath + "/" + name }
+        let expanded = (given as NSString).expandingTildeInPath
+        var isDir: ObjCBool = false
+        let exists = FileManager.default.fileExists(atPath: expanded, isDirectory: &isDir)
+        if given.hasSuffix("/") || (exists && isDir.boolValue) {
+            let dir = (expanded as NSString).standardizingPath
+            if !exists {
+                try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+            }
+            return dir + "/" + name
+        }
+        return expanded
     }
 
     func run() {
@@ -136,7 +156,7 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
         } else {
             err("choose --app <name> or --all — try --help")
         }
-        if opts.outPath.isEmpty { opts.outPath = AudioRecorder.defaultOutPath(label) }
+        opts.outPath = AudioRecorder.resolveOutPath(opts.outPath, label: label)
 
         // Audio-only: SCStream still wants a video configuration, so ask for the smallest
         // possible frame at the slowest possible rate and never attach a .screen output.
@@ -207,6 +227,9 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
+        // Our own stopCapture() trips this delegate on the way out — that is teardown,
+        // not a fault. Only report a stop we did not ask for.
+        guard !finished else { return }
         FileHandle.standardError.write("stream stopped: \(error.localizedDescription)\n".data(using: .utf8)!)
         finish()
     }

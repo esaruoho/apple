@@ -62,6 +62,23 @@ Feature: Capture one application's audio to a .wav without a loopback driver
     #          branch building SCContentFilter(display:including:exceptingWindows:)
 
   @hw-verified
+  Scenario: --out takes a FOLDER, not just a filename  (ran live 2026-07-29)
+    Given the ask was "record a wavefile to a specific folder"
+    When `app-audio-record --all --seconds 3 --out <dir>` ran with <dir> not existing
+    Then the folder was created and a timestamped <stamp>-system.wav landed inside it
+    And a path with a trailing "/" is treated as a folder even if it does not exist yet,
+      while any other non-directory path is used verbatim as the output file
+    # innards: `resolveOutPath(_:label:)` + `stamped(_:)`
+
+  @hw-verified
+  Scenario: teardown is silent, not an error  (ran live 2026-07-29)
+    Given finish() calls stopCapture(), which trips SCStreamDelegate didStopWithError
+    When the recorder stops on its own --seconds deadline
+    Then no "stream stopped:" line is printed, because the stop was ours
+    And an UNREQUESTED stop still reports and finalises what was captured
+    # innards: `stream(_:didStopWithError:)` — the `guard !finished` gate
+
+  @hw-verified
   Scenario: --list enumerates tappable applications  (ran live 2026-07-29)
     When `app-audio-record --list` ran
     Then it printed every running application with its bundle id, one per line,
