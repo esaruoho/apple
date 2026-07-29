@@ -15,6 +15,8 @@ Use Bash to execute (one call, then stop):
 - `/wav` — pick with ↑/↓, Enter records until Ctrl-C
 - `/wav --seconds 20` — Enter records exactly 20 s
 - `/wav --out ~/Music/grabs` — where the .wav lands (folder created if missing)
+- `/wav --then "Ableton"` — record, then open the .wav in that app ("first, then")
+- `/wav --then finder` / `--then none` — reveal it, or just leave it
 
 Keys inside the picker: `↑↓`/`kj` move · `Enter` record · `a` all system audio ·
 `p` playing-only · `+`/`-` duration ±5 s · `q` quit.

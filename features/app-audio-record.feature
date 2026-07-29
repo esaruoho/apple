@@ -230,6 +230,50 @@ Feature: Capture one application's audio to a .wav without a loopback driver
     # NOTE: `stty -g` before vs after a run is BYTE-IDENTICAL — the terminal is never
     #       left in raw mode, including via atexit if we die unexpectedly.
 
+  @hw-verified
+  Scenario: "first, then" — record Renoise TO Ableton Live as one gesture  (2026-07-29)
+    Given a recording is rarely the end of the thought
+    When you press Enter on the source app
+    Then a second screen asks where the finished .wav should go: Nothing / Finder /
+      any running app, defaulting to the first app that is NOT the source
+    And `--then "Ableton"` / `--then finder` / `--then none` skip that screen entirely
+    And Esc on the second screen goes BACK to the source list rather than quitting
+    # innards: bin/wav `choose_then()` inside `picker()`, `resolve_then()`, `run_then()`
+
+  @hw-verified
+  Scenario: the path is handed over as DATA, not scraped from prose  (ran live 2026-07-29)
+    Given the "then" step needs to know which file was just written
+    When --manifest <path> is passed
+    Then the recorder writes {schema, path, bytes, peak_dbfs, silent, app} JSON there
+    And it writes it on BOTH outcomes — a silent grab produced
+      {"peak_dbfs": -999, "silent": true} exactly as designed
+    And wav deletes the manifest after reading it (verified: no wav-*.json left in TMPDIR)
+    # innards: `writeManifest(bytes:silent:)`; consumed in bin/wav `main()`
+    # WHY: same doctrine as screen-audio-record's RECBURN-MANIFEST — nobody greps the
+    #      human "✓ …" line, whose wording will change.
+
+  @hw-verified
+  Scenario: a silent grab is never handed onward  (ran live 2026-07-29)
+    Given opening 20s of silence in Live is worse than opening nothing, because it
+      looks like it worked
+    When the manifest reports silent: true
+    Then the then-step is skipped with "→ not sending to Finder: the grab was silent"
+    And with silent: false the same path DOES fire the handoff
+    # innards: bin/wav `main()` — the `if info.get("silent")` guard
+
+  @hw-verified
+  Scenario: destinations resolve by bundle id or by name, and refusals are admitted  (2026-07-29)
+    Given "ableton" matches a RUNNING app       → open -b com.ableton.live <file>
+    And   "Renoise" matches nothing running     → open -a Renoise <file>   (by NAME)
+    And   "com.foo.bar" is dotted               → open -b com.foo.bar <file>
+    And   "finder"                              → open -R <file>
+    And   "none"                                → no subprocess at all
+    When the target app REFUSES the open (non-zero exit)
+    Then it says "<app> would not open it (<reason>); revealing in Finder instead"
+      rather than printing a success line
+    # innards: `resolve_then()` + `run_then()`
+    # NOTE: some DAWs only accept dragged files, so the refusal path is not theoretical.
+
   @note
   Boundary: "playing" means an open output stream, not audible sound
     kAudioProcessPropertyIsRunningOutput is true for an app holding an output stream

@@ -124,6 +124,7 @@ struct Options {
     var list = false
     var reveal = false
     var quiet = false           // suppress the live level meter
+    var manifest = ""           // typed handoff: write {path, peak, bytes, silent} here
 }
 
 func err(_ s: String) -> Never {
@@ -145,6 +146,8 @@ func printUsage() {
       --out <path>        a .wav FILE, or a FOLDER to drop <timestamp>-<app>.wav into
                           (folder is created if missing; default: the current folder)
       --quiet             no live level meter (and no countdown)
+      --manifest <path>   write {path, peak_dbfs, bytes, silent} JSON there when done
+                          (typed handoff for a "then" step — no scraping our prose)
       --reveal            reveal the finished file in Finder
 
     While capturing it prints a live level meter WITH a countdown, so you can see both
@@ -177,6 +180,7 @@ func parseArgs() -> Options {
         case "--out", "-o": i += 1; o.outPath = i < a.count ? a[i] : ""
         case "--seconds", "-t": i += 1; o.seconds = i < a.count ? (Double(a[i]) ?? 0) : 0
         case "--after", "--delay": i += 1; o.after = i < a.count ? (Double(a[i]) ?? 0) : 0
+        case "--manifest": i += 1; o.manifest = i < a.count ? a[i] : ""
         case "--help", "-h": printUsage(); exit(0)
         default: err("unknown argument \(a[i]) — try --help")
         }
@@ -410,6 +414,26 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
         installKeyWatcher()
     }
 
+    /// Typed handoff, same doctrine as screen-audio-record's RECBURN-MANIFEST: whatever
+    /// runs AFTER this recording (open in Live, reveal in Finder, a Shortcut) must read
+    /// structured data, never grep the human "✓ …" line whose wording will change.
+    /// Written on BOTH outcomes, so a "then" step can decline to open a silent grab.
+    func writeManifest(bytes: Int, silent: Bool) {
+        guard !opts.manifest.isEmpty else { return }
+        let db = sessionPeak > 0 ? 20 * log10(Double(sessionPeak)) : -Double.infinity
+        let obj: [String: Any] = [
+            "schema": "app-audio-record/1",
+            "path": opts.outPath,
+            "bytes": bytes,
+            "peak_dbfs": db.isFinite ? db : -999,
+            "silent": silent,
+            "app": opts.appName ?? "",
+        ]
+        if let d = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted]) {
+            try? d.write(to: URL(fileURLWithPath: opts.manifest))
+        }
+    }
+
     func setupWriter() {
         let url = URL(fileURLWithPath: opts.outPath)
         try? FileManager.default.removeItem(at: url)
@@ -533,6 +557,7 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
                         // the file (so it can be inspected), and exit non-zero so any
                         // automation chaining off this doesn't treat silence as a capture.
                         if self.sessionPeak <= 0 {
+                            self.writeManifest(bytes: bytes, silent: true)
                             let who = self.opts.appName ?? "the selected source"
                             FileHandle.standardError.write("""
                             ⚠️  SILENT — every sample is zero. \(self.opts.outPath) is \
@@ -545,6 +570,7 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
                             """.data(using: .utf8)!)
                             exit(3)
                         }
+                        self.writeManifest(bytes: bytes, silent: false)
                         let db = 20 * log10(Double(self.sessionPeak))
                         print(String(format: "✓ %@  (%d bytes, %d buffers, peak %.1f dBFS)",
                                      self.opts.outPath, bytes, self.frames, db))

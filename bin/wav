@@ -12,6 +12,13 @@ green ●, refreshes ~2x/sec, and records the one you pick.
     wav --out ~/Music/grabs where the .wav lands (default: the current folder)
     wav --after 5           5s countdown after the app is raised, so you can hit play
     wav --no-activate       do NOT bring the picked app to the front
+    wav --then "Ableton"    after recording, open the .wav in that app
+    wav --then finder       after recording, reveal it in Finder
+    wav --then none         just leave the file
+
+"First, then": pick the source app, then pick where the finished .wav goes — so
+"record Renoise to Ableton Live" is one gesture. Skip the second screen entirely
+by passing --then. A silent grab is never handed onward.
 
 Pressing Enter brings the picked app to the FRONT, then starts the tap — you picked
 it because you want to play something in it, so it lands under your hands.
@@ -41,6 +48,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 
 HERE = os.path.dirname(os.path.realpath(__file__))
@@ -69,6 +77,70 @@ def fmt_dur(seconds):
     return "open-ended" if not seconds else f"{seconds}s"
 
 
+# ─── "first, then" ────────────────────────────────────────────────────────────
+# A recording is rarely the end of the thought. "record Renoise TO Ableton Live" is
+# one gesture: tap the source, then hand the .wav to the destination. The THEN step
+# is picked up front (so the whole thing is one decision), and it only fires if the
+# grab actually contains sound — handing a silent file to Live is worse than nothing.
+
+def open_apps():
+    """Real, running apps that could plausibly receive a .wav — for the THEN list."""
+    seen, out = set(), []
+    for r in audio_procs():
+        bid = r.get("bundleID") or ""
+        if r.get("isApp") and bid and bid not in seen:
+            seen.add(bid)
+            out.append({"name": r["name"], "bundleID": bid})
+    return sorted(out, key=lambda r: r["name"].lower())
+
+
+def then_choices():
+    return ([{"kind": "none", "name": "Nothing — just leave the file", "bundleID": ""},
+             {"kind": "finder", "name": "Finder — reveal it", "bundleID": ""}]
+            + [{"kind": "app", **a} for a in open_apps()])
+
+
+def resolve_then(spec):
+    """--then finder | none | <app name or bundle id substring> → a choice dict."""
+    if not spec:
+        return None
+    s = spec.strip().lower()
+    if s in ("none", "no", "off"):
+        return {"kind": "none", "name": "nothing", "bundleID": ""}
+    if s == "finder":
+        return {"kind": "finder", "name": "Finder", "bundleID": ""}
+    for a in open_apps():
+        if s in a["name"].lower() or s in a["bundleID"].lower():
+            return {"kind": "app", **a}
+    # Not running (or the list was unreadable) — still usable. A dotted string is a
+    # bundle id for `open -b`; anything else is an app NAME for `open -a`, which is what
+    # someone typing --then "Ableton Live 12 Suite" means.
+    if "." in spec:
+        return {"kind": "app", "name": spec, "bundleID": spec}
+    return {"kind": "app", "name": spec, "bundleID": "", "appName": spec}
+
+
+def run_then(choice, path):
+    """Hand the finished .wav to the destination."""
+    if not choice or choice["kind"] == "none":
+        return
+    if choice["kind"] == "finder":
+        subprocess.run(["/usr/bin/open", "-R", path], capture_output=True)
+        print(f"→ revealed in Finder: {path}")
+        return
+    flag, target = ("-b", choice["bundleID"]) if choice.get("bundleID") else ("-a", choice.get("appName", choice["name"]))
+    r = subprocess.run(["/usr/bin/open", flag, target, path],
+                       capture_output=True, text=True)
+    if r.returncode == 0:
+        print(f"→ opened in {choice['name']}: {os.path.basename(path)}")
+    else:
+        # Most likely an app that refuses `open <file>` (some hosts only accept drags).
+        # Don't pretend it worked — say so and fall back to revealing the file.
+        print(f"→ {choice['name']} would not open it ({r.stderr.strip() or 'no reason given'}); "
+              f"revealing in Finder instead", file=sys.stderr)
+        subprocess.run(["/usr/bin/open", "-R", path], capture_output=True)
+
+
 def safe_add(stdscr, y, x, text, width, attr=0):
     """Every curses write is best-effort.
 
@@ -84,7 +156,7 @@ def safe_add(stdscr, y, x, text, width, attr=0):
         pass
 
 
-def picker(stdscr, seconds, outdir, show_all, after=0):
+def picker(stdscr, seconds, outdir, show_all, after=0, then_spec=None):
     try:
         curses.curs_set(0)  # TERM=ansi and friends can't hide the cursor; 3.14 raises on ERR
     except curses.error:
@@ -104,6 +176,40 @@ def picker(stdscr, seconds, outdir, show_all, after=0):
 
     def pair(n):
         return curses.color_pair(n) if colors else 0
+
+    def choose_then(source_name):
+        """Screen 2 of the 'first, then': where does the finished .wav go?"""
+        items = then_choices()
+        # Default to the first non-Finder app that isn't the source — for "record Renoise
+        # to Ableton Live" the destination is, by definition, some OTHER app.
+        tsel = next((i for i, it in enumerate(items)
+                     if it["kind"] == "app" and it["name"] != source_name), 1)
+        while True:
+            stdscr.erase()
+            h, w = stdscr.getmaxyx()
+            safe_add(stdscr, 0, 0,
+                     f" first: record {source_name}   …then: send the .wav where?".ljust(w - 1),
+                     w - 1, pair(3) | curses.A_BOLD)
+            safe_add(stdscr, 1, 0, " ↑↓ move · Enter confirm · Esc back".ljust(w - 1),
+                     w - 1, curses.A_DIM)
+            for i, it in enumerate(items[:max(1, h - 4)]):
+                safe_add(stdscr, 3 + i, 0, f"   {it['name']}".ljust(w - 1), w - 1,
+                         pair(2) if i == tsel else 0)
+            try:
+                stdscr.refresh()
+            except curses.error:
+                pass
+            k = stdscr.getch()
+            if k == -1:
+                continue
+            if k == 27:                       # Esc → back to the source list
+                return None
+            if k in (curses.KEY_UP, ord("k")):
+                tsel = max(0, tsel - 1)
+            elif k in (curses.KEY_DOWN, ord("j")):
+                tsel = min(len(items) - 1, tsel + 1)
+            elif k in (curses.KEY_ENTER, 10, 13):
+                return items[tsel]
 
     sel = 0
     playing_only = False
@@ -166,17 +272,24 @@ def picker(stdscr, seconds, outdir, show_all, after=0):
         elif key in (ord("-"), ord("_")):
             seconds = max(0, seconds - 5)
         elif key in (ord("a"),):
-            return {"all": True, "seconds": seconds, "after": after}
+            then = then_spec if then_spec is not None else choose_then("all system audio")
+            if then is None:
+                continue                      # Esc on screen 2 → back to the source list
+            return {"all": True, "seconds": seconds, "after": after, "then": then}
         elif key in (curses.KEY_ENTER, 10, 13):
             if shown:
                 r = shown[sel]
+                then = then_spec if then_spec is not None else choose_then(r["name"])
+                if then is None:
+                    continue
                 return {"bundleID": r["bundleID"], "name": r["name"],
-                        "seconds": seconds, "after": after}
+                        "seconds": seconds, "after": after, "then": then}
 
 
 def main():
     args = sys.argv[1:]
     seconds, outdir, show_all, activate, after = 0, "", False, True, 0
+    then_spec = None
     i = 0
     while i < len(args):
         a = args[i]
@@ -186,6 +299,8 @@ def main():
             i += 1; after = int(float(args[i]))
         elif a in ("--out", "-o") and i + 1 < len(args):
             i += 1; outdir = os.path.expanduser(args[i])
+        elif a == "--then" and i + 1 < len(args):
+            i += 1; then_spec = args[i]
         elif a == "--no-activate":
             activate = False
         elif a == "--all-procs":
@@ -205,7 +320,8 @@ def main():
         return 1
 
     try:
-        choice = curses.wrapper(picker, seconds, outdir, show_all, after)
+        choice = curses.wrapper(picker, seconds, outdir, show_all, after,
+                                resolve_then(then_spec))
     except KeyboardInterrupt:
         return 130
     if not choice:
@@ -236,7 +352,33 @@ def main():
         cmd += ["--after", str(choice["after"])]
     if outdir:
         cmd += ["--out", outdir]
-    return subprocess.call(cmd)
+
+    # Typed handoff instead of scraping the recorder's "✓ …" line: it writes the finished
+    # path (and whether the grab was silent) as JSON, and the THEN step reads that.
+    then = choice.get("then")
+    manifest = None
+    if then and then.get("kind") != "none":
+        manifest = os.path.join(tempfile.gettempdir(), f"wav-{os.getpid()}.json")
+        cmd += ["--manifest", manifest]
+
+    rc = subprocess.call(cmd)
+
+    if manifest and os.path.exists(manifest):
+        try:
+            with open(manifest) as f:
+                info = json.load(f)
+        except Exception:
+            info = {}
+        os.unlink(manifest)
+        path = info.get("path")
+        if path and os.path.exists(path):
+            # Never hand a silent file onward — opening 20s of nothing in Live is worse
+            # than not opening anything, because it looks like it worked.
+            if info.get("silent"):
+                print(f"→ not sending to {then['name']}: the grab was silent", file=sys.stderr)
+            else:
+                run_then(then, path)
+    return rc
 
 
 if __name__ == "__main__":
