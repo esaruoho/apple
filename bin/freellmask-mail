@@ -586,6 +586,14 @@ def fetch_url_content(body, verbose=False):
         done.add(u)
         low=u.lower()
         if "patreon.com/" in low: continue          # signature link, not content
+        # A VIDEO's page is NOT the video. Scraping youtube's og: title+description put the blurb into
+        # the answer context, which (a) made `extra` non-empty and so silently defeated the bare-video
+        # gate below, and (b) gave the model something to reason from — producing exactly the reply Esa
+        # got on 2026-07-28: "the only concrete material we have is the Finnish description … because we
+        # do not possess the full transcript, we must treat the video's specific claims as unknown".
+        # A description is not content. The whisp transcript belt is the ONLY authority on what a video
+        # says, so skip these here and let the video be conveyed and answered from the real transcript.
+        if youtube_urls(u): continue
         try:
             if re.search(r'(?:x|twitter)\.com/[^/]+/status/\d+', low):
                 tw=_fetch_tweet(u)
