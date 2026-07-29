@@ -261,6 +261,14 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             sysm=("You are answering WITHIN this skill/role space. Honour its rules and grounding "
                   "(especially any anti-fabrication rules) as the authoritative frame:\n"+lens.strip()
                   +"\n\n"+sysm)
+    # STANDING RULES the reader established by ADJUSTING earlier answers. One shared ledger with
+    # `convey adjust` (kb/adjust/rules.md), so a wording Esa corrected in a prism viewer is not
+    # written again by the mail agent either — one methodology, two surfaces.
+    _rules = adjust_rules()
+    if _rules:
+        sysm += ("\n\nSTANDING RULES the reader has established by adjusting earlier answers — "
+                 "honour every one of them:\n" + "\n".join(f"- {r}" for r in _rules))
+
     # BIG-CONTEXT ESCALATION: if the raw context is large, use Gemini's 1M window and DON'T truncate;
     # otherwise nemotron with the normal caps. Decided on RAW sizes (pre-truncation) so a big
     # attachment that would be clipped for nemotron triggers the escalation.
@@ -662,6 +670,111 @@ def pdf_filename(answer, subject=None):
     base=re.sub(r'[*_`#]', '', base)
     base=re.sub(r'[^A-Za-z0-9]+','-', base).strip('-')[:60]
     return (base or "freellmask-answer")+".pdf"
+
+# ── ADJUSTMENTS BY EMAIL ────────────────────────────────────────────────────────────────────
+# Esa's methodology (2026-07-29): "when i make an adjustment to a voices response, that adjustment
+# should be sent out to the voice for a response, that specific area" — he marks destructive wording
+# ("pretend-scientists"), writes better wording over it, and that goes back to the voice. The
+# accumulating half matters more than any single edit: every substitution becomes a standing rule
+# re-given on every later answer. THE LEDGER IS SHARED with `convey adjust`, so a correction made in
+# a prism viewer also binds the mail agent and vice versa — one methodology, two surfaces.
+ADJUST_RULES = Path.home()/"work"/"convey"/"kb"/"adjust"/"rules.md"
+ADJUST_BANK  = Path.home()/"work"/"convey"/"kb"/"adjust"/"adjustments.jsonl"
+
+def adjust_rules(limit=60):
+    """The standing rules, newest last. Soft-guarded: no ledger yet is the normal early state."""
+    try:
+        out=[l.strip()[2:].strip() for l in ADJUST_RULES.read_text(errors="replace").splitlines()
+             if l.strip().startswith("- ") and l.strip()[2:].strip()]
+        return out[-limit:]
+    except Exception:
+        return []
+
+def adjust_rule_for(marked, better):
+    """Same derivation `convey adjust` uses — deterministic, no model. Asking a model to generalize
+    the reader's intent would invent intent; the literal substitution is what they actually said."""
+    marked, better = " ".join((marked or "").split()), " ".join((better or "").split())
+    if not better:
+        return f'never write "{marked}" — the reader struck it as unwanted wording'
+    if len(marked.split())<=6 and len(better.split())<=8:
+        return f'write "{better}", never "{marked}"'
+    return f'prefer the reader\'s wording here: "{better[:120]}" over "{marked[:120]}"'
+
+def adjust_bank(marked, better, voice, question, area, reply, adopted):
+    try:
+        ADJUST_BANK.parent.mkdir(parents=True, exist_ok=True)
+        with ADJUST_BANK.open("a") as f:
+            f.write(json.dumps({"ts":time.strftime("%Y-%m-%dT%H:%M:%S"),"voice":voice,"brain":"freellmask",
+                                "question":question,"marked":marked,"better":better,"area":area,
+                                "reply":reply,"adopted":adopted,"warning":None,
+                                "source":"email","target":"cloudcity-llm@"}, ensure_ascii=False)+"\n")
+        rule=adjust_rule_for(marked, better)
+        if rule and rule not in adjust_rules(limit=10_000):
+            ADJUST_RULES.parent.mkdir(parents=True, exist_ok=True)
+            if not ADJUST_RULES.exists():
+                ADJUST_RULES.write_text("# Voice rules — learned from adjustments\n\n")
+            with ADJUST_RULES.open("a") as f: f.write(f"- {rule}\n")
+        return rule
+    except Exception as e:
+        print(f"  adjust-bank error: {e}"); return None
+
+# Two ways to state an adjustment from a phone. sed shape is the terse one; the block shape is for
+# passages with slashes in them. Both are unambiguous — no guessing at whether an email is an edit.
+_ADJ_SED = re.compile(r'(?m)^\s*s/((?:[^/\\]|\\.)+)/((?:[^/\\]|\\.)*)/\s*$')
+#  `\Z` (not `$`) ends the LAST block: with MULTILINE, `$` matches at every line end, so a final
+#  block with no trailing ADJUST: never terminated and the whole match failed.
+_ADJ_BLOCK = re.compile(r'(?is)^[ \t]*ADJUST:[ \t]*(.+?)\n[ \t]*BETTER:[ \t]*(.*?)(?=\n[ \t]*ADJUST:|\Z)', re.M)
+
+def parse_adjustments(body):
+    """[(marked, better)] stated in a reply. Empty list = an ordinary email; nothing is inferred."""
+    out=[]
+    for m in _ADJ_SED.finditer(body or ""):
+        out.append((m.group(1).replace("\\/","/").strip(), m.group(2).replace("\\/","/").strip()))
+    for m in _ADJ_BLOCK.finditer(body or ""):
+        out.append((m.group(1).strip(), m.group(2).strip()))
+    return [(a,b) for a,b in out if a]
+
+def _adj_span(span):
+    return re.compile(r"\s+".join(re.escape(w) for w in span.split()), re.I)
+
+def apply_email_adjustment(prior, marked, better, question, space_sys=""):
+    """Send ONE marked area of our prior answer back to the voice that wrote it. Returns
+    (revised_answer, area, voice_reply, adopted, error)."""
+    m=_adj_span(marked).search(prior or "")
+    if not m:
+        return None, "", "", False, (f"I could not find “{marked[:80]}” in my previous answer — "
+                                     f"quote it as it appears and I'll adjust it.")
+    start,end=m.span()
+    before,after=prior[max(0,start-420):start], prior[end:end+420]
+    sysm=((space_sys.strip()+"\n\n") if space_sys else "") + (
+        "The reader is IMPROVING your answer with you. They marked one passage and wrote what they "
+        "consider better wording. Receive that warmly and collegially — it is a collaboration, not a "
+        "correction of your worth, and you do not apologise or grovel.\n"
+        "Adopt their wording. Rewrite ONLY the marked passage, keeping it grammatical with the text on "
+        "either side. Do not rewrite the rest of your answer.\n"
+        "Then say one or two sentences back to them about what you changed and why.\n\n"
+        "Reply in EXACTLY this shape, nothing before or after:\nAREA: <the rewritten passage only>\n"
+        "REPLY: <one or two sentences to the reader>")
+    rules=adjust_rules()
+    if rules:
+        sysm += "\n\nSTANDING RULES to honour:\n" + "\n".join(f"- {r}" for r in rules)
+    user=((f"THE ORIGINAL QUESTION:\n{question}\n\n" if question else "")
+          + f"YOUR PREVIOUS ANSWER, IN FULL:\n{prior}\n\nTHE PASSAGE THE READER MARKED:\n{prior[start:end]}\n\n"
+          + (f"WHAT THEY WROTE OVER IT:\n{better}\n\n" if better else "THEY STRUCK IT — it should not appear.\n\n")
+          + (f"IMMEDIATELY BEFORE (read-only):\n…{before}\n\n" if before else "")
+          + (f"IMMEDIATELY AFTER (read-only):\n{after}…\n\n" if after else "")
+          + "Rewrite just that passage with their wording adopted, then reply to them.")
+    try:
+        said,_used=_fm_call([{"role":"system","content":sysm},{"role":"user","content":user}])
+    except Exception as e:
+        return None, "", "", False, f"the brain did not answer ({e})"
+    a=re.search(r'(?is)^\s*AREA\s*:\s*(.*?)(?=^\s*REPLY\s*:|\Z)', said or "", re.M)
+    r=re.search(r'(?is)^\s*REPLY\s*:\s*(.*)$', said or "", re.M)
+    area=(a.group(1).strip() if a else "") or better or prior[start:end]
+    reply=(r.group(1).strip() if r else (said or "").strip())
+    adopted = bool(_adj_span(better).search(area)) if better else True
+    return prior[:start]+area+prior[end:], area, reply, adopted, None
+
 
 def prior_bot_answer(k, msgs, thread_id):
     """The bot's most recent answer IN THIS THREAD — the immutable record to compile from
@@ -1510,6 +1623,56 @@ def poll_once(verbose=True):
             gres=re.sub(r'(?i)\b(fwd|fw|re|see|this|that|these|those|folder|file|files|drive|gdrive|google|docs?|link|url|please|pls|download|fetch|convey|ocr|analyse|analyze|thoughts?|check|out|the|a|an|and|for|to|hey|hi|hello|thanks?|cheers)\b',' ',gres)
             gres=re.sub(r'[^A-Za-z0-9]+',' ',gres).strip()
             if len(gres)<12: gdrive_only=True
+        # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
+        # answer (the immutable record), never regenerate. This is the Karpathy fix.
+        # ADJUSTMENT BY EMAIL: a reply that states `s/marked/better/` (or an ADJUST:/BETTER: block)
+        # is not a new question — it is an edit to a SPECIFIC AREA of what we already said. Send that
+        # area back to the voice, reply with the rewritten passage + what the voice says about it, and
+        # bank the substitution as a standing rule so no later answer needs the same correction.
+        adjustments = parse_adjustments(raw_body)
+        if adjustments:
+            _prior = prior_bot_answer(k, msgs, m.get("thread_id"))
+            if not _prior:
+                print(f"  ✎ adjustment(s) but no prior answer in this thread — answering normally")
+            else:
+                _q = re.sub(r'(?i)^\s*(re|fwd|fw):\s*', '', full.get("subject") or "").strip()
+                _cur, _lines, _rules_added = _prior, [], []
+                for _mk, _bt in adjustments:
+                    _rev, _area, _vreply, _adopted, _err = apply_email_adjustment(
+                        _cur, _mk, _bt, _q, space_sys="")
+                    if _err:
+                        _lines.append(f"⚠ **{_mk[:70]}** — {_err}")
+                        continue
+                    _cur = _rev
+                    _r = adjust_bank(_mk, _bt, "cloudcity-llm", _q, _area, _vreply, _adopted)
+                    if _r: _rules_added.append(_r)
+                    _lines += [f"**You marked:** “{_mk}”",
+                               (f"**You wrote:** “{_bt}”" if _bt else "**You struck it.**"),
+                               f"**That area now reads:** {_area}", f"**I changed it because:** {_vreply}"]
+                    if _bt and not _adopted:
+                        _lines.append("⚠ I did not manage to use your exact wording there — say it again "
+                                      "and I'll take another pass.")
+                    _lines.append("")
+                note = ("## Adjusted\n\n" + "\n\n".join(_lines)
+                        + ("\n\n---\n**Standing rules now in force for every later answer:**\n"
+                           + "\n".join(f"- {r}" for r in _rules_added) if _rules_added else "")
+                        + "\n\n---\n## The answer, with your adjustment in it\n\n" + _cur)
+                reply = {"text": note, "html": md_to_html(note)}
+                seen.add(mid)
+                st["seen"] = list(seen)[-SEEN_CAP:]; st["last_poll"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+                save_state(st)
+                replied_add(mid, m.get("thread_id"), full.get("subject", ""))
+                replied_mids.add(mid)
+                replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
+                if BCC and BCC.lower() not in (full.get("from") or "").lower():
+                    reply["bcc"] = [BCC]
+                try:
+                    http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST", reply)
+                    print(f"  ✎ adjusted {len(adjustments)} area(s); {len(_rules_added)} rule(s) banked")
+                except Exception as e:
+                    debug_log("adjust-send-error", mid, full.get("subject", ""), note=str(e))
+                new += 1
+                continue
         # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
         # answer (the immutable record), never regenerate. This is the Karpathy fix.
         reformat = is_pure_reformat(question) and not extra
