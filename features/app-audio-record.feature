@@ -312,6 +312,25 @@ Feature: Capture one application's audio to a .wav without a loopback driver
       clearing a stale pidfile if the process is gone
     # innards: bin/wav `stop_running()` + the pidfile block in `do_record()`
 
+  @hw-verified
+  Scenario: every entry path is smoke-tested, including the bare one  (ran live 2026-07-29)
+    Given a careless str.replace hit BOTH do_record call sites and dedented the --app
+      branch's return out of its if-block
+    Then plain `wav` executed that return before the picker ran and died with
+      UnboundLocalError: cannot access local variable 'choice'
+    And every OTHER path still worked — --app, --last, --stop and the pty picker had all
+      been tested; the one path nobody re-ran after the edit was the no-argument one,
+      which is how the tool is normally started
+    When `python3 bin/test-wav-paths.py` runs
+    Then all 11 entry paths are driven with the recorder stubbed, asserting what each
+      WOULD launch — bare, picker-quit, --app, --app-no-match, --last, --recent-overflow,
+      --list-recent, --stop, --help, unknown-flag, and all-system-audio
+    And re-introducing the exact dedent makes it report 3 FAILED and exit 1 (verified
+      by actually re-introducing it, not by assuming)
+    # innards: bin/test-wav-paths.py
+    # NOTE: a path that RAISES is reported as that case failing, not as a crashed test
+    #       run, so one break cannot hide the others.
+
   @note
   Boundary: "playing" means an open output stream, not audible sound
     kAudioProcessPropertyIsRunningOutput is true for an app holding an output stream

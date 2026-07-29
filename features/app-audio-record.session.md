@@ -186,3 +186,35 @@ before touching the code under test. Two rounds of edits were nearly made to wor
 All history testing used a throwaway `HOME`, so Esa's real `~/.config/wav` was never touched.
 Side effect worth noting: one `--then finder` test opened a Finder window revealing a file
 in the scratchpad.
+
+---
+
+## Round 4 — I shipped a crash on the most common path
+
+`wav` with no arguments: `UnboundLocalError: cannot access local variable 'choice'`.
+
+My own edit, one commit earlier. I used `str.replace` to make the picker's `do_record`
+call honour a remembered output folder — and it silently hit **both** call sites, because
+`str.replace` replaces every occurrence by default. The two-line comment I injected
+dedented the `--app` branch's `return` out of its `if app_spec:` block, so plain `wav`
+executed it before the picker ever opened, with `choice` unbound.
+
+What makes this bad is not the typo, it's the test gap: I had tested `--app`, `--last`,
+`--stop`, `--list-recent` and the picker through a pty — and then made an edit *after*
+all of that and re-ran none of it. The path I never re-ran was the no-argument one, which
+is how the tool is actually started.
+
+Fix: restore the indentation, and add `bin/test-wav-paths.py` — 11 entry paths driven with
+the recorder stubbed, asserting what each would launch. Verified the way a regression test
+has to be verified: **re-introduced the exact dedent and confirmed the suite reports
+3 FAILED and exits 1.** A test that has only ever passed proves nothing.
+
+Two smaller things this turned up:
+
+- `cp` is aliased to `cp -iv` in Esa's shell. My "restore the good copy" step prompted
+  `overwrite bin/wav? (y/n [n])`, got no answer, timed out — and left the repo sitting on
+  the BROKEN version while I believed it was restored. All copies now use `/bin/cp -f`.
+  Same family as the known `tr`/`dir`/`del` alias shadowing.
+- The background-task notification for that hang reported "failed exit 144", which is the
+  timeout, not the test result. The actual result was in the log file, and reading it is
+  what confirmed the test catches the bug.

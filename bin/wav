@@ -537,10 +537,7 @@ def main():
             return 1
         choice = {"bundleID": src["bundleID"], "name": src["name"], "seconds": seconds,
                   "after": after, "then": resolve_then(then_spec) or {"kind": "none", "name": "nothing"}}
-        # A repeated combo brings its remembered folder with it (same as --last), unless
-    # an explicit --out overrides. Picking fresh keeps whatever --out said.
-    return do_record(choice, outdir or (choice.get("outdir", "") if choice.get("repeat") else ""),
-                     activate)
+        return do_record(choice, outdir, activate)
 
     try:
         choice = curses.wrapper(picker, seconds, outdir, show_all, after,
