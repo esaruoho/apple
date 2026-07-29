@@ -169,6 +169,19 @@ Feature: Capture one application's audio to a .wav without a loopback driver
     #       blacklist of daemon names — a blacklist leaked audiomxd on the first try.
 
   @hw-verified
+  Scenario: it survives a terminal that can't hide the cursor  (ran live 2026-07-29)
+    Given Esa's terminal reports TERM=ansi, whose terminfo has no civis capability
+    And Python 3.14 raises curses.error on curs_set() returning ERR (older Pythons did not)
+    When `wav` starts there
+    Then it draws normally instead of dying with a traceback
+    And TERM=ansi / dumb / xterm-256color were all exercised through a pty: no crash in any
+    # innards: bin/wav `picker()` — try/except around curs_set + start_color, plus
+    #          safe_add() wrapping every write (last-cell writes raise too)
+    # NOTE: bin/sessions had ALREADY solved this exact thing at line 520, comment and all.
+    #       I wrote fresh curses instead of reusing its hardening. Reuse-before-re-rolling
+    #       is a standing rule here and I broke it; the fix is that pattern, copied.
+
+  @hw-verified
   Scenario: arrow keys + Enter produce a .wav  (ran live 2026-07-29, driven through a pty)
     Given `wav --seconds 3 --out ./pickdrop` running in a pseudo-terminal
     When ↓ then ↑ then Enter were written to the pty
@@ -176,6 +189,8 @@ Feature: Capture one application's audio to a .wav without a loopback driver
       the live dBFS meter redrew ~10x/sec, and a finished .wav was reported
     # innards: bin/wav `picker()` + `main()`
     # NOTE: this test is what caught the --out folder bug above; the UI was fine.
+    # Re-run under TERM=ansi after the curs_set fix: ↓ ↑ ⏎ → tapped Live, wrote
+    # ansidrop/2026-07-29-14-21-21-Live.wav. keypad(True) makes arrows work on ansi too.
 
   @note
   Boundary: "playing" means an open output stream, not audible sound

@@ -59,16 +59,41 @@ def fmt_dur(seconds):
     return "until Ctrl-C" if not seconds else f"{seconds}s"
 
 
+def safe_add(stdscr, y, x, text, width, attr=0):
+    """Every curses write is best-effort.
+
+    Writing to the last cell of the last line, or on a terminal that disagrees about
+    its own size, raises curses.error — which must never take down the picker. Same
+    hardening bin/sessions already does.
+    """
+    if width <= 0:
+        return
+    try:
+        stdscr.addnstr(y, x, text, width, attr)
+    except curses.error:
+        pass
+
+
 def picker(stdscr, seconds, outdir, show_all):
-    curses.curs_set(0)
-    stdscr.nodelay(True)
+    try:
+        curses.curs_set(0)  # TERM=ansi and friends can't hide the cursor; 3.14 raises on ERR
+    except curses.error:
+        pass
+    stdscr.keypad(True)                 # so KEY_UP/KEY_DOWN arrive as keys, not escape soup
     stdscr.timeout(500)                 # redraw ~2x/sec so ● markers stay live
-    if curses.has_colors():
+    colors = False
+    try:
         curses.start_color()
         curses.use_default_colors()
         curses.init_pair(1, curses.COLOR_GREEN, -1)     # playing marker
         curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_CYAN)  # selection
         curses.init_pair(3, curses.COLOR_YELLOW, -1)    # header/help
+        colors = True
+    except curses.error:
+        pass
+
+    def pair(n):
+        return curses.color_pair(n) if colors else 0
 
     sel = 0
     playing_only = False
@@ -83,9 +108,9 @@ def picker(stdscr, seconds, outdir, show_all):
         stdscr.erase()
         h, w = stdscr.getmaxyx()
         head = f" wav — pick an app, Enter records   [{fmt_dur(seconds)}]  → {outdir or 'current folder'}"
-        stdscr.addnstr(0, 0, head.ljust(w - 1), w - 1, curses.color_pair(3) | curses.A_BOLD)
+        safe_add(stdscr, 0, 0, head.ljust(w - 1), w - 1, pair(3) | curses.A_BOLD)
         legend = " ● = making sound right now    ↑↓ move · Enter record · a all-audio · p playing-only · +/- duration · q quit"
-        stdscr.addnstr(1, 0, legend.ljust(w - 1), w - 1, curses.A_DIM)
+        safe_add(stdscr, 1, 0, legend.ljust(w - 1), w - 1, curses.A_DIM)
 
         top = 3
         room = max(1, h - top - 1)
@@ -97,13 +122,16 @@ def picker(stdscr, seconds, outdir, show_all):
             line = f"  {mark}  {r['name']}"
             pad = max(1, 34 - len(line))
             line = f"{line}{' ' * pad}{r['bundleID']}"
-            attr = curses.color_pair(2) if idx == sel else 0
-            stdscr.addnstr(y, 0, line.ljust(w - 1), w - 1, attr)
+            attr = pair(2) if idx == sel else 0
+            safe_add(stdscr, y, 0, line.ljust(w - 1), w - 1, attr)
             if r["playing"] and idx != sel:
-                stdscr.addnstr(y, 2, "●", 1, curses.color_pair(1) | curses.A_BOLD)
+                safe_add(stdscr, y, 2, "●", 1, pair(1) | curses.A_BOLD)
         if not shown:
-            stdscr.addnstr(top, 2, "nothing to show — is CoreAudio reporting? (macOS 14.4+)", w - 1)
-        stdscr.refresh()
+            safe_add(stdscr, top, 2, "nothing to show — is CoreAudio reporting? (macOS 14.4+)", w - 1)
+        try:
+            stdscr.refresh()
+        except curses.error:
+            pass
 
         try:
             key = stdscr.getch()
