@@ -17,6 +17,7 @@ Secrets / config (never in git):
   FM_FREE_KEY / ~/.fm-free.key                 (FreeLLMAPI unified key — the research brain)
   FM_FREE_HOST       (default cloudcity Mini :3001)
 """
+# FEATURE-CARD >> features/freellmask-mail-anti-loop-and-video-gate.feature
 import base64, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.parse, urllib.request, urllib.error, uuid
 from pathlib import Path
 

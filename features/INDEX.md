@@ -233,6 +233,19 @@ Free-energy lens voices are a shared switch  —  7 scenarios   (features/free-e
   triad: .session✗  transcript✗  RESULT✗
   honesty: 7/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+freellmask-mail answers each email once, and never speaks for an untranscribed video  —  9 scenarios   (features/freellmask-mail-anti-loop-and-video-gate.feature)
+  - [@built] handled message-ids are persisted in insertion order
+  - [@built] a message that has been answered can never be answered again
+  - [@built] the ledger builds itself on a machine that has never had it
+  - [@built] a thread cannot exceed its hourly reply ceiling
+  - [@built] an email that is just a YouTube link is a convey request, not a 
+  - [@built] a video's page is not the video
+  - [@built] the answer about a video comes from the real transcript
+  - [@built] a failed transcription job stays retryable
+  - [@untested] a Short with no speech reports itself
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 8/9 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Hey Sal folded into AppleBar — hands-free voice over the one routing pipeline  —  7 scenarios   (features/hey-sal-fold.feature)
   - [@verified] applebar://listen and applebar://open route to AppleBar's handle
   - [@built] listen mode wakes the bar and starts the shared on-device dictat
