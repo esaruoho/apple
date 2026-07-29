@@ -1168,6 +1168,88 @@ def _bare_link_body(body, subject=""):
     words=[w for w in re.split(r'[^A-Za-z0-9]+', txt) if w and w.lower() not in subj_words]
     return len(" ".join(words)) < 12
 
+def _youtube_id(u):
+    m=(re.search(r'(?:v=|youtu\.be/|shorts/|embed/)([\w-]{11})', u or "")
+       or re.search(r'youtube\.com/watch\?[^\s]*v=([\w-]{11})', u or "", re.I))
+    return m.group(1) if m else ""
+
+def _youtube_watch_url(u):
+    vid=_youtube_id(u)
+    return f"https://www.youtube.com/watch?v={vid}" if vid else (u or "")
+
+def _youtube_embed_url(u):
+    vid=_youtube_id(u)
+    return f"https://www.youtube.com/embed/{vid}" if vid else ""
+
+def youtube_metadata(u):
+    """Best-effort YouTube metadata for the receipt email. No LLM/token usage: yt-dlp first,
+    then YouTube oEmbed for title only. Description is metadata, not transcript content."""
+    watch=_youtube_watch_url(u)
+    meta={"url":watch, "title":"", "description":"", "author":"", "embed_url":_youtube_embed_url(u)}
+    try:
+        r=subprocess.run(["yt-dlp","--skip-download","--dump-single-json","--no-warnings",watch],
+                         capture_output=True, text=True, timeout=45)
+        if r.returncode == 0 and (r.stdout or "").strip():
+            d=json.loads(r.stdout)
+            meta["title"]=(d.get("title") or "").strip()
+            meta["description"]=(d.get("description") or "").strip()
+            meta["author"]=(d.get("channel") or d.get("uploader") or "").strip()
+            return meta
+    except Exception:
+        pass
+    try:
+        q=urllib.parse.urlencode({"url":watch,"format":"json"})
+        req=urllib.request.Request("https://www.youtube.com/oembed?"+q, headers={"User-Agent":"freellmask/1.0"})
+        with urllib.request.urlopen(req, timeout=20) as r: d=json.load(r)
+        meta["title"]=(d.get("title") or "").strip()
+        meta["author"]=(d.get("author_name") or "").strip()
+    except Exception:
+        pass
+    return meta
+
+def youtube_receipt(urls, subject="", queued=0):
+    """Code-composed response for bare YouTube shares: direct URL + title + description + embed.
+    This intentionally does NOT analyse the video; transcript-grounded analysis is a later mail."""
+    metas=[youtube_metadata(u) for u in (urls or [])]
+    if not metas:
+        metas=[{"url":"", "title":subject or "YouTube video", "description":"", "author":"", "embed_url":""}]
+    text_parts=[]; html_parts=[]
+    for m in metas:
+        title=m.get("title") or subject or m.get("url") or "YouTube video"
+        desc=m.get("description") or ""
+        if len(desc)>4000: desc=desc[:3997].rstrip()+"..."
+        author=m.get("author") or ""
+        url=m.get("url") or ""
+        embed=m.get("embed_url") or ""
+        text_parts.append("\n".join(x for x in (
+            f"YouTube video: {title}",
+            f"Channel: {author}" if author else "",
+            f"URL: {url}" if url else "",
+            f"Embed: {embed}" if embed else "",
+            "",
+            "Description:",
+            desc or "(no description found)",
+        ) if x is not None))
+        html_parts.append(
+            "<hr>"
+            f"<h2>{_htmlmod.escape(title)}</h2>"
+            + (f"<p><b>Channel:</b> {_htmlmod.escape(author)}</p>" if author else "")
+            + (f'<p><b>URL:</b> <a href="{_htmlmod.escape(url)}">{_htmlmod.escape(url)}</a></p>' if url else "")
+            + (f'<iframe width="560" height="315" src="{_htmlmod.escape(embed)}" '
+               'title="YouTube video player" frameborder="0" '
+               'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" '
+               'allowfullscreen></iframe>' if embed else "")
+            + "<h3>Description</h3>"
+            + f'<pre style="white-space:pre-wrap;font-family:-apple-system,Segoe UI,sans-serif">{_htmlmod.escape(desc or "(no description found)")}</pre>'
+        )
+    status=("Queued for transcript analysis; a separate transcript-grounded analysis email will follow when whisp finishes."
+            if queued else
+            "Transcript analysis is pending; if this video is already transcribed, the transcript mailer will send the grounded analysis.")
+    text=status+"\n\n"+"\n\n---\n".join(text_parts)
+    html=('<div style="font-family:-apple-system,Segoe UI,sans-serif;line-height:1.5;font-size:14px">'
+          f"<p>{_htmlmod.escape(status)}</p>"+"".join(html_parts)+"</div>")
+    return text, html
+
 _GD_RE = re.compile(r'https?://(?:drive|docs)\.google\.com/[^\s<>"\')\]]+', re.I)
 def gdrive_urls(text):
     """Google Drive / Docs links in an email body (folders, files, open?id=)."""
@@ -1433,9 +1515,8 @@ def poll_once(verbose=True):
         reformat = is_pure_reformat(question) and not extra
         prior = prior_bot_answer(k, msgs, m.get("thread_id")) if reformat else None
         if video_only:
-            # Bare YouTube mail is a request to convey/analyse the video, not a chat question.
-            # Do not send an immediate "queued" ack: the useful reply is the later transcript-grounded
-            # analysis from fa-video-analysis-mailer once whisp has actually produced the transcript.
+            # Bare YouTube mail gets a deterministic metadata receipt, never an LLM/RAG answer.
+            # The transcript-grounded analysis is still handled later by fa-video-analysis-mailer.
             try:
                 _who=full.get("from") or ""
                 _mm=re.search(r"<([^>]+)>", _who); _to=(_mm.group(1) if _mm else _who).strip() or BCC
@@ -1445,12 +1526,13 @@ def poll_once(verbose=True):
                     for _u in yt_urls:
                         _pf.write(json.dumps({"url":_u,"to":_to,"subj":full.get("subject",""),
                                               "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
-                if verbose: print(f"  📝 pending video-analysis email → {_to} for {len(yt_urls)} video(s); no immediate ack")
+                if verbose: print(f"  📝 pending video-analysis email → {_to} for {len(yt_urls)} video(s); metadata receipt now")
             except Exception as _e:
                 if verbose: print(f"  pending-write error: {_e}")
-            seen.add(mid); new+=1
-            st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
-            continue
+            text, html = youtube_receipt(yt_urls, full.get("subject",""), queued=q_n)
+            reply={"text":text, "html":html}
+            used="youtube metadata receipt (no LLM)"
+            yt_note=""
         elif gdrive_only:
             note=(f"📁 On it — **fetching your Google Drive** ({len(gd_urls)} link{'s' if len(gd_urls)>1 else ''}). "
                   f"The Mini is downloading now; I won't guess at the contents. Once the files land I'll OCR "
