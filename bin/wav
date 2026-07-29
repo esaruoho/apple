@@ -24,7 +24,7 @@ Keys:
     ↑/↓ or k/j    move            Enter    record the highlighted app
     a             all system audio (not one app)
     p             show only apps currently playing  (toggle)
-    +/-           duration ±5s (0 = until Ctrl-C)
+    +/-           duration ±5s (0 = open-ended, stop with Enter/Esc/q/Ctrl-C)
     q / Esc       quit
 
 Under the hood it just runs the Apple-native recorder:
@@ -66,7 +66,7 @@ def audio_procs(show_all=False):
 
 
 def fmt_dur(seconds):
-    return "until Ctrl-C" if not seconds else f"{seconds}s"
+    return "open-ended" if not seconds else f"{seconds}s"
 
 
 def safe_add(stdscr, y, x, text, width, attr=0):
