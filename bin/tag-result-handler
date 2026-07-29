@@ -70,10 +70,49 @@ OCR_PDF_SUFFIX = "_ocr.pdf"
 TS_PREFIX_RE = re.compile(r"^\d{8}-\d{6}-")
 
 
+# This handler runs on a cadence over EVERY file in ocr-results, so any per-file notice about a
+# steady-state condition (an orphan that will still be an orphan next cycle) is re-logged forever.
+# On 2026-07-29 that had grown tag-result-handler.log to 418 MB and was consuming the last free
+# space on a full disk — which froze Syncthing and killed the convey serve agents. Two guards:
+# a hard size cap on the log, and log_once() for notices that repeat by nature.
+LOG_CAP = 8 * 1024 * 1024          # bytes; beyond this the log is rolled down to its recent tail
+SAID_PATH = COMMS / "tag-result-handler-said.json"
+
+
 def log(msg):
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if LOG_PATH.exists() and LOG_PATH.stat().st_size > LOG_CAP:
+            tail = LOG_PATH.read_bytes()[-(LOG_CAP // 8):]
+            LOG_PATH.write_bytes(b"[log rolled: exceeded cap, older lines dropped]\n"
+                                 + tail.split(b"\n", 1)[-1])
+    except Exception:
+        pass
     with LOG_PATH.open("a") as f:
         f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')}  {msg}\n")
+
+
+def log_once(key, msg):
+    """Log a steady-state notice the FIRST time only. `key` identifies the condition (e.g. the
+    filename), so the same orphan reported on every cycle is written once, not thousands of times."""
+    said = {}
+    try:
+        said = json.loads(SAID_PATH.read_text())
+        if not isinstance(said, dict):
+            said = {}
+    except Exception:
+        pass
+    if key in said:
+        return
+    said[key] = time.strftime("%Y-%m-%dT%H:%M:%S")
+    try:
+        if len(said) > 20000:                      # bounded: drop the oldest half
+            for k in sorted(said, key=said.get)[:len(said) // 2]:
+                said.pop(k, None)
+        SAID_PATH.write_text(json.dumps(said, indent=0))
+    except Exception:
+        pass
+    log(msg)
 
 
 def load_map():
@@ -135,7 +174,8 @@ def resolve_basename(basename):
         if c in idx and len(idx[c]) == 1:
             return idx[c][0]
         if c in idx and len(idx[c]) > 1:
-            log(f"AMBIGUOUS {basename}: {len(idx[c])} matches in archive — skipping")
+            log_once(f"ambiguous:{basename}",
+                     f"AMBIGUOUS {basename}: {len(idx[c])} matches in archive — skipping")
             return None
     return None
 
@@ -214,7 +254,8 @@ def handle_ocr_result(result_pdf, mapping, dry_run=False):
         original = resolve_basename(result_pdf.name)
         map_key = None
     if original is None:
-        log(f"ORPHAN {result_pdf.name}: no map entry and not found in archive — leaving in results/")
+        log_once(f"orphan:{result_pdf.name}",
+                 f"ORPHAN {result_pdf.name}: no map entry and not found in archive — leaving in results/")
         return False
     if not original.parent.exists():
         log(f"SKIP {result_pdf.name}: original folder gone: {original.parent}")
