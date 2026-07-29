@@ -207,6 +207,29 @@ Feature: Capture one application's audio to a .wav without a loopback driver
     # NOTE: this is user-requested activation via `open`, NOT System Events keystrokes —
     #   nothing is typed into whatever was frontmost (see never-UI-hijack rule).
 
+  @hw-verified
+  Scenario: the meter line is also the clock  (ran live 2026-07-29, pty)
+    Given "stopping after 16.0s" printed once tells you nothing while you wait
+    When a 16s capture runs
+    Then the meter line carries a live countdown: 16.0s left, 15.9s left, 15.8s left …
+    And 30 redraws were observed over 2.5s (~12/sec)
+    And with no --seconds it counts UP as elapsed m:ss instead
+    # innards: `drawMeter()` (clock section) + `startMeterClock()`
+    # NOTE: driven by a 0.1s timer AND the audio callbacks, so the clock keeps ticking
+    #       even if buffers stall — a frozen countdown would be its own kind of lie.
+
+  @hw-verified
+  Scenario: stop the capture with a keypress, not just Ctrl-C  (ran live 2026-07-29, pty)
+    Given a capture is running in a terminal
+    When Enter, Esc, q or Ctrl-C is pressed
+    Then the recorder finalises the .wav and reports it — all four verified through a pty
+    And Enter at 3s into a 16s capture produced a finished 484096-byte file at -5.2 dBFS
+    # innards: `installKeyWatcher()` + `restoreTerminal()`
+    # HOW: ICANON+ECHO cleared so single keys arrive unechoed; ISIG deliberately LEFT ON
+    #      so Ctrl-C still raises SIGINT exactly as before.
+    # NOTE: `stty -g` before vs after a run is BYTE-IDENTICAL — the terminal is never
+    #       left in raw mode, including via atexit if we die unexpectedly.
+
   @note
   Boundary: "playing" means an open output stream, not audible sound
     kAudioProcessPropertyIsRunningOutput is true for an app holding an output stream

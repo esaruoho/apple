@@ -7,14 +7,18 @@ never find out afterwards that you recorded ten seconds of silence. This lists e
 app CoreAudio knows about, marks the ones ACTUALLY OUTPUTTING AUDIO RIGHT NOW with a
 green ●, refreshes ~2x/sec, and records the one you pick.
 
-    wav                     pick from the live list, Enter records
-    wav --seconds 20        Enter records exactly 20s (default: Ctrl-C to stop)
+    wav                     pick from the live list, Enter records open-ended
+    wav --seconds 20        Enter records exactly 20s (stop early any time)
     wav --out ~/Music/grabs where the .wav lands (default: the current folder)
     wav --after 5           5s countdown after the app is raised, so you can hit play
     wav --no-activate       do NOT bring the picked app to the front
 
 Pressing Enter brings the picked app to the FRONT, then starts the tap — you picked
 it because you want to play something in it, so it lands under your hands.
+
+While recording, the meter line shows the level AND counts down the time remaining.
+Stop whenever you like with Enter, Esc, q or Ctrl-C — with no --seconds it simply
+records until you do.
 
 Keys:
     ↑/↓ or k/j    move            Enter    record the highlighted app
@@ -217,8 +221,8 @@ def main():
         # Raising the app takes focus off this terminal, so an open-ended capture would
         # leave you unable to Ctrl-C without clicking back. Say so once, up front.
         if not choice.get("seconds"):
-            print(f"↑ raising {choice.get('name', choice['bundleID'])} — recording until Ctrl-C "
-                  f"(click back to this terminal to stop, or use --seconds N)")
+            print(f"↑ raising {choice.get('name', choice['bundleID'])} — recording until you stop it "
+                  f"(click back to this terminal, then Enter / Esc / q / Ctrl-C)")
         subprocess.run(["/usr/bin/open", "-b", choice["bundleID"]],
                        capture_output=True, timeout=10)
         time.sleep(0.5)     # let the window actually come forward before the tap opens

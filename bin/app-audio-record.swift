@@ -144,11 +144,12 @@ func printUsage() {
       --seconds <n>       stop automatically after n seconds (default: run until Ctrl-C)
       --out <path>        a .wav FILE, or a FOLDER to drop <timestamp>-<app>.wav into
                           (folder is created if missing; default: the current folder)
-      --quiet             no live level meter
+      --quiet             no live level meter (and no countdown)
       --reveal            reveal the finished file in Finder
 
-    While capturing it prints a live level meter, so you can SEE whether the app is
-    actually making sound. If the whole capture was digital silence it says so and
+    While capturing it prints a live level meter WITH a countdown, so you can see both
+    whether the app is making sound and how long is left. Stop early any time with
+    Enter, Esc, q or Ctrl-C. If the whole capture was digital silence it says so and
     exits 3 — a silent .wav is never reported as a success.
 
     The source app keeps playing normally — this is a parallel tap, not a reroute.
@@ -264,6 +265,8 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
     var sessionPeak: Float = 0
     var lastMeterDraw = Date.distantPast
     var meterEnabled = false
+    var captureStart: Date?
+    var meterTimer: DispatchSourceTimer?
 
     func peakOf(_ sb: CMSampleBuffer) -> Float? {
         guard let fmt = sb.formatDescription,
@@ -284,15 +287,44 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
         return maxAbs
     }
 
-    func drawMeter(_ peak: Float) {
-        guard meterEnabled, Date().timeIntervalSince(lastMeterDraw) > 0.1 else { return }
+    /// The meter line is also the clock. A capture that says "stopping after 16.0s" once
+    /// and then sits there tells you nothing about how long is left — so the remaining
+    /// time counts down in the same line that shows the level.
+    ///
+    /// Driven by BOTH the audio callbacks and a 0.1s timer, so the clock keeps ticking
+    /// even if buffers stall — a frozen countdown would be its own kind of lie.
+    var lastPeak: Float = 0
+
+    func drawMeter() {
+        guard meterEnabled, Date().timeIntervalSince(lastMeterDraw) > 0.08 else { return }
         lastMeterDraw = Date()
+        let peak = lastPeak
         let db = peak > 0 ? 20 * log10(Double(peak)) : -Double.infinity
         // -60 dBFS .. 0 dBFS across 30 cells
         let filled = peak > 0 ? max(0, min(30, Int((db + 60) / 2))) : 0
         let bar = String(repeating: "█", count: filled) + String(repeating: "·", count: 30 - filled)
         let label = peak > 0 ? String(format: "%6.1f dBFS", db) : "  silence"
-        FileHandle.standardError.write("   [\(bar)] \(label)  \r".data(using: .utf8)!)
+
+        var clock = ""
+        if let started = captureStart {
+            let elapsed = Date().timeIntervalSince(started)
+            if opts.seconds > 0 {
+                let left = max(0, opts.seconds - elapsed)
+                clock = String(format: "  %4.1fs left", left)
+            } else {
+                clock = String(format: "  %d:%02d", Int(elapsed) / 60, Int(elapsed) % 60)
+            }
+        }
+        FileHandle.standardError.write("   [\(bar)] \(label)\(clock)  \r".data(using: .utf8)!)
+    }
+
+    func startMeterClock() {
+        guard meterEnabled else { return }
+        let t = DispatchSource.makeTimerSource(queue: sampleQueue)
+        t.schedule(deadline: .now() + 0.1, repeating: 0.1)
+        t.setEventHandler { [weak self] in self?.drawMeter() }
+        t.resume()
+        meterTimer = t
     }
 
     func listContent(_ c: SCShareableContent) {
@@ -364,12 +396,18 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
             guard let self else { return }
             let scope = self.opts.appName == nil ? "all system audio" : "app \"\(label)\""
             print("🎧 tapping \(scope) → \(self.opts.outPath)")
-            print(self.opts.seconds > 0 ? "   stopping after \(self.opts.seconds)s…" : "   press Ctrl-C to stop.")
+            let stopKeys = isatty(STDIN_FILENO) == 1 ? "Enter / Esc / q / Ctrl-C" : "Ctrl-C"
+            print(self.opts.seconds > 0
+                  ? "   stopping after \(String(format: "%g", self.opts.seconds))s — or \(stopKeys) to stop early."
+                  : "   press \(stopKeys) to stop.")
+            self.captureStart = Date()
+            self.startMeterClock()
             if self.opts.seconds > 0 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + self.opts.seconds) { self.finish() }
             }
         }
         installSignalHandler()
+        installKeyWatcher()
     }
 
     func setupWriter() {
@@ -402,7 +440,8 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
         }
         if let p = peakOf(sampleBuffer) {
             if p > sessionPeak { sessionPeak = p }
-            drawMeter(p)
+            lastPeak = p
+            drawMeter()
         }
         if audioInput.isReadyForMoreMediaData {
             audioInput.append(sampleBuffer)
@@ -427,9 +466,56 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
     }
     static var sigSrc: DispatchSourceSignal?
 
+    // MARK: - Stop on a keypress
+    //
+    // Ctrl-C works, but "press a key to stop" is what a recorder should feel like — and
+    // after `wav` raises the app, Ctrl-C is a two-handed thing while Esc/Enter is one.
+    // ICANON+ECHO are cleared so single keys arrive immediately with nothing echoed;
+    // ISIG is deliberately LEFT ON so Ctrl-C still raises SIGINT as before.
+
+    static var savedTermios: termios?
+    var stdinSrc: DispatchSourceRead?
+
+    func installKeyWatcher() {
+        guard isatty(STDIN_FILENO) == 1 else { return }   // piped/backgrounded: nothing to read
+        var raw = termios()
+        guard tcgetattr(STDIN_FILENO, &raw) == 0 else { return }
+        Self.savedTermios = raw
+        raw.c_lflag &= ~(UInt(ICANON) | UInt(ECHO))       // NOT ISIG — keep Ctrl-C alive
+        withUnsafeMutablePointer(to: &raw.c_cc) {
+            $0.withMemoryRebound(to: cc_t.self, capacity: Int(NCCS)) { cc in
+                cc[Int(VMIN)] = 1
+                cc[Int(VTIME)] = 0
+            }
+        }
+        tcsetattr(STDIN_FILENO, TCSANOW, &raw)
+        atexit { AudioRecorder.restoreTerminal() }        // never leave a wrecked terminal
+
+        let src = DispatchSource.makeReadSource(fileDescriptor: STDIN_FILENO, queue: .main)
+        src.setEventHandler { [weak self] in
+            var byte: UInt8 = 0
+            guard read(STDIN_FILENO, &byte, 1) == 1 else { return }
+            // Enter, Esc or q — Esc arrives as 0x1B alone (no arrow-key escape sequences
+            // are expected here, this is not a full-screen UI).
+            if byte == 0x0A || byte == 0x0D || byte == 0x1B || byte == UInt8(ascii: "q") {
+                self?.finish()
+            }
+        }
+        src.resume()
+        stdinSrc = src
+    }
+
+    static func restoreTerminal() {
+        guard var t = savedTermios else { return }
+        tcsetattr(STDIN_FILENO, TCSANOW, &t)
+        savedTermios = nil
+    }
+
     func finish() {
         guard !finished else { return }
         finished = true
+        meterTimer?.cancel(); meterTimer = nil
+        AudioRecorder.restoreTerminal()
         stream?.stopCapture { _ in
             self.sampleQueue.async {
                 guard self.started else {
