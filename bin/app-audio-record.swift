@@ -24,15 +24,106 @@ import Foundation
 import ScreenCaptureKit
 import AVFoundation
 import CoreMedia
+import CoreAudio
 import AppKit
+
+// MARK: - Who is actually making sound right now?
+//
+// SCShareableContent lists every running app; it does NOT know which of them are
+// producing audio. CoreAudio does: macOS 14.4+ exposes an audio-process object list,
+// and each process object reports whether it is currently running OUTPUT. That is the
+// difference between "here are 60 apps, guess" and "Schism Tracker ● is playing".
+// Used by --list-audio, which is what the `wav` picker renders.
+
+struct AudioProc {
+    var pid: pid_t
+    var bundleID: String
+    var name: String
+    var playing: Bool
+    var isApp: Bool     // .regular activation policy — a real app with a Dock tile / UI,
+                        // as opposed to audiomxd / assistantd / avconferenced plumbing.
+}
+
+func audioProcesses() -> [AudioProc] {
+    guard #available(macOS 14.4, *) else { return [] }
+    var addr = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyProcessObjectList,
+                                          mScope: kAudioObjectPropertyScopeGlobal,
+                                          mElement: kAudioObjectPropertyElementMain)
+    var size: UInt32 = 0
+    guard AudioObjectGetPropertyDataSize(AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size) == noErr,
+          size > 0 else { return [] }
+    let count = Int(size) / MemoryLayout<AudioObjectID>.size
+    var ids = [AudioObjectID](repeating: 0, count: count)
+    guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &addr, 0, nil, &size, &ids) == noErr
+    else { return [] }
+
+    // POD properties only (pid_t, UInt32). CFString properties must NOT go through this —
+    // taking a raw pointer to a variable holding an object reference is not well-defined.
+    func prop<T>(_ obj: AudioObjectID, _ selector: AudioObjectPropertySelector, _ initial: T) -> T? {
+        var a = AudioObjectPropertyAddress(mSelector: selector,
+                                           mScope: kAudioObjectPropertyScopeGlobal,
+                                           mElement: kAudioObjectPropertyElementMain)
+        var v = initial
+        var sz = UInt32(MemoryLayout<T>.size)
+        let status = withUnsafeMutablePointer(to: &v) {
+            AudioObjectGetPropertyData(obj, &a, 0, nil, &sz, UnsafeMutableRawPointer($0))
+        }
+        guard status == noErr else { return nil }
+        return v
+    }
+
+    /// CFString-valued property. CoreAudio hands back a +1 reference, hence takeRetainedValue.
+    func stringProp(_ obj: AudioObjectID, _ selector: AudioObjectPropertySelector) -> String? {
+        var a = AudioObjectPropertyAddress(mSelector: selector,
+                                           mScope: kAudioObjectPropertyScopeGlobal,
+                                           mElement: kAudioObjectPropertyElementMain)
+        var cf: Unmanaged<CFString>?
+        var sz = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+        let status = withUnsafeMutablePointer(to: &cf) {
+            AudioObjectGetPropertyData(obj, &a, 0, nil, &sz, $0)
+        }
+        guard status == noErr, let cf else { return nil }
+        return cf.takeRetainedValue() as String
+    }
+
+    var out: [AudioProc] = []
+    for id in ids {
+        guard let pid: pid_t = prop(id, kAudioProcessPropertyPID, pid_t(0)) else { continue }
+        let playing = (prop(id, kAudioProcessPropertyIsRunningOutput, UInt32(0)) ?? 0) != 0
+        let bundleID = stringProp(id, kAudioProcessPropertyBundleID) ?? ""
+        let running = NSRunningApplication(processIdentifier: pid)
+        let name = running?.localizedName ?? bundleID
+        if bundleID.isEmpty && running == nil { continue }   // faceless daemon, nothing to pick
+        out.append(AudioProc(pid: pid,
+                             bundleID: bundleID.isEmpty ? (running?.bundleIdentifier ?? "") : bundleID,
+                             name: name.isEmpty ? "pid \(pid)" : name,
+                             playing: playing,
+                             isApp: running?.activationPolicy == .regular))
+    }
+    // Playing first, then alphabetical — the thing you want is always at the top.
+    return out.sorted { ($0.playing ? 0 : 1, $0.name.lowercased()) < ($1.playing ? 0 : 1, $1.name.lowercased()) }
+}
+
+func printAudioProcessesJSON() {
+    let rows = audioProcesses().map { p -> [String: Any] in
+        ["pid": Int(p.pid), "bundleID": p.bundleID, "name": p.name,
+         "playing": p.playing, "isApp": p.isApp]
+    }
+    let data = try! JSONSerialization.data(withJSONObject: rows, options: [.prettyPrinted])
+    FileHandle.standardOutput.write(data)
+    FileHandle.standardOutput.write("\n".data(using: .utf8)!)
+}
 
 struct Options {
     var appName: String?
     var all = false
+    var front = false           // tap whatever app is frontmost when capture begins
     var outPath = ""
     var seconds: Double = 0     // 0 = record until Ctrl-C
+    var after: Double = 0       // countdown before the tap opens (go hit play in the tracker)
     var list = false
     var reveal = false
+    var quiet = false           // suppress the live level meter
 }
 
 func err(_ s: String) -> Never {
@@ -44,16 +135,28 @@ func printUsage() {
     print("""
     app-audio-record — capture one app's audio to a .wav (ScreenCaptureKit, no loopback driver)
 
-      --list              list displays + tappable apps
+      --list              list tappable apps
       --app <name>        capture ONLY this app's audio (name or bundle id, substring ok)
+      --front             capture whatever app is FRONTMOST when the tap opens
       --all               capture all system audio
+      --after <n>         wait n seconds before the tap opens — switch to the app and
+                          hit play; with --front the frontmost app is resolved AFTER the wait
       --seconds <n>       stop automatically after n seconds (default: run until Ctrl-C)
       --out <path>        a .wav FILE, or a FOLDER to drop <timestamp>-<app>.wav into
                           (folder is created if missing; default: the current folder)
+      --quiet             no live level meter
       --reveal            reveal the finished file in Finder
+
+    While capturing it prints a live level meter, so you can SEE whether the app is
+    actually making sound. If the whole capture was digital silence it says so and
+    exits 3 — a silent .wav is never reported as a success.
 
     The source app keeps playing normally — this is a parallel tap, not a reroute.
     Needs Screen Recording permission (System Settings ▸ Privacy & Security).
+
+    Tracker workflow:
+      app-audio-record --front --after 4 --seconds 30 --out ~/Music/grabs
+      (run it, switch to Schism/Renoise, hit play — the grab lands in the folder)
     """)
 }
 
@@ -64,11 +167,15 @@ func parseArgs() -> Options {
     while i < a.count {
         switch a[i] {
         case "--list", "-l": o.list = true
+        case "--list-audio": printAudioProcessesJSON(); exit(0)
         case "--all", "--system-audio": o.all = true
+        case "--front", "--frontmost": o.front = true
         case "--reveal": o.reveal = true
+        case "--quiet", "-q": o.quiet = true
         case "--app": i += 1; o.appName = i < a.count ? a[i] : nil
         case "--out", "-o": i += 1; o.outPath = i < a.count ? a[i] : ""
         case "--seconds", "-t": i += 1; o.seconds = i < a.count ? (Double(a[i]) ?? 0) : 0
+        case "--after", "--delay": i += 1; o.after = i < a.count ? (Double(a[i]) ?? 0) : 0
         case "--help", "-h": printUsage(); exit(0)
         default: err("unknown argument \(a[i]) — try --help")
         }
@@ -96,26 +203,49 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
         return "\(f.string(from: Date()))-\(safe).wav"
     }
 
-    /// `--out` takes a FILE or a FOLDER. A folder (existing directory, or any path ending
-    /// in "/") gets a timestamped `<stamp>-<App>.wav` dropped inside it — "record a wavefile
-    /// to a specific folder" without inventing a filename every time. Empty = current folder.
+    /// `--out` takes a FILE or a FOLDER, and the rule is the one people actually expect:
+    /// **it is a file only if it ends in .wav** — otherwise it is a folder, created if
+    /// missing, and a timestamped `<stamp>-<App>.wav` is dropped inside.
+    ///
+    /// The earlier rule ("folder only if it already exists or ends in /") looked reasonable
+    /// and was wrong in the exact case that matters: `--out ~/Music/grabs` on the FIRST run,
+    /// before the folder exists, silently produced a extension-less *file* named `grabs`.
+    /// Caught by the picker's end-to-end test, which passed a not-yet-created folder.
     static func resolveOutPath(_ given: String, label: String) -> String {
         let name = stamped(label)
         if given.isEmpty { return FileManager.default.currentDirectoryPath + "/" + name }
-        let expanded = (given as NSString).expandingTildeInPath
-        var isDir: ObjCBool = false
-        let exists = FileManager.default.fileExists(atPath: expanded, isDirectory: &isDir)
-        if given.hasSuffix("/") || (exists && isDir.boolValue) {
-            let dir = (expanded as NSString).standardizingPath
-            if !exists {
-                try? FileManager.default.createDirectory(atPath: dir, withIntermediateDirectories: true)
+        let expanded = ((given as NSString).expandingTildeInPath as NSString).standardizingPath
+        if expanded.lowercased().hasSuffix(".wav") {
+            // A file. Make sure its parent exists so `--out ~/new/dir/take.wav` works too.
+            let parent = (expanded as NSString).deletingLastPathComponent
+            if !parent.isEmpty {
+                try? FileManager.default.createDirectory(atPath: parent, withIntermediateDirectories: true)
             }
-            return dir + "/" + name
+            return expanded
         }
-        return expanded
+        try? FileManager.default.createDirectory(atPath: expanded, withIntermediateDirectories: true)
+        return expanded + "/" + name
     }
 
     func run() {
+        // The countdown happens BEFORE anything is resolved, so --front picks the app you
+        // switched to during the wait, not the terminal you launched from.
+        if opts.after > 0 {
+            var left = Int(opts.after.rounded())
+            print("⏱  starting in \(left)s — switch to the app and hit play…")
+            while left > 0 {
+                FileHandle.standardError.write("   \(left)…\r".data(using: .utf8)!)
+                Thread.sleep(forTimeInterval: 1)
+                left -= 1
+            }
+            FileHandle.standardError.write("        \r".data(using: .utf8)!)
+        }
+        if opts.front {
+            guard let app = NSWorkspace.shared.frontmostApplication,
+                  let bid = app.bundleIdentifier else { err("cannot determine the frontmost app") }
+            opts.appName = bid
+            print("🎯 frontmost app: \(app.localizedName ?? bid)  (\(bid))")
+        }
         SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: false) { content, error in
             if let error { err("ScreenCaptureKit: \(error.localizedDescription)\n(grant Screen Recording in System Settings ▸ Privacy & Security)") }
             guard let content else { err("no shareable content") }
@@ -123,6 +253,46 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
             self.start(content)
         }
         dispatchMain()
+    }
+
+    // MARK: - Level metering
+    //
+    // The whole point: a capture that produced silence must LOOK different from one that
+    // worked, while it is still running. SCK hands us Float32 PCM; peak-scan each buffer,
+    // keep the session maximum, and redraw a meter line ~10x/sec.
+
+    var sessionPeak: Float = 0
+    var lastMeterDraw = Date.distantPast
+    var meterEnabled = false
+
+    func peakOf(_ sb: CMSampleBuffer) -> Float? {
+        guard let fmt = sb.formatDescription,
+              let asbd = fmt.audioStreamBasicDescription,
+              asbd.mFormatFlags & kAudioFormatFlagIsFloat != 0 else { return nil }
+        var maxAbs: Float = 0
+        try? sb.withAudioBufferList { abl, _ in
+            for buf in abl {
+                guard let data = buf.mData else { continue }
+                let n = Int(buf.mDataByteSize) / MemoryLayout<Float>.size
+                let p = data.bindMemory(to: Float.self, capacity: n)
+                for i in 0..<n {
+                    let a = abs(p[i])
+                    if a > maxAbs { maxAbs = a }
+                }
+            }
+        }
+        return maxAbs
+    }
+
+    func drawMeter(_ peak: Float) {
+        guard meterEnabled, Date().timeIntervalSince(lastMeterDraw) > 0.1 else { return }
+        lastMeterDraw = Date()
+        let db = peak > 0 ? 20 * log10(Double(peak)) : -Double.infinity
+        // -60 dBFS .. 0 dBFS across 30 cells
+        let filled = peak > 0 ? max(0, min(30, Int((db + 60) / 2))) : 0
+        let bar = String(repeating: "█", count: filled) + String(repeating: "·", count: 30 - filled)
+        let label = peak > 0 ? String(format: "%6.1f dBFS", db) : "  silence"
+        FileHandle.standardError.write("   [\(bar)] \(label)  \r".data(using: .utf8)!)
     }
 
     func listContent(_ c: SCShareableContent) {
@@ -150,6 +320,15 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
             }
             guard !matches.isEmpty else { err("no running app matches \"\(name)\" — try --list") }
             label = matches[0].applicationName
+            // Say out loud WHICH app the string resolved to, so nobody has to type a bundle
+            // id defensively just to be sure the match landed where they meant.
+            let names = matches.map { "\($0.applicationName) (\($0.bundleIdentifier))" }
+            if names.count == 1 {
+                print("🎯 matched: \(names[0])")
+            } else {
+                print("🎯 \"\(name)\" matched \(names.count) apps — tapping all of them:")
+                for n in names { print("     • \(n)") }
+            }
             filter = SCContentFilter(display: display, including: matches, exceptingWindows: [])
         } else if opts.all {
             filter = SCContentFilter(display: display, excludingWindows: [])
@@ -173,6 +352,7 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
         cfg.excludesCurrentProcessAudio = true
 
         setupWriter()
+        meterEnabled = !opts.quiet && isatty(STDERR_FILENO) == 1
 
         let s = SCStream(filter: filter, configuration: cfg, delegate: self)
         do { try s.addStreamOutput(self, type: .audio, sampleHandlerQueue: sampleQueue) }
@@ -220,6 +400,10 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
             writer.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
             started = true
         }
+        if let p = peakOf(sampleBuffer) {
+            if p > sessionPeak { sessionPeak = p }
+            drawMeter(p)
+        }
         if audioInput.isReadyForMoreMediaData {
             audioInput.append(sampleBuffer)
             frames += 1
@@ -254,9 +438,39 @@ final class AudioRecorder: NSObject, SCStreamOutput, SCStreamDelegate {
                 }
                 self.audioInput.markAsFinished()
                 self.writer.finishWriting {
+                    if self.meterEnabled {
+                        FileHandle.standardError.write(String(repeating: " ", count: 56).data(using: .utf8)! + "\r".data(using: .utf8)!)
+                    }
                     if self.writer.status == .completed {
                         let bytes = (try? FileManager.default.attributesOfItem(atPath: self.opts.outPath)[.size] as? Int) ?? 0
-                        print("✓ \(self.opts.outPath)  (\(bytes) bytes, \(self.frames) buffers)")
+                        // A silent .wav is a FAILED grab, not a successful one. Say so, keep
+                        // the file (so it can be inspected), and exit non-zero so any
+                        // automation chaining off this doesn't treat silence as a capture.
+                        if self.sessionPeak <= 0 {
+                            let who = self.opts.appName ?? "the selected source"
+                            FileHandle.standardError.write("""
+                            ⚠️  SILENT — every sample is zero. \(self.opts.outPath) is \
+                            \(String(format: "%.1f", Double(bytes) / 192_000.0))s of digital silence.
+                                \(who) produced no audio during the capture. Check that it was
+                                actually PLAYING, and that its output goes to a normal output
+                                device (a tap can only hear what the app renders).
+                                Use --after <n> to give yourself time to switch over and hit play.
+
+                            """.data(using: .utf8)!)
+                            exit(3)
+                        }
+                        let db = 20 * log10(Double(self.sessionPeak))
+                        print(String(format: "✓ %@  (%d bytes, %d buffers, peak %.1f dBFS)",
+                                     self.opts.outPath, bytes, self.frames, db))
+                        // Not zero, but nothing you could ever hear: an app can hold an
+                        // open output stream (so CoreAudio calls it "playing") while
+                        // rendering only denormal noise. Say so — otherwise a -99 dBFS
+                        // grab reads as a clean success and disappoints later.
+                        if db < -60 {
+                            let warn = "⚠️  effectively silent — peak is \(String(format: "%.1f", db)) dBFS, far below audible. "
+                                     + "The app held an audio stream open but rendered (near-)nothing. Was it really playing?\n"
+                            FileHandle.standardError.write(warn.data(using: .utf8)!)
+                        }
                         if self.opts.reveal {
                             NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: self.opts.outPath)])
                         }

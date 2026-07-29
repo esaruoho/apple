@@ -1,4 +1,4 @@
-# CLI Tools Index — 308 tools in bin/
+# CLI Tools Index — 309 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -303,6 +303,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `voicebox-stop` — Stop whatever Voicebox is currently playing. — `bin/voicebox-stop`
 `voicebox-submit` — submit text for TTS via Syncthing to the Mac Mini's Voicebox. — `bin/voicebox-submit`
 `voicebox-worker.py` — (no description) — `bin/voicebox-worker.py`
+`wav` — (no description) — `bin/wav`
 `why-no-mount` — (no description) — `bin/why-no-mount`
 `wiki-generate.py` — SHIM → canonical copy in convey: ~/work/convey/bin/wiki-generate.py — `bin/wiki-generate.py`
 `wiki-index.py` — SHIM → canonical copy in convey (source of truth): ~/work/convey/bin/wiki-index.py — `bin/wiki-index.py`

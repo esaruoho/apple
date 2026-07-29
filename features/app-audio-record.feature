@@ -4,8 +4,9 @@
 #
 # WHAT THIS CARD SPAWNS
 #   Codespace : bin/app-audio-record.swift (source) + bin/app-audio-record (compiled;
-#               swiftc -O, frameworks ScreenCaptureKit/AVFoundation/CoreMedia/AppKit),
-#               commands/app-audio-record.md (slash pointer).
+#               swiftc -O, frameworks ScreenCaptureKit/AVFoundation/CoreMedia/CoreAudio/
+#               AppKit), bin/wav (curses picker, python3 stdlib — same shape as
+#               bin/sessions), commands/app-audio-record.md + commands/wav.md (slashes).
 #   Thinkspace: features/app-audio-record.session.md (the spawning conversation).
 #   Areaspace : OWNS = pulling a single running application's audio output off the
 #               system audio engine into a LinearPCM .wav, with no video track and no
@@ -33,9 +34,13 @@
 #   @note         a documented boundary, not an executable claim.
 #
 # RESULT
-#   Direct-push to main, no PR. Files: bin/app-audio-record.swift, bin/app-audio-record
-#   (binary), commands/app-audio-record.md, features/app-audio-record.feature +
-#   .session.md. Live build machine: macOS 15.6.1 (24G90), 2026-07-29.
+#   Direct-pushes to main, no PR. Live build machine: macOS 15.6.1 (24G90), 2026-07-29.
+#   Ship 1 (71ce6fa): the recorder — app-scoped SCK tap → LinearPCM .wav.
+#   Ship 2 (5d784e9): --out accepts a folder; silence self-inflicted teardown error.
+#   Ship 3: the ANSWER TO "select by cursor up/down and press enter" — CoreAudio
+#     process objects (--list-audio: who is actually outputting audio) + bin/wav, the
+#     arrow-key picker; plus live dBFS metering, the SILENT/effectively-silent verdicts,
+#     --front, --after, and matched-app echo. Also fixes the --out folder rule.
 # ============================================================================
 
 Feature: Capture one application's audio to a .wav without a loopback driver
@@ -62,13 +67,26 @@ Feature: Capture one application's audio to a .wav without a loopback driver
     #          branch building SCContentFilter(display:including:exceptingWindows:)
 
   @hw-verified
-  Scenario: --out takes a FOLDER, not just a filename  (ran live 2026-07-29)
+  Scenario: --out is a FILE only if it ends in .wav, otherwise a FOLDER  (ran live 2026-07-29)
     Given the ask was "record a wavefile to a specific folder"
-    When `app-audio-record --all --seconds 3 --out <dir>` ran with <dir> not existing
-    Then the folder was created and a timestamped <stamp>-system.wav landed inside it
-    And a path with a trailing "/" is treated as a folder even if it does not exist yet,
-      while any other non-directory path is used verbatim as the output file
+    When `--out <dir>` names a folder that does NOT exist yet
+    Then the folder is created and <stamp>-<App>.wav lands inside it
+    When `--out <dir>/deeper/take.wav` names a .wav in a missing folder
+    Then the parent folders are created and the file is written at exactly that path
     # innards: `resolveOutPath(_:label:)` + `stamped(_:)`
+    # BUG THIS FIXES: the first rule was "folder only if it already exists or ends in /",
+    # which silently turned `--out ~/Music/grabs` on its FIRST run into an extension-less
+    # FILE named `grabs`. Found by the picker's end-to-end test, not by reasoning.
+
+  @hw-verified
+  Scenario: an app that holds an open stream but renders nothing is called out  (ran live 2026-07-29)
+    Given Ableton Live was "playing" per CoreAudio (output stream open) but rendering ~nothing
+    When a 2s tap of Live finished
+    Then it exited 0 with the file kept, but printed
+      "⚠️  effectively silent — peak is -100.6 dBFS, far below audible"
+    And this is distinct from the all-zero case, which is an exit-3 failure
+    # innards: `finish()` — the `db < -60` branch
+    # WHY: -100 dBFS reported as a clean ✓ is a success message that disappoints later.
 
   @hw-verified
   Scenario: teardown is silent, not an error  (ran live 2026-07-29)
@@ -134,3 +152,32 @@ Feature: Capture one application's audio to a .wav without a loopback driver
     audio-only route (no Screen Recording permission). It was not used because SCK was
     already proven in this repo by screen-audio-record and shares the app-matching code
     shape. If the Screen Recording prompt ever becomes a problem, that is the swap.
+
+  @hw-verified
+  Scenario: the picker lists apps and marks who is ACTUALLY making sound  (ran live 2026-07-29)
+    Given CoreAudio's audio-process object list (macOS 14.4+) knows which processes
+      are currently running output — something SCShareableContent cannot tell you
+    When `app-audio-record --list-audio` ran
+    Then it emitted JSON per process with pid / bundleID / name / playing / isApp
+    And with Ableton Live and Schism Tracker both open it reported exactly
+      playing: ["Live", "Schism Tracker"]
+    And `wav` filtered 38 audio clients down to 7 rows — real apps plus anything
+      currently playing — so audiomxd / assistantd / avconferenced never appear
+    # innards: bin/app-audio-record.swift `audioProcesses()` + `printAudioProcessesJSON()`,
+    #          bin/wav `audio_procs()`
+    # NOTE: the filter is NSRunningApplication.activationPolicy == .regular, NOT a
+    #       blacklist of daemon names — a blacklist leaked audiomxd on the first try.
+
+  @hw-verified
+  Scenario: arrow keys + Enter produce a .wav  (ran live 2026-07-29, driven through a pty)
+    Given `wav --seconds 3 --out ./pickdrop` running in a pseudo-terminal
+    When ↓ then ↑ then Enter were written to the pty
+    Then the curses picker exited, the recorder ran with --app com.ableton.live,
+      the live dBFS meter redrew ~10x/sec, and a finished .wav was reported
+    # innards: bin/wav `picker()` + `main()`
+    # NOTE: this test is what caught the --out folder bug above; the UI was fine.
+
+  @note
+  Boundary: "playing" means an open output stream, not audible sound
+    kAudioProcessPropertyIsRunningOutput is true for an app holding an output stream
+    even when it renders silence — hence the separate peak-based verdicts after capture.

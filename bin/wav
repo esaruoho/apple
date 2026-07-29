@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+"""
+wav — pick an app with the arrow keys, press Enter, get a .wav of its audio.
+
+The point: you should never have to know an app's name-vs-bundle-id, and you should
+never find out afterwards that you recorded ten seconds of silence. This lists every
+app CoreAudio knows about, marks the ones ACTUALLY OUTPUTTING AUDIO RIGHT NOW with a
+green ●, refreshes ~2x/sec, and records the one you pick.
+
+    wav                     pick from the live list, Enter records
+    wav --seconds 20        Enter records exactly 20s (default: Ctrl-C to stop)
+    wav --out ~/Music/grabs where the .wav lands (default: the current folder)
+
+Keys:
+    ↑/↓ or k/j    move            Enter    record the highlighted app
+    a             all system audio (not one app)
+    p             show only apps currently playing  (toggle)
+    +/-           duration ±5s (0 = until Ctrl-C)
+    q / Esc       quit
+
+Under the hood it just runs the Apple-native recorder:
+    app-audio-record --app <bundle-id> [--seconds N] --out <folder>
+ScreenCaptureKit taps that one process. Nothing is rerouted, nothing is installed,
+the app keeps playing to your speakers exactly as before.
+
+Apple-native: stdlib only. No Homebrew, no pip.
+
+FEATURE-CARD >> features/app-audio-record.feature
+"""
+import curses
+import json
+import os
+import subprocess
+import sys
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+RECORDER = os.path.join(HERE, "app-audio-record")
+
+def audio_procs(show_all=False):
+    """CoreAudio's process list via the recorder (playing-first, already sorted).
+
+    Default view = real apps (NSRunningApplication activation policy .regular) plus
+    anything currently making sound. That keeps audiomxd / assistantd / avconferenced
+    and friends out of the list without maintaining a blacklist of daemon names.
+    --all-procs shows every audio client, plumbing included.
+    """
+    try:
+        out = subprocess.run([RECORDER, "--list-audio"], capture_output=True,
+                             text=True, timeout=10).stdout
+        rows = json.loads(out) if out.strip() else []
+    except Exception:
+        return []
+    if show_all:
+        return rows
+    return [r for r in rows if r.get("isApp") or r.get("playing")]
+
+
+def fmt_dur(seconds):
+    return "until Ctrl-C" if not seconds else f"{seconds}s"
+
+
+def picker(stdscr, seconds, outdir, show_all):
+    curses.curs_set(0)
+    stdscr.nodelay(True)
+    stdscr.timeout(500)                 # redraw ~2x/sec so ● markers stay live
+    if curses.has_colors():
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_GREEN, -1)     # playing marker
+        curses.init_pair(2, curses.COLOR_BLACK, curses.COLOR_CYAN)  # selection
+        curses.init_pair(3, curses.COLOR_YELLOW, -1)    # header/help
+
+    sel = 0
+    playing_only = False
+    rows = audio_procs(show_all)
+
+    while True:
+        shown = [r for r in rows if r["playing"]] if playing_only else rows
+        if not shown:
+            shown = rows
+        sel = max(0, min(sel, len(shown) - 1)) if shown else 0
+
+        stdscr.erase()
+        h, w = stdscr.getmaxyx()
+        head = f" wav — pick an app, Enter records   [{fmt_dur(seconds)}]  → {outdir or 'current folder'}"
+        stdscr.addnstr(0, 0, head.ljust(w - 1), w - 1, curses.color_pair(3) | curses.A_BOLD)
+        legend = " ● = making sound right now    ↑↓ move · Enter record · a all-audio · p playing-only · +/- duration · q quit"
+        stdscr.addnstr(1, 0, legend.ljust(w - 1), w - 1, curses.A_DIM)
+
+        top = 3
+        room = max(1, h - top - 1)
+        first = max(0, min(sel - room // 2, max(0, len(shown) - room)))
+        for i, r in enumerate(shown[first:first + room]):
+            y = top + i
+            idx = first + i
+            mark = "●" if r["playing"] else " "
+            line = f"  {mark}  {r['name']}"
+            pad = max(1, 34 - len(line))
+            line = f"{line}{' ' * pad}{r['bundleID']}"
+            attr = curses.color_pair(2) if idx == sel else 0
+            stdscr.addnstr(y, 0, line.ljust(w - 1), w - 1, attr)
+            if r["playing"] and idx != sel:
+                stdscr.addnstr(y, 2, "●", 1, curses.color_pair(1) | curses.A_BOLD)
+        if not shown:
+            stdscr.addnstr(top, 2, "nothing to show — is CoreAudio reporting? (macOS 14.4+)", w - 1)
+        stdscr.refresh()
+
+        try:
+            key = stdscr.getch()
+        except KeyboardInterrupt:
+            return None
+        if key == -1:
+            rows = audio_procs(show_all)     # timeout tick → refresh the ● markers
+            continue
+        if key in (ord("q"), 27):
+            return None
+        if key in (curses.KEY_UP, ord("k")):
+            sel = max(0, sel - 1)
+        elif key in (curses.KEY_DOWN, ord("j")):
+            sel = min(len(shown) - 1, sel + 1) if shown else 0
+        elif key in (ord("p"),):
+            playing_only = not playing_only
+            sel = 0
+        elif key in (ord("+"), ord("=")):
+            seconds += 5
+        elif key in (ord("-"), ord("_")):
+            seconds = max(0, seconds - 5)
+        elif key in (ord("a"),):
+            return {"all": True, "seconds": seconds}
+        elif key in (curses.KEY_ENTER, 10, 13):
+            if shown:
+                r = shown[sel]
+                return {"bundleID": r["bundleID"], "name": r["name"], "seconds": seconds}
+
+
+def main():
+    args = sys.argv[1:]
+    seconds, outdir, show_all = 0, "", False
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("--seconds", "-t") and i + 1 < len(args):
+            i += 1; seconds = int(float(args[i]))
+        elif a in ("--out", "-o") and i + 1 < len(args):
+            i += 1; outdir = os.path.expanduser(args[i])
+        elif a == "--all-procs":
+            show_all = True
+        elif a in ("--help", "-h"):
+            print(__doc__); return 0
+        else:
+            print(f"unknown argument {a} — try --help", file=sys.stderr); return 1
+        i += 1
+
+    if not os.path.exists(RECORDER):
+        print(f"error: recorder not found at {RECORDER}", file=sys.stderr)
+        print("build it: swiftc -O -o bin/app-audio-record bin/app-audio-record.swift \\",
+              file=sys.stderr)
+        print("            -framework ScreenCaptureKit -framework AVFoundation \\", file=sys.stderr)
+        print("            -framework CoreMedia -framework CoreAudio -framework AppKit", file=sys.stderr)
+        return 1
+
+    try:
+        choice = curses.wrapper(picker, seconds, outdir, show_all)
+    except KeyboardInterrupt:
+        return 130
+    if not choice:
+        return 0
+
+    # Out of curses, into the real recorder — so its live level meter is what you watch.
+    cmd = [RECORDER]
+    cmd += ["--all"] if choice.get("all") else ["--app", choice["bundleID"]]
+    if choice["seconds"]:
+        cmd += ["--seconds", str(choice["seconds"])]
+    if outdir:
+        cmd += ["--out", outdir]
+    return subprocess.call(cmd)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
