@@ -1,9 +1,10 @@
-# CLI Tools Index — 307 tools in bin/
+# CLI Tools Index — 308 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
 Format: `tool-name` — description — `path`
 Regenerate: `python3 bin/gen-skill-indexes.py`
+`app-audio-record` — (no description) — `bin/app-audio-record`
 `app-plist-probe.py` — (no description) — `bin/app-plist-probe.py`
 `app-probe.py` — (no description) — `bin/app-probe.py`
 `apple-bootstrap` — one-command setup for any Apple user. — `bin/apple-bootstrap`
