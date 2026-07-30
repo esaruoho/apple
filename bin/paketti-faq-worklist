@@ -1,0 +1,377 @@
+#!/usr/bin/env python3
+"""paketti-faq-worklist — triage the unvetted FAQ vault into a curator worklist.
+
+Certifying is curator-locked: only Esa decides what becomes a trusted answer. This tool does
+everything AROUND that decision so the decision itself is fast — it sorts the unvetted drafts into
+buckets, ranks them, and prefills the exact `paketti-faq-vet` command for each, so the curator
+reads and says yes or no instead of hunting.
+
+Why it exists: the vault was 128 entries with only 9 vetted. A vetted answer is served instantly
+from an embedding match with NO model call — it is the only path that doesn't depend on a 4-bit
+model using its grounding well. So the vetted count IS the quality ceiling of the whole helper.
+
+    paketti-faq-worklist                     # the ranked worklist, best candidates first
+    paketti-faq-worklist --broken            # only drafts the old bugs corrupted (reject these)
+    paketti-faq-worklist --dupes             # only duplicate questions (keep one, reject the rest)
+    paketti-faq-worklist --show <id>         # one draft in full, with its prefilled commands
+    paketti-faq-worklist --md OUT.md         # write the whole worklist as markdown to read/mark up
+    paketti-faq-worklist --limit 20          # cap the REVIEW bucket
+
+Buckets:
+  BROKEN   — corrupted by bugs that are now fixed (a leaked reasoning trace, a nested provenance
+             tag, an echoed `\"\"\"` fence, an echoed grounding dump, empty/absurd length). These need
+             no judgment: the text is visibly wrong. Reject, and the question gets a fresh draft
+             next time someone asks.
+  DUPE     — the same question drafted more than once. Keep the strongest, reject the others.
+  UNSURE   — a draft that answers with "not documented" / "I couldn't find". Honest, but nothing to
+             certify. Better redrafted now that changelog retrieval is fixed.
+  REVIEW   — clean drafts, ranked by confidence. This is the pile worth the curator's eyes.
+
+Confidence is deliberately mechanical — no model call, so it can't bluff:
+  + cites real changelog dates / manual headings
+  + every **bold feature name** it claims exists in the ground-truth function index
+  − claims a feature name that is NOT in the index (a fabrication; heavily penalised)
+  + sensible length; − hedging, − no-answer phrasing
+
+# FEATURE-CARD >> features/fm-think-no-leak.feature
+"""
+import argparse
+import json
+import os
+import re
+import shlex
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+
+VAULT = Path(os.environ.get(
+    "PAKETTI_FAQ_VAULT",
+    str(Path.home() / "work" / "comms" / "queue" / "paketti-faq" / "vault.jsonl")))
+
+BOLD, DIM, RED, YEL, GREEN, CYAN, RESET = (
+    "\033[1m", "\033[2m", "\033[31m", "\033[33m", "\033[32m", "\033[36m", "\033[0m")
+
+PROVENANCE = re.compile(
+    r"(?:✅ \*\*Vetted answer\*\*|🟡 \*\*Draft — unverified\*\*|🟡 \*\*Not documented yet\*\*"
+    r"|📖 \*\*From the changelog\*\*)")
+GROUNDING = re.compile(r"PAKETTI FEATURES for this topic|COMPLETE real list from the function index")
+NO_ANSWER = re.compile(
+    r"(?i)\b(not documented|isn'?t documented|no (?:such )?(?:feature|setting|documented)|"
+    r"doesn'?t (?:describe|mention|indicate)|does not (?:describe|mention|indicate)|"
+    r"couldn'?t (?:find|draft)|no information|not (?:explicitly )?(?:described|mentioned))\b")
+HEDGE = re.compile(r"(?i)\b(may|might|possibly|perhaps|likely|presumably|appears to|seems to)\b")
+BOLD_NAME = re.compile(r"\*\*([A-Z][^*\n]{3,60})\*\*")
+
+
+def _real_question(q):
+    """The USER's question, recovered from a synthesized revise/redraft prompt. Reuses the engine's
+    extractor so there is one definition of it."""
+    try:
+        import paketti_faq as F
+        return F.real_question(q)
+    except Exception:
+        return (q or "").strip()
+
+
+def load(repair=True):
+    if not VAULT.exists():
+        sys.exit(f"no vault at {VAULT}")
+    out = []
+    for ln in VAULT.read_text(encoding="utf-8", errors="replace").splitlines():
+        if ln.strip():
+            try:
+                out.append(json.loads(ln))
+            except Exception:
+                continue
+    if repair:
+        # Historical entries stored the whole synthesized PROMPT as `q`, which made them
+        # permanently unmatchable (a short question never embeds close to a 2KB prompt). Recover the
+        # real question in memory so the worklist ranks and vets against something real. Writing the
+        # repair back to the vault is `--repair`, and it is opt-in.
+        for e in out:
+            rq = _real_question(e.get("q") or "")
+            if rq and rq != (e.get("q") or "").strip():
+                e["q_raw"], e["q"], e["_repaired"] = e["q"], rq, True
+    return out
+
+
+def real_feature_names():
+    """Every feature name the ground-truth function index knows — the only names a draft is allowed
+    to assert. Falls back to None (checks skipped) when the index isn't reachable from this machine."""
+    try:
+        import paketti_faq as F
+        idx = json.loads(F.FUNCTIONS_INDEX.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    names = set()
+    for area, fns in idx.items():
+        names.add(area.lower())
+        for f in fns:
+            names.add(str(f.get("function", "")).lower())
+            for k in ("keybindings", "midimappings", "menuentries"):
+                for n in f.get(k, []) or []:
+                    names.add(str(n).lower())
+                    names.add(str(n).split(":")[-1].lower())
+    return {n.strip() for n in names if n and n.strip()}
+
+
+def breakage(a: str):
+    """Which now-fixed bug corrupted this draft. Empty list = the text itself is intact."""
+    try:
+        from fm_think import looks_like_thinking
+    except Exception:
+        def looks_like_thinking(_):
+            return False
+    bad = []
+    if "<think" in a or looks_like_thinking(a):
+        bad.append("leaked-thinking")
+    if len(PROVENANCE.findall(a)) >= 1:
+        bad.append("nested-provenance-tag")
+    if '"""' in a:
+        bad.append("echoed-fence")
+    if GROUNDING.search(a):
+        bad.append("echoed-grounding")
+    if not a.strip():
+        bad.append("empty")
+    elif len(a.strip()) < 120:
+        bad.append("too-short")
+    if len(a) > 6000:
+        bad.append("absurd-length")
+    return bad
+
+
+def has_prose(a: str) -> bool:
+    """Does the answer DESCRIBE behaviour, or is it just a list of names? The engine already draws
+    this line (a list-only section has no behaviour to ground in) — reuse its definition."""
+    try:
+        import paketti_faq as F
+        return F._has_prose(a)
+    except Exception:
+        return bool(re.search(r"[a-z]{3,}[^\n]{60,}", a))
+
+
+def already_vetted_qs(entries):
+    """Questions that already have a certified answer — certifying a near-twin adds nothing."""
+    try:
+        import paketti_faq as F
+        return [(F._strip_template(e.get("q") or ""), e) for e in entries
+                if e.get("status") == "vetted"]
+    except Exception:
+        return []
+
+
+def confidence(e, real, vetted=()):
+    """Mechanical score — no model call, so it cannot bluff. Returns (score, reasons)."""
+    a = e.get("a") or ""
+    s, why = 0.0, []
+    if has_prose(a):
+        s += 2.0
+        why.append("+2 describes behaviour")
+    else:
+        s -= 2.0
+        why.append("-2 list-only, no behaviour described")
+    if vetted:
+        try:
+            import paketti_faq as F
+            mine = F._strip_template(e.get("q") or "")
+            mywords = set(mine.split())
+            for vq, ve in vetted:
+                vw = set(vq.split())
+                if mywords and vw and len(mywords & vw) / len(mywords | vw) >= 0.6:
+                    s -= 2.5
+                    why.append(f"-2.5 already covered by vetted {ve['id']}")
+                    break
+        except Exception:
+            pass
+    if e.get("citations"):
+        s += 2.0
+        why.append(f"+2 cites {len(e['citations'])}")
+    if re.search(r"\b20\d\d-\d\d-\d\d\b", a):
+        s += 1.0
+        why.append("+1 dated changelog reference")
+    claimed = {m.group(1).strip().lower() for m in BOLD_NAME.finditer(a)}
+    if real is not None and claimed:
+        unknown = [c for c in claimed
+                   if c not in real and not any(c in r or r in c for r in real)]
+        if unknown:
+            s -= 3.0 * len(unknown)
+            why.append(f"-{3 * len(unknown):.0f} claims unknown name(s): {', '.join(unknown[:3])}")
+        else:
+            s += 1.5
+            why.append(f"+1.5 all {len(claimed)} named features exist")
+    n = len(a.strip())
+    if 250 <= n <= 1800:
+        s += 1.0
+        why.append("+1 sensible length")
+    elif n > 3000:
+        s -= 1.0
+        why.append("-1 very long")
+    hedges = len(HEDGE.findall(a))
+    if hedges >= 3:
+        s -= 1.0
+        why.append(f"-1 hedges ×{hedges}")
+    return s, why
+
+
+def triage(entries):
+    real = real_feature_names()
+    vetted = already_vetted_qs(entries)
+    un = [e for e in entries if e.get("status") == "unvetted"]
+    by_q = {}
+    for e in un:
+        by_q.setdefault((e.get("q") or "").strip().lower(), []).append(e)
+
+    broken, dupes, unsure, review = [], [], [], []
+    for q, group in by_q.items():
+        scored = []
+        for e in group:
+            a = e.get("a") or ""
+            bad = breakage(a)
+            sc, why = confidence(e, real, vetted)
+            scored.append((sc, why, bad, e))
+        scored.sort(key=lambda t: (not t[2], t[0]), reverse=True)   # intact first, then best score
+        best = scored[0]
+        for rest in scored[1:]:
+            dupes.append(rest)
+        if best[2]:
+            broken.append(best)
+        elif NO_ANSWER.search(best[3].get("a") or ""):
+            unsure.append(best)
+        else:
+            review.append(best)
+    review.sort(key=lambda t: t[0], reverse=True)
+    return broken, dupes, unsure, review, real, vetted
+
+
+def vet_cmd(e, reject=False):
+    q = shlex.quote(e.get("q") or "")
+    if reject:
+        return f"paketti-faq-vet --reject --q {q}"
+    return f"paketti-faq-vet --q {q} --a \"$(paketti-faq-worklist --answer {e['id']})\""
+
+
+def line(i, sc, why, bad, e, colour=True):
+    q = (e.get("q") or "").replace("\n", " ")[:72]
+    tag = f"{RED}{','.join(bad)}{RESET}" if bad else f"{GREEN}{sc:+.1f}{RESET}"
+    if not colour:
+        tag = ",".join(bad) if bad else f"{sc:+.1f}"
+    return f"{i:>3}. [{e['id']}] {tag}  {q}"
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=True)
+    ap.add_argument("--broken", action="store_true")
+    ap.add_argument("--dupes", action="store_true")
+    ap.add_argument("--unsure", action="store_true")
+    ap.add_argument("--show")
+    ap.add_argument("--answer", help="print one draft's answer text only (used by the vet command)")
+    ap.add_argument("--md")
+    ap.add_argument("--limit", type=int, default=25)
+    ap.add_argument("--repair", action="store_true",
+                    help="write recovered real questions back into the vault (keeps the prompt as "
+                         "q_raw). Makes unmatchable entries matchable again.")
+    a = ap.parse_args()
+
+    entries = load()
+
+    if a.repair:
+        fixed = [e for e in entries if e.pop("_repaired", None)]
+        if not fixed:
+            print("nothing to repair — every entry's q is already a real question")
+            return 0
+        tmp = VAULT.with_suffix(".tmp")
+        for e in entries:
+            e.pop("_repaired", None)
+        tmp.write_text("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
+                       encoding="utf-8")
+        tmp.replace(VAULT)
+        print(f"repaired {len(fixed)} entries (prompt kept as q_raw) → {VAULT}")
+        for e in fixed[:10]:
+            print(f"  {e['id']}  {e['q'][:80]}")
+        return 0
+    if a.answer:
+        e = next((x for x in entries if x["id"] == a.answer), None)
+        if not e:
+            sys.exit(f"no entry {a.answer}")
+        print(e.get("a") or "")
+        return 0
+
+    broken, dupes, unsure, review, real, vetted = triage(entries)
+
+    if a.show:
+        e = next((x for x in entries if x["id"] == a.show), None)
+        if not e:
+            sys.exit(f"no entry {a.show}")
+        sc, why = confidence(e, real, vetted)
+        bad = breakage(e.get("a") or "")
+        print(f"{BOLD}{e['id']}{RESET} {DIM}· {e.get('status')} · {e.get('ts','')}{RESET}")
+        print(f"{CYAN}Q:{RESET} {e.get('q')}\n")
+        print(e.get("a") or "(empty)")
+        print(f"\n{DIM}score {sc:+.1f} — {'; '.join(why) or 'no signals'}{RESET}")
+        if bad:
+            print(f"{RED}BROKEN: {', '.join(bad)}{RESET}")
+        print(f"\n{GREEN}certify:{RESET} {vet_cmd(e)}")
+        print(f"{RED}reject :{RESET} {vet_cmd(e, reject=True)}")
+        return 0
+
+    if a.md:
+        out = [f"# Paketti FAQ — curator worklist\n",
+               f"_{len(review)} to review · {len(broken)} broken · {len(dupes)} duplicates · "
+               f"{len(unsure)} no-answer drafts · vault `{VAULT}`_\n",
+               "Certifying is yours alone. Each item below carries the exact command.\n"]
+        for title, bucket, note in (
+                ("REVIEW — worth certifying", review[:a.limit],
+                 "Ranked by mechanical confidence (real feature names, citations, length). "
+                 "Read, then run the certify or reject line."),
+                ("BROKEN — reject, no judgment needed", broken,
+                 "Corrupted by bugs now fixed (leaked thinking, nested tags, echoed fences, "
+                 "grounding dumps). The question gets a clean draft next time it's asked."),
+                ("DUPLICATES — keep the best, reject these", dupes,
+                 "The same question drafted more than once; the strongest copy is in another bucket."),
+                ("NO-ANSWER — redraft instead of certifying", unsure,
+                 "Honest 'not documented' drafts. Changelog retrieval is fixed now, so a fresh "
+                 "draft may actually find the answer.")):
+            if not bucket:
+                continue
+            out.append(f"\n## {title} ({len(bucket)})\n\n{note}\n")
+            for i, (sc, why, bad, e) in enumerate(bucket, 1):
+                out.append(f"\n### {i}. {e.get('q')}\n")
+                out.append(f"`{e['id']}` · score **{sc:+.1f}**"
+                           + (f" · **BROKEN:** {', '.join(bad)}" if bad else "")
+                           + (f" · {'; '.join(why)}" if why else "") + "\n")
+                body = (e.get("a") or "").strip()
+                out.append("\n```\n" + (body[:1200] + ("\n…[truncated]" if len(body) > 1200 else ""))
+                           + "\n```\n")
+                out.append(f"\n- certify: `{vet_cmd(e)}`\n- reject: `{vet_cmd(e, reject=True)}`\n")
+        Path(a.md).write_text("".join(out), encoding="utf-8")
+        print(f"wrote {a.md} ({len(''.join(out))} chars)")
+        return 0
+
+    def dump(title, bucket, colour, note):
+        if not bucket:
+            return
+        print(f"\n{colour}{BOLD}{title}{RESET} {DIM}({len(bucket)}) — {note}{RESET}")
+        for i, (sc, why, bad, e) in enumerate(bucket, 1):
+            print("  " + line(i, sc, why, bad, e))
+
+    if a.broken:
+        dump("BROKEN", broken, RED, "reject these")
+    elif a.dupes:
+        dump("DUPLICATES", dupes, YEL, "keep the best, reject these")
+    elif a.unsure:
+        dump("NO-ANSWER", unsure, YEL, "redraft instead")
+    else:
+        dump("REVIEW — worth certifying", review[:a.limit], GREEN, "best first")
+        dump("BROKEN — reject, no judgment needed", broken, RED, "corrupted by now-fixed bugs")
+        dump("DUPLICATES", dupes, YEL, "keep the best, reject the rest")
+        dump("NO-ANSWER — redraft instead", unsure, YEL, "retrieval is fixed now")
+        print(f"\n{DIM}{len(review)} review · {len(broken)} broken · {len(dupes)} dupes · "
+              f"{len(unsure)} no-answer · `--show <id>` for one · `--md OUT.md` to read them all"
+              f"{RESET}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

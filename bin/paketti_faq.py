@@ -506,7 +506,12 @@ def _is_synthesized(ql: str) -> bool:
     the URL handler). Real user questions are short and lack these markers."""
     return ("the user's instruction" in ql or "here is the current answer" in ql
             or "previous answer was rejected" in ql or "apply their instruction" in ql
-            or "output the full updated answer" in ql or len(ql) > 240)
+            or "output the full updated answer" in ql
+            # older prompt wordings still sitting in the vault, plus the marker every
+            # synthesized prompt starts with
+            or "your previous answer was" in ql or "the previous answer was" in ql
+            or "the user replied with" in ql or ql.lstrip().startswith("question about paketti:")
+            or len(ql) > 240)
 
 
 def urls_answer(question: str):
@@ -1103,10 +1108,38 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
     return a or None
 
 
+def real_question(q: str) -> str:
+    """Recover the USER's question from a synthesized revise/redraft prompt.
+
+    The bot's revise prompt is a whole document — "Question about Paketti: <real question>" then the
+    current answer, the user's note, and the rules. Storing that document as a vault entry's `q` made
+    the entry permanently unmatchable: a future asker types a short question, the embedding compares
+    it against a 2KB prompt, and never matches. Half the vault was dead weight this way. Take the
+    first line's question and drop the scaffolding."""
+    if not q:
+        return q
+    if not _is_synthesized(q.lower()):
+        return q.strip()
+    m = re.search(r"(?is)^\s*Question about Paketti:\s*(.+?)(?:\n\s*\n|$)", q)
+    if m:
+        cand = m.group(1).strip()
+        # A run-on first line can still carry the next section's opener — cut at those markers.
+        cand = re.split(r"(?i)\b(?:Here is the CURRENT answer|Your previous answer was|"
+                        r"The previous answer was|The user replied with)\b", cand)[0].strip()
+        if 3 <= len(cand) <= 240:
+            return cand
+    first = next((ln.strip() for ln in q.splitlines() if ln.strip()), "")
+    return first[:240] or q.strip()
+
+
 def new_entry(question: str, answer: str) -> dict:
-    return {"id": uuid.uuid4().hex[:10], "q": question, "a": answer,
+    # Store the real question, never the synthesized prompt — otherwise the entry can never be
+    # matched by a future asker, and certifying it would certify a prompt as if it were a question.
+    q = real_question(question)
+    return {"id": uuid.uuid4().hex[:10], "q": q, "a": answer,
             "citations": _citations(answer), "status": "unvetted",
-            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            **({"q_raw": question} if q != question.strip() else {})}
 
 
 def unanswered_seeds(entries: list) -> list:
