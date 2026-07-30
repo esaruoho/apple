@@ -782,6 +782,52 @@ def feature_undocumented_answer(question: str):
             f"learn it — or @esaruoho can confirm.")
 
 
+def _stem(w: str) -> str:
+    """Crude suffix strip so swallow/swallows/swallowed and focus/focused match each other. Not
+    linguistics — just enough that a question's verb form doesn't hide the entry that answers it."""
+    for suf in ("ings", "ing", "edly", "ies", "ed", "es", "s"):
+        if len(w) - len(suf) >= 4 and w.endswith(suf):
+            return w[: -len(suf)]
+    return w
+
+
+_DF_CACHE: dict = {}
+
+
+def _doc_freq(entries: list) -> dict:
+    """How many changelog entries each stem appears in — so 'dialog' (everywhere) counts for little
+    and 'swallow' (rare) counts for a lot. Computed once per entry-set."""
+    key = len(entries)
+    if key in _DF_CACHE:
+        return _DF_CACHE[key]
+    df: dict = {}
+    for e in entries:
+        seen = {_stem(w) for w in re.findall(r"[a-z]{4,}",
+                                            (e["head"] + " " + " ".join(e["body"])).lower())}
+        for s in seen:
+            df[s] = df.get(s, 0) + 1
+    _DF_CACHE.clear()
+    _DF_CACHE[key] = df
+    return df
+
+
+def _relevance(words: set, entry: dict, entries: list) -> float:
+    """Rarity-weighted overlap; a match in the HEADING counts double (the heading is what the entry
+    is ABOUT, the body merely mentions)."""
+    df = _doc_freq(entries)
+    n = max(len(entries), 1)
+    head = {_stem(w) for w in re.findall(r"[a-z]{4,}", entry["head"].lower())}
+    body = {_stem(w) for w in re.findall(r"[a-z]{4,}", " ".join(entry["body"]).lower())}
+    score = 0.0
+    for w in words:
+        s = _stem(w)
+        if s not in head and s not in body:
+            continue
+        weight = math.log(1 + n / (1 + df.get(s, 0)))      # rarer stem → bigger weight
+        score += weight * (2.0 if s in head else 1.0)
+    return score
+
+
 def changelog_context(question: str, limit: int = 5) -> str:
     """The CHANGELOG is the AUTHORITATIVE description source — Esa writes what each feature DOES when
     he ships it. Return full entries (heading + body), preferring 'Feature:' entries, for the queried
@@ -799,8 +845,17 @@ def changelog_context(question: str, limit: int = 5) -> str:
     if words:
         need = max(1, len(words) // 3)
         hits = [e for e in entries if sum(1 for w in words if w in blob(e)) >= need]
-        # prefer the original 'Feature:' description over Fix:/Improvement: entries, then by overlap
-        hits.sort(key=lambda e: (e["feat"], sum(1 for w in words if w in blob(e))), reverse=True)
+        # RELEVANCE FIRST, then prefer the original 'Feature:' description as a TIE-BREAKER.
+        # Sorting by `feat` first (as this did) let a barely-relevant Feature: entry outrank a
+        # dead-on Fix:/Improvement: one — which silently starved exactly the questions that need
+        # them. Live 2026-07-30: asked whether Paketti had fixed dialogs swallowing Renoise's global
+        # shortcuts, the model was handed 5 unrelated Feature: entries and truthfully answered "the
+        # changelog doesn't mention a fix" — while "2026-06-08 - Improvement: Groovebox 8120 controls
+        # return keyboard focus to Renoise" (the exact fix) was ranked out of the top 5. Ranking by
+        # raw term count alone wasn't enough either: "dialog"/"keyboard" hit hundreds of entries and
+        # tied everything, while the discriminating words ("swallows", "focused") missed on
+        # morphology. So: stem both sides, weight each term by rarity, and count a HEAD match double.
+        hits.sort(key=lambda e: (_relevance(words, e, entries), e["feat"]), reverse=True)
         hits = hits[:limit]
     elif recency:
         hits = entries[:limit]          # newest-first → the latest changes
@@ -946,6 +1001,42 @@ def _sanitize_links(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
+# Sentinels that exist only in the GROUNDING we hand the model. If they come back, the model has
+# echoed our system context instead of answering — cut from there down. (Seen live: a revise job
+# posted the whole function index plus a "Delete Unused Instruments" changelog blob as its answer.)
+_GROUNDING_SENTINELS = (
+    "PAKETTI FEATURES for this topic",
+    "the COMPLETE real list from the function index",
+)
+
+
+_CITE_DATE = re.compile(r"(?im)^[ \t]*[—–-]?[ \t]*changelog[ \t,:]+(\d{4}-\d{2}-\d{2})[ \t]*$")
+
+
+def _strip_bare_changelog_cites(text: str) -> str:
+    """Strip a bare dated changelog citation line ("— changelog 2026-06-09") from a DRAFTED answer.
+
+    The model likes to stamp a plausible date onto its own reasoning — seen live 2026-07-30, it hung
+    that date on a paragraph of generic GUI theory. The date was real; none of that day's 18 entries
+    said anything like the claim. We can't mechanically check whether a claim matches an entry, and a
+    citation that looks authoritative but isn't is worse than no citation — so the drafting path
+    doesn't get to cite by date at all. Verbatim changelog answers come from changelog_answer(),
+    which quotes the real entry and never passes through here."""
+    if not text or "changelog" not in text.lower():
+        return text
+    return re.sub(r"\n{3,}", "\n\n", _CITE_DATE.sub("", text)).strip()
+
+
+def _strip_grounding_echo(text: str) -> str:
+    if not text:
+        return text
+    cut = min((text.find(s) for s in _GROUNDING_SENTINELS if s in text), default=-1)
+    if cut < 0:
+        return text
+    head = text[:cut].rsplit("\n", 1)[0].strip()      # drop the partial line the sentinel sat on
+    return head or ""                                  # nothing but grounding → no answer at all
+
+
 def _split_thinking(text: str, question: str = "") -> "tuple[str, str]":
     """Peel a reasoning trace off a brain's reply and FILE it (never print it, never answer with
     it). Returns (answer, thinking) — answer is "" when the reply was nothing but deliberation."""
@@ -1004,6 +1095,7 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
         # inline it — so strip it here too and treat a thinking-only reply as a FAILURE, which
         # falls through to the next brain instead of shipping deliberation to a human.
         a, _think = _split_thinking(a, question)
+        a = _strip_bare_changelog_cites(_strip_grounding_echo(a))
         if a and "models exhausted" not in a.lower() and "routing_error" not in a.lower():
             break
         a = ""        # this brain failed/exhausted/only-thought → try the next
