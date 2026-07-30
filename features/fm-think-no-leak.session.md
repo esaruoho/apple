@@ -112,6 +112,76 @@ Same lesson as `convey-prism`: never give a voice two conflicting instructions.
 E2E). Everything else is `@built` — unit-tested, not yet exercised by a real Discord user. The
 watch-the-circling-rate scenario is `@todo` and says so.
 
+## Round 2 — "re-answer the thread on discord so i can see a better thinking"
+
+Esa's follow-up, plus a correction I had earned: **"PakettiAskBot is not the same thing as
+PakettiBot."** Fair — the fix was all in PakettiAskBot, but I had used PakettiBot's `!pk` inbox as a
+transport for a verify command, which blurred them. (That inbox turned out to be wedged anyway: my
+probe sat unconsumed and its guardian probes were `.timeout`ing while its heartbeat stayed fresh. I
+removed my file and flagged it rather than chasing it.)
+
+Then I read the actual thread — `1532089541236752404`, "Is there a setting in Renoise that would
+block or prevent keystrokes?", 23 messages. **The leak was the loudest fault, not the only one.**
+Five more were stacked under it, and every one of them fed the model bad input and got a wrong
+answer back — the same failure as the leak in different clothes:
+
+1. **Nested provenance headers** — `prevAnswer` was fed back *including* our own "🟡 Draft —
+   unverified" tag, so the model copied it forward. The thread shows it stacked **three deep**.
+2. **Echoed delimiters** — the `"""` fences wrapping the prompt were posted verbatim as answer text.
+3. **Four blank (0-character) messages** posted into the thread.
+4. **The grounding dump** — the whole function index plus a "Delete Unused Instruments" changelog
+   blob was posted *as the answer*. The model read our system context back to us.
+5. **Split-up corrections — the actual root of the meaningless note.** Esa typed his correction as
+   TWO messages 4 seconds apart: *"only if there is a dialog open, that is eating those specific
+   shortcuts"* at 19:08:29, then *"and the dialog is highlighted"* at 19:08:33. Each enqueued its own
+   revise job, so the model saw the **second one alone** — a bare fragment with all the substance
+   stripped off. My round-1 diagnosis ("the prompt called a fragment an instruction") was right about
+   the symptom and wrong about the cause: the fragment existed because the bot *split the thought in
+   half*. That is now merged (`mergeIntoPendingRevise`).
+
+Then, chasing a genuinely useful answer, a sixth fault — and the most interesting one:
+
+6. **`changelog_context` ranked `feat` BEFORE relevance.** Asked "has Paketti fixed dialogs eating
+   shortcuts?", the model was handed 5 unrelated `Feature:` entries and *truthfully* said "the
+   changelog doesn't mention a fix" — while **"2026-06-08 - Improvement: Groovebox 8120 controls
+   return keyboard focus to Renoise"** — Esa's own words, the exact fix, describing a dialog that
+   "swallowed Renoise global shortcuts" — was ranked out of the top 5 *because it is an
+   `Improvement:`*. The class of entry that answers "is this fixed?" was systematically demoted.
+   Fixing the sort alone wasn't enough: raw term-count tied everything at 4-5 on "dialog"/"keyboard"
+   while the discriminating words ("swallows", "focused") missed on morphology. So scoring now stems
+   both sides, weights terms by rarity (log-IDF over 2362 entries, cached), and doubles a HEAD match.
+   The 8120 entry now ranks #1; Music Mouse / XRNI→PTI / Keybindings Loader still rank their own
+   entry first.
+
+I also added `_strip_bare_changelog_cites` after catching the model stamping "— changelog 2026-06-09"
+on a paragraph of generic GUI theory. That date was real; **none of its 18 entries said anything like
+the claim.** I only caught it because I checked the citation instead of trusting it.
+
+### What I posted, and what I refused to post
+
+Three candidate answers came out of the fixed pipeline. I posted the **revise** one — the same mode
+that leaked — because it is clean, correct, and claims nothing false. Message
+`1532352660408369205`, 512 chars.
+
+I did **not** post the fuller "fresh answer" run, even though it reads better: it asserted "No,
+Paketti has not fixed this for any dialog", which is **false** — the 8120 entry is exactly that fix.
+A better-reading answer with a wrong negative claim is worse than a thin true one, especially in a
+public help channel.
+
+And I did not hand-write the answer myself. Esa asked to see *the bot's* better thinking; ghost-writing
+it would have hidden whether the fix works.
+
+### The honest remaining gap
+
+Even with the 8120 entry ranked **first** in its grounding, the 4-bit 14B still answered "not
+documented" in a live run. That is not a pipeline fault — retrieval did its job and the model didn't
+use it. Graded `@todo` on the card, not papered over. The 👍 vetting path is the real answer: certify
+a good answer once and it is served instantly forever, with no model call at all.
+
 ## RESULT
 
-See the RESULT block in `features/fm-think-no-leak.feature` and the commits below.
+- Round 1: `apple@9bc9629` (fm_think + fm-mlx + paketti-thinking), `pakettiaskbot@90f7892`.
+- Round 2: `apple@2e72f80` (retrieval + grounding-echo + citation guards), `pakettiaskbot@a2fd6b6`
+  (nested tags, echoed fences, blank posts, correction merging).
+- Direct-push to main, no PRs. Deployed by repo-puller (post-pull `pkill` → the Boot pane relaunches).
+- Live: thread `1532089541236752404` re-answered as message `1532352660408369205`.

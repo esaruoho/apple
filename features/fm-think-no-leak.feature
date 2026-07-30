@@ -146,6 +146,97 @@ Feature: A reasoning model's thinking is filed, never shown
     Then max_tokens defaults to 4096, not the 1024 that guaranteed truncation
     # bin/fm-mlx:58 — restores the committed default; FM_MLX_MAX_TOKENS overrides.
 
+  # ── Round 2 (same session): re-answering the leaked thread, at Esa's "re-answer the
+  # thread on discord so i can see a better thinking". Reading the real thread showed the
+  # leak was the LOUDEST fault, not the only one — five more were stacked under it, every
+  # one of them feeding the model bad input and getting a wrong answer back. Same failure
+  # as the leak in different clothes. Commits: apple@2e72f80, pakettiaskbot@a2fd6b6.
+
+  @hw-verified
+  Scenario: A correction typed as two quick messages arrives as ONE thought
+    Given the user types "only if there is a dialog open, that is eating those specific shortcuts"
+    And 4 seconds later types "and the dialog is highlighted"
+    When the second follow-up is enqueued and the first revise has not started
+    Then the two corrections are merged into that one queued job
+    And the model sees the whole thought instead of the trailing fragment
+    # pakettiaskbot/index.js mergeIntoPendingRevise() — THIS is why the note was
+    # meaningless: each message enqueued its own revise, so the model got the second one
+    # alone, with all the substance stripped off. VERIFIED against the real thread
+    # timestamps (2026-07-29T19:08:29 and :33).
+
+  @built
+  Scenario: Our own provenance header is never fed back to the model
+    Given the previous answer starts with "🟡 **Draft — unverified**"
+    When the revise prompt embeds it
+    Then only the answer BODY is embedded
+    And the posted answer carries exactly ONE provenance header
+    # index.js stripProvenance/cleanForPost — the real thread showed the tag stacked THREE
+    # deep, because each revision handed the model the tag and it copied it forward.
+
+  @built
+  Scenario: Prompt delimiters are not copied into the answer
+    Given the prompt wraps the current answer in markers
+    When the model answers
+    Then no fence or marker line survives into the posted message
+    # index.js — `"""` was echoed verbatim into the thread. Markers are now
+    # <<<CURRENT_ANSWER / <<<NOTE and stripped on the way out either way.
+
+  @built
+  Scenario: Blank messages are never posted
+    Given a chunked answer whose tail is empty
+    When postAnswer sends the parts
+    Then empty parts are skipped
+    # index.js — four 0-character messages went into that one thread.
+
+  @built
+  Scenario: The model's answer is never our own grounding read back to us
+    Given the reply contains a grounding sentinel
+    When the engine cleans it
+    Then everything from the sentinel down is cut
+    # paketti_faq._strip_grounding_echo — the thread got the whole function index plus a
+    # "Delete Unused Instruments" changelog blob posted as an answer.
+
+  @built
+  Scenario: A drafted answer cannot cite the changelog by bare date
+    Given the model stamps "— changelog 2026-06-09" on a paragraph of its own reasoning
+    When the engine cleans it
+    Then the bare dated citation line is removed and the prose stays
+    # paketti_faq._strip_bare_changelog_cites — that date was real; none of its 18 entries
+    # said anything like the claim. Verbatim changelog answers come from
+    # changelog_answer(), which quotes the real entry and never passes through here.
+
+  @hw-verified
+  Scenario: A "has this been fixed?" question actually reaches the fix
+    Given the changelog contains "2026-06-08 - Improvement: Groovebox 8120 controls return keyboard focus to Renoise"
+    And that entry is the exact answer to dialogs swallowing Renoise's global shortcuts
+    When changelog_context ranks entries for that question
+    Then relevance leads and the Feature:/Fix: preference only breaks ties
+    And term scoring stems both sides, weights each term by rarity, and doubles a HEAD match
+    And that entry ranks FIRST instead of being cut from the top 5
+    # paketti_faq._stem/_doc_freq/_relevance + the changelog_context sort.
+    # Ranking by `feat` first had let barely-relevant Feature: entries outrank it; ranking by
+    # raw term count still tied everything at 4-5 on "dialog"/"keyboard" while the
+    # discriminating words ("swallows", "focused") missed on morphology.
+    # VERIFIED: 8120 now #1; Music Mouse / XRNI→PTI / Keybindings Loader still rank their own
+    # entry first (0.01-0.09s).
+
+  @hw-verified
+  Scenario: The thread is re-answered with prose, not deliberation
+    When the revise that leaked is re-run through the fixed pipeline
+    Then the answer is coherent prose with no "wait, hold on" anywhere
+    And it carries one provenance header, no fences, and no grounding dump
+    And the thinking behind it is filed instead of posted
+    # Posted live to thread 1532089541236752404 as message 1532352660408369205 (512 chars).
+
+  @todo
+  Scenario: A 4-bit 14B still under-uses grounding it was handed
+    Given the 8120 entry is ranked FIRST in the grounding
+    When the model is asked whether Paketti has fixed dialogs eating shortcuts
+    Then it STILL answered "not documented" in a live run
+    # Not a pipeline fault — the retrieval did its job and the model didn't use it. This is
+    # what the 👍 vetting path is for: certify the right answer once and it is served
+    # instantly forever after, with no model call. Honest grade: unresolved.
+
   @todo
   Scenario: The circling rate is watched, not just recorded
     Given traces accumulate with a truncated_in_think flag

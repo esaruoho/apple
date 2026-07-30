@@ -237,7 +237,7 @@ fm-mlx reuses Say, Karaoke, and Markdown (DRY)  —  8 scenarios   (features/fm-
   triad: .session✓  transcript✗  RESULT✓
   honesty: 0/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-A reasoning model's thinking is filed, never shown  —  10 scenarios   (features/fm-think-no-leak.feature)
+A reasoning model's thinking is filed, never shown  —  19 scenarios   (features/fm-think-no-leak.feature)
   - [@hw-verified] The exact payload that leaked to Discord now yields no answer, n
   - [@hw-verified] A completed answer ships clean while its thinking is filed silen
   - [@built] reasoning fields are NEVER promoted to the answer
@@ -247,9 +247,18 @@ A reasoning model's thinking is filed, never shown  —  10 scenarios   (feature
   - [@built] The revise prompt no longer forces the model to deliberate in ci
   - [@hw-verified] The filed thinking is extractable and correctable from the lapto
   - [@built] The 14B reasoner gets a budget it can actually finish in
+  - [@hw-verified] A correction typed as two quick messages arrives as ONE thought
+  - [@built] Our own provenance header is never fed back to the model
+  - [@built] Prompt delimiters are not copied into the answer
+  - [@built] Blank messages are never posted
+  - [@built] The model's answer is never our own grounding read back to us
+  - [@built] A drafted answer cannot cite the changelog by bare date
+  - [@hw-verified] A "has this been fixed?" question actually reaches the fix
+  - [@hw-verified] The thread is re-answered with prose, not deliberation
+  - [@todo] A 4-bit 14B still under-uses grounding it was handed
   - [@todo] The circling rate is watched, not just recorded
   triad: .session✓  transcript✗  RESULT✗
-  honesty: 9/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 17/19 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Give a folder a voice — the per-folder sidecar triad  —  8 scenarios   (features/folder-memory.feature)
   - [@built @verified] Build the triad for one folder
