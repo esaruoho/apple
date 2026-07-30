@@ -237,6 +237,20 @@ fm-mlx reuses Say, Karaoke, and Markdown (DRY)  —  8 scenarios   (features/fm-
   triad: .session✓  transcript✗  RESULT✓
   honesty: 0/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+A reasoning model's thinking is filed, never shown  —  10 scenarios   (features/fm-think-no-leak.feature)
+  - [@hw-verified] The exact payload that leaked to Discord now yields no answer, n
+  - [@hw-verified] A completed answer ships clean while its thinking is filed silen
+  - [@built] reasoning fields are NEVER promoted to the answer
+  - [@built] An untagged trace is still caught
+  - [@built] An unclosed think tag leaves no answer behind
+  - [@built] Discord is guarded at the last mile
+  - [@built] The revise prompt no longer forces the model to deliberate in ci
+  - [@hw-verified] The filed thinking is extractable and correctable from the lapto
+  - [@built] The 14B reasoner gets a budget it can actually finish in
+  - [@todo] The circling rate is watched, not just recorded
+  triad: .session✓  transcript✗  RESULT✗
+  honesty: 9/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Give a folder a voice — the per-folder sidecar triad  —  8 scenarios   (features/folder-memory.feature)
   - [@built @verified] Build the triad for one folder
   - [@built @verified] Auto-formulate the architecture with the on-device model

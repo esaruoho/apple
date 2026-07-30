@@ -946,6 +946,22 @@ def _sanitize_links(text: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
+def _split_thinking(text: str, question: str = "") -> "tuple[str, str]":
+    """Peel a reasoning trace off a brain's reply and FILE it (never print it, never answer with
+    it). Returns (answer, thinking) — answer is "" when the reply was nothing but deliberation."""
+    try:
+        from fm_think import strip_think, looks_like_thinking, log as _log
+    except Exception:
+        return text, ""
+    answer, thinking = strip_think(text)
+    if answer and looks_like_thinking(answer):    # untagged trace → still not an answer
+        thinking, answer = (thinking + "\n\n" + answer).strip(), ""
+    if thinking:
+        _log(thinking, question=question, source="paketti-ask",
+             meta={"leaked_via": "brain-stdout"})
+    return answer, thinking
+
+
 def generate_answer(question: str, timeout: int = 180) -> "str | None":
     """Draft a grounded answer. Grounding = any named spine entity + the matching live
     FEATURE-MAP lines (real registered features). A LEAN system + grounding is fed to
@@ -983,9 +999,14 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
         a = (p.stdout or "").strip()
         if a.lower().startswith("assistant:"):
             a = a.split(":", 1)[1].strip()
+        # Reasoning models deliberate ("wait, hold on, let's re-read") and that trace is NEVER an
+        # answer. fm-mlx already files+withholds it, but a second brain (or a future one) may
+        # inline it — so strip it here too and treat a thinking-only reply as a FAILURE, which
+        # falls through to the next brain instead of shipping deliberation to a human.
+        a, _think = _split_thinking(a, question)
         if a and "models exhausted" not in a.lower() and "routing_error" not in a.lower():
             break
-        a = ""        # this brain failed/exhausted → try the next
+        a = ""        # this brain failed/exhausted/only-thought → try the next
     a = _strip_fabrication(_strip_fake_domains(_strip_ai_boilerplate(_sanitize_links(a))))   # kill fabricated URLs/domains/AI junk
     return a or None
 

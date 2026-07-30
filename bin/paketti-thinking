@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""paketti-thinking — read the bot's WITHHELD reasoning, so its thinking can be corrected.
+
+PakettiAskBot's brain is a reasoning model. Its deliberation never reaches Discord (that's
+fm_think's job) — but it is never thrown away either: every trace is filed as one JSONL line
+under comms/queue/paketti-faq/thinking.jsonl, which Syncthing mirrors off the Mini. This is the
+reader for that file. No SSH, no model call, no network.
+
+    paketti-thinking                      # the last 10 traces, one line each
+    paketti-thinking -n 40                # more
+    paketti-thinking --circles            # ONLY the ones that thought without answering
+    paketti-thinking --grep "dialog"      # traces whose question or thinking matches
+    paketti-thinking --show 3             # the full trace of entry 3 (as listed)
+    paketti-thinking --stats              # how often it circles, and how much it burns
+    paketti-thinking --show 3 --md > t.md # a file to mark up when correcting its thinking
+
+The point of keeping these: a trace that loops ("wait, no, let's re-read…") is a prompt bug,
+not a model bug. Read the trace, find the unresolvable instruction, fix the prompt.
+
+# FEATURE-CARD >> features/fm-think-no-leak.feature
+"""
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+LOG = Path(os.environ.get(
+    "FM_THINK_LOG",
+    str(Path.home() / "work" / "comms" / "queue" / "paketti-faq" / "thinking.jsonl")))
+
+BOLD, DIM, YEL, RED, CYAN, GREEN, RESET = (
+    "\033[1m", "\033[2m", "\033[33m", "\033[31m", "\033[36m", "\033[32m", "\033[0m")
+TIC = re.compile(r"(?i)\b(wait|hold on|re-?read|actually|no,)\b")
+
+
+def load():
+    if not LOG.exists():
+        print(f"no thinking filed yet ({LOG})")
+        return []
+    out = []
+    for ln in LOG.read_text(encoding="utf-8", errors="replace").splitlines():
+        ln = ln.strip()
+        if not ln:
+            continue
+        try:
+            out.append(json.loads(ln))
+        except Exception:
+            continue          # a torn line (crash mid-append) — skip it, don't die
+    return out
+
+
+def circles(d) -> bool:
+    """Did this trace fail to produce an answer? Either it ran out of budget mid-think, or the
+    engine handed back deliberation with no answer in it."""
+    return bool(d.get("truncated_in_think") or d.get("thinking_only"))
+
+
+def one_line(i, d):
+    q = (d.get("question") or "").replace("\n", " ")[:64]
+    tics = len(TIC.findall(d.get("thinking") or ""))
+    flag = f"{RED}CIRCLED{RESET}" if circles(d) else f"{GREEN}ok     {RESET}"
+    return (f"{DIM}{i:>3}{RESET} {d.get('ts','?')[:19]}  {flag}  "
+            f"{d.get('chars',0):>6}ch {YEL}{tics:>3} tics{RESET}  "
+            f"{DIM}{d.get('source','?'):<14}{RESET} {q}")
+
+
+def main() -> int:
+    a = sys.argv[1:]
+    n, grep, show, md = 10, None, None, "--md" in a
+    only_circles, stats = "--circles" in a, "--stats" in a
+    for flag, cast in (("-n", int), ("--grep", str), ("--show", int)):
+        if flag in a:
+            i = a.index(flag)
+            v = cast(a[i + 1])
+            n, grep, show = (v, grep, show) if flag == "-n" else \
+                            (n, v, show) if flag == "--grep" else (n, grep, v)
+    if "-h" in a or "--help" in a:
+        print(__doc__)
+        return 0
+
+    entries = load()
+    if not entries:
+        return 1
+    if grep:
+        g = grep.lower()
+        entries = [d for d in entries
+                   if g in (d.get("question") or "").lower() or g in (d.get("thinking") or "").lower()]
+    if only_circles:
+        entries = [d for d in entries if circles(d)]
+
+    if stats:
+        tot = len(entries)
+        circ = sum(1 for d in entries if circles(d))
+        ch = sum(d.get("chars", 0) for d in entries)
+        print(f"{BOLD}filed traces{RESET} {tot}   "
+              f"{RED}circled (no answer){RESET} {circ} ({100 * circ // max(tot, 1)}%)   "
+              f"{DIM}thinking written{RESET} {ch / 1000:.1f}k chars")
+        by = {}
+        for d in entries:
+            by[d.get("source", "?")] = by.get(d.get("source", "?"), 0) + 1
+        for k, v in sorted(by.items(), key=lambda kv: -kv[1]):
+            print(f"  {k:<16} {v}")
+        print(f"{DIM}{LOG}{RESET}")
+        return 0
+
+    if show is not None:
+        # Index as printed by the listing (1-based over the shown tail).
+        tail = entries[-n:]
+        if not 1 <= show <= len(tail):
+            print(f"--show must be 1..{len(tail)} (as listed)")
+            return 2
+        d = tail[show - 1]
+        if md:
+            print(f"# Thinking trace — {d.get('ts')}\n")
+            print(f"- **source:** {d.get('source')}\n- **finish:** {d.get('finish_reason')}"
+                  f"\n- **circled (no answer):** {circles(d)}\n- **chars:** {d.get('chars')}\n")
+            print(f"## Question\n\n{d.get('question')}\n\n## Thinking\n\n```\n{d.get('thinking')}\n```\n")
+            print("## Correction\n\n_What instruction was unresolvable? What should the prompt say instead?_\n")
+        else:
+            print(f"{BOLD}{d.get('ts')}{RESET} {DIM}· {d.get('source')} · "
+                  f"finish={d.get('finish_reason')} · circled={circles(d)}{RESET}")
+            print(f"{CYAN}Q:{RESET} {d.get('question')}\n")
+            print(d.get("thinking") or "(empty)")
+        return 0
+
+    for i, d in enumerate(entries[-n:], 1):
+        print(one_line(i, d))
+    print(f"{DIM}{len(entries)} filed · `--show N` for the full trace · `--circles` for the "
+          f"loops · `--stats`{RESET}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

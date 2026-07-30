@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# fm-mlx — ask the CloudcityMacMini's MLX server (Qwen3-4B) over Tailscale.
+# fm-mlx — ask the CloudcityMacMini's MLX server over Tailscale.
 #
 #   fm-mlx hello                          # prompt as args (speaks + shows richtext)
 #   fm-mlx "summarise this in 5 words"    # quote multi-word prompts
@@ -27,6 +27,8 @@ set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 HOST="${FM_MLX_HOST:-http://cloudcitymacmini:8080}"
+MODEL_ID="${FM_MLX_MODEL:-Qwen/Qwen3-14B-MLX-4bit}"
+MODEL_LABEL="${FM_MLX_MODEL_LABEL:-MLX/Qwen3-14B-4bit}"
 
 say="auto"                      # auto = talk on an interactive terminal; --say forces, --quiet disables
 raw=0                           # --raw = reply text ONLY (no fm-chat framing, no speech) — the brain interface
@@ -53,23 +55,36 @@ if [ -z "$prompt" ]; then
 fi
 
 body=$(python3 -c 'import json,sys,os
-sysmsg, user = sys.argv[1], sys.argv[2]
+model, sysmsg, user = sys.argv[1], sys.argv[2], sys.argv[3]
 msgs = ([{"role":"system","content":sysmsg}] if sysmsg else []) + [{"role":"user","content":user}]
-print(json.dumps({"messages": msgs, "max_tokens": int(os.environ.get("FM_MLX_MAX_TOKENS","4096"))}))' "$system" "$prompt")
+print(json.dumps({"model": model, "messages": msgs, "max_tokens": int(os.environ.get("FM_MLX_MAX_TOKENS","4096"))}))' "$MODEL_ID" "$system" "$prompt")
 
 t0=$(python3 -c 'import time; print(time.time())')
 reply=$(curl -s -m 180 -X POST "$HOST/v1/chat/completions" \
   -H "Content-Type: application/json" -d "$body" \
-| python3 -c '
-import sys, json
+| FM_THINK_QUESTION="$prompt" FM_BIN="$HERE" python3 -c '
+# The ANSWER goes to stdout; the model THINKING is filed, never printed (fm_think.split).
+# Qwen3 via mlx_lm.server returns its chain-of-thought in message.reasoning with NO content key
+# until </think> closes — chaining `content or reasoning` published the raw trace. Do not.
+import sys, os, json
+sys.path.insert(0, os.environ.get("FM_BIN", os.path.expanduser("~/work/apple/bin")))
 raw = sys.stdin.read()
 if not raw.strip():
     sys.exit("fm-mlx: no response — is the MLX server up on the Mini? (first call after a reboot waits ~30s for model load)")
 try:
     d = json.loads(raw)
-    print(d["choices"][0]["message"]["content"])
 except Exception:
-    sys.exit("fm-mlx: unexpected response:\n" + raw[:500])
+    sys.exit("fm-mlx: unexpected response:\n" + raw[:1000])
+from fm_think import split, log
+answer, thinking, meta = split(d)
+log(thinking, question=os.environ.get("FM_THINK_QUESTION", ""), meta=meta, source="fm-mlx")
+if not answer:
+    if meta.get("truncated_in_think"):
+        sys.exit("fm-mlx: the model spent its whole token budget thinking and never answered "
+                 "(finish_reason=length; %d chars of thinking filed). Raise FM_MLX_MAX_TOKENS."
+                 % len(thinking))
+    sys.exit("fm-mlx: response carried no answer text:\n" + raw[:1000])
+print(answer)
 ') || exit 1
 rt=$(python3 -c "import time; print(f'{time.time()-$t0:.1f}')")
 
@@ -91,5 +106,5 @@ else
   # The ONE shared "show a reply" call (bin/fm_render.py --present): rich markdown
   # + karaoke speech in the premium voice. fm-mlx no longer re-rolls render or speak.
   printf '%s\n' "$reply" | python3 "$HERE/fm_render.py" --present \
-    --host "$host" --model "MLX/Qwen3-4B" --rt "$rt" --voice "$voice" $nospeak
+    --host "$host" --model "$MODEL_LABEL" --rt "$rt" --voice "$voice" $nospeak
 fi
