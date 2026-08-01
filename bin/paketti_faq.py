@@ -168,7 +168,7 @@ def feature_context(query: str, limit: int = 28) -> str:
         lines = FEATURE_MAP.read_text(encoding="utf-8").splitlines()
     except Exception:
         return ""
-    words = {w for w in re.findall(r"[a-z]{4,}", query.lower()) if w not in _FEAT_STOP}
+    words = {w for w in _terms(query) if w not in _FEAT_STOP}
     # expand with synonyms so e.g. "quieter" reaches the Volume features
     _SYN = {"quiet": "volume", "quieter": "volume", "softer": "volume", "louder": "volume",
             "loud": "volume", "lull": "volume", "faster": "tempo", "slower": "tempo",
@@ -588,7 +588,14 @@ def screenshots_answer(question: str):
         return None
     is_shot = (re.search(r"\b(screenshots?|screen ?shots?|dialog ?shots?)\b", ql)
                or (re.search(r"\b(images?|pictures?|photos?|png)\b", ql) and "dialog" in ql)
-               or (re.search(r"\b(show me|see|look)\b", ql) and re.search(r"\b(dialog|screen)", ql)))
+               or (re.search(r"\b(show me|see|look)\b", ql) and re.search(r"\b(dialog|screen)", ql))
+               # "what does X look like" / "how does X look" is a picture request even when the
+               # word "dialog" never appears. Live 2026-07-30: "what does the paketti groovebox 8120
+               # look like?" answered "its visual appearance is not documented" while 21 real 8120
+               # PNGs sat on disk. Safe to widen — the filename match below returns None when
+               # nothing actually matches, so this can't invent an image.
+               or re.search(r"\b(what|how)(?:'s| does| do| is| are)?\b[^?]{0,60}\blooks?\s+like\b", ql)
+               or re.search(r"\bhow\s+(?:does|do|es)?\s*[^?]{0,60}\blooks?\b", ql))
     if not is_shot:
         return None
     shots = _all_shots()
@@ -787,6 +794,21 @@ def feature_undocumented_answer(question: str):
             f"learn it — or @esaruoho can confirm.")
 
 
+# A query/entry TERM is either a normal word (4+ letters) or an alphanumeric identifier — any token
+# carrying a digit. The old `[a-z]{4,}` alone could not see "rx2", "8120", "sf2", "16sv" or "m00",
+# which are precisely the most discriminating words in the questions that use them. Live 2026-07-30:
+# "how do I activate rx2 files in paketti?" produced NO rx2 content in any of the seven grounding
+# channels — 7 real RX2 functions and 19 changelog entries were invisible — so the model was handed
+# grounding with nothing about RX2 in it and truthfully concluded Paketti has no RX2 support. It has
+# had it for years. The confident "no" was manufactured by the tokenizer, not by the model.
+_TERM_RE = re.compile(r"[a-z]{4,}|[a-z0-9]*\d[a-z0-9]*")
+
+
+def _terms(text: str) -> list:
+    """Query/entry terms: words of 4+ letters, plus any digit-bearing identifier."""
+    return [t for t in _TERM_RE.findall((text or "").lower()) if len(t) >= 2]
+
+
 def _stem(w: str) -> str:
     """Crude suffix strip so swallow/swallows/swallowed and focus/focused match each other. Not
     linguistics — just enough that a question's verb form doesn't hide the entry that answers it."""
@@ -807,8 +829,7 @@ def _doc_freq(entries: list) -> dict:
         return _DF_CACHE[key]
     df: dict = {}
     for e in entries:
-        seen = {_stem(w) for w in re.findall(r"[a-z]{4,}",
-                                            (e["head"] + " " + " ".join(e["body"])).lower())}
+        seen = {_stem(w) for w in _terms(e["head"] + " " + " ".join(e["body"]))}
         for s in seen:
             df[s] = df.get(s, 0) + 1
     _DF_CACHE.clear()
@@ -821,8 +842,8 @@ def _relevance(words: set, entry: dict, entries: list) -> float:
     is ABOUT, the body merely mentions)."""
     df = _doc_freq(entries)
     n = max(len(entries), 1)
-    head = {_stem(w) for w in re.findall(r"[a-z]{4,}", entry["head"].lower())}
-    body = {_stem(w) for w in re.findall(r"[a-z]{4,}", " ".join(entry["body"]).lower())}
+    head = {_stem(w) for w in _terms(entry["head"])}
+    body = {_stem(w) for w in _terms(" ".join(entry["body"]))}
     score = 0.0
     for w in words:
         s = _stem(w)
@@ -839,7 +860,7 @@ def changelog_context(question: str, limit: int = 5) -> str:
     feature; or the latest entries for a 'what's new' question. This is what fixes the junk: the real
     behaviour lives here, not the auto-generated manual."""
     recency = any(w in question.lower() for w in _CL_RECENCY)
-    words = {w for w in re.findall(r"[a-z]{4,}", question.lower()) if w not in _FEAT_STOP}
+    words = {w for w in _terms(question) if w not in _FEAT_STOP}
     entries = _changelog_entries()
     if not entries:
         return ""
@@ -886,7 +907,7 @@ def topic_functions_context(question: str, max_funcs: int = 50) -> str:
     except Exception:
         return ""
     allf = [f for fns in idx.values() for f in fns]
-    words = {w for w in re.findall(r"[a-z]{4,}", question.lower()) if w not in _FEAT_STOP}
+    words = {w for w in _terms(question) if w not in _FEAT_STOP}
     if not words:
         return ""
     picked = {}   # function name -> door glyphs
@@ -1082,9 +1103,14 @@ def generate_answer(question: str, timeout: int = 180) -> "str | None":
             return c + [question]
         return [str(FM_MLX), "--raw", "--system", system, question]   # the Mini's Qwen3-4B
 
-    # Try the configured brain; if it returns nothing (fm-free rate-limited / provider error), fall
-    # back to the always-available local Qwen so an answer still ships.
-    order = [BRAIN] + (["fm-mlx"] if not BRAIN.startswith("fm-mlx") else [])
+    # Try the configured brain, then the others, so one dead brain never means "no answer".
+    # This chain used to be one-way — anything → fm-mlx, but fm-mlx → nothing. Since fm-mlx is the
+    # DEFAULT, the default brain had no fallback at all: when the Mini's mlx_lm.server pane was down
+    # (Tailscale answering 502 with nothing behind it, 2026-08-01) every question died with "the
+    # on-device brain didn't respond", while fm-service and the fm-free aggregator were both up and
+    # heartbeating. Order matters: local/private first, aggregator last.
+    order = [BRAIN] + [b for b in ("fm-mlx", "fm-submit", "fm-free")
+                       if not BRAIN.startswith(b)]
     a = ""
     for brain in order:
         try:
