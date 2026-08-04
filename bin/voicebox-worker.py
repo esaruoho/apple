@@ -81,6 +81,7 @@ def heartbeat(state: dict):
     tmp.replace(HEARTBEAT)
 
 
+_PROFILE_META = {}
 _PROFILE_CACHE = {}  # name (lowercase) -> uuid
 
 
@@ -101,12 +102,46 @@ def resolve_profile(name_or_id: str) -> str:
             profiles = json.loads(r.read())
         for p in profiles:
             _PROFILE_CACHE[p["name"].lower()] = p["id"]
+            _PROFILE_META[p["name"].lower()] = p
+            _PROFILE_META[p["id"]] = p
     except Exception as e:
         raise RuntimeError(f"could not list /profiles to resolve '{name_or_id}': {e}")
     if key not in _PROFILE_CACHE:
         available = sorted({p["name"] for p in profiles}) if profiles else []
         raise RuntimeError(f"profile '{name_or_id}' not found. available: {available or 'none — create one first'}")
     return _PROFILE_CACHE[key]
+
+
+def engine_for_profile(profile_id_or_name: str, requested: str | None) -> str:
+    """Derive the engine FROM THE VOICE, not from whoever submitted the job.
+
+    Why this exists (2026-08-04): a Bearden voice-piece was submitted as
+    engine=kokoro and Voicebox answered HTTP 400. The Bearden clone only works on
+    `chatterbox`. Nothing in the chain enforced that: `voicebox-submit` hardcoded
+    `VOICEBOX_ENGINE:-kokoro`, `convey say` has no --engine flag at all, and every
+    Voicebox profile carries `default_engine: null` — so there was nothing for any
+    caller to read. The engine was a submitter guess about a property of the voice.
+
+    Rule: a CLONED voice is a chatterbox voice unless its profile says otherwise.
+    An explicit request is honoured only when it is compatible; asking for kokoro
+    on a clone is a known-400 and gets overridden with a log line, not obeyed.
+    """
+    try:
+        resolve_profile(profile_id_or_name)          # populates _PROFILE_META
+    except Exception:
+        return requested or "kokoro"
+    meta = _PROFILE_META.get(str(profile_id_or_name).lower()) \
+        or _PROFILE_META.get(str(profile_id_or_name)) or {}
+    declared = meta.get("default_engine")
+    if declared:
+        return declared                              # the profile is authoritative
+    if meta.get("voice_type") == "cloned":
+        if requested and requested != "chatterbox":
+            log_event({"event": "engine_override", "profile": meta.get("name"),
+                       "requested": requested, "used": "chatterbox",
+                       "reason": "cloned voice — requested engine would HTTP 400"})
+        return "chatterbox"
+    return requested or "kokoro"
 
 
 def voicebox_synth(text: str, profile_id_or_name: str, engine: str, language: str = "en") -> bytes:
@@ -196,7 +231,9 @@ def process_one(job_path: Path):
     # name comes from env so the worker can be moved between Voicebox installs
     # without per-job edits.
     profile_id = spec.get("profile_id") or spec.get("profile") or os.environ.get("VOICEBOX_DEFAULT_PROFILE", "default")
-    engine = spec.get("engine") or os.environ.get("VOICEBOX_DEFAULT_ENGINE", "kokoro")
+    requested_engine = spec.get("engine") or os.environ.get("VOICEBOX_DEFAULT_ENGINE")
+    # derive from the VOICE, not from the submitter (see engine_for_profile)
+    engine = engine_for_profile(profile_id, requested_engine)
     language = spec.get("language") or "en"
 
     log_event({"event": "start", "id": job_id, "chars": len(text),
