@@ -1,4 +1,4 @@
-# CLI Tools Index — 313 tools in bin/
+# CLI Tools Index — 315 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -128,6 +128,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `fm-worker` — (no description) — `bin/fm-worker`
 `folder-memory` — (no description) — `bin/folder-memory`
 `folder-wordcloud` — bounded word-cloud for a folder, backing the "Word Cloud" — `bin/folder-wordcloud`
+`forum-verify-me` — NOTE: /usr/bin/env, NOT /opt/homebrew/bin/bash — this script runs on the LAPTOP, which — `bin/forum-verify-me`
 `freellmask-mail` — (no description) — `bin/freellmask-mail`
 `gdrive` — submit a Google Drive download to PakettiBot from any terminal. — `bin/gdrive`
 `gen-features-index.py` — (no description) — `bin/gen-features-index.py`
@@ -202,6 +203,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `paketti-functions-view` — (no description) — `bin/paketti-functions-view`
 `paketti-kb-populate` — (no description) — `bin/paketti-kb-populate`
 `paketti-manual-index` — (no description) — `bin/paketti-manual-index`
+`paketti-ship` — push a Paketti change, sync it to Gumroad, announce it, syndicate it. — `bin/paketti-ship`
 `paketti-spine-build` — (no description) — `bin/paketti-spine-build`
 `paketti-spine-report` — (no description) — `bin/paketti-spine-report`
 `paketti-thinking` — (no description) — `bin/paketti-thinking`

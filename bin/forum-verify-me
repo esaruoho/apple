@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# NOTE: /usr/bin/env, NOT /opt/homebrew/bin/bash — this script runs on the LAPTOP, which
+# has no Homebrew bash. Hardcoding the Mini's interpreter path made it die with a
+# baffling 'No such file or directory' (the missing file being the SHEBANG, not the
+# script) at the exact moment it was needed to unblock a paused mirror.
+# forum-verify-me — run ON THE LAPTOP. Makes the Mini's Cloudflare Turnstile a one-click job:
+# preps the Mini so Safari is frontmost with the challenge loaded, THEN opens Screen Sharing to
+# the Mini right here, so the human wakes up to "click that" instead of hunting for it.
+#
+# WHY (Esa, 2026-08-05): "can you not just directly spawn screenshare and connect to the device
+# so i would just wake up to 'hey... click on that'". Before this, the best I did was prep the
+# Mini and TELL him to screen-share — which still left him opening the app, picking the host,
+# and finding Safari. The remote side being ready is only half the job; the local side has to
+# open too. lenr-forum escalated to an interactive Turnstile, so this happens ~daily for as long
+# as the forum belt runs.
+#
+# Usage: forum-verify-me [url] [minutes-to-hold-mini-display-awake]
+
+set -u
+URL="${1:-https://www.lenr-forum.com/forum/}"
+HOLD_MIN="${2:-90}"
+MINI="${MINI_HOST:-cloudcity}"
+
+say() { echo "[verify-me] $*"; }
+
+# 1. Preflight the link. If the Mini is unreachable there is nothing to prep and opening a
+#    Screen Sharing window would just show a spinner.
+if ! timeout 10 ssh -o ConnectTimeout=6 -o BatchMode=yes "$MINI" 'true' 2>/dev/null; then
+    say "cannot reach $MINI over ssh — not opening Screen Sharing to a dead host"
+    exit 1
+fi
+
+# 2. Prep the REMOTE side: wake the display, load the URL, raise Safari frontmost, and confirm.
+#    forum-verify-prep.sh reports READY / NOT READY and exits non-zero if Safari is not actually
+#    frontmost, so this never claims success on the Mini's behalf.
+say "prepping $MINI (wake display, load forum, raise Safari)…"
+prep_out="$(timeout 120 ssh -o BatchMode=yes "$MINI" \
+    "/opt/homebrew/bin/bash /Users/esaruoho/work/comms/scripts/forum-verify-prep.sh '$URL' $HOLD_MIN" 2>&1)"
+prep_rc=$?
+echo "$prep_out" | sed 's/^/    /'
+
+if [ $prep_rc -ne 0 ]; then
+    say "prep reported NOT READY (rc=$prep_rc) — opening Screen Sharing anyway so you can look,"
+    say "but Safari may not be frontmost. Check the output above."
+fi
+
+# 3. Open the LOCAL side: Screen Sharing straight to the Mini. This is the half that was missing.
+say "opening Screen Sharing to $MINI on this Mac…"
+open "vnc://$MINI" || { say "could not open vnc://$MINI — open Screen Sharing manually"; exit 1; }
+
+say ""
+say "→ Click \"Verify you are human\" in the Safari window that comes up."
+say "  Then run:  convey forum \"$URL\" --submit --person lenr --assets"
+say "  (or tell Claude you clicked it, and it will re-queue the job)"
