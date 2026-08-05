@@ -112,7 +112,13 @@ def resolve_profile(name_or_id: str) -> str:
     return _PROFILE_CACHE[key]
 
 
-def engine_for_profile(profile_id_or_name: str, requested: str | None) -> str:
+def engine_for_profile(profile_id_or_name, requested):
+    # NB: no PEP-604 (`str | None`) annotations in this file. The LaunchAgent runs
+    # /usr/bin/python3 = 3.9.6, where `str | None` raises TypeError AT IMPORT, so the
+    # whole worker dies and launchd reports exit 78 (EX_CONFIG). 2026-08-05: that is
+    # exactly what happened — a `str | None` added here kept the worker down for ~24 h
+    # after an unrelated disk-full crash, because every relaunch hit the TypeError.
+    # Validate any edit with `/usr/bin/python3 voicebox-worker.py --status`, not a newer python.
     """Derive the engine FROM THE VOICE, not from whoever submitted the job.
 
     Why this exists (2026-08-04): a Bearden voice-piece was submitted as
