@@ -110,3 +110,57 @@ no longer costs the sessions.
   (`PreventSystemSleep` is 0), so rung 2 will still fire.
 - The hub moved receptacles across the reboot: it was at locationID `0x001…` /
   `0x002…` before, and is at `0x021…` / `0x022…` now.
+
+## "do we know that this works?" — the verification pass
+
+Esa asked the right question, and the answer at that moment was **partly**. What
+followed found three defects, one of them severe.
+
+Before the pass, only two things were genuinely exercised: `--list`, and
+`sessions --save/--restore`. The verdict logic had been *fitted* to the single
+incident it was built from (n=1, tuned until it produced the answer I already
+knew — worth remembering as a caveat, not a validation). Everything on the
+recovery side was written but never run.
+
+### Defect 1 (severe): `watch` gave a false "port is DEAD"
+
+Triggering a known-good re-enumerate underneath a running `watch` produced
+`0 USB event(s) ... SILENCE — that port is dead`. The command would have told
+Esa a perfectly healthy port was dead. Two independent causes:
+
+- Live kernel USB lines carry sender `IOUSBHostFamily` and do **not** match
+  `subsystem CONTAINS "usb"` when streaming — even though the identical lines
+  **do** match that predicate when read back via `log show`. Same log, same
+  lines, different matching behaviour depending on which verb reads it.
+- Enumeration lines are debug level; `log stream` drops those without
+  `--level debug`.
+
+Only an end-to-end test with a *known* event could have caught this. Reading the
+code would not have.
+
+### Defect 2: `watch` hung forever on a quiet bus
+
+Blocking `readline()` inside a deadline loop meant `--seconds` was never
+honoured when nothing was logging — i.e. it hung in precisely the dead-port case
+it exists to diagnose. Replaced with `select()`.
+
+### Defect 3: `fix` demanded root it did not need
+
+Re-enumerating the Billboard device succeeds as a normal user. The up-front
+`geteuid()` gate would have sent Esa to sudo unnecessarily. Now it tries first
+and mentions sudo only if an open actually fails.
+
+### What the pass positively established
+
+Rung 1 genuinely works, proven two independent ways rather than by exit code:
+
+- device count polled across a reset: 6 -> 5 -> 6 within about a second
+- kernel log, live: `terminateDevice: ... reset API call` followed by
+  `enumerateDeviceComplete_block_invoke: enumerated ... at 480 Mbps`
+
+### What remains unverified, and honestly cannot be verified on demand
+
+Rung 2 (sleep/wake) is still `@untested`. It cannot be tested without the fault
+being present, and the fault is intermittent. The ledger is the mechanism for
+settling it. The verdict logic also remains fitted to one incident; the second
+occurrence is the first real test of it.

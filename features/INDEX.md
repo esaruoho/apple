@@ -486,20 +486,23 @@ Live Spotlight-style suggestions in AppleBar  —  5 scenarios   (features/spotl
   triad: .session✓  transcript✗  RESULT✓
   honesty: 4/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Recover a wedged USB-C port without losing the work on the machine  —  11 scenarios   (features/usb-port-revive.feature)
+Recover a wedged USB-C port without losing the work on the machine  —  14 scenarios   (features/usb-port-revive.feature)
   - [@built @hw-verified] Classify a fault that only a restart recovered
   - [@built @hw-verified] launchd service churn must not be mistaken for bus activity
   - [@built @hw-verified] An ordinary idle gap must not be read as a wedge
   - [@built @hw-verified] Software replug of a device or hub that wedged
+  - [@built @hw-verified] Root is not assumed to be required
   - [@built @hw-verified] Rung 1 is honest about not applying to a dead port
   - [@built @untested] Sleep/wake as the only reboot-free lever on the port hardware
   - [@built @hw-verified] Rung 2 never fires by accident
-  - [@built @untested] Tell a dead port apart from an empty port
+  - [@built @hw-verified] Tell a dead port apart from an empty port
+  - [@built @hw-verified] The watch predicate must match LIVE kernel USB lines
+  - [@built @hw-verified] Watch must survive silence, because silence is the finding
   - [@built @hw-verified] A restart must not cost the day's sessions
   - [@todo] Automatically snapshot sessions when a wedge is detected
   - [@todo] Establish the root cause rather than only recovering from it
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 9/11 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 12/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 One button for "Claude talks to me" (server + speech together)  —  9 scenarios   (features/voicebox-speak-toggle.feature)
   - [@verified] Default is ON when no state file exists

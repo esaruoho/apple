@@ -34,6 +34,7 @@ import json
 import os
 import plistlib
 import re
+import select
 import shlex
 import subprocess
 import sys
@@ -281,19 +282,37 @@ def cmd_watch(args):
     print("  Any line appearing below = the port is ALIVE (the controller saw it).")
     print("  Total silence while you plug/unplug = the port is DEAD.\n")
     print("-" * 68)
+    # Two things that a subsystem-based predicate gets wrong when STREAMING,
+    # both verified the hard way (a real re-enumerate was reported as silence,
+    # i.e. a false "port is DEAD" — the worst possible failure for this command):
+    #
+    #   1. Live kernel USB lines carry sender IOUSBHostFamily and do NOT match
+    #      `subsystem CONTAINS "usb"`, even though the same lines DO match it
+    #      when read back later with `log show`. Match on senderImagePath.
+    #   2. Enumeration lines are debug level, which `log stream` drops unless
+    #      --level debug is passed.
     p = subprocess.Popen(
-        ["log", "stream", "--style", "compact", "--predicate",
-         'subsystem BEGINSWITH "com.apple.iokit.IOUSB" OR subsystem CONTAINS "usb" '
-         'OR subsystem CONTAINS "Thunderbolt"'],
+        ["log", "stream", "--style", "compact", "--level", "debug", "--predicate",
+         'senderImagePath CONTAINS[c] "IOUSBHostFamily" '
+         'OR senderImagePath CONTAINS[c] "AppleUSB" '
+         'OR senderImagePath CONTAINS[c] "Thunderbolt" '
+         'OR subsystem CONTAINS "usb"'],
         stdout=subprocess.PIPE, text=True)
     seen = 0
     deadline = time.time() + args.seconds
     try:
-        while time.time() < deadline:
+        # select(), not readline(): on a genuinely dead port there is NO output
+        # at all, and a blocking readline would hang forever — which is exactly
+        # the case this command exists to detect. The timeout must survive
+        # silence, because silence is the finding.
+        while (remaining := deadline - time.time()) > 0:
+            ready, _, _ = select.select([p.stdout], [], [], min(remaining, 0.5))
+            if not ready:
+                continue
             line = p.stdout.readline()
             if not line:
                 break
-            if "Filtering the log data" in line:
+            if "Filtering the log data" in line or line.startswith("Timestamp"):
                 continue
             seen += 1
             print("  " + line.rstrip()[:200])
@@ -301,6 +320,10 @@ def cmd_watch(args):
         pass
     finally:
         p.terminate()
+        try:
+            p.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            p.kill()
     print("-" * 68)
     print(f"\n{seen} USB event(s) in {args.seconds}s.")
     if seen == 0:
@@ -421,14 +444,22 @@ def cmd_fix(args):
         print("  enumerated. That is itself the signature of a dead port: there is no")
         print("  device object to talk to. Skipping to rung 2.")
     else:
-        if os.geteuid() != 0:
-            print("\nRung 1 needs root. Re-run: sudo port-revive fix")
-            return 1
+        # Do NOT gate on root up front. Verified 2026-08-07: re-enumerating the
+        # Billboard device succeeded as a normal user. Whether root is needed
+        # depends on which kernel driver holds the device, so try first and only
+        # mention sudo if the open actually fails.
+        needs_root = False
         for loc, name in targets:
             print(f"\nRung 1: re-enumerating 0x{loc:08x} {name}")
             r = subprocess.run([str(HELPER_BIN), "--reset", hex(loc)],
                                capture_output=True, text=True)
-            print("  " + (r.stdout or r.stderr).strip())
+            msg = (r.stdout or r.stderr).strip()
+            print("  " + msg)
+            if "run as root" in msg and os.geteuid() != 0:
+                needs_root = True
+        if needs_root:
+            print("\nSome devices refused to open as a normal user.")
+            print("Re-run with: sudo port-revive fix")
         print("\nWaiting 8s for re-enumeration...")
         time.sleep(8)
         after = {loc for loc, _, _ in usb_devices()}

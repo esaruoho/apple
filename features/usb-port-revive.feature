@@ -85,13 +85,30 @@ Feature: Recover a wedged USB-C port without losing the work on the machine
   @built @hw-verified
   Scenario: Software replug of a device or hub that wedged
     Given a device or hub is still enumerated but has stopped responding
-    When I run `sudo port-revive fix`
-    Then each matching hub is re-enumerated via IOUSBLib USBDeviceReEnumerate
+    When I run `port-revive fix --match <name>`
+    Then that device is re-enumerated via IOUSBLib USBDeviceReEnumerate
     And the device count before and after is reported
+    # VERIFIED 2026-08-07 on the USB Billboard Device, two independent ways:
+    #   1. Device count polled across the reset: 6 -> 5 -> 6 within ~1s.
+    #   2. Kernel log, live:
+    #        terminateDevice: destroying 0x2109/8817/0001 ...: reset API call
+    #        enumerateDeviceComplete_block_invoke: enumerated ... at 480 Mbps
+    # The mechanism is real; this is not inferred from a zero exit code.
     # USBDeviceReEnumerate requires IOUSBDeviceInterface187 or newer; the helper
     # walks 942 -> 187 and uses the first that answers. Devices with a kernel
     # driver attached need USBDeviceOpenSeize, not USBDeviceOpen.
     # bin/usb-reenumerate.c :: cmd_reset
+
+  @built @hw-verified
+  Scenario: Root is not assumed to be required
+    Given re-enumerating the Billboard device succeeds as a normal user
+    When I run `port-revive fix` without sudo
+    Then it attempts the reset rather than refusing up front
+    And it only suggests sudo if an open actually fails
+    # The first version gated on geteuid()==0 and would have sent the user to
+    # sudo for an operation that does not need it. Whether root is required
+    # depends on which kernel driver holds the device.
+    # bin/port-revive :: cmd_fix, needs_root
 
   @built @hw-verified
   Scenario: Rung 1 is honest about not applying to a dead port
@@ -127,13 +144,40 @@ Feature: Recover a wedged USB-C port without losing the work on the machine
 
   # ------------------------------------------------------------------- live
 
-  @built @untested
+  @built @hw-verified
   Scenario: Tell a dead port apart from an empty port
     Given ioreg cannot distinguish "nothing plugged in" from "port not responding"
     When I run `port-revive watch` and plug something into the suspect port
     Then any streamed line means the controller saw it and the port is alive
     And total silence means the port is dead at the controller level
+    # VERIFIED 2026-08-07 end to end: a reset triggered 4s into a 10s watch was
+    # reported as "2 USB event(s) ... The USB controller is responding."
     # bin/port-revive :: cmd_watch
+
+  @built @hw-verified
+  Scenario: The watch predicate must match LIVE kernel USB lines
+    Given live kernel USB lines carry sender IOUSBHostFamily
+    And the same lines match `subsystem CONTAINS "usb"` only when read via `log show`
+    When streaming
+    Then the predicate matches on senderImagePath, and passes --level debug
+    # THIS WAS A REAL FALSE NEGATIVE, caught only by triggering a known-good
+    # reset underneath a running watch: a genuine re-enumerate was reported as
+    # "0 USB event(s) ... SILENCE — that port is dead". The command would have
+    # confidently told Esa a working port was dead. Two causes, both needed
+    # fixing: the subsystem predicate does not match when streaming, and
+    # enumeration lines are debug level which log stream drops by default.
+    # bin/port-revive :: cmd_watch, predicate
+
+  @built @hw-verified
+  Scenario: Watch must survive silence, because silence is the finding
+    Given a genuinely dead port produces no output whatsoever
+    When the watch window elapses
+    Then it exits and reports, rather than blocking forever on readline
+    # The first version used a blocking readline() inside a deadline loop, so it
+    # hung indefinitely on a quiet bus — hanging in exactly the situation the
+    # command exists to diagnose. Now select() with a bounded timeout.
+    # Verified: `watch --seconds 6` on a quiet bus returns in 6.4s.
+    # bin/port-revive :: cmd_watch, select loop
 
   # --------------------------------------------------------------- sessions
 
