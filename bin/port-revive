@@ -1,0 +1,512 @@
+#!/usr/bin/env python3
+"""port-revive — diagnose and recover a wedged USB-C / Thunderbolt port without a reboot.
+
+The problem this exists for: a USB-C port stops responding entirely. Not one
+device dropping off — the whole receptacle goes dark, so nothing plugged into it
+enumerates at all, and only a full restart brings it back. A restart costs every
+running Claude Code session, which is the expensive part.
+
+What this tool does, in order:
+
+  status     what is on each port right now
+  diagnose   read the kernel log and say WHICH failure this was:
+             device-level wedge (fixable in software) vs root-port wedge
+  sessions   snapshot every running Claude Code session so a restart is cheap
+  fix        run the recovery ladder, cheapest rung first
+
+Honesty about the ladder — the rungs are not equally proven:
+
+  rung 1  re-enumerate a device/hub (IOUSBLib USBDeviceReEnumerate).
+          PROVEN for a device or hub that wedged. Does NOTHING for a dead root
+          port, because a dead root port has no device object left to talk to.
+  rung 2  sleep/wake. On Apple Silicon, system sleep power-gates the Type-C PHYs
+          and XHCI controllers, and wake re-initialises them. This is the only
+          reboot-free lever that touches the port hardware itself.
+          UNPROVEN for this specific fault — it has never been tested here.
+          The tool records the outcome to the ledger so we find out.
+  rung 3  restart. Known to work, and what we are trying to avoid.
+
+FEATURE-CARD >> features/usb-port-revive.feature
+"""
+
+import argparse
+import json
+import os
+import plistlib
+import re
+import shlex
+import subprocess
+import sys
+import time
+from datetime import datetime, timedelta
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+HELPER_SRC = HERE / "usb-reenumerate.c"
+HELPER_BIN = HERE / ".build" / "usb-reenumerate"
+STATE = Path.home() / ".local" / "state" / "apple"
+LEDGER = STATE / "port-revive-ledger.jsonl"
+SESSION_SNAPSHOT = STATE / "claude-sessions.json"
+
+# The kernel log signatures that distinguish the two failure modes.
+DEVICE_WEDGE = [
+    "transaction error",
+    "resetAndCreateDevice",
+    "terminateDevice",
+    "hardwareException",
+    "failed control request",
+]
+PORT_WEDGE = [
+    "AppleTypeCPhy",
+    "IOAccessoryManagerUSBC",
+    "overcurrent",
+    "port is not enabled",
+]
+
+
+def sh(cmd, **kw):
+    """Run a command, return stdout as text. Never raises on non-zero."""
+    kw.setdefault("capture_output", True)
+    kw.setdefault("text", True)
+    try:
+        return subprocess.run(cmd, **kw).stdout or ""
+    except Exception as e:  # noqa: BLE001 - diagnostics must not crash the tool
+        return f"<{e}>"
+
+
+def ensure_helper():
+    """Build the IOKit re-enumerate helper if missing or stale."""
+    if HELPER_BIN.exists() and HELPER_BIN.stat().st_mtime >= HELPER_SRC.stat().st_mtime:
+        return True
+    HELPER_BIN.parent.mkdir(parents=True, exist_ok=True)
+    r = subprocess.run(
+        ["clang", "-O2", "-o", str(HELPER_BIN), str(HELPER_SRC),
+         "-framework", "CoreFoundation", "-framework", "IOKit"],
+        capture_output=True, text=True,
+    )
+    if r.returncode != 0:
+        print(f"port-revive: helper build failed:\n{r.stderr}", file=sys.stderr)
+        return False
+    return True
+
+
+def usb_devices():
+    """[(locationID:int, 'vvvv:pppp', name)] for every enumerated USB device."""
+    if not ensure_helper():
+        return []
+    out = []
+    for line in sh([str(HELPER_BIN), "--list"]).splitlines():
+        parts = line.split("\t")
+        if len(parts) == 3:
+            out.append((int(parts[0], 16), parts[1], parts[2]))
+    return out
+
+
+def thunderbolt_ports():
+    """[(bus, receptacle, status, speed, attached_device_name)] per Thunderbolt bus.
+
+    system_profiler nests the receptacle info as a `receptacle_N_tag` dict inside
+    each bus item, not as a child `_items` entry — hence the key-scan rather than
+    a plain tree walk.
+    """
+    raw = sh(["system_profiler", "-xml", "SPThunderboltDataType"])
+    try:
+        data = plistlib.loads(raw.encode())
+    except Exception:
+        return []
+    ports = []
+
+    def walk(items):
+        for it in items or []:
+            bus = it.get("_name", "?")
+            attached = [c.get("_name") for c in (it.get("_items") or [])]
+            for key, val in it.items():
+                if not (key.startswith("receptacle") and isinstance(val, dict)):
+                    continue
+                ports.append((
+                    bus,
+                    val.get("receptacle_id_key", "?"),
+                    val.get("receptacle_status_key", "?"),
+                    val.get("current_speed_key", "?"),
+                    ", ".join(a for a in attached if a) or None,
+                ))
+            walk(it.get("_items"))
+
+    for top in data:
+        walk(top.get("_items"))
+    return ports
+
+
+# ---------------------------------------------------------------- status
+
+
+def cmd_status(args):
+    devs = usb_devices()
+    print("USB-C / Thunderbolt receptacles")
+    tb = thunderbolt_ports()
+    if tb:
+        for bus, recept, status, speed, name in tb:
+            line = f"  {bus}  receptacle {recept}: {status}  ({speed})"
+            if name:
+                line += f"  -> {name}"
+            print(line)
+    else:
+        print("  (system_profiler returned no receptacle data)")
+
+    print("\nEnumerated USB devices (locationID's top byte = which controller/port)")
+    if not devs:
+        print("  none")
+    for loc, vidpid, name in sorted(devs):
+        print(f"  0x{loc:08x}  {vidpid}  {name}")
+
+    # A controller with zero devices is normal (empty port) but worth showing,
+    # because "port dead" and "port empty" look identical from userspace.
+    ctrls = sorted({loc >> 24 for loc, _, _ in devs})
+    print(f"\nControllers with devices attached: {[hex(c) for c in ctrls] or 'none'}")
+    print("Note: an unresponsive port and an empty port are indistinguishable here.")
+    print("Use `port-revive diagnose` to read what the kernel actually logged.")
+    return 0
+
+
+# -------------------------------------------------------------- diagnose
+
+
+def cmd_diagnose(args):
+    since = args.since
+    print(f"Reading kernel USB/Thunderbolt log for the last {since}...\n")
+    raw = sh([
+        "log", "show", "--last", since, "--style", "compact",
+        "--predicate",
+        'subsystem BEGINSWITH "com.apple.iokit.IOUSB" OR subsystem CONTAINS "Thunderbolt" '
+        'OR subsystem CONTAINS "USBHost" OR subsystem CONTAINS "usb"',
+    ])
+    lines = raw.splitlines()
+
+    def hits(needles):
+        return [l for l in lines if any(n in l for n in needles)]
+
+    dev_hits = hits(DEVICE_WEDGE)
+    port_hits = hits(PORT_WEDGE)
+
+    # Boot time tells us where a restart interrupted the story.
+    boot = sh(["sysctl", "-n", "kern.boottime"])
+    m = re.search(r"sec = (\d+)", boot)
+    boot_dt = datetime.fromtimestamp(int(m.group(1))) if m else None
+
+    print(f"log lines: {len(lines)}   device-wedge signatures: {len(dev_hits)}   "
+          f"port-level signatures: {len(port_hits)}")
+    if boot_dt:
+        print(f"last boot: {boot_dt:%Y-%m-%d %H:%M:%S}")
+
+    if dev_hits:
+        print("\n--- device/hub wedge evidence (most recent 12) ---")
+        for l in dev_hits[-12:]:
+            print("  " + l[:200])
+    if port_hits:
+        print("\n--- port/PHY level evidence (most recent 12) ---")
+        for l in port_hits[-12:]:
+            print("  " + l[:200])
+
+    # The decisive signal for a wedged root port is SILENCE: after the fault, the
+    # USB subsystem stops logging entirely — anything plugged in is not even seen
+    # by the kernel — and the silence ends only at the next boot. A device-level
+    # wedge looks different: the controller keeps logging right through it.
+    #
+    # So the thing to measure is the largest gap between consecutive USB log
+    # lines, and whether an error sits at the start of that gap.
+    if not dev_hits and not port_hits:
+        print("\nVERDICT: no USB error signatures in this window.")
+        print("  Widen it: port-revive diagnose --since 12h")
+        return 0
+
+    # The decisive marker for "only a restart fixed it" is a stretch of silence
+    # that ENDS AT THE BOOT: the subsystem stopped talking, stayed quiet however
+    # long you kept trying to plug things in, and spoke again only once the
+    # machine came back up.
+    #
+    # Anchoring on the boot rather than on the gap's first line matters, because
+    # the last line before the silence is often something benign (an app probing
+    # the bus) rather than the error itself.
+    # Only kernel bus traffic counts as "the subsystem is talking". launchd lines
+    # about usbd/usbmuxd starting and stopping are service management, not bus
+    # activity — and they fire during shutdown, which would otherwise mask the
+    # very silence we are trying to measure.
+    stamped = [(t, l) for l in lines
+               if (t := _line_time(l)) and "kernel[" in l and "[com.apple.usb" in l]
+    err_sigs = DEVICE_WEDGE + PORT_WEDGE
+
+    verdict_root = False
+    if boot_dt:
+        pre = [(t, l) for t, l in stamped if t < boot_dt]
+        if pre:
+            last_pre_t, _ = pre[-1]
+            silence = boot_dt - last_pre_t
+            errs_near = [t for t, l in pre
+                         if any(n in l for n in err_sigs) and boot_dt - t < timedelta(minutes=10)]
+            print(f"\nSilence before the reboot: {silence} "
+                  f"(last USB event {last_pre_t:%H:%M:%S}, boot {boot_dt:%H:%M:%S})")
+            if errs_near:
+                print(f"USB errors in the 10 min before that reboot: {len(errs_near)} "
+                      f"(first at {min(errs_near):%H:%M:%S})")
+            if silence > timedelta(seconds=45) and errs_near:
+                verdict_root = True
+
+    if verdict_root:
+        print("\nVERDICT: ROOT-PORT WEDGE — and the restart is what recovered it.")
+        print("  USB errors, then the subsystem went silent and stayed silent right")
+        print("  up to the reboot. Anything plugged in during that window was not")
+        print("  seen by the kernel at all.")
+        print("\n  Rung 1 (re-enumerate) CANNOT help this: there is no device object")
+        print("  left to reset. Only sleep/wake (rung 2) or a restart touches the")
+        print("  port hardware. Next time it happens, before restarting, try:")
+        print("      port-revive sessions --save")
+        print("      port-revive fix --sleep")
+    else:
+        print("\nVERDICT: DEVICE / HUB WEDGE.")
+        print("  The controller kept logging through the fault, so it is alive and a")
+        print("  specific device or hub is stuck. Rung 1 should fix it:")
+        print("      sudo port-revive fix")
+    return 0
+
+
+def cmd_watch(args):
+    """Live test: is the port dead RIGHT NOW?
+
+    A dead root port and an empty port look identical in ioreg. The only way to
+    tell them apart is to plug something in and see whether the kernel reacts at
+    all. This streams the USB log so that test takes one plug.
+    """
+    print(f"Streaming kernel USB events for {args.seconds}s.")
+    print("PLUG SOMETHING INTO THE SUSPECT PORT NOW.\n")
+    print("  Any line appearing below = the port is ALIVE (the controller saw it).")
+    print("  Total silence while you plug/unplug = the port is DEAD.\n")
+    print("-" * 68)
+    p = subprocess.Popen(
+        ["log", "stream", "--style", "compact", "--predicate",
+         'subsystem BEGINSWITH "com.apple.iokit.IOUSB" OR subsystem CONTAINS "usb" '
+         'OR subsystem CONTAINS "Thunderbolt"'],
+        stdout=subprocess.PIPE, text=True)
+    seen = 0
+    deadline = time.time() + args.seconds
+    try:
+        while time.time() < deadline:
+            line = p.stdout.readline()
+            if not line:
+                break
+            if "Filtering the log data" in line:
+                continue
+            seen += 1
+            print("  " + line.rstrip()[:200])
+    except KeyboardInterrupt:
+        pass
+    finally:
+        p.terminate()
+    print("-" * 68)
+    print(f"\n{seen} USB event(s) in {args.seconds}s.")
+    if seen == 0:
+        print("SILENCE — if you did plug something in, that port is dead at the")
+        print("controller level. Run: port-revive sessions --save && port-revive fix --sleep")
+    else:
+        print("The USB controller is responding.")
+    return 0
+
+
+def _line_time(line):
+    m = re.match(r"(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", line)
+    return datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S") if m else None
+
+
+# -------------------------------------------------------------- sessions
+
+
+def claude_sessions():
+    """Every running Claude Code session: pid, cwd, session id, resume command."""
+    out = []
+    ps = sh(["ps", "-axo", "pid=,command="])
+    for line in ps.splitlines():
+        line = line.strip()
+        m = re.match(r"^(\d+)\s+(\S*claude)\s+(.*)$", line)
+        if not m:
+            continue
+        pid, args = int(m.group(1)), m.group(3)
+        if "shell-snapshots" in line:  # a bash helper, not a session
+            continue
+        sid = None
+        s = re.search(r"--resume\s+([0-9a-f-]{36})", args)
+        if s:
+            sid = s.group(1)
+        cwd = _pid_cwd(pid)
+        if sid is None and cwd:
+            sid = _newest_session_for(cwd)
+        out.append({
+            "pid": pid,
+            "cwd": cwd,
+            "session": sid,
+            "resume": (f"cd {shlex.quote(cwd)} && "
+                       f"claude --dangerously-skip-permissions --resume {sid}"
+                       if cwd and sid else None),
+        })
+    return out
+
+
+def _pid_cwd(pid):
+    for line in sh(["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"]).splitlines():
+        if line.startswith("n"):
+            return line[1:]
+    return None
+
+
+def _newest_session_for(cwd):
+    """Claude Code stores transcripts under ~/.claude/projects/<cwd with / as ->."""
+    proj = Path.home() / ".claude" / "projects" / cwd.replace("/", "-")
+    if not proj.is_dir():
+        return None
+    js = sorted(proj.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
+    return js[0].stem if js else None
+
+
+def cmd_sessions(args):
+    sess = claude_sessions()
+    if args.restore:
+        if not SESSION_SNAPSHOT.exists():
+            print("port-revive: no snapshot saved yet — run `port-revive sessions --save`")
+            return 1
+        snap = json.loads(SESSION_SNAPSHOT.read_text())
+        print(f"Snapshot from {snap['saved']} — {len(snap['sessions'])} session(s):\n")
+        for s in snap["sessions"]:
+            print(f"# {s['cwd']}")
+            print(f"{s['resume'] or '(no resume command — session id unknown)'}\n")
+        return 0
+
+    print(f"{len(sess)} running Claude Code session(s):\n")
+    for s in sess:
+        print(f"  pid {s['pid']:>6}  {s['cwd'] or '?'}")
+        print(f"          {s['resume'] or '(session id unknown)'}")
+
+    if args.save:
+        STATE.mkdir(parents=True, exist_ok=True)
+        SESSION_SNAPSHOT.write_text(json.dumps(
+            {"saved": datetime.now().isoformat(timespec="seconds"), "sessions": sess},
+            indent=2))
+        print(f"\nSaved to {SESSION_SNAPSHOT}")
+        print("After any restart: port-revive sessions --restore")
+    return 0
+
+
+# ------------------------------------------------------------------- fix
+
+
+def ledger_append(entry):
+    STATE.mkdir(parents=True, exist_ok=True)
+    entry["when"] = datetime.now().isoformat(timespec="seconds")
+    with LEDGER.open("a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+def cmd_fix(args):
+    before = {loc for loc, _, _ in usb_devices()}
+    print(f"Before: {len(before)} USB device(s) enumerated.")
+
+    # --- rung 1: re-enumerate ------------------------------------------------
+    targets = []
+    for loc, vidpid, name in usb_devices():
+        if args.match:
+            if args.match.lower() in name.lower() or args.match.lower() in vidpid:
+                targets.append((loc, name))
+        elif "hub" in name.lower():
+            targets.append((loc, name))
+
+    if not targets:
+        print("\nRung 1 (re-enumerate): nothing to reset — no matching device is")
+        print("  enumerated. That is itself the signature of a dead port: there is no")
+        print("  device object to talk to. Skipping to rung 2.")
+    else:
+        if os.geteuid() != 0:
+            print("\nRung 1 needs root. Re-run: sudo port-revive fix")
+            return 1
+        for loc, name in targets:
+            print(f"\nRung 1: re-enumerating 0x{loc:08x} {name}")
+            r = subprocess.run([str(HELPER_BIN), "--reset", hex(loc)],
+                               capture_output=True, text=True)
+            print("  " + (r.stdout or r.stderr).strip())
+        print("\nWaiting 8s for re-enumeration...")
+        time.sleep(8)
+        after = {loc for loc, _, _ in usb_devices()}
+        print(f"After: {len(after)} USB device(s) enumerated.")
+        if after >= before and after:
+            print("\nRung 1 succeeded — devices came back. Done.")
+            ledger_append({"rung": 1, "result": "recovered",
+                           "before": len(before), "after": len(after)})
+            return 0
+        print("\nRung 1 did not restore everything.")
+        ledger_append({"rung": 1, "result": "insufficient",
+                       "before": len(before), "after": len(after)})
+
+    # --- rung 2: sleep/wake --------------------------------------------------
+    print("\n" + "=" * 68)
+    print("Rung 2: sleep/wake — the only reboot-free lever that re-initialises")
+    print("the Type-C PHY and XHCI controller hardware.")
+    print("")
+    print("THIS IS UNPROVEN for a wedged root port. It is the thing worth testing")
+    print("in place of a restart, because it costs nothing and keeps every Claude")
+    print("Code session alive.")
+    print("=" * 68)
+
+    if not args.sleep:
+        print("\nNot sleeping — rung 2 requires an explicit flag:")
+        print("    port-revive fix --sleep")
+        print("\nBefore you do, snapshot your sessions so even a restart is cheap:")
+        print("    port-revive sessions --save")
+        return 2
+
+    print("\nSnapshotting Claude Code sessions first...")
+    sess = claude_sessions()
+    STATE.mkdir(parents=True, exist_ok=True)
+    SESSION_SNAPSHOT.write_text(json.dumps(
+        {"saved": datetime.now().isoformat(timespec="seconds"), "sessions": sess}, indent=2))
+    print(f"  {len(sess)} session(s) saved to {SESSION_SNAPSHOT}")
+
+    print("\nSleeping in 5 seconds. Wake the machine normally, then re-run:")
+    print("    port-revive status")
+    time.sleep(5)
+    ledger_append({"rung": 2, "result": "attempted", "before": len(before),
+                   "sessions_saved": len(sess)})
+    subprocess.run(["pmset", "sleepnow"])
+    return 0
+
+
+# ------------------------------------------------------------------ main
+
+
+def main():
+    p = argparse.ArgumentParser(
+        prog="port-revive",
+        description="Diagnose and recover a wedged USB-C / Thunderbolt port without rebooting.")
+    sub = p.add_subparsers(dest="cmd", required=True)
+
+    sub.add_parser("status", help="show ports and what is enumerated").set_defaults(fn=cmd_status)
+
+    d = sub.add_parser("diagnose", help="read the kernel log and classify the failure")
+    d.add_argument("--since", default="3h", help="log window (default 3h)")
+    d.set_defaults(fn=cmd_diagnose)
+
+    s = sub.add_parser("sessions", help="list / snapshot / restore Claude Code sessions")
+    s.add_argument("--save", action="store_true", help="snapshot to disk")
+    s.add_argument("--restore", action="store_true", help="print resume commands from snapshot")
+    s.set_defaults(fn=cmd_sessions)
+
+    w = sub.add_parser("watch", help="live test: plug something in, see if the kernel reacts")
+    w.add_argument("--seconds", type=int, default=45, help="how long to stream (default 45)")
+    w.set_defaults(fn=cmd_watch)
+
+    f = sub.add_parser("fix", help="run the recovery ladder")
+    f.add_argument("--match", help="device name or vid:pid to reset (default: hubs)")
+    f.add_argument("--sleep", action="store_true", help="allow rung 2 (sleep/wake)")
+    f.set_defaults(fn=cmd_fix)
+
+    args = p.parse_args()
+    return args.fn(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

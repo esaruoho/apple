@@ -1,4 +1,4 @@
-# CLI Tools Index — 315 tools in bin/
+# CLI Tools Index — 316 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -212,6 +212,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `patch-sal-libraries-for-current-bundle-ids.sh` — Patch Sal's installed .scptd libraries to use current Apple bundle IDs. — `bin/patch-sal-libraries-for-current-bundle-ids.sh`
 `pdf-textlen` — self-building Swift wrapper around PDFKit. Prints, per PDF path, — `bin/pdf-textlen`
 `photo-submit` — ask CloudcityMacMini to photograph EACH video input device. — `bin/photo-submit`
+`port-revive` — (no description) — `bin/port-revive`
 `prism` — FEATURE-CARD >> ~/work/convey/features/convey-prism.feature — `bin/prism`
 `probe-vocal-shortcuts.sh` — Probe where Vocal Shortcuts stores its phrase→Shortcut mappings. — `bin/probe-vocal-shortcuts.sh`
 `process` — Send a local media file (or URL) to the Cloudcity whisp pipeline. — `bin/process`
