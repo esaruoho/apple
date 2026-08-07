@@ -1,4 +1,4 @@
-# CLI Tools Index — 316 tools in bin/
+# CLI Tools Index — 317 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -254,6 +254,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `seed-script-triggers.py` — (no description) — `bin/seed-script-triggers.py`
 `send-to-media-editor` — (no description) — `bin/send-to-media-editor`
 `sentiment-map-svg` — (no description) — `bin/sentiment-map-svg`
+`sesh` — (no description) — `bin/sesh`
 `sessions` — (no description) — `bin/sessions`
 `sessions-recover` — (no description) — `bin/sessions-recover`
 `setup-finances-private.sh` — ONE-TIME setup of a private, password-protected — `bin/setup-finances-private.sh`

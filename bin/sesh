@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""sesh — one word. Sessions open: save them. Nothing open: boot them all back.
+
+The whole point is that you type the same three letters either way and it does
+the right thing, so there is nothing to remember at the moment you most need it
+(the machine is about to be restarted, or has just come back up).
+
+    sesh          auto: save if any session is running, otherwise boot
+    sesh save     force a save
+    sesh boot     force a boot (opens an iTerm tab per saved session)
+    sesh list     show what is running and what is saved
+    sesh boot -n  dry run: print what would launch, launch nothing
+
+Booting opens one iTerm tab per saved session, each already cd'd into its own
+folder and resuming its own session id.
+
+FEATURE-CARD >> features/sesh.feature
+"""
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _claude_sessions as cs  # noqa: E402
+
+
+def _osascript(script):
+    return subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+
+
+def boot(sessions, dry_run=False):
+    """Open one iTerm tab per session, cd'd into its folder and resuming it."""
+    # Never resume a session id that is already open. Two processes resuming the
+    # same transcript is asking for a conflict, and it is also just noise —
+    # you end up with duplicate tabs of work you already had.
+    #
+    # Learned the embarrassing way on 2026-08-07: a boot that did not check this
+    # took Esa from 12 sessions to 21, all duplicates, which he had to close by
+    # hand.
+    live_ids = {s["session"] for s in cs.running() if s.get("session")}
+
+    launchable, skipped = [], []
+    for s in sessions:
+        if not s.get("resume"):
+            skipped.append((s, "no session id recorded"))
+        elif not Path(s["cwd"]).is_dir():
+            skipped.append((s, "folder no longer exists"))
+        elif s.get("session") in live_ids:
+            skipped.append((s, "already running — not duplicating"))
+        else:
+            launchable.append(s)
+
+    for s, why in skipped:
+        print(f"  SKIP  {s.get('cwd') or '?'} — {why}")
+
+    if not launchable:
+        print("\nNothing to boot.")
+        return 1
+
+    print(f"\n{'Would launch' if dry_run else 'Launching'} {len(launchable)} session(s):")
+    for s in launchable:
+        print(f"  {s['cwd']}")
+        print(f"      claude --resume {s['session']}")
+    if dry_run:
+        return 0
+
+    # One window, then a tab per session. Building a single AppleScript keeps it
+    # to one Apple Event round trip and one focus change, instead of N.
+    #
+    # This drives iTerm through its own scripting verbs — it is NOT System Events
+    # keystroke injection, so it cannot land in whatever app happens to be
+    # frontmost. See feedback_never_ui_hijack_active_session.
+    parts = ['tell application "iTerm"', "  activate"]
+    for i, s in enumerate(launchable):
+        cmd = s["resume"].replace("\\", "\\\\").replace('"', '\\"')
+        if i == 0:
+            parts.append("  set w to (create window with default profile)")
+            parts.append("  tell current session of w")
+        else:
+            parts.append("  tell w")
+            parts.append("    set t to (create tab with default profile)")
+            parts.append("  end tell")
+            parts.append("  tell current session of t")
+        parts.append(f'    write text "{cmd}"')
+        parts.append("  end tell")
+    parts.append("end tell")
+
+    r = _osascript("\n".join(parts))
+    if r.returncode != 0:
+        print(f"\nsesh: iTerm launch failed:\n{r.stderr.strip()}", file=sys.stderr)
+        print("\nThe snapshot is intact. Resume commands:", file=sys.stderr)
+        for s in launchable:
+            print(f"  {s['resume']}", file=sys.stderr)
+        return 1
+
+    print(f"\nBooted {len(launchable)} session(s) in iTerm.")
+    return 0
+
+
+def do_save(live, quiet=False):
+    path = cs.save(live)
+    if not quiet:
+        for s in live:
+            print(f"  {s['cwd'] or '?'}")
+            print(f"      {s['resume'] or '(session id unknown)'}")
+    print(f"\nSaved {len(live)} session(s) to {path}")
+    return 0
+
+
+def main():
+    p = argparse.ArgumentParser(prog="sesh", description=__doc__.split("\n")[0])
+    p.add_argument("action", nargs="?", default="auto",
+                   choices=["auto", "save", "boot", "list"])
+    p.add_argument("-n", "--dry-run", action="store_true")
+    args = p.parse_args()
+
+    live = cs.running()
+    snap = cs.load()
+
+    if args.action == "list":
+        print(f"Running now: {len(live)} session(s)")
+        for s in live:
+            print(f"  pid {s['pid']:>6}  {s['cwd'] or '?'}")
+        if snap:
+            print(f"\nSaved {snap['saved']}: {len(snap['sessions'])} session(s)")
+            for s in snap["sessions"]:
+                print(f"  {s['cwd'] or '?'}")
+        else:
+            print("\nNo snapshot saved yet.")
+        return 0
+
+    if args.action == "save":
+        if not live:
+            # Refuse to replace a good snapshot with an empty one. This is the
+            # single way `sesh` could destroy the thing it exists to protect.
+            print("sesh: nothing is running — refusing to overwrite the snapshot")
+            print("      with an empty one. Did you mean `sesh boot`?")
+            return 1
+        return do_save(live)
+
+    if args.action == "boot":
+        if not snap or not snap["sessions"]:
+            print("sesh: no snapshot to boot. Run `sesh save` while sessions are open.")
+            return 1
+        print(f"Snapshot from {snap['saved']}")
+        return boot(snap["sessions"], dry_run=args.dry_run)
+
+    # auto — the whole point of the tool
+    if live:
+        print(f"{len(live)} session(s) running -> saving.\n")
+        return do_save(live)
+    if not snap or not snap["sessions"]:
+        print("sesh: nothing running and nothing saved. Nothing to do.")
+        return 1
+    print(f"Nothing running -> booting snapshot from {snap['saved']}.")
+    return boot(snap["sessions"], dry_run=args.dry_run)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

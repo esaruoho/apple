@@ -42,6 +42,9 @@ import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _claude_sessions as cs  # noqa: E402
+
 HERE = Path(__file__).resolve().parent
 HELPER_SRC = HERE / "usb-reenumerate.c"
 HELPER_BIN = HERE / ".build" / "usb-reenumerate"
@@ -342,50 +345,10 @@ def _line_time(line):
 # -------------------------------------------------------------- sessions
 
 
+# Session discovery lives in _claude_sessions.py, shared with `sesh`. One copy
+# of the ps/lsof/transcript dance, not two that can drift apart.
 def claude_sessions():
-    """Every running Claude Code session: pid, cwd, session id, resume command."""
-    out = []
-    ps = sh(["ps", "-axo", "pid=,command="])
-    for line in ps.splitlines():
-        line = line.strip()
-        m = re.match(r"^(\d+)\s+(\S*claude)\s+(.*)$", line)
-        if not m:
-            continue
-        pid, args = int(m.group(1)), m.group(3)
-        if "shell-snapshots" in line:  # a bash helper, not a session
-            continue
-        sid = None
-        s = re.search(r"--resume\s+([0-9a-f-]{36})", args)
-        if s:
-            sid = s.group(1)
-        cwd = _pid_cwd(pid)
-        if sid is None and cwd:
-            sid = _newest_session_for(cwd)
-        out.append({
-            "pid": pid,
-            "cwd": cwd,
-            "session": sid,
-            "resume": (f"cd {shlex.quote(cwd)} && "
-                       f"claude --dangerously-skip-permissions --resume {sid}"
-                       if cwd and sid else None),
-        })
-    return out
-
-
-def _pid_cwd(pid):
-    for line in sh(["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"]).splitlines():
-        if line.startswith("n"):
-            return line[1:]
-    return None
-
-
-def _newest_session_for(cwd):
-    """Claude Code stores transcripts under ~/.claude/projects/<cwd with / as ->."""
-    proj = Path.home() / ".claude" / "projects" / cwd.replace("/", "-")
-    if not proj.is_dir():
-        return None
-    js = sorted(proj.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
-    return js[0].stem if js else None
+    return cs.running()
 
 
 def cmd_sessions(args):

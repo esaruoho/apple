@@ -470,6 +470,21 @@ Record screen + system audio to one .mov with no loopback driver  —  19 scenar
   triad: .session✓  transcript✗  RESULT✓
   honesty: 18/19 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+The master session list is bootable with one word  —  11 scenarios   (features/sesh.feature)
+  - [@built @hw-verified] Sessions are open, so sesh saves them
+  - [@built @hw-verified] Nothing is open, so sesh boots the snapshot
+  - [@built @hw-verified] Never resume a session that is already open
+  - [@built @hw-verified] Never overwrite a good snapshot with an empty one
+  - [@built @hw-verified] Folders with spaces survive the round trip
+  - [@built @hw-verified] Dry run shows the plan without launching anything
+  - [@built @hw-verified] Session discovery has exactly one implementation
+  - [@built @untested] A folder that no longer exists is skipped, not fatal
+  - [@built @untested] iTerm launch failure falls back to printed commands
+  - [@todo] Restore window/tab layout, not just the session set
+  - [@todo] Boot sessions that were closed rather than only those live at sa
+  triad: .session✗  transcript✗  RESULT✓
+  honesty: 9/11 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Desktop & Dock visibility from the command bar  —  3 scenarios   (features/shell-toggles.feature)
   - [@verified] "hide … desktop" and "hide the dock" route to their actions
   - [@built] desktop hides (or shows) all Desktop icons

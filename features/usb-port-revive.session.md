@@ -164,3 +164,43 @@ Rung 2 (sleep/wake) is still `@untested`. It cannot be tested without the fault
 being present, and the fault is intermittent. The ledger is the mechanism for
 settling it. The verdict logic also remains fitted to one incident; the second
 occurrence is the first real test of it.
+
+## The spin-off: `sesh` (see features/sesh.feature)
+
+After the accounting above, Esa named what he actually wanted from the session
+half:
+
+> "i want me to write 'sesh' and currently open ones are saved, and then when
+> there are none open, i write sesh again and all of them retrigger in the right
+> folders. do you see? i want sessions to basically have a way of having the
+> master sessions bootable."
+
+The key design point is that it is idempotent *by context*, not by flag. At the
+moment you need it you should not have to decide which subcommand to type.
+
+`port-revive sessions --save/--restore` only ever *printed* resume commands. The
+new part is actually launching them — an iTerm tab per session, each cd'd into
+its own folder.
+
+### I launched 9 sessions by accident
+
+Testing the auto branch, I called `main()` a second time expecting to inspect
+which path it took. It did not inspect anything; it ran the boot for real and
+opened all 9 snapshot sessions in iTerm. Esa: *"i closed it myself after it
+opened all of them up."*
+
+Two things follow. First, it was an unintended end-to-end verification that the
+launch path works, correctly foldered. Second, and more useful, it exposed a
+genuine design gap: boot re-resumed session ids that were **already open**,
+taking him from 12 sessions to 21 duplicates. Two processes on one transcript is
+a conflict risk, not merely noise. Now `boot` skips any id already running —
+verified by running it with all 9 live and watching it launch nothing.
+
+The lesson worth keeping: calling a CLI's `main()` in a test harness is not
+"inspecting" it. It is running it, with every side effect it has.
+
+### Reuse rather than a second copy
+
+`port-revive` had its own ps/lsof/transcript logic. Rather than have `sesh`
+carry a second copy, it was extracted to `bin/_claude_sessions.py` and
+`port-revive :: claude_sessions` became a one-line delegation.
