@@ -178,8 +178,22 @@ def voicebox_synth(text: str, profile_id_or_name: str, engine: str, language: st
     deadline = time.time() + timeout_s
     completed = False
     last_status = None
+    # 2026-08-07 SOCKET-EXHAUSTION FIX. Every pass of this loop opens a NEW TCP
+    # connection to Voicebox. When the SSE stream closes immediately (server sends the
+    # current status then ends), the old `time.sleep(0.5)` meant ~2 reconnects/second for
+    # the whole 240s budget = up to ~480 connections PER SENTENCE. A 183-sentence
+    # narration run therefore burned ~88k connections and left 62,117 sockets in
+    # TIME_WAIT — Voicebox went unreachable (HTTP 000, Errno 49 "can't assign requested
+    # address") and the whole Mini was one step from a Tailscale lockout.
+    # Fix: exponential backoff between reconnects (0.5 -> 5s cap). The stream pushes
+    # status ~1/s, so a few seconds of poll latency costs nothing and cuts worst-case
+    # connections per sentence from ~480 to ~55 (roughly 10x fewer sockets).
+    backoff = 0.5
+    BACKOFF_MAX = float(os.environ.get("VOICEBOX_POLL_BACKOFF_MAX", "5"))
+    reconnects = 0
     while time.time() < deadline:
         try:
+            reconnects += 1
             with urllib.request.urlopen(f"{VB}/generate/{gen_id}/status", timeout=15) as r:
                 for raw in r:
                     if time.time() > deadline:      # escape a never-terminating stream
@@ -198,11 +212,13 @@ def voicebox_synth(text: str, profile_id_or_name: str, engine: str, language: st
         # Py3.9: socket.timeout / TimeoutError are NOT URLError subclasses — catch all
         # transient read failures and retry within the budget instead of dying.
         except (urllib.error.URLError, socket.timeout, TimeoutError):
-            time.sleep(2)
+            time.sleep(backoff)
+            backoff = min(backoff * 2, BACKOFF_MAX)
             continue
         if completed:
             break
-        time.sleep(0.5)
+        time.sleep(backoff)
+        backoff = min(backoff * 2, BACKOFF_MAX)   # see SOCKET-EXHAUSTION FIX above
     if not completed:
         _cancel_generation(gen_id)
         raise RuntimeError(
