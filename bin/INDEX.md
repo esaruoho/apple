@@ -1,4 +1,4 @@
-# CLI Tools Index — 318 tools in bin/
+# CLI Tools Index — 319 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -283,6 +283,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `tag-smart` — (no description) — `bin/tag-smart`
 `tag-trinity` — (no description) — `bin/tag-trinity`
 `tag-watcher` — (no description) — `bin/tag-watcher`
+`tagpages` — list every isolate job waiting on ONE human ear. — `bin/tagpages`
 `test-vault-tools.sh` — end-to-end smoke for the vault + apple ML toolchain. — `bin/test-vault-tools.sh`
 `test-wav-paths.py` — (no description) — `bin/test-wav-paths.py`
 `text-to-pdf` — render text/markdown to a paginated US-Letter PDF (pure Core Text, — `bin/text-to-pdf`

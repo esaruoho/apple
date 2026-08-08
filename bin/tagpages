@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# tagpages — list every isolate job waiting on ONE human ear.
+# The worker emits NEEDS-TAG.json + tag/tag.html when no speaker matched a person's profile.
+# Open the page, listen to the per-speaker samples, then run the `voice-tag learn` line it prints.
+R="$HOME/work/comms/queue/convey-isolate-results"
+found=0
+for f in "$R"/*/NEEDS-TAG.json; do
+  [ -f "$f" ] || continue
+  d="$(dirname "$f")"
+  page="$d/tag/tag.html"
+  if [ -f "$page" ]; then state="READY"; else state="no page (diarization produced no turns)"; fi
+  printf "  %-28s %s\n" "$(basename "$d")" "$state"
+  [ -f "$page" ] && { printf "      open %s\n" "$page"; found=1; }
+done
+[ "$found" = 0 ] && echo "  (no tag pages ready yet — jobs still running, or none needed one)"
+echo
+echo "  after listening:  ssh cloudcity 'python3 /Users/esaruoho/work/convey/convey/actions/voice-tag learn <TAGDIR> <SPEAKER_NN> <person>'"
