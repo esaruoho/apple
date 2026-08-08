@@ -1,7 +1,8 @@
 // live-envelope — drive Ableton Live's Clip View Envelopes choosers.
 //
 //   live-envelope gain | transposition | "sample offset"   select that clip envelope
-//   live-envelope next | prev                              cycle through the three
+//   live-envelope smart                                    warp-mode aware: Sample Offset / Transposition
+//   live-envelope next | prev                              cycle Gain <-> the warp-appropriate one
 //   live-envelope link | unlink | toggle-link              Link/Unlink the envelope
 //   live-envelope open                                     pop the chooser menu open
 //   live-envelope open-at-mouse                            ... and move it under the pointer
@@ -29,7 +30,14 @@ import Cocoa
 import ApplicationServices
 
 let BUNDLE_ID = "com.ableton.live"
-let CYCLE = ["Gain", "Transposition", "Sample Offset"]
+
+//--------------------------------------------------------------------------------
+// Sample Offset only exists in Beats Warp Mode; in every other mode the equivalent
+// pitch-shaping envelope is Transposition. So the second step of the cycle follows
+// the clip's warp mode instead of being fixed, and "smart" selects it directly.
+//--------------------------------------------------------------------------------
+let BEATS_PARTNER = "Sample Offset"
+let OTHER_PARTNER = "Transposition"
 let CHECK_MARK = "\u{2714}"
 let OSC_HOST = "127.0.0.1"
 let OSC_PORT: UInt16 = 11000
@@ -72,6 +80,13 @@ let SEARCH_MAX_DEPTH = 6
 let SEARCH_MAX_NODES = 4000
 
 func findControl(in root: AXUIElement, role wanted: String, description: String) -> AXUIElement? {
+    //--------------------------------------------------------------------------------
+    // The Envelopes box always sits in a band just above the status bar. Skipping any
+    // subtree that ends above that band discards the session grid and mixer wholesale,
+    // which is what makes this fast on a Set with many tracks.
+    //--------------------------------------------------------------------------------
+    let band = frame(root).map { $0.maxY - 220 }
+
     var queue = [(element: root, depth: 0)]
     var visited = 0
     while !queue.isEmpty && visited < SEARCH_MAX_NODES {
@@ -81,7 +96,10 @@ func findControl(in root: AXUIElement, role wanted: String, description: String)
             return element
         }
         guard depth < SEARCH_MAX_DEPTH else { continue }
-        queue.append(contentsOf: children(element).map { (element: $0, depth: depth + 1) })
+        for child in children(element) {
+            if let cutoff = band, depth >= 1, let box = frame(child), box.maxY < cutoff { continue }
+            queue.append((element: child, depth: depth + 1))
+        }
     }
     return nil
 }
@@ -119,13 +137,10 @@ func currentMenu(in application: AXUIElement) -> AXUIElement? {
 
 func openMenu(_ popup: AXUIElement, in application: AXUIElement) -> AXUIElement? {
     //--------------------------------------------------------------------------------
-    // A menu left over from a previous command swallows the next press, so dismiss
-    // anything still on screen and wait for it to actually go away first.
+    // Pressing the chooser toggles its menu, so a menu that is already on screen must
+    // be reused rather than pressed again — pressing would close it.
     //--------------------------------------------------------------------------------
-    if let stale = currentMenu(in: application) {
-        closeMenu(stale)
-        for _ in 0..<25 where currentMenu(in: application) != nil { usleep(20_000) }
-    }
+    if let alreadyOpen = currentMenu(in: application) { return alreadyOpen }
 
     for attempt in 0..<2 {
         guard AXUIElementPerformAction(popup, kAXPressAction as CFString) == .success else { return nil }
@@ -220,7 +235,8 @@ let usage = """
 usage: live-envelope <command>
 
   gain | transposition | sample offset    select that clip envelope
-  next | prev                             cycle through the three
+  smart                                   Sample Offset in Beats, else Transposition
+  next | prev                             cycle Gain <-> whichever the warp mode offers
   link | unlink | toggle-link             Link/Unlink the displayed envelope
   open                                    pop the chooser menu open
   open-at-mouse                           ... and move it under the pointer
@@ -322,6 +338,21 @@ guard let control = controlChooser else {
          + "showing something else (Device View, or a MIDI clip).")
 }
 
+//--------------------------------------------------------------------------------
+// The Warp Mode chooser stays visible in the clip properties panel while the
+// Envelopes box is showing, so the mode can be read without touching Live's API.
+// It is absent when the clip is unwarped, in which case Sample Offset is unavailable
+// anyway and Transposition is the right partner.
+//--------------------------------------------------------------------------------
+func warpMode() -> String {
+    locate(role: "AXPopUpButton", description: "Warp Mode")
+        .map { string($0, kAXValueAttribute as String) } ?? ""
+}
+
+func warpPartner() -> String {
+    warpMode().caseInsensitiveCompare("Beats") == .orderedSame ? BEATS_PARTNER : OTHER_PARTNER
+}
+
 switch command {
 case "status":
     let device = locate(role: "AXPopUpButton", description: "Device Chooser")
@@ -329,6 +360,9 @@ case "status":
     print("device:   \(device.map { string($0, kAXValueAttribute as String) } ?? "?")")
     print("envelope: \(string(control, kAXValueAttribute as String))")
     print("link:     \(link.map { string($0, kAXValueAttribute as String) } ?? "?")")
+    let warp = warpMode()
+    print("warp:     \(warp.isEmpty ? "(unwarped)" : warp)")
+    print("smart:    \(warpPartner())")
 
 case "open", "menu", "open at mouse", "open-at-mouse":
     let atMouse = command.contains("mouse")
@@ -337,12 +371,26 @@ case "open", "menu", "open at mouse", "open-at-mouse":
     // this menu again on its own after a few seconds, so it is a "pop it up and pick"
     // gesture, not a palette that can be parked.
     //
-    // This is idempotent on purpose: a trigger that repeats while held (a HID mouse
-    // button set to WhileDown, say) would otherwise close and reopen the menu on every
-    // repeat, making it flicker too fast to click.
+    // Re-triggering closes it again, so one button toggles the menu. A trigger that
+    // repeats while held (a HID mouse button set to WhileDown, say) would otherwise
+    // strobe it, so toggles closer together than the debounce are ignored.
+    //--------------------------------------------------------------------------------
+    let stamp = "/tmp/live-envelope.toggle"
+    let debounce = 0.35
+    let lastToggle = try? FileManager.default.attributesOfItem(atPath: stamp)[.modificationDate] as? Date
+    if let last = lastToggle ?? nil, Date().timeIntervalSince(last) < debounce {
+        exit(0)
+    }
+    FileManager.default.createFile(atPath: stamp, contents: nil)
+
+    //--------------------------------------------------------------------------------
+    // Pressing the chooser toggles its menu, so the same trigger both opens and
+    // dismisses it. Live's own menu offers no cancel action, so this press is the only
+    // way to close it without clicking elsewhere or synthesising a keystroke.
     //--------------------------------------------------------------------------------
     if currentMenu(in: application) != nil {
-        print(string(control, kAXValueAttribute as String))
+        AXUIElementPerformAction(control, kAXPressAction as CFString)
+        print("closed")
         exit(0)
     }
     if let device = locate(role: "AXPopUpButton", description: "Device Chooser") {
@@ -379,8 +427,16 @@ case "list":
     guard let menu = openMenu(control, in: application) else { fail("could not open the Control Chooser menu") }
     let all = entries(of: menu)
     closeMenu(menu)
+    //--------------------------------------------------------------------------------
+    // Live reports AXEnabled as true even for entries it greys out, so availability
+    // cannot be shown here. Only the warp-dependent pair is known for certain.
+    //--------------------------------------------------------------------------------
+    let partner = warpPartner()
     for entry in all {
-        print((entry.checked ? "* " : "  ") + entry.title + (entry.enabled ? "" : "  (unavailable)"))
+        let note = (entry.title == BEATS_PARTNER || entry.title == OTHER_PARTNER)
+            ? (entry.title == partner ? "  <- available in this warp mode" : "  <- not in this warp mode")
+            : ""
+        print((entry.checked ? "* " : "  ") + entry.title + note)
     }
 
 case "link", "unlink", "toggle-link":
@@ -405,10 +461,21 @@ default:
     }
 
     var wanted = command
-    if command == "next" || command == "prev" {
+    switch command {
+    case "smart", "auto":
+        wanted = warpPartner()
+    case "next", "prev":
+        //--------------------------------------------------------------------------------
+        // Two steps, not three: Gain and whichever of Sample Offset / Transposition the
+        // clip's warp mode actually offers. Landing on the one Live greys out would make
+        // a press appear to do nothing.
+        //--------------------------------------------------------------------------------
+        let cycle = ["Gain", warpPartner()]
         let current = string(control, kAXValueAttribute as String)
-        let index = CYCLE.firstIndex { $0.lowercased() == current.lowercased() } ?? 0
-        wanted = CYCLE[(index + (command == "next" ? 1 : CYCLE.count - 1)) % CYCLE.count]
+        let index = cycle.firstIndex { $0.lowercased() == current.lowercased() }
+        wanted = index.map { cycle[($0 + 1) % cycle.count] } ?? cycle[0]
+    default:
+        break
     }
     print(select(control, wanted, in: application, label: "Control Chooser"))
 }
