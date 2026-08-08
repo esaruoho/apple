@@ -234,7 +234,7 @@ func showEnvelopeBox() {
 let usage = """
 usage: live-envelope <command>
 
-  gain                                    select the Gain envelope
+  gain                                    toggle Gain <-> Transposition
   smart | sample offset | transposition   Beats: toggle the two; else Transposition
   exact <name>                            select <name> verbatim, no substitution
   next | prev                             cycle only what the warp mode offers
@@ -491,6 +491,14 @@ default:
 
     var wanted = command
     switch command {
+    //--------------------------------------------------------------------------------
+    // Gain is a toggle too: pressing it while Gain is already shown goes to
+    // Transposition, and pressing again comes back. Transposition exists in every warp
+    // mode, so this needs no warp handling.
+    //--------------------------------------------------------------------------------
+    case "gain", "volume":
+        wanted = string(control, kAXValueAttribute as String).caseInsensitiveCompare("Gain") == .orderedSame
+            ? OTHER_PARTNER : "Gain"
     //--------------------------------------------------------------------------------
     // Sample Offset and Transposition are two names for the same dual-purpose slot:
     // whichever of them the clip's warp mode offers. Asking for either gets the one
