@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+"""
+live-envelope — switch the Clip View Envelopes chooser for the clip currently
+shown in Ableton Live's Clip View.
+
+    live-envelope volume         # Clip / Volume     (Gain)
+    live-envelope transposition  # Clip / Transposition
+    live-envelope detune         # Clip / Detune
+    live-envelope next           # cycle forwards
+    live-envelope prev           # cycle backwards
+
+Requires AbletonOSC to be enabled as a Control Surface in Live.
+Fire-and-forget: sends one UDP packet and exits, so it is safe to bind to a
+keyboard shortcut without introducing latency.
+
+Note: Sample Offset is deliberately absent. Live 12 exposes no clip property for
+it, so there is nothing to select it with. See the AbletonOSC branch
+clip-envelope-chooser for the full investigation.
+"""
+import socket
+import sys
+
+HOST = "127.0.0.1"
+PORT = 11000
+ADDRESS = "/live/view/select_clip_envelope"
+NAMES = ("volume", "transposition", "detune", "next", "prev")
+
+ALIASES = {
+    "gain": "volume",
+    "pitch": "transposition",
+    "transpose": "transposition",
+}
+
+
+def pad(data: bytes) -> bytes:
+    """OSC pads every null-terminated element up to a multiple of four bytes."""
+    return data + b"\0" * (-len(data) % 4)
+
+
+def encode(address: str, argument: str) -> bytes:
+    return pad(address.encode() + b"\0") + pad(b",s\0") + pad(argument.encode() + b"\0")
+
+
+def main() -> int:
+    if len(sys.argv) != 2:
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
+
+    name = ALIASES.get(sys.argv[1].lower(), sys.argv[1].lower())
+    if name not in NAMES:
+        print("live-envelope: unknown envelope %r (expected one of %s)"
+              % (sys.argv[1], ", ".join(NAMES)), file=sys.stderr)
+        return 2
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.sendto(encode(ADDRESS, name), (HOST, PORT))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
