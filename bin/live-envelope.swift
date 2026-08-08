@@ -3,6 +3,7 @@
 //   live-envelope gain | transposition | "sample offset"   select that clip envelope
 //   live-envelope next | prev                              cycle through the three
 //   live-envelope link | unlink | toggle-link              Link/Unlink the envelope
+//   live-envelope open                                     pop the chooser menu open at the pointer
 //   live-envelope status                                   print the current state
 //   live-envelope list                                     list every chooser entry
 //
@@ -59,18 +60,27 @@ func role(_ element: AXUIElement) -> String {
     string(element, kAXRoleAttribute as String)
 }
 
-/// Breadth-first, so the shallow Envelopes box controls are found without
-/// descending into the sample editor's thousands of warp markers.
+//--------------------------------------------------------------------------------
+// The Envelopes box controls sit at depth 4 of the window. Everything expensive in
+// Live's accessibility tree (warp markers, mixer strips, device chains) lives deeper
+// or wider, and on a large Set a full walk takes minutes — so the search is bounded
+// on both depth and node count. Without this, a Set with many tracks makes every
+// invocation hang long enough to pile up if the trigger is pressed repeatedly.
+//--------------------------------------------------------------------------------
+let SEARCH_MAX_DEPTH = 6
+let SEARCH_MAX_NODES = 4000
+
 func findControl(in root: AXUIElement, role wanted: String, description: String) -> AXUIElement? {
-    var queue = [root]
+    var queue = [(element: root, depth: 0)]
     var visited = 0
-    while !queue.isEmpty && visited < 60000 {
-        let element = queue.removeFirst()
+    while !queue.isEmpty && visited < SEARCH_MAX_NODES {
+        let (element, depth) = queue.removeFirst()
         visited += 1
         if role(element) == wanted && string(element, kAXDescriptionAttribute as String) == description {
             return element
         }
-        queue.append(contentsOf: children(element))
+        guard depth < SEARCH_MAX_DEPTH else { continue }
+        queue.append(contentsOf: children(element).map { (element: $0, depth: depth + 1) })
     }
     return nil
 }
@@ -216,6 +226,16 @@ if command.isEmpty || command == "-h" || command == "--help" {
     exit(command.isEmpty ? 2 : 0)
 }
 
+//--------------------------------------------------------------------------------
+// Bound to a mouse button or MIDI pad this can be fired far faster than it can run,
+// so only one instance is allowed at a time. Without this, a Set that makes lookups
+// slow turns a burst of presses into a pile of stuck processes.
+//--------------------------------------------------------------------------------
+let lock = open("/tmp/live-envelope.lock", O_CREAT | O_RDWR, 0o644)
+if lock < 0 || flock(lock, LOCK_EX | LOCK_NB) != 0 {
+    exit(0)
+}
+
 guard AXIsProcessTrusted() else {
     fail("not trusted for Accessibility. Grant the app running this command access in "
          + "System Settings > Privacy & Security > Accessibility.")
@@ -226,26 +246,72 @@ guard let live = NSRunningApplication.runningApplications(withBundleIdentifier: 
 
 let application = AXUIElementCreateApplication(live.processIdentifier)
 
-/// Searches every window, since a stray open menu can occupy the first slot.
-func locate(role: String, description: String) -> AXUIElement? {
+//--------------------------------------------------------------------------------
+// Never block indefinitely on a Live that is busy or mid-render.
+//--------------------------------------------------------------------------------
+AXUIElementSetMessagingTimeout(application, 2.0)
+
+func frame(_ element: AXUIElement) -> CGRect? {
+    guard let positionValue = attribute(element, kAXPositionAttribute as String),
+          let sizeValue = attribute(element, kAXSizeAttribute as String),
+          CFGetTypeID(positionValue as CFTypeRef) == AXValueGetTypeID(),
+          CFGetTypeID(sizeValue as CFTypeRef) == AXValueGetTypeID() else { return nil }
+    var origin = CGPoint.zero, size = CGSize.zero
+    AXValueGetValue(positionValue as! AXValue, .cgPoint, &origin)
+    AXValueGetValue(sizeValue as! AXValue, .cgSize, &size)
+    return CGRect(origin: origin, size: size)
+}
+
+/// Searches every window, since a stray open menu or the Settings window can occupy
+/// the first slot.
+func locate(role wantedRole: String, description: String) -> AXUIElement? {
     for window in windows(of: application) {
-        if let found = findControl(in: window, role: role, description: description) { return found }
+        if let found = findControl(in: window, role: wantedRole, description: description) { return found }
     }
     return nil
 }
 
 var controlChooser = locate(role: "AXPopUpButton", description: "Control Chooser")
 if controlChooser == nil {
+    //--------------------------------------------------------------------------------
+    // The Envelopes box is hidden, or Clip View is not showing at all. Ask AbletonOSC
+    // to open it, then retry a bounded number of times — each retry is a fresh tree
+    // search, so this deliberately stays small.
+    //--------------------------------------------------------------------------------
     showEnvelopeBox()
-    for _ in 0..<50 {
-        usleep(20_000)
+    for _ in 0..<8 {
+        usleep(60_000)
         controlChooser = locate(role: "AXPopUpButton", description: "Control Chooser")
         if controlChooser != nil { break }
     }
 }
+if controlChooser == nil, let filtered = locate(role: "AXPopUpButton", description: "Automated Control Chooser") {
+    //--------------------------------------------------------------------------------
+    // "Only show adjusted envelopes" is on, which replaces the Device + Control
+    // chooser pair with a single filtered list of already-automated controls. The
+    // clip's own envelopes are not reachable in that mode, so switch it back off.
+    //--------------------------------------------------------------------------------
+    if let menu = openMenu(filtered, in: application),
+       let toggle = entries(of: menu).first(where: { $0.title.lowercased().contains("only show adjusted") }) {
+        if AXUIElementPerformAction(toggle.element, kAXPressAction as CFString) != .success {
+            closeMenu(menu)
+        }
+        for _ in 0..<10 {
+            usleep(60_000)
+            controlChooser = locate(role: "AXPopUpButton", description: "Control Chooser")
+            if controlChooser != nil { break }
+        }
+    }
+    if controlChooser == nil {
+        fail("the Envelopes box is in \"Only show adjusted envelopes\" mode, which hides the "
+             + "clip's own envelopes, and it could not be switched off automatically "
+             + "(close Live's Settings window if it is open, then retry). "
+             + "Otherwise untick it at the bottom of the envelope chooser menu.")
+    }
+}
 guard let control = controlChooser else {
-    fail("could not find the Envelopes box. Select an audio clip and show Clip View "
-         + "(AbletonOSC must be enabled for it to be opened automatically).")
+    fail("no Envelopes box. Select an audio clip and open Clip View — Live is currently "
+         + "showing something else (Device View, or a MIDI clip).")
 }
 
 switch command {
@@ -255,6 +321,46 @@ case "status":
     print("device:   \(device.map { string($0, kAXValueAttribute as String) } ?? "?")")
     print("envelope: \(string(control, kAXValueAttribute as String))")
     print("link:     \(link.map { string($0, kAXValueAttribute as String) } ?? "?")")
+
+case "open", "menu":
+    //--------------------------------------------------------------------------------
+    // Open the chooser and leave it open so it can be clicked by hand. Live closes
+    // this menu again on its own after a few seconds, so it is a "pop it up and pick"
+    // gesture, not a palette that can be parked.
+    //
+    // This is idempotent on purpose: a trigger that repeats while held (a HID mouse
+    // button set to WhileDown, say) would otherwise close and reopen the menu on every
+    // repeat, making it flicker too fast to click.
+    //--------------------------------------------------------------------------------
+    if currentMenu(in: application) != nil {
+        print(string(control, kAXValueAttribute as String))
+        exit(0)
+    }
+    if let device = locate(role: "AXPopUpButton", description: "Device Chooser") {
+        select(device, "Clip", in: application, label: "Device Chooser")
+    }
+    guard let menu = openMenu(control, in: application) else { fail("could not open the Control Chooser menu") }
+
+    //--------------------------------------------------------------------------------
+    // Move it under the pointer. NSEvent reports a bottom-left origin, accessibility
+    // wants top-left, so the y coordinate is flipped against the main screen.
+    //--------------------------------------------------------------------------------
+    if let screen = NSScreen.screens.first {
+        let mouse = NSEvent.mouseLocation
+        var origin = CGPoint(x: mouse.x - 20, y: screen.frame.maxY - mouse.y - 10)
+        if let size = attribute(menu, kAXSizeAttribute as String), CFGetTypeID(size as CFTypeRef) == AXValueGetTypeID() {
+            var box = CGSize.zero
+            AXValueGetValue(size as! AXValue, .cgSize, &box)
+            origin.x = min(origin.x, screen.frame.maxX - box.width)
+            origin.y = min(origin.y, screen.frame.maxY - box.height)
+        }
+        origin.x = max(origin.x, 0)
+        origin.y = max(origin.y, 0)
+        if let value = AXValueCreate(.cgPoint, &origin) {
+            AXUIElementSetAttributeValue(menu, kAXPositionAttribute as CFString, value)
+        }
+    }
+    print(string(control, kAXValueAttribute as String))
 
 case "list":
     guard let menu = openMenu(control, in: application) else { fail("could not open the Control Chooser menu") }
