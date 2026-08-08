@@ -207,26 +207,41 @@ func select(_ popup: AXUIElement, _ wanted: String, in application: AXUIElement,
 // visible, and the Sample/Envelopes tab is not exposed to accessibility.
 //--------------------------------------------------------------------------------
 
-func showEnvelopeBox() {
-    func pad(_ bytes: [UInt8]) -> [UInt8] {
-        bytes + [UInt8](repeating: 0, count: (4 - bytes.count % 4) % 4)
+func oscPad(_ bytes: [UInt8]) -> [UInt8] {
+    bytes + [UInt8](repeating: 0, count: (4 - bytes.count % 4) % 4)
+}
+
+func sendOSC(_ address: String, int32 value: Int32? = nil) {
+    var packet = oscPad(Array(address.utf8) + [0])
+    if let value = value {
+        packet += oscPad(Array(",i".utf8) + [0])
+        packet += withUnsafeBytes(of: value.bigEndian) { Array($0) }
+    } else {
+        packet += oscPad(Array(",".utf8) + [0])
     }
-    let packet = pad(Array("/live/view/show_clip_envelope".utf8) + [0]) + pad(Array(",".utf8) + [0])
 
     let descriptor = socket(AF_INET, SOCK_DGRAM, 0)
     guard descriptor >= 0 else { return }
     defer { close(descriptor) }
 
-    var address = sockaddr_in()
-    address.sin_family = sa_family_t(AF_INET)
-    address.sin_port = OSC_PORT.bigEndian
-    address.sin_addr.s_addr = inet_addr(OSC_HOST)
+    var target = sockaddr_in()
+    target.sin_family = sa_family_t(AF_INET)
+    target.sin_port = OSC_PORT.bigEndian
+    target.sin_addr.s_addr = inet_addr(OSC_HOST)
 
-    withUnsafePointer(to: &address) { pointer in
+    withUnsafePointer(to: &target) { pointer in
         pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
             _ = sendto(descriptor, packet, packet.count, 0, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
         }
     }
+}
+
+func showEnvelopeBox() {
+    sendOSC("/live/view/show_clip_envelope")
+}
+
+func nudgeTransposition(by semitones: Int32) {
+    sendOSC("/live/view/nudge_clip_transposition", int32: semitones)
 }
 
 //--------------------------------------------------------------------------------
@@ -236,6 +251,7 @@ usage: live-envelope <command>
 
   gain                                    toggle Gain <-> Transposition
   smart | sample offset | transposition   Beats: toggle the two; else Transposition
+  transpose-up-12 | transpose-down-12      snap the clip's transposition by an octave
   exact <name>                            select <name> verbatim, no substitution
   next | prev                             cycle only what the warp mode offers
   link | unlink | toggle-link             Link/Unlink the displayed envelope
@@ -494,6 +510,18 @@ default:
 
     var wanted = command
     switch command {
+    //--------------------------------------------------------------------------------
+    // Snaps the clip's transposition by a full octave, via AbletonOSC — this writes
+    // Live's actual pitch_coarse value, unlike every other command here, which only
+    // changes which envelope is displayed. Transposition is then shown so the new
+    // value is visible; it is never greyed out, so this needs no warp handling.
+    //--------------------------------------------------------------------------------
+    case "transpose-up-12", "transpose+12", "transpose-up":
+        nudgeTransposition(by: 12)
+        wanted = OTHER_PARTNER
+    case "transpose-down-12", "transpose-12", "transpose-down":
+        nudgeTransposition(by: -12)
+        wanted = OTHER_PARTNER
     //--------------------------------------------------------------------------------
     // Gain is a toggle too: pressing it while Gain is already shown goes to
     // Transposition, and pressing again comes back. Transposition exists in every warp
