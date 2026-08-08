@@ -297,20 +297,23 @@ func locate(role wantedRole: String, description: String) -> AXUIElement? {
 }
 
 //--------------------------------------------------------------------------------
-// The choosers stay in the accessibility tree even while the Sample tab is the one
-// on screen, so their presence cannot be used to tell whether the Envelopes box is
-// actually visible. Any command that changes the selection therefore asks for the
-// Envelopes tab every time — otherwise pressing a trigger over a clip showing Sample
-// would change the chooser behind a tab the user cannot see.
-//
-// Fire-and-forget, and idempotent when the tab is already showing.
+// Whether the Envelopes box was on screen BEFORE this command touched anything.
+// This has to be captured first: the chooser keeps its last value even while the
+// Sample tab hides it, so forcing the tab open and then reading "is it already
+// Gain?" would see stale leftover state and toggle away from an envelope the user
+// was never actually looking at.
 //--------------------------------------------------------------------------------
-if command != "status" && command != "list" {
-    showEnvelopeBox()
-}
+let wasAlreadyVisible = locate(role: "AXPopUpButton", description: "Control Chooser") != nil
+
+//--------------------------------------------------------------------------------
+// "status" and "list" are read-only and must not change what is on screen, so they
+// report on whatever is already showing (or fail below) rather than revealing the
+// box the way every selection command does.
+//--------------------------------------------------------------------------------
+let readOnly = command == "status" || command == "list"
 
 var controlChooser = locate(role: "AXPopUpButton", description: "Control Chooser")
-if controlChooser == nil {
+if controlChooser == nil && !readOnly {
     //--------------------------------------------------------------------------------
     // The Envelopes box is hidden, or Clip View is not showing at all. Ask AbletonOSC
     // to open it, then retry a bounded number of times — each retry is a fresh tree
@@ -323,7 +326,7 @@ if controlChooser == nil {
         if controlChooser != nil { break }
     }
 }
-if controlChooser == nil, let filtered = locate(role: "AXPopUpButton", description: "Automated Control Chooser") {
+if controlChooser == nil && !readOnly, let filtered = locate(role: "AXPopUpButton", description: "Automated Control Chooser") {
     //--------------------------------------------------------------------------------
     // "Only show adjusted envelopes" is on, which replaces the Device + Control
     // chooser pair with a single filtered list of already-automated controls. The
@@ -497,7 +500,11 @@ default:
     // mode, so this needs no warp handling.
     //--------------------------------------------------------------------------------
     case "gain", "volume":
-        wanted = string(control, kAXValueAttribute as String).caseInsensitiveCompare("Gain") == .orderedSame
+        //--------------------------------------------------------------------------------
+        // If the Envelopes box was not on screen, this press's job is to reveal it on
+        // Gain, not to react to whatever it happened to be showing before it was hidden.
+        //--------------------------------------------------------------------------------
+        wanted = wasAlreadyVisible && string(control, kAXValueAttribute as String).caseInsensitiveCompare("Gain") == .orderedSame
             ? OTHER_PARTNER : "Gain"
     //--------------------------------------------------------------------------------
     // Sample Offset and Transposition are two names for the same dual-purpose slot:
@@ -512,8 +519,10 @@ default:
         // every other warp mode Sample Offset is unavailable and Transposition is the
         // only meaningful destination.
         //--------------------------------------------------------------------------------
+        // Same rule as gain: only react to the chooser's current value if it was
+        // actually visible, otherwise this press's job is to reveal it.
         if isBeats() {
-            wanted = string(control, kAXValueAttribute as String).caseInsensitiveCompare(BEATS_PARTNER) == .orderedSame
+            wanted = wasAlreadyVisible && string(control, kAXValueAttribute as String).caseInsensitiveCompare(BEATS_PARTNER) == .orderedSame
                 ? OTHER_PARTNER : BEATS_PARTNER
         } else {
             wanted = OTHER_PARTNER
@@ -527,8 +536,12 @@ default:
         // landing on the entry Live greys out would make a press appear to do nothing.
         //--------------------------------------------------------------------------------
         let cycle = isBeats() ? ["Gain", BEATS_PARTNER, OTHER_PARTNER] : ["Gain", OTHER_PARTNER]
+        //--------------------------------------------------------------------------------
+        // Same rule as gain/smart: an invisible box's stale value is not a real position
+        // in the cycle, so this press lands on the first step instead of stepping past it.
+        //--------------------------------------------------------------------------------
         let current = string(control, kAXValueAttribute as String)
-        let index = cycle.firstIndex { $0.lowercased() == current.lowercased() }
+        let index = wasAlreadyVisible ? cycle.firstIndex { $0.lowercased() == current.lowercased() } : nil
         wanted = index.map { cycle[($0 + 1) % cycle.count] } ?? cycle[0]
     default:
         break
