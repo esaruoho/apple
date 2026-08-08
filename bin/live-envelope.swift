@@ -234,9 +234,10 @@ func showEnvelopeBox() {
 let usage = """
 usage: live-envelope <command>
 
-  gain | transposition | sample offset    select that clip envelope
-  smart                                   Sample Offset in Beats, else Transposition
-  next | prev                             cycle Gain <-> whichever the warp mode offers
+  gain                                    select the Gain envelope
+  smart | sample offset | transposition   Beats: toggle the two; else Transposition
+  exact <name>                            select <name> verbatim, no substitution
+  next | prev                             cycle only what the warp mode offers
   link | unlink | toggle-link             Link/Unlink the displayed envelope
   open                                    pop the chooser menu open
   open-at-mouse                           ... and move it under the pointer
@@ -295,6 +296,19 @@ func locate(role wantedRole: String, description: String) -> AXUIElement? {
     return nil
 }
 
+//--------------------------------------------------------------------------------
+// The choosers stay in the accessibility tree even while the Sample tab is the one
+// on screen, so their presence cannot be used to tell whether the Envelopes box is
+// actually visible. Any command that changes the selection therefore asks for the
+// Envelopes tab every time — otherwise pressing a trigger over a clip showing Sample
+// would change the chooser behind a tab the user cannot see.
+//
+// Fire-and-forget, and idempotent when the tab is already showing.
+//--------------------------------------------------------------------------------
+if command != "status" && command != "list" {
+    showEnvelopeBox()
+}
+
 var controlChooser = locate(role: "AXPopUpButton", description: "Control Chooser")
 if controlChooser == nil {
     //--------------------------------------------------------------------------------
@@ -345,12 +359,27 @@ guard let control = controlChooser else {
 // anyway and Transposition is the right partner.
 //--------------------------------------------------------------------------------
 func warpMode() -> String {
-    locate(role: "AXPopUpButton", description: "Warp Mode")
-        .map { string($0, kAXValueAttribute as String) } ?? ""
+    //--------------------------------------------------------------------------------
+    // Retry briefly: right after the Envelopes box is asked to show, or straight after
+    // the displayed clip changes, the chooser can be momentarily unreadable. Treating
+    // that blank as "not Beats" would silently pick the wrong envelope.
+    //--------------------------------------------------------------------------------
+    for attempt in 0..<4 {
+        if let popup = locate(role: "AXPopUpButton", description: "Warp Mode") {
+            let value = string(popup, kAXValueAttribute as String)
+            if !value.isEmpty { return value }
+        }
+        if attempt < 3 { usleep(60_000) }
+    }
+    return ""
+}
+
+func isBeats() -> Bool {
+    warpMode().caseInsensitiveCompare("Beats") == .orderedSame
 }
 
 func warpPartner() -> String {
-    warpMode().caseInsensitiveCompare("Beats") == .orderedSame ? BEATS_PARTNER : OTHER_PARTNER
+    isBeats() ? BEATS_PARTNER : OTHER_PARTNER
 }
 
 switch command {
@@ -462,15 +491,34 @@ default:
 
     var wanted = command
     switch command {
-    case "smart", "auto":
-        wanted = warpPartner()
+    //--------------------------------------------------------------------------------
+    // Sample Offset and Transposition are two names for the same dual-purpose slot:
+    // whichever of them the clip's warp mode offers. Asking for either gets the one
+    // that is actually usable, so a single trigger covers both. "exact <name>" bypasses
+    // this and selects verbatim.
+    //--------------------------------------------------------------------------------
+    case "smart", "auto", "sample offset", "sample-offset", "sampleoffset",
+         "transposition", "transpose", "pitch":
+        //--------------------------------------------------------------------------------
+        // In Beats both envelopes exist, so this one trigger toggles between them. In
+        // every other warp mode Sample Offset is unavailable and Transposition is the
+        // only meaningful destination.
+        //--------------------------------------------------------------------------------
+        if isBeats() {
+            wanted = string(control, kAXValueAttribute as String).caseInsensitiveCompare(BEATS_PARTNER) == .orderedSame
+                ? OTHER_PARTNER : BEATS_PARTNER
+        } else {
+            wanted = OTHER_PARTNER
+        }
+    case _ where command.hasPrefix("exact "):
+        wanted = String(command.dropFirst("exact ".count))
     case "next", "prev":
         //--------------------------------------------------------------------------------
-        // Two steps, not three: Gain and whichever of Sample Offset / Transposition the
-        // clip's warp mode actually offers. Landing on the one Live greys out would make
-        // a press appear to do nothing.
+        // Only step through envelopes this warp mode actually offers. Beats has both
+        // Sample Offset and Transposition; everything else has Transposition alone, and
+        // landing on the entry Live greys out would make a press appear to do nothing.
         //--------------------------------------------------------------------------------
-        let cycle = ["Gain", warpPartner()]
+        let cycle = isBeats() ? ["Gain", BEATS_PARTNER, OTHER_PARTNER] : ["Gain", OTHER_PARTNER]
         let current = string(control, kAXValueAttribute as String)
         let index = cycle.firstIndex { $0.lowercased() == current.lowercased() }
         wanted = index.map { cycle[($0 + 1) % cycle.count] } ?? cycle[0]
