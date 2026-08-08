@@ -3,7 +3,8 @@
 //   live-envelope gain | transposition | "sample offset"   select that clip envelope
 //   live-envelope next | prev                              cycle through the three
 //   live-envelope link | unlink | toggle-link              Link/Unlink the envelope
-//   live-envelope open                                     pop the chooser menu open at the pointer
+//   live-envelope open                                     pop the chooser menu open
+//   live-envelope open-at-mouse                            ... and move it under the pointer
 //   live-envelope status                                   print the current state
 //   live-envelope list                                     list every chooser entry
 //
@@ -128,9 +129,14 @@ func openMenu(_ popup: AXUIElement, in application: AXUIElement) -> AXUIElement?
 
     for attempt in 0..<2 {
         guard AXUIElementPerformAction(popup, kAXPressAction as CFString) == .success else { return nil }
-        for _ in 0..<(attempt == 0 ? 25 : 60) {
+        //--------------------------------------------------------------------------------
+        // Spin without sleeping at first. The menu can only be repositioned once it
+        // exists, so every millisecond spent noticing it is a millisecond it is visible
+        // at its original position before it jumps.
+        //--------------------------------------------------------------------------------
+        for poll in 0..<(attempt == 0 ? 60 : 100) {
             if let menu = currentMenu(in: application) { return menu }
-            usleep(20_000)
+            if poll > 20 { usleep(20_000) }
         }
     }
     return nil
@@ -216,6 +222,8 @@ usage: live-envelope <command>
   gain | transposition | sample offset    select that clip envelope
   next | prev                             cycle through the three
   link | unlink | toggle-link             Link/Unlink the displayed envelope
+  open                                    pop the chooser menu open
+  open-at-mouse                           ... and move it under the pointer
   status                                  print the current chooser state
   list                                    list every entry the chooser offers
 """
@@ -322,7 +330,8 @@ case "status":
     print("envelope: \(string(control, kAXValueAttribute as String))")
     print("link:     \(link.map { string($0, kAXValueAttribute as String) } ?? "?")")
 
-case "open", "menu":
+case "open", "menu", "open at mouse", "open-at-mouse":
+    let atMouse = command.contains("mouse")
     //--------------------------------------------------------------------------------
     // Open the chooser and leave it open so it can be clicked by hand. Live closes
     // this menu again on its own after a few seconds, so it is a "pop it up and pick"
@@ -342,10 +351,14 @@ case "open", "menu":
     guard let menu = openMenu(control, in: application) else { fail("could not open the Control Chooser menu") }
 
     //--------------------------------------------------------------------------------
-    // Move it under the pointer. NSEvent reports a bottom-left origin, accessibility
-    // wants top-left, so the y coordinate is flipped against the main screen.
+    // Move it under the pointer, only when asked. A menu can only be repositioned once
+    // it already exists, so this always shows one frame at the chooser before jumping;
+    // plain "open" leaves it where Live put it and so is visually clean.
+    //
+    // NSEvent reports a bottom-left origin, accessibility wants top-left, so the y
+    // coordinate is flipped against the main screen.
     //--------------------------------------------------------------------------------
-    if let screen = NSScreen.screens.first {
+    if atMouse, let screen = NSScreen.screens.first {
         let mouse = NSEvent.mouseLocation
         var origin = CGPoint(x: mouse.x - 20, y: screen.frame.maxY - mouse.y - 10)
         if let size = attribute(menu, kAXSizeAttribute as String), CFGetTypeID(size as CFTypeRef) == AXValueGetTypeID() {
