@@ -34,36 +34,33 @@ func runLiveEnvelope(_ args: [String], completion: @escaping (String, Bool) -> V
     }
 }
 
+let DEFAULT_TITLE = "Live Clip Envelopes"
+
 final class PanelController: NSObject {
     let panel: NSPanel
-    let statusField: NSTextField
+    //--------------------------------------------------------------------------------
+    // Bumped on every press; a delayed revert-to-default only applies if it's still
+    // the most recent press, so a rapid second click isn't stomped by the first
+    // click's timer reverting the title out from under it.
+    //--------------------------------------------------------------------------------
+    var generation = 0
 
     override init() {
-        statusField = NSTextField(labelWithString: "Live Clip Envelopes")
-        statusField.font = .systemFont(ofSize: 10)
-        statusField.textColor = .secondaryLabelColor
-        statusField.alignment = .center
-        //--------------------------------------------------------------------------------
-        // Wrap within the panel's fixed width rather than growing it. An unconstrained
-        // label's intrinsic width follows its longest text (e.g. an Accessibility error),
-        // and without a width cap that drags the whole window wider permanently.
-        //--------------------------------------------------------------------------------
-        statusField.lineBreakMode = .byWordWrapping
-        statusField.maximumNumberOfLines = 3
-        statusField.cell?.wraps = true
-        statusField.preferredMaxLayoutWidth = PANEL_WIDTH - 20
-
         panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: PANEL_WIDTH, height: 148),
+            contentRect: NSRect(x: 0, y: 0, width: PANEL_WIDTH, height: 100),
             styleMask: [.nonactivatingPanel, .titled, .closable, .utilityWindow],
             backing: .buffered,
             defer: false)
 
         super.init()
 
-        panel.title = "Live Envelopes"
-        panel.titleVisibility = .hidden
-        panel.titlebarAppearsTransparent = true
+        //--------------------------------------------------------------------------------
+        // The app's name lives in the title bar, not as a row of button-area text, so it
+        // costs no vertical space. The title also doubles as the result/error readout.
+        //--------------------------------------------------------------------------------
+        panel.title = DEFAULT_TITLE
+        panel.titleVisibility = .visible
+        panel.titlebarAppearsTransparent = false
         panel.isFloatingPanel = true
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
@@ -75,10 +72,13 @@ final class PanelController: NSObject {
         let root = NSStackView()
         root.orientation = .vertical
         root.spacing = 6
-        root.edgeInsets = NSEdgeInsets(top: 10, left: 10, bottom: 8, right: 10)
+        root.edgeInsets = NSEdgeInsets(top: 8, left: 10, bottom: 6, right: 10)
         root.translatesAutoresizingMaskIntoConstraints = false
 
-        root.addArrangedSubview(sectionLabel("Transpose"))
+        //--------------------------------------------------------------------------------
+        // No section labels: the button captions ("Gain", "+12", ...) already say what
+        // each one does, so a header above them would only repeat that and cost a row.
+        //--------------------------------------------------------------------------------
         root.addArrangedSubview(row([
             smallButton("-48", "transpose-set-neg48"),
             smallButton("-36", "transpose-set-neg36"),
@@ -91,14 +91,11 @@ final class PanelController: NSObject {
             smallButton("+48", "transpose-set-48"),
         ]))
 
-        root.addArrangedSubview(sectionLabel("Envelope"))
         root.addArrangedSubview(row([
             button("Gain", "exact Gain"),
             button("Transpose", "exact Transposition"),
             button("Sample Offset", "exact Sample Offset"),
         ]))
-
-        root.addArrangedSubview(statusField)
 
         panel.contentView = NSView(frame: panel.contentRect(forFrameRect: panel.frame))
         panel.contentView!.addSubview(root)
@@ -116,15 +113,15 @@ final class PanelController: NSObject {
         panel.minSize = NSSize(width: PANEL_WIDTH, height: 0)
         panel.maxSize = NSSize(width: PANEL_WIDTH, height: .greatestFiniteMagnitude)
 
+        //--------------------------------------------------------------------------------
+        // Size to exactly what the two button rows need, rather than a guessed constant
+        // — this is what keeps the window free of dead space.
+        //--------------------------------------------------------------------------------
+        root.layoutSubtreeIfNeeded()
+        panel.setContentSize(NSSize(width: PANEL_WIDTH, height: root.fittingSize.height))
+
         panel.center()
         panel.makeKeyAndOrderFront(nil)
-    }
-
-    func sectionLabel(_ text: String) -> NSTextField {
-        let label = NSTextField(labelWithString: text)
-        label.font = .systemFont(ofSize: 10, weight: .semibold)
-        label.textColor = .tertiaryLabelColor
-        return label
     }
 
     func row(_ views: [NSView]) -> NSStackView {
@@ -153,11 +150,20 @@ final class PanelController: NSObject {
     var commandTable: [String] = []
 
     @objc func pressed(_ sender: NSButton) {
+        generation += 1
+        let thisPress = generation
         let args = commandTable[sender.tag].split(separator: " ").map(String.init)
-        statusField.stringValue = "…"
+
         runLiveEnvelope(args) { [weak self] text, ok in
-            self?.statusField.stringValue = ok ? text : "⚠ \(text)"
-            self?.statusField.textColor = ok ? .secondaryLabelColor : .systemRed
+            guard let self = self else { return }
+            self.panel.title = ok ? text : "⚠ \(text)"
+            //--------------------------------------------------------------------------------
+            // An error stays up longer than a success, since it's the one worth reading.
+            //--------------------------------------------------------------------------------
+            let holdSeconds = ok ? 1.5 : 5.0
+            DispatchQueue.main.asyncAfter(deadline: .now() + holdSeconds) {
+                if self.generation == thisPress { self.panel.title = DEFAULT_TITLE }
+            }
         }
     }
 }
