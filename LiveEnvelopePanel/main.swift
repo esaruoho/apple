@@ -92,9 +92,11 @@ final class PanelController: NSObject {
         ]))
 
         root.addArrangedSubview(row([
+            button("◀ Prev", "prev"),
             button("Gain", "exact Gain"),
             button("Transpose", "exact Transposition"),
             button("Sample Offset", "exact Sample Offset"),
+            button("Next ▶", "next"),
         ]))
 
         panel.contentView = NSView(frame: panel.contentRect(forFrameRect: panel.frame))
