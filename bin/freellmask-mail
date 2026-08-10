@@ -1424,10 +1424,50 @@ def convey_chatgpt(urls, verbose=False):
           f"MLX/Qwen, Apple FoundationModels, and FreeLLMAPI — both files attached.") if done else ""
     return "\n\n".join(folded), atts, note, done
 
+# ── ARCHIVE-PAGE MAIL IS NOT A TRANSCRIPTION REQUEST ────────────────────────────
+# 2026-08-08: merlib-mirror/scripts/email_corpus_to_llm.py started mailing amasci.com
+# pages here for analysis ("page 88 of 685"). Bill Beaty's pages are dense link dumps,
+# so youtube_urls() harvested every embedded link and expand_playlists() enumerated the
+# playlists behind them with NO cap → 1,041 whisp jobs, 175 sci-fi/horror feature films
+# transcribed (~205 h of audio) before anyone noticed. A mirrored page that we mailed to
+# OURSELVES for analysis is CONTENT TO READ, never a request to transcribe what it links.
+_SELF_INBOXES = {"cloudcity-foundationmodels@agentmail.to", "cloudcity-llm@agentmail.to"}
+# A mirror-page subject looks like "[amasci.com] SCIENCE HOBBYIST: HELP PAGE".
+_SITE_SUBJ_RE = re.compile(r'^\s*\[[a-z0-9][a-z0-9.\-]*\.[a-z]{2,}\]')
+# The corpus mailer's own body signature.
+_CORPUS_BODY_RE = re.compile(r'reachable from the entry page|from the .* mirror', re.I)
+# Extra belt-and-braces: hosts whose pages must never auto-queue their outbound links.
+_WHISP_BLOCK_HOSTS = {h.strip().lower() for h in
+                      os.environ.get("FA_WHISP_BLOCK_HOSTS", "amasci.com").split(",") if h.strip()}
+
+def whisp_blocked_reason(from_addr, subject, body):
+    """Why this email must NOT auto-queue the YouTube links it contains (or None to allow).
+    Machine-generated archive/mirror pages are the blocked class — a human mailing a video
+    link is still honoured exactly as before."""
+    frm=(from_addr or "").lower()
+    addr=re.search(r'<([^>]+)>', frm)
+    addr=(addr.group(1) if addr else frm).strip()
+    if addr in _SELF_INBOXES:
+        return f"self-sent agent mail ({addr}) — archive page, not a transcription request"
+    m=_SITE_SUBJ_RE.match(subject or "")
+    if m:
+        host=m.group(0).strip()[1:-1].lower()
+        if host in _WHISP_BLOCK_HOSTS or _CORPUS_BODY_RE.search(body or ""):
+            return f"mirror-page analysis mail for [{host}] — its outbound links are not requests"
+    if _CORPUS_BODY_RE.search(body or ""):
+        return "corpus-mailer page body — its outbound links are not requests"
+    return None
+
+# Hard ceiling on enumeration from ANY email (0 = unlimited). Even an allowed sender must
+# not be able to turn one pasted channel URL into thousands of jobs by accident.
+MAIL_PLAYLIST_CAP = int(os.environ.get("FA_PLAYLIST_CAP", "50"))
+
 def expand_playlists(urls, cap=None):
-    """A playlist/channel URL → ALL its individual video URLs (yt-dlp --flat-playlist). A 5000-video
-    channel yields 5000 videos: each transcribed, analysed, emailed. Bare video URLs pass through. NO
-    cap by default — a channel/playlist means the WHOLE thing (cap kept only as an optional override)."""
+    """A playlist/channel URL → its individual video URLs (yt-dlp --flat-playlist). Bare video
+    URLs pass through. Capped at MAIL_PLAYLIST_CAP (FA_PLAYLIST_CAP, 0 = unlimited) — the
+    uncapped version turned one amasci page into 1,041 whisp jobs on 2026-08-08."""
+    if cap is None and MAIL_PLAYLIST_CAP > 0:
+        cap = MAIL_PLAYLIST_CAP
     out=[]; seen=set()
     for u in urls or []:
         if re.search(r'(?:[?&]list=|/playlist\?|/channel/|/@|/c/|/user/)', u):
@@ -1511,8 +1551,18 @@ def poll_once(verbose=True):
         # AUTO-TRIGGER: any YouTube URL in the email → drop it on the convey→whisp transcript belt
         # (deduped). This is the "figure it out and start the work" behaviour: an email mentioning
         # USP/Russell videos should schedule their transcription, not just get summarised.
+        # …but an archive/mirror page we mailed to OURSELVES is content to READ, not a request to
+        # transcribe everything it links to (the 2026-08-08 amasci storm). Blocked BEFORE yt-dlp
+        # enumeration, so a link-dump page costs zero downloads.
         yt_note=""
-        yt_urls=expand_playlists(youtube_urls(raw_body))   # a playlist/channel → its individual videos
+        _block=whisp_blocked_reason(full.get("from"), full.get("subject"), raw_body)
+        if _block:
+            if verbose:
+                _n=len(youtube_urls(raw_body))
+                print(f"  📼 whisp auto-queue SKIPPED ({_n} youtube link(s)): {_block}")
+            yt_urls=[]
+        else:
+            yt_urls=expand_playlists(youtube_urls(raw_body))   # a playlist/channel → its individual videos
         if yt_urls:
             q_n,seen_n=whisp_autosubmit(yt_urls, verbose)
             if q_n:
