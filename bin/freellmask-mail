@@ -588,11 +588,18 @@ def _fetch_tweet(u):
 def fetch_url_content(body, verbose=False):
     """Fetch and read content LINKED BY URL in the body: tweets (via fxtwitter), PDFs
     (download + on-Mini OCR), and general web pages (HTML→text). Feeds it to research."""
-    blocks=[]; done=set()
+    # Hard ceiling on how many links ONE email can make us fetch. A link-dump page has
+    # hundreds; fetching them all is a self-inflicted crawl, not reading the email.
+    cap=int(os.environ.get("FA_URL_FETCH_CAP","10"))
+    blocks=[]; done=set(); fetched=0
     for u in _URL_RE.findall(body or ""):
         u=u.rstrip('.,);')
         if u in done: continue
         done.add(u)
+        if cap and fetched>=cap:
+            if verbose: print(f"    · url-fetch cap {cap} reached — skipping the rest")
+            break
+        fetched+=1
         low=u.lower()
         if "patreon.com/" in low: continue          # signature link, not content
         # A VIDEO's page is NOT the video. Scraping youtube's og: title+description put the blurb into
@@ -1545,8 +1552,17 @@ def poll_once(verbose=True):
         is_penpal=False                                          # envoy/penpal (e.g. Francois) → always full-forward to Esa, not just BCC
         atts=full.get("attachments") or []
         att_text=extract_attachments(k, mid, atts, verbose) if atts else ""
-        try: url_text=fetch_url_pdfs(raw_body, verbose)          # download + OCR any PDF linked by URL
-        except Exception as e: url_text=""; print(f"  url-pdf scan error: {e}")
+        # Same guard as the whisp belt below: an archive/mirror page mailed to OURSELVES has its
+        # content ATTACHED already — its outbound links are the site's navigation, not things to
+        # go fetch. Un-gated, one amasci index page means hundreds of web fetches plus PDF
+        # downloads and on-Mini OCR (same shape as the 2026-08-08 YouTube storm).
+        _block=whisp_blocked_reason(full.get("from"), full.get("subject"), raw_body)
+        if _block:
+            url_text=""
+            if verbose: print(f"  🔗 url-content fetch SKIPPED: {_block}")
+        else:
+            try: url_text=fetch_url_pdfs(raw_body, verbose)      # download + OCR any PDF linked by URL
+            except Exception as e: url_text=""; print(f"  url-pdf scan error: {e}")
         extra="\n\n".join(x for x in (att_text, url_text) if x)
         # AUTO-TRIGGER: any YouTube URL in the email → drop it on the convey→whisp transcript belt
         # (deduped). This is the "figure it out and start the work" behaviour: an email mentioning
@@ -1555,7 +1571,6 @@ def poll_once(verbose=True):
         # transcribe everything it links to (the 2026-08-08 amasci storm). Blocked BEFORE yt-dlp
         # enumeration, so a link-dump page costs zero downloads.
         yt_note=""
-        _block=whisp_blocked_reason(full.get("from"), full.get("subject"), raw_body)
         if _block:
             if verbose:
                 _n=len(youtube_urls(raw_body))
