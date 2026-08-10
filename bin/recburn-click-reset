@@ -1,0 +1,21 @@
+#!/bin/bash
+# recburn-click-reset — put the burned-in CLICKS counter back to 0, mid-recording.
+#
+# Bind this to anything: a global hotkey (⌃⌥⌘Space via RecBurn.app), a Loupedeck or
+# Stream Deck button, a MIDI mapping, a Shortcut, or just run it. It sends SIGUSR2 to the
+# running recorder, which zeroes the counter without stopping or splitting the recording.
+#
+#   recburn-click-reset          # zero the counter of whatever is recording
+#
+# Exits 1 if nothing is recording, so a binding can tell the difference.
+#
+# FEATURE-CARD >> features/recburnclick.feature
+
+PIDS=$(pgrep -f "screen-audio-record" 2>/dev/null)
+if [ -z "$PIDS" ]; then
+  echo "recburn-click-reset: nothing is recording" >&2
+  exit 1
+fi
+# shellcheck disable=SC2086
+kill -USR2 $PIDS
+echo "↺ click counter reset to 0"

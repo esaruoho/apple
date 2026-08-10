@@ -20,6 +20,10 @@ Use Bash to execute (one call, then stop):
 - `/recburnclick --no-mic --no-burn` — subtract anything recburn added
 - `/recburnclick --app Renoise` — only that app's audio, still counting clicks
 
+**⌃⌥⌘Space** zeroes the counter mid-recording (RecBurn.app must be running); from a
+script, a Loupedeck button or a MIDI mapping use `recburn-click-reset`, which sends the
+same SIGUSR2 and exits 1 if nothing is recording.
+
 Ctrl-C stops and finalizes. This is `recburn` plus `--clicks`, so it inherits recburn's
 settings (mic, webcam, subtitles); `--no-mic` / `--no-pip` / `--no-burn` subtract them.
 Also a RecBurn.app menu setting: **Click Counter** + **Click Counter Position**. The count comes from macOS's own per-session mouse-down tally

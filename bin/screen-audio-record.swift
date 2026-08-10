@@ -58,12 +58,19 @@ struct Options {
 // of a type the session has seen. No tap, no TCC prompt, no event stream. We take a
 // baseline when recording starts and the counter is simply the delta since.
 final class ClickCounter {
-    private let baseline: Int
-    private let seed: Int
+    private var baseline: Int
+    private var seed: Int
 
     init(seed: Int = 0) {
         self.seed = seed
         self.baseline = ClickCounter.sessionTotal()
+    }
+
+    /// Back to zero, mid-recording, without stopping: move the baseline to now and drop
+    /// any seed. Used by ⌃⌥⌘Space / SIGUSR2 to start counting a fresh take-within-a-take.
+    func reset() {
+        baseline = ClickCounter.sessionTotal()
+        seed = 0
     }
 
     static func sessionTotal() -> Int {
@@ -149,6 +156,8 @@ func printUsage() {
       --no-mic / --no-pip / --no-burn / --no-clicks
                              turn one off again — for subtracting from a chained wrapper
                              (recburnclick → recburn → rec each ADD flags; these remove)
+      (reset the counter to 0 mid-recording with ⌃⌥⌘Space via RecBurn.app,
+       `recburn-click-reset`, or `kill -USR2 <pid>`)
       --clicks               burn a live "CLICKS: n" counter into the video (counts every
                              left/right/middle mouse-down from the moment recording starts)
       --clicks-corner <c>    tl (default) | tr | bl | br
@@ -615,6 +624,16 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         micSrc.setEventHandler { [weak self] in self?.toggleMic() }
         micSrc.resume()
         objc_setAssociatedObject(self, "sigusr1", micSrc, .OBJC_ASSOCIATION_RETAIN)
+
+        // SIGUSR2 → put the click counter back to 0 without stopping the recording.
+        // A signal, not a hotkey, is the right seam here: it works from a global hotkey,
+        // a Loupedeck button, a MIDI mapping, a Shortcut or `kill -USR2` alike, and it
+        // needs no window, no key-capture and no Accessibility grant.
+        signal(SIGUSR2, SIG_IGN)
+        let clickSrc = DispatchSource.makeSignalSource(signal: SIGUSR2, queue: .main)
+        clickSrc.setEventHandler { [weak self] in self?.resetClicks() }
+        clickSrc.resume()
+        objc_setAssociatedObject(self, "sigusr2", clickSrc, .OBJC_ASSOCIATION_RETAIN)
     }
 
     /// Allow `q` + Enter as a friendly alternative to Ctrl-C. Reads stdin on a background
@@ -635,6 +654,21 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     /// Flip the mic between ON and OFF mid-recording. The append gate (micOn) is the
     /// source of truth for what lands in the file; updateConfiguration() also starts/stops
     /// the actual mic hardware capture so "off" means the mic is truly not listening.
+    /// Zero the burned-in click counter mid-recording (⌃⌥⌘Space / SIGUSR2).
+    func resetClicks() {
+        guard let counter = clickCounter else {
+            FileHandle.standardError.write("click counter is not on (needs --clicks)\n".data(using: .utf8)!)
+            return
+        }
+        counter.reset()
+        drawMeterLineIfIdle()
+        FileHandle.standardError.write("↺ clicks reset to 0\n".data(using: .utf8)!)
+    }
+
+    /// Nudge the badge cache so the next composited frame definitely redraws at 0 even if
+    /// no click arrives to change the number again.
+    func drawMeterLineIfIdle() { badgeCache = nil }
+
     func toggleMic() {
         micOn.toggle()
         if micOn { micEverOn = true }

@@ -133,6 +133,59 @@ Feature: Burn a live click counter into a screen recording
     # NOT VERIFIED: RecBurn.app builds clean (21.9s, signed), but clicking through its
     #   menu bar means driving Esa's UI while he works. His check, not mine.
 
+  @hw-verified
+  Scenario: the counter can be zeroed mid-recording  (ran live 2026-08-10)
+    Given a recording seeded to 77 with a busy screen so frames track wall time
+    When SIGUSR2 arrived at 6s wall (≈5.3s of a 10.6s video)
+    Then the burned-in badge read 77 at t=1s and t=3s, and 0 at t=5s, t=7s, t=9s
+    And the recording was neither stopped nor split — it kept going at 0
+    # innards: `ClickCounter.reset()` (baseline←now, seed←0), the SIGUSR2 DispatchSource in
+    #          `installSignalHandler()`, `resetClicks()`, and `badgeCache = nil` so the
+    #          next frame redraws even if no further click changes the number
+    # HOW TESTED: OCR of frames sampled across the timeline, not one lucky frame. A first
+    #   attempt sampled only two points and misread the result, because with a STATIC
+    #   screen SCK emits frames sparsely and video time drifts from wall time.
+
+  @hw-verified
+  Scenario: the counter really does go UP on real clicks  (observed live 2026-08-10)
+    Given an earlier reset test ran while Esa was working
+    Then the badge sequence across that video was 50 → 0 → 1 → 2 → 3
+    And nothing but a left/right/middle mouse-down can move that number, so those
+      increments are his actual clicks — the scenario previously graded @built
+    # innards: `ClickCounter.count`
+    # NOTE: observed rather than staged. Synthetic clicks still cannot be used (see below).
+
+  @hw-verified
+  Scenario: any trigger can fire the reset — it is a signal, not a keystroke  (ran live 2026-08-10)
+    Given `recburn-click-reset` sends SIGUSR2 to whatever is recording
+    When it ran during a recording, the recorder logged "↺ clicks reset to 0"
+    And with nothing recording it printed "nothing is recording" and exited 1, so a
+      binding can tell the difference
+    # innards: bin/recburn-click-reset
+    # WHY A SIGNAL: it works from a global hotkey, a Loupedeck/Stream Deck button, a MIDI
+    #   mapping, a Shortcut or a bare `kill -USR2` alike — no window, no key capture, no
+    #   Accessibility grant. Same seam as the existing SIGUSR1 mic toggle.
+
+  @built
+  Scenario: ⌃⌥⌘Space zeroes the counter from anywhere
+    Given RecBurn.app registers ⌃⌥⌘Space with Carbon's RegisterEventHotKey
+    When the combination is pressed while any app is frontmost
+    Then the app sends SIGUSR2 to the recorder — its own child if it started one,
+      otherwise any running recorder, so it also works during a CLI recording
+    And the menu carries "Reset Click Count to 0" showing the same shortcut
+    # innards: apple-rec Sources/RecBurn/RecBurnApp.swift `registerResetHotKey()` +
+    #          RecBurnController.swift `resetClickCount()`
+    # VERIFIED: RegisterEventHotKey returned noErr on this Mac — nothing else owns
+    #   ⌃⌥⌘Space (a conflict WOULD have been logged, and is the one failure mode
+    #   detectable without pressing keys).
+    # NOT VERIFIED: that it actually fires. status == noErr is NOT proof a hotkey fires
+    #   (a documented gotcha in this repo), and confirming it needs a real keypress —
+    #   synthesising one would post keys into whatever app Esa has focused.
+    # BOUNDARY: Carbon hotkeys need a real NSApplication, so this requires RecBurn.app to
+    #   be running. A pure-terminal recording has `recburn-click-reset` instead. The hotkey
+    #   is deliberately registered in ONE process only — two registration sites across two
+    #   apps race last-writer-wins.
+
   @note
   Boundary: it counts clicks, not what was clicked
     The session counter is a tally, not an event stream — there is no target, no

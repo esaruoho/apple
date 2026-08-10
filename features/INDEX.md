@@ -447,7 +447,7 @@ Trigger recburn from anywhere through one seam, and hand off a typed result  —
   triad: .session✓  transcript✗  RESULT✓
   honesty: 13/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Burn a live click counter into a screen recording  —  9 scenarios   (features/recburnclick.feature)
+Burn a live click counter into a screen recording  —  13 scenarios   (features/recburnclick.feature)
   - [@hw-verified] counting clicks needs NO event tap and NO Accessibility prompt  
   - [@hw-verified] the number is really in the pixels  (ran live 2026-07-29)
   - [@hw-verified] corner and label are honoured  (ran live 2026-07-29)
@@ -457,8 +457,12 @@ Burn a live click counter into a screen recording  —  9 scenarios   (features/
   - [@hw-verified] recburnclick inherits RECBURN's settings, not rec's  (ran live 2
   - [@hw-verified] a chained wrapper can be subtracted from  (ran live 2026-07-29)
   - [@built] the click counter is a RecBurn.app menu setting with its own cor
+  - [@hw-verified] the counter can be zeroed mid-recording  (ran live 2026-08-10)
+  - [@hw-verified] the counter really does go UP on real clicks  (observed live 202
+  - [@hw-verified] any trigger can fire the reset — it is a signal, not a keystroke
+  - [@built] ⌃⌥⌘Space zeroes the counter from anywhere
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 9/9 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 13/13 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Record screen + system audio to one .mov with no loopback driver  —  19 scenarios   (features/screen-audio-record.feature)
   - [@hw-verified] single-app audio isolation captures screen + only that app's sou
