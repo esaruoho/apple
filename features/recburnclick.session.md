@@ -70,3 +70,55 @@ light during his working session is not a side effect worth a test run.
 
 - Three short screen recordings of Esa's actual desktop were made into the session
   scratchpad (visible in the OCR output: Ray Nightly, Live). Not committed, not moved.
+
+---
+
+## Round 2 — the mic, the app setting, and a repo that had forked in two
+
+Three things at once:
+
+1. **"why is recburnclick microphone off?"** Because I chained it to `rec`, not to
+   `recburn`. `recburn = rec --mic --pip --burn`; wrapping `rec` quietly delivered a strict
+   SUBSET when the ask had been "in addition to everything else". Fixed:
+   `recburnclick → recburn → rec → screen-audio-record`. The apple repo turned out to have
+   no `bin/recburn` at all — only the standalone did — so that came across too.
+   Verified: `recburnclick --no-pip --no-burn` prints "🎤 microphone: ON" and writes 2
+   audio tracks.
+
+2. **Negation flags.** Every wrapper in the chain only ADDS, so there was no way to drop
+   one without rebuilding the command from `rec`. Added `--no-mic` / `--no-pip` /
+   `--no-burn` / `--no-clicks`; parsing is sequential so a trailing negation wins. This is
+   also what let me test the mic without switching Esa's webcam on.
+
+3. **The corner as a RecBurn.app setting.** Menu now has "Click Counter (CLICKS: n, burned
+   in)" + a "Click Counter Position" submenu, chosen independently of the webcam's corner
+   (they share the `PiPCorner` type but never the value — you want them opposite). Persists
+   in UserDefaults, settable per-recording over the `recburn://` URL scheme.
+
+### The repo question was the real find
+
+Esa asked whether this belonged in `~/work/recburn` "or the recburn-only repo on github".
+There is no `~/work/recburn`. The standalone is `~/work/apple-rec` → `esaruoho/apple-rec`,
+and it had **forked into two different projects**:
+
+- local: 30 commits never pushed — all of RecBurn.app (vocabulary editor, YouTube upload,
+  icon, Shortcuts/Services). **The app's sources existed nowhere else.**
+- remote: 15 commits the local didn't have, having been re-created from scratch as a flat,
+  CLI-only "source-only repo" with `Engine/` and `Sources/RecBurn/` deleted.
+
+`git merge` refused outright — **unrelated histories**. Either direction of blind copying
+would have destroyed real work, so I stopped and asked rather than guessing. Esa chose to
+publish the app back.
+
+Resolution: one commit built on top of `origin/main`, re-adding the app in the *remote's*
+flat layout (no `Engine/`, no `bin/` — both now gitignored build artifacts), with a
+`build.sh` that produces CLI + app from the flat sources. The old line is preserved on
+`backup-local-app-20260810`.
+
+One thing that needed checking rather than assuming: the public engine sources had been
+**pared** (no typed handoff manifest, no `--burn-prompt`) and RecBurn.app depends on both.
+Diffed first, confirmed local was a strict superset, then replaced. Also scanned everything
+being published for personal paths and credentials before pushing — `recburn-youtube` reads
+its OAuth client from disk, nothing baked in.
+
+Published: `ffdaa92`, 21 files, local `main` now equals `origin/main`.
