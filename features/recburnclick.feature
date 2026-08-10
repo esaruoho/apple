@@ -3,7 +3,8 @@
 # ============================================================================
 #
 # WHAT THIS CARD SPAWNS
-#   Codespace : bin/recburnclick (wrapper: rec + --clicks), and inside
+#   Codespace : bin/recburnclick (wrapper: recburn + --clicks) and bin/recburn (which the
+#               apple repo was missing entirely — brought over from the standalone), inside
 #               bin/screen-audio-record.swift — the `ClickCounter` type, the
 #               `clickBadge(_:baseW:)` renderer, the badge block in `compositeFrame`
 #               (renamed from compositePiP, since it now composes more than PiP),
@@ -26,9 +27,15 @@
 #   @built        wired + compiles; that branch was not exercised live (and why).
 #   @note         a documented boundary, not an executable claim.
 #
+#   MIRRORED to the public standalone esaruoho/apple-rec (~/work/apple-rec), which is where
+#   RecBurn.app lives: Engine/screen-audio-record.swift, Engine/recburnclick, build.sh
+#   (ships recburnclick in bin/), Sources/RecBurn/{RecBurnController,RecBurnApp}.swift for
+#   the menu setting. Standalone is canonical on divergence (same rule as apple-energy).
+#
 # RESULT
-#   Direct-push to main, no PR. Files: bin/recburnclick, bin/screen-audio-record.swift
-#   (+ rebuilt binary), commands/recburnclick.md, features/recburnclick.feature + .session.md.
+#   Direct-push to main, no PR. Files: bin/recburnclick, bin/recburn,
+#   bin/screen-audio-record.swift (+ rebuilt binary), commands/recburnclick.md,
+#   features/recburnclick.feature + .session.md; plus the apple-rec mirror above.
 # ============================================================================
 
 Feature: Burn a live click counter into a screen recording
@@ -92,6 +99,39 @@ Feature: Burn a live click counter into a screen recording
     # innards: `compositeFrame` — PiP block, then the badge block, then one ctx.render
     # NOT VERIFIED: --pip switches the webcam on, and the camera light during Esa's
     #   working session is not a side effect worth a test run.
+
+  @hw-verified
+  Scenario: recburnclick inherits RECBURN's settings, not rec's  (ran live 2026-07-29)
+    Given recburn = rec --mic --pip --burn, so it records the microphone
+    And the first cut of recburnclick chained to `rec`, which silently dropped the mic
+    When `recburnclick --no-pip --no-burn` ran
+    Then the recorder announced "🎤 microphone: ON — your voice IS being recorded"
+    And the .mov carried 2 audio tracks (system + mic), not 1
+    # innards: bin/recburnclick — `exec "$DIR/recburn" --clicks "$@"`
+    # NOTE: the apple repo had no bin/recburn at all; only the standalone did. Brought over.
+
+  @hw-verified
+  Scenario: a chained wrapper can be subtracted from  (ran live 2026-07-29)
+    Given recburnclick → recburn → rec each ADD flags, so there was no way to drop one
+    When --no-mic / --no-pip / --no-burn / --no-clicks are passed after them
+    Then the later flag wins, because parsing is sequential
+    And this is what made the test above possible without switching the webcam on
+    # innards: the negation cases in `parseArgs()`
+
+  @built
+  Scenario: the click counter is a RecBurn.app menu setting with its own corner
+    Given Esa: "the bottom-right position should be something i can decide, from recburn
+      app on topbar too"
+    Then the menu has "Click Counter (CLICKS: n, burned in)" plus a "Click Counter
+      Position" submenu (Top Left / Top Right / Bottom Left / Bottom Right)
+    And the corner is chosen INDEPENDENTLY of the webcam's — they share the PiPCorner
+      type but never the value, since you want them in opposite corners
+    And both persist in UserDefaults and are settable per-recording over the URL scheme
+      (`?clicks=0|1&clickcorner=tl|tr|bl|br`)
+    # innards: apple-rec Sources/RecBurn/RecBurnController.swift (clickCounter,
+    #          clicksCorner, args, applyQuery) + RecBurnApp.swift (menu + actions)
+    # NOT VERIFIED: RecBurn.app builds clean (21.9s, signed), but clicking through its
+    #   menu bar means driving Esa's UI while he works. His check, not mine.
 
   @note
   Boundary: it counts clicks, not what was clicked

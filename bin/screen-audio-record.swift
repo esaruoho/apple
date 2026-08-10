@@ -108,6 +108,13 @@ func parseArgs() -> Options {
         case "--clicks-label":  o.clicksLabel = it.next() ?? "CLICKS"
         case "--clicks-seed":   o.clicksSeed = Int(it.next() ?? "0") ?? 0
         case "--also-mic", "--mic": o.alsoMic = true
+        // Negations exist so a CHAINED wrapper can be subtracted from: recburnclick →
+        // recburn adds --mic --pip --burn, and a trailing --no-pip must be able to undo
+        // one of them without the user rebuilding the whole command from rec.
+        case "--no-mic":       o.alsoMic = false
+        case "--no-pip":       o.pip = false
+        case "--no-burn":      o.burn = false
+        case "--no-clicks":    o.clicks = false
         case "--fps":          o.fps = Int(it.next() ?? "60") ?? 60
         case "--out", "-o":    o.outPath = (it.next() as NSString?)?.expandingTildeInPath ?? ""
         case "--reveal":       o.reveal = true
@@ -139,6 +146,9 @@ func printUsage() {
       --app <name>           capture only this app's screen windows AND its audio
       --system-audio         capture the whole display + all system audio
       --display <n>          display index from --list (default 0 = main)
+      --no-mic / --no-pip / --no-burn / --no-clicks
+                             turn one off again — for subtracting from a chained wrapper
+                             (recburnclick → recburn → rec each ADD flags; these remove)
       --clicks               burn a live "CLICKS: n" counter into the video (counts every
                              left/right/middle mouse-down from the moment recording starts)
       --clicks-corner <c>    tl (default) | tr | bl | br

@@ -1,26 +1,27 @@
 #!/bin/bash
-# recburnclick — `rec`, plus a live click counter burned into the video.
+# recburnclick — `recburn`, plus a live click counter burned into the video.
 #
-# Everything rec does (whole screen + all system audio, no loopback driver, Ctrl-C to
-# stop, --mic / --pip / --burn all still available), and ON TOP of that a "CLICKS: n"
-# badge composited into every frame. The number starts at 0 when recording starts and
-# goes up on every left / right / middle mouse-down — so a demo video carries its own
-# click count instead of you narrating it.
+# Everything recburn does — screen + system audio + MICROPHONE + webcam circle, then on
+# stop flatten (YouTube-ready) + transcribe + burn subtitles — and on top of that a
+# "CLICKS: n" badge composited into every frame. The number starts at 0 when recording
+# starts and goes up on every left / right / middle mouse-down, so a demo video carries
+# its own click count instead of you narrating it.
+#
+# It is recburn's settings, plus clicks. Nothing is taken away: --mic, --pip and --burn
+# all still apply, because this simply chains to recburn.
 #
 # Usage:
-#   recburnclick                        # screen + audio + click counter → ./<timestamp>.mov
+#   recburnclick                        # the full screencast + click counter
 #   recburnclick --clicks-corner br     # move the badge (tl default | tr | bl | br)
 #   recburnclick --clicks-label TAPS    # relabel it
-#   recburnclick --mic --pip            # the full speaking-head demo, with clicks
+#   recburnclick --no-pip               # drop the webcam, keep mic + subtitles + clicks
 #   recburnclick --app Renoise          # only that app's audio, still counting clicks
 #
 # The count needs NO Accessibility permission and installs no event tap: macOS already
 # tallies mouse-downs per session (CGEventSource.counterForEventType), so the recorder
 # just reads that number and subtracts its start-of-recording baseline.
 #
-# Any flag is passed straight through to screen-audio-record.
-#
 # FEATURE-CARD >> features/recburnclick.feature
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec "$DIR/screen-audio-record" --system-audio --auto-flatten --clicks "$@"
+exec "$DIR/recburn" --clicks "$@"
