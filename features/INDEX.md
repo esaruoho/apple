@@ -447,6 +447,16 @@ Trigger recburn from anywhere through one seam, and hand off a typed result  —
   triad: .session✓  transcript✗  RESULT✓
   honesty: 13/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Burn a live click counter into a screen recording  —  6 scenarios   (features/recburnclick.feature)
+  - [@hw-verified] counting clicks needs NO event tap and NO Accessibility prompt  
+  - [@hw-verified] the number is really in the pixels  (ran live 2026-07-29)
+  - [@hw-verified] corner and label are honoured  (ran live 2026-07-29)
+  - [@hw-verified] plain `rec` is unchanged  (ran live 2026-07-29)
+  - [@built] the counter goes UP as you click
+  - [@built] --clicks composes with --pip and --mic
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 6/6 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Record screen + system audio to one .mov with no loopback driver  —  19 scenarios   (features/screen-audio-record.feature)
   - [@hw-verified] single-app audio isolation captures screen + only that app's sou
   - [@hw-verified] Ctrl-C stops cleanly and finalizes a playable file  (ran live)
