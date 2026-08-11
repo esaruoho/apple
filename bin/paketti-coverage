@@ -8,7 +8,7 @@ This finds those gaps — globally and per Renoise region — so we see what's "
 the table."
 
 Reads ~/.paketti-spine/spine-true.json (run `paketti-spine-report` first, or this
-runs the harness itself). Writes ~/.paketti-spine/COVERAGE.md.
+runs the harness itself). Writes the Paketti repo's docs/COVERAGE.md.
 """
 import json
 import re
@@ -154,13 +154,14 @@ def main():
             break
 
     text = "\n".join(out)
-    (OUT / "COVERAGE.md").write_text(text)
+    # ONE copy. This used to be written here as well as into docs/, producing two
+    # byte-identical files and no way to tell which was authoritative.
     try:
         (Path(PAKETTI) / "docs").mkdir(exist_ok=True)
         (Path(PAKETTI) / "docs" / "COVERAGE.md").write_text(text)   # useful Paketti documentation
     except Exception:
         pass
-    print(f"wrote {OUT}/COVERAGE.md  +  {PAKETTI}/docs/COVERAGE.md")
+    print(f"wrote {PAKETTI}/docs/COVERAGE.md")
     print(f"  {len(allactions):,} distinct actions · "
           f"K={len(KB):,} M={len(MI):,} E={len(ME):,}")
     print(f"  shortcut-but-no-MIDI: {len(KB - MI):,} · menu-but-no-shortcut: {len(ME - KB):,}")
