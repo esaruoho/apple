@@ -191,6 +191,7 @@ def _is_wiki_refusal(t):
 # Returned by fm_research when the free-energy viewpoint is active but the model would not produce
 # the required '## Thought about it' heading within this pass. The poll loop treats it as "not
 # sendable yet": it does NOT send and does NOT mark the email seen, so the next poll retries it fresh.
+TRY_FLOOR = 12                 # attempts the viewpoint template gets; compose lowers it (see fm_research)
 REQUEUE_NO_THINKING = "\x00REQUEUE-NO-THINKING\x00"
 # Returned when the model BAILED ('please provide the content') despite content being available — the
 # poll loop re-queues (does not send the bail) and debug-logs it for inspection.
@@ -301,7 +302,11 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     NUDGE=("\n\nREMINDER: your previous reply omitted the required '## Thought about it' section. Begin THIS reply "
            "with the literal heading '## Thought about it' followed by 4-7 sentences of genuine reasoning, THEN the "
            "'## Answer' and the tone sections. Do not skip it.")
-    eff_tries = max(tries, 12) if (viewpoint and voices_on) else max(1, tries)   # give the thinking heading room to land
+    # The six-heading template makes nemotron drop the required heading ~1/3 of the time, so the poll
+    # loop gives it 12 attempts — fine when a human is waiting for a reply, fatal for a BELT email:
+    # 12 × ~60s ran past a 900s timeout and the transcript was never answered at all (2026-08-11).
+    # TRY_FLOOR lets a caller bound it; compose sets it, the poll loop keeps 12.
+    eff_tries = max(tries, TRY_FLOOR) if (viewpoint and voices_on) else max(1, tries)
     has_content = bool((question or "").strip()) or bool((attachments or "").strip())
     used=chosen_model; cur=msgs; saw_failure=False
     for _ in range(eff_tries):
@@ -1895,7 +1900,7 @@ def poll_once(verbose=True):
     st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
     return new
 
-def compose_and_send(to, subject, body_text, source="", label="", verbose=True):
+def compose_and_send(to, subject, body_text, source="", label="", verbose=True, tries=4):
     """THE ONE ANSWER FORMAT, callable from outside the poll loop.
 
     Esa, 2026-08-10, holding three different-looking emails from the same system: "i have
@@ -1939,7 +1944,12 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True):
     if verbose:
         print(f"  → composing [{space}·{why}] for {to}: {subject[:60]}"
               + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else ""))
-    answer, used = fm_research(question, "", body_text, wiki_ctx=wctx, viewpoint=vp)
+    global TRY_FLOOR
+    _floor, TRY_FLOOR = TRY_FLOOR, max(1, tries)          # bounded for the belt, restored after
+    try:
+        answer, used = fm_research(question, "", body_text, wiki_ctx=wctx, viewpoint=vp, tries=tries)
+    finally:
+        TRY_FLOOR = _floor
     if answer is REQUEUE_NO_THINKING or answer is REQUEUE_FAILED:
         return False, ("model would not produce the required shape — NOT sending "
                        "(the same gate the poll loop uses)")
@@ -1979,12 +1989,15 @@ def main():
         ap.add_argument("--source", default="", help="the URL or origin, printed under the answer")
         ap.add_argument("--label", default="", help="a line noting the artifact (e.g. the transcript path)")
         ap.add_argument("--max-chars", type=int, default=120000)
+        ap.add_argument("--tries", type=int, default=4,
+                        help="attempts at the required shape before giving up (default 4; the poll "
+                             "loop uses 12, which is too slow for a belt email)")
         a = ap.parse_args(sys.argv[2:])
         body = a.text or ""
         if a.file:
             body = Path(a.file).expanduser().read_text(errors="replace")
         ok, info = compose_and_send(a.to, a.subject, body[:a.max_chars], source=a.source,
-                                    label=a.label)
+                                    label=a.label, tries=a.tries)
         print(("✅ sent (" + str(info) + ")") if ok else ("✗ " + str(info)))
         return 0 if ok else 1
     if cmd=="status":
