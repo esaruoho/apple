@@ -19,6 +19,13 @@ import time
 import uuid
 from pathlib import Path
 
+# The spine lives in the Paketti repo (.spine/), not here. It used to be duplicated:
+# a harness copy in this folder and outputs in ~/.paketti-spine, which silently drifted
+# from the repo's own (the repo's harness was a day newer and slightly different).
+# Resolve the repo first; fall back to the old home dotdir so nothing breaks mid-migration.
+_REPO_SPINE = Path("/Users/esaruoho/work/paketti/.spine")
+SPINE_DIR = _REPO_SPINE if _REPO_SPINE.is_dir() else Path.home() / ".paketti-spine"
+
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 FM_MLX = HERE / "fm-mlx"
@@ -114,7 +121,7 @@ def _citations(answer: str) -> list:
     return sorted(set(re.findall(r"[A-Za-z0-9_/.\-]+\.lua", answer)))
 
 
-SPINE = Path.home() / ".paketti-spine" / "spine.json"
+SPINE = SPINE_DIR / "spine.json"
 
 
 def spine_context(query: str) -> str:
