@@ -1895,8 +1895,98 @@ def poll_once(verbose=True):
     st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
     return new
 
+def compose_and_send(to, subject, body_text, source="", label="", verbose=True):
+    """THE ONE ANSWER FORMAT, callable from outside the poll loop.
+
+    Esa, 2026-08-10, holding three different-looking emails from the same system: "i have
+    cloudcity-llm@agentmail.to that responds … with an analysis and then bearden, russell, prigogine
+    and hilarion voices. but what i wanted was, that when the convey transcript finishes, that the
+    SAME THING is done. but instead, its some other junk!"
+
+    He was right, and it was not one bug. THREE mailers had grown up separately, each composing its
+    own email with its own prompt:
+      · convey email-transcript --analyze  → "## Summary / ## Key points / ## Notable quotes"
+      · convey soft --email                → "⚠️ SOFT machine legs — fm-mlx + freellmapi"
+      · freellmask-mail (this agent)       → "Thought about it / Answer / Russell / Bearden / …"
+    Only the third is the agent. This function exposes the agent's own path — same wiki context,
+    same VIEWPOINT, same voices, same footer — so the other two stop composing and start ASKING.
+    """
+    k = am_key()
+    body_text = (body_text or "").strip()
+    if not body_text:
+        return False, "nothing to answer"
+    question = (f"Read the material below and answer it as you would an email asking about it: what "
+                f"it says, what holds up, what is worth checking."
+                + (f"\n\nSOURCE: {source}" if source else ""))
+    # EXACTLY the poll loop's order: retrieve the wiki FIRST, then route WITH the wslugs. Routing
+    # before retrieval (my first cut) meant the wiki-match branch could never fire, so a bifilar-coil
+    # transcript routed to "plain" — no viewpoint, no Russell/Bearden/Prigogine/Hilarion voices, which
+    # is precisely the format Esa asked for.
+    route_text = "\n".join(x for x in (subject, body_text) if x)
+    wctx, wslugs = "", []
+    try:
+        wctx, wslugs = wiki_context(route_text)
+    except Exception as e:
+        if verbose: print(f"  wiki context error: {e}")
+    try:
+        space, why = route_space(FORWARD_TO, subject, route_text, wslugs)
+    except Exception as e:
+        space, why = "free-energy", f"routing error ({e}) → free-energy"
+    in_fe = (space == "free-energy")
+    vp = VIEWPOINT if in_fe else ""
+    if not in_fe:
+        wctx = ""                                  # a plain space gets no free-energy RAG leakage
+    if verbose:
+        print(f"  → composing [{space}·{why}] for {to}: {subject[:60]}"
+              + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else ""))
+    answer, used = fm_research(question, "", body_text, wiki_ctx=wctx, viewpoint=vp)
+    if answer is REQUEUE_NO_THINKING or answer is REQUEUE_FAILED:
+        return False, ("model would not produce the required shape — NOT sending "
+                       "(the same gate the poll loop uses)")
+    if not answer:
+        return False, "no answer from the brain"
+    # fm_research's LAST resort is an apology string. The poll loop can afford to send that as a reply
+    # to a human who can reply again; a BELT email must not — it would look exactly like the junk this
+    # unification is fixing. Caught by reading the first composed email (2026-08-11).
+    if answer.startswith("I wasn't able to generate a reliable answer"):
+        return False, "the brain never produced a usable answer — NOT sending an apology as an analysis"
+    note = ""
+    if source:
+        note = f"\n\n---\n▶ Source: {source}"
+    if label:
+        note += f"\n📄 {label}"
+    text = answer + note
+    payload = {"to": [to], "subject": subject, "text": text, "html": md_to_html(text)}
+    if BCC and BCC.lower() != (to or "").lower():
+        payload["bcc"] = [BCC]
+    try:
+        http(f"{AM_BASE}/inboxes/{INBOX}/messages/send", k, "POST", payload)
+        return True, used
+    except Exception as e:
+        return False, f"send failed: {e}"
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv)>1 else "poll"
+    if cmd == "compose":
+        import argparse
+        ap = argparse.ArgumentParser(prog="freellmask-mail compose",
+                                     description="Answer a file IN THE AGENT'S OWN FORMAT and email it.")
+        ap.add_argument("--to", required=True)
+        ap.add_argument("--subject", required=True)
+        ap.add_argument("--file", help="transcript / extracted text to answer")
+        ap.add_argument("--text", help="raw text instead of a file")
+        ap.add_argument("--source", default="", help="the URL or origin, printed under the answer")
+        ap.add_argument("--label", default="", help="a line noting the artifact (e.g. the transcript path)")
+        ap.add_argument("--max-chars", type=int, default=120000)
+        a = ap.parse_args(sys.argv[2:])
+        body = a.text or ""
+        if a.file:
+            body = Path(a.file).expanduser().read_text(errors="replace")
+        ok, info = compose_and_send(a.to, a.subject, body[:a.max_chars], source=a.source,
+                                    label=a.label)
+        print(("✅ sent (" + str(info) + ")") if ok else ("✗ " + str(info)))
+        return 0 if ok else 1
     if cmd=="status":
         st=load_state(); print(f"inbox={INBOX}\nmodel={FM_MODEL} host={FM_HOST}\nseen={len(st.get('seen',[]))} last_poll={st.get('last_poll')}")
         print(f"AgentMail key: {'set' if _read_key('AGENTMAIL_API_KEY','~/.agentmail.key') else 'MISSING'}")

@@ -23,6 +23,7 @@ PEND    = HOME/"work"/"comms"/"queue"/"fa-video-pending.jsonl"
 CATALOG = HOME/"work"/"whisp-transcripts"/"catalog.yaml"
 TDIR    = HOME/"work"/"whisp-transcripts"/"transcripts"
 CONVEY  = HOME/"work"/"apple"/"bin"/"convey"
+FREELLMASK = HOME/"work"/"apple"/"bin"/"freellmask-mail"   # the agent — the ONE answer format
 VERBOSE = "--verbose" in sys.argv or "-v" in sys.argv
 
 
@@ -66,7 +67,15 @@ def main():
             keep.append(l)                              # not transcribed yet — keep pending
             continue
         to = rec.get("to") or os.environ.get("CONVEY_DIGEST_EMAIL", "esaruoho@gmail.com")
-        cmd = [str(CONVEY), "email-transcript", str(tpath), "--analyze", "--to", to, "--source", url]
+        # ONE FORMAT. This used to call `convey email-transcript --analyze`, which composes its own
+        # email ("## Summary / ## Key points / ## Notable quotes") — a different-looking reply from
+        # the same address as the agent's. Esa, 2026-08-10: "what i wanted was, that when the convey
+        # transcript finishes, that the SAME THING is done. but instead, its some other junk!"
+        # So we ASK THE AGENT instead: same viewpoint, same wiki context, same voices, same footer.
+        cmd = [str(FREELLMASK), "compose", "--to", to,
+               "--subject", (rec.get("subj") or slug.replace("-", " "))[:120],
+               "--file", str(tpath), "--source", url,
+               "--label", f"Transcript: {tpath}"]
         try:
             r = subprocess.run(cmd, timeout=360, capture_output=True, text=True)
             if r.returncode == 0:
@@ -76,11 +85,11 @@ def main():
             else:
                 keep.append(l)                          # send failed — retry next pass
                 if VERBOSE:
-                    print(f"  ✗ email-transcript failed for {slug}: {(r.stderr or r.stdout)[:120]}")
+                    print(f"  ✗ compose failed for {slug}: {(r.stderr or r.stdout)[:160]}")
         except Exception as e:
             keep.append(l)
             if VERBOSE:
-                print(f"  ✗ email-transcript error for {slug}: {e}")
+                print(f"  ✗ compose error for {slug}: {e}")
     try:
         PEND.write_text(("\n".join(keep) + "\n") if keep else "", encoding="utf-8")
     except Exception:
