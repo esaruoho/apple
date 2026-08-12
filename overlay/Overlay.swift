@@ -30,10 +30,11 @@ import Carbon.HIToolbox   // RegisterEventHotKey — global hotkey, needs no per
 
 // ─────────────────────────────── the panel ───────────────────────────────
 
-/// Borderless + non-activating, but still able to take the keyboard.
+/// Borderless, and able to take the keyboard.
 ///
 /// A borderless window refuses key status unless you override this; without it Esc
-/// and ⌘Z would never arrive and draw mode would be a one-way door.
+/// and ⌘Z never arrive and draw mode is a one-way door. That is not hypothetical —
+/// it is the bug Esa hit on the first real run.
 final class OverlayPanel: NSPanel {
     override var canBecomeKey: Bool { true }
     /// Never main: this must not present itself as the app's primary window, or the
@@ -63,7 +64,7 @@ final class InkView: NSView {
             // being stranded on screen when you hit Esc mid-drag.
             live = []
             needsDisplay = true
-            window?.invalidateCursorRects(for: self)
+            if mode == .draw { NSCursor.crosshair.set() } else { NSCursor.arrow.set() }
         }
     }
 
@@ -274,40 +275,76 @@ final class InkView: NSView {
         return NSColor(srgbRed: c.r, green: c.g, blue: c.b, alpha: c.a)
     }
 
+    /// The part of the canvas that is not underneath the menu bar or the Dock.
+    ///
+    /// The first version of the mode indicator drew a 3pt border at the screen's
+    /// extreme edges and a chip 18pt off the bottom — i.e. exactly under the menu bar
+    /// (level 24) and the Dock (level 20), both of which sit above .floating. Esa saw
+    /// nothing at all and reasonably concluded draw mode had not turned on.
+    private var unobscured: CGRect {
+        guard let screen = window?.screen else { return bounds }
+        return CGRect(x: screen.visibleFrame.minX - screen.frame.minX,
+                      y: screen.visibleFrame.minY - screen.frame.minY,
+                      width: screen.visibleFrame.width,
+                      height: screen.visibleFrame.height)
+    }
+
     /// Draw mode has to be unmistakable — an overlay that silently eats your clicks
     /// is indistinguishable from a frozen Mac.
     private func drawModeChrome() {
-        let border = NSBezierPath(rect: bounds.insetBy(dx: 1.5, dy: 1.5))
-        border.lineWidth = 3
-        color(colorHex).withAlphaComponent(0.85).setStroke()
+        let area = unobscured
+
+        let border = NSBezierPath(rect: area.insetBy(dx: 3, dy: 3))
+        border.lineWidth = 6
+        color(colorHex).withAlphaComponent(0.9).setStroke()
         border.stroke()
 
-        let text = "DRAW  ·  esc exit  ·  ⌘Z undo  ·  1-6 colour  ·  [ ] size  ·  ⌘⌫ clear"
+        let text = "DRAW MODE  ·  esc to exit  ·  ⌘Z undo  ·  1-6 colour  ·  [ ] size  ·  ⌘⌫ clear"
         let attrs: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .medium),
+            .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .semibold),
             .foregroundColor: NSColor.white,
         ]
         let size = (text as NSString).size(withAttributes: attrs)
-        let chip = CGRect(x: bounds.midX - size.width / 2 - 10, y: 18,
-                          width: size.width + 20, height: size.height + 10)
-        NSColor.black.withAlphaComponent(0.72).setFill()
-        NSBezierPath(roundedRect: chip, xRadius: 7, yRadius: 7).fill()
-        (text as NSString).draw(at: CGPoint(x: chip.minX + 10, y: chip.minY + 5),
+        let swatchWidth: CGFloat = 44
+        let chip = CGRect(x: area.midX - (size.width + swatchWidth + 34) / 2,
+                          // Pinned just below the menu bar: the top of the screen is
+                          // where the eye goes, and nothing occludes it there.
+                          y: area.maxY - size.height - 22,
+                          width: size.width + swatchWidth + 34,
+                          height: size.height + 14)
+        color(colorHex).withAlphaComponent(0.95).setFill()
+        NSBezierPath(roundedRect: chip, xRadius: 9, yRadius: 9).fill()
+        (text as NSString).draw(at: CGPoint(x: chip.minX + 12, y: chip.minY + 7),
                                 withAttributes: attrs)
 
         // The live colour and width, shown as an actual swatch rather than a number.
-        let swatch = CGRect(x: chip.maxX + 8, y: chip.midY - CGFloat(strokeWidth) / 2,
-                            width: 34, height: max(2, CGFloat(strokeWidth)))
-        color(colorHex).setFill()
+        let swatch = CGRect(x: chip.maxX - swatchWidth - 12,
+                            y: chip.midY - CGFloat(strokeWidth) / 2,
+                            width: swatchWidth, height: max(2, CGFloat(strokeWidth)))
+        NSColor.white.setFill()
         NSBezierPath(roundedRect: swatch,
                      xRadius: CGFloat(strokeWidth) / 2,
                      yRadius: CGFloat(strokeWidth) / 2).fill()
     }
 
-    override func resetCursorRects() {
-        // Only claim the cursor in draw mode; in passthrough the pointer belongs to
-        // whatever app is underneath.
-        if mode == .draw { addCursorRect(bounds, cursor: .crosshair) }
+    /// Cursor rects only apply to a KEY window, and this panel may not be key on
+    /// every macOS configuration. A tracking area with .activeAlways works either
+    /// way, so the crosshair is not hostage to activation succeeding.
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas { removeTrackingArea(area) }
+        addTrackingArea(NSTrackingArea(rect: bounds,
+                                       options: [.mouseEnteredAndExited, .mouseMoved,
+                                                 .activeAlways, .inVisibleRect],
+                                       owner: self, userInfo: nil))
+    }
+
+    override func mouseEntered(with event: NSEvent) { applyCursor() }
+    override func mouseMoved(with event: NSEvent) { applyCursor() }
+    override func mouseExited(with event: NSEvent) { NSCursor.arrow.set() }
+
+    private func applyCursor() {
+        if mode == .draw { NSCursor.crosshair.set() }
     }
 
     // ── pointer ──
@@ -397,8 +434,13 @@ final class Canvas {
             NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value ?? 0
         displayName = screen.localizedName
 
+        // NOT .nonactivatingPanel. It reads like the polite choice, and it is a trap:
+        // on an .accessory app it makes NSApp.activate a no-op, so the panel never
+        // becomes key — which silently costs you keyDown (no Esc, no ⌘Z, no colour
+        // keys) and cursor rects (no crosshair). Draw mode is a MODE; owning the
+        // keyboard while it is on is correct, and Esc gives it straight back.
         panel = OverlayPanel(contentRect: screen.frame,
-                             styleMask: [.borderless, .nonactivatingPanel],
+                             styleMask: [.borderless],
                              backing: .buffered,
                              defer: false,
                              screen: screen)
@@ -514,12 +556,24 @@ final class OverlayManager {
 
         if new == .draw {
             appBeforeDraw = NSWorkspace.shared.frontmostApplication
-            // An .accessory app must actually activate for keystrokes to reach the
-            // panel; .nonactivatingPanel keeps the visual disruption to a minimum.
             if activatesOnDraw { NSApp.activate(ignoringOtherApps: true) }
             if let target = canvasUnderPointer() ?? here.first {
                 target.panel.makeKeyAndOrderFront(nil)
                 target.panel.makeFirstResponder(target.view)
+                // Activation is not guaranteed on the first attempt for a menu-bar
+                // app. Retry once on the next runloop turn rather than leaving Esa
+                // in a mode whose keyboard silently does nothing.
+                if activatesOnDraw, !target.panel.isKeyWindow {
+                    DispatchQueue.main.async {
+                        NSRunningApplication.current.activate(options: [.activateAllWindows])
+                        target.panel.makeKeyAndOrderFront(nil)
+                        target.panel.makeFirstResponder(target.view)
+                        if !target.panel.isKeyWindow {
+                            NSLog("Overlay: panel still not key — keyboard shortcuts "
+                                + "will not work; ⌃⌥⌘D and the menu still will")
+                        }
+                    }
+                }
             }
         } else {
             // Ordering out and back drops key status without hiding the ink. Only
@@ -532,6 +586,15 @@ final class OverlayManager {
             appBeforeDraw?.activate()
             appBeforeDraw = nil
             reapEmptyElsewhere()
+        }
+
+        // Draw mode is only usable if the panel actually took the keyboard. Log it
+        // every time: "the hotkey fired but nothing worked" is otherwise impossible
+        // to tell apart from "the hotkey never fired".
+        if new == .draw, let panel = here.first?.panel {
+            NSLog("Overlay: draw mode — appActive=\(NSApp.isActive) "
+                + "key=\(panel.isKeyWindow) firstResponder="
+                + "\(String(describing: type(of: panel.firstResponder ?? NSNull())))")
         }
 
         onModeChange?(new)
@@ -549,9 +612,31 @@ final class OverlayManager {
         persist()
     }
 
+    func redoHere() {
+        for canvas in here { _ = canvas.view.store.redo(); canvas.view.needsDisplay = true }
+        persist()
+    }
+
     func clearHere() {
         for canvas in here { canvas.view.store.clear(); canvas.view.needsDisplay = true }
         persist()
+    }
+
+    /// Pen settings live on the canvas but are chosen globally, so switching display
+    /// mid-session doesn't silently reset the colour you just picked.
+    func setColor(index: Int) {
+        guard Hex.palette.indices.contains(index) else { return }
+        for canvas in canvases {
+            canvas.view.colorHex = Hex.palette[index]
+            canvas.view.needsDisplay = true
+        }
+    }
+
+    func nudgeWidth(_ delta: Double) {
+        for canvas in canvases {
+            canvas.view.strokeWidth = min(48, max(1, canvas.view.strokeWidth + delta))
+            canvas.view.needsDisplay = true
+        }
     }
 
     func clearAll() {
@@ -615,6 +700,133 @@ final class OverlayManager {
         return failures.isEmpty ? nil : failures.joined(separator: "; ")
     }
 
+    // ── ask: the point of the whole thing ──
+
+    /// Take the last shape drawn, crop the screen to it, and hand that region to a
+    /// model. The squiggle is a SELECTION GESTURE, not a drawing: circle part of a
+    /// whiteboard and this is what turns it into "look at this bit and tell me".
+    ///
+    /// Steps, in order, and why:
+    ///   1. the last object's cropRect — the region the human indicated
+    ///   2. hide every canvas, so the ink itself is not in the screenshot
+    ///   3. `screencapture -x -R` — Apple-shipped, no prompt, no library
+    ///   4. restore the canvases, drop a "thinking" mark so something visibly happens
+    ///   5. hand the PNG to bin/overlay-ask, which OCRs it and asks a model, then
+    ///      posts the answer back through the ordinary inbox as a callout
+    func askLastRegion(question: String? = nil) {
+        guard let canvas = here.first(where: { !$0.view.store.objects.isEmpty })
+                        ?? here.first,
+              let last = canvas.view.store.objects.last else {
+            NSLog("Overlay: ask — nothing drawn to ask about")
+            return
+        }
+
+        let crop = last.cropRect(in: canvas.view.bounds, pad: 8)
+        guard crop.width > 8, crop.height > 8 else {
+            NSLog("Overlay: ask — the region is too small to be worth capturing")
+            return
+        }
+
+        // View coords are this canvas's screen frame; lift them to AppKit global.
+        let origin = canvas.panel.frame.origin
+        let global = CGRect(x: crop.minX + origin.x, y: crop.minY + origin.y,
+                            width: crop.width, height: crop.height)
+
+        // screencapture speaks top-left, measured from the top of the PRIMARY display.
+        let primary = NSScreen.screens.first { $0.frame.origin == .zero } ?? NSScreen.screens[0]
+        let top = primary.frame.height - global.maxY
+        let region = "\(Int(global.minX)),\(Int(top)),\(Int(global.width)),\(Int(global.height))"
+
+        let png = OverlayPaths.asks
+            .appendingPathComponent("ask-\(Int(Date().timeIntervalSince1970)).png")
+        try? FileManager.default.createDirectory(at: OverlayPaths.asks,
+                                                 withIntermediateDirectories: true)
+
+        // The overlay must not photograph itself. Hiding is instant but the window
+        // server needs a beat to composite, hence the async hop rather than a sleep.
+        for c in canvases { c.panel.alphaValue = 0 }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
+            guard let self = self else { return }
+            let capture = Process()
+            capture.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+            capture.arguments = ["-x", "-R", region, png.path]
+            try? capture.run()
+            capture.waitUntilExit()
+
+            for c in self.canvases { c.panel.alphaValue = 1 }
+
+            guard FileManager.default.fileExists(atPath: png.path) else {
+                NSLog("Overlay: ask — screencapture produced nothing for \(region)")
+                return
+            }
+
+            // Something visible happens immediately; the answer replaces it later.
+            let waiting = OverlayObject(
+                kind: .callout,
+                points: [CGPoint(x: crop.midX, y: crop.midY),
+                         CGPoint(x: crop.midX, y: crop.maxY + 46)],
+                colorHex: "#0A84FF", width: 3, actor: "agent:ask",
+                lifetime: .session, anchor: OverlayAnchor(type: .screen), text: "thinking…")
+            canvas.view.store.add(waiting)
+            canvas.view.needsDisplay = true
+
+            self.runAsk(png: png, region: crop, canvas: canvas,
+                        placeholder: waiting.id, question: question)
+        }
+    }
+
+    /// Hand the crop to `bin/overlay-ask`, which does OCR + model and prints an
+    /// answer. Off the main thread — the Mini roundtrip is seconds, not milliseconds.
+    private func runAsk(png: URL, region: CGRect, canvas: Canvas,
+                        placeholder: String, question: String?) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let tool = URL(fileURLWithPath: "/Users/esaruoho/work/apple/bin/overlay-ask")
+            let process = Process()
+            process.executableURL = tool
+            process.arguments = [png.path] + (question.map { ["--question", $0] } ?? [])
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = Pipe()
+
+            var answer = "overlay-ask failed to run"
+            do {
+                try process.run()
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                process.waitUntilExit()
+                answer = String(data: data, encoding: .utf8)?
+                    .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                if answer.isEmpty { answer = "no answer (exit \(process.terminationStatus))" }
+            } catch {
+                answer = "could not run overlay-ask: \(error.localizedDescription)"
+            }
+
+            DispatchQueue.main.async {
+                canvas.view.store.remove(id: placeholder)
+                canvas.view.store.add(OverlayObject(
+                    kind: .callout,
+                    points: [CGPoint(x: region.midX, y: region.midY),
+                             CGPoint(x: region.midX, y: region.maxY + 46)],
+                    colorHex: "#34C759", width: 3, actor: "agent:ask",
+                    lifetime: .session, anchor: OverlayAnchor(type: .screen),
+                    text: OverlayManager.wrap(answer)))
+                canvas.view.needsDisplay = true
+                self.persist()
+            }
+        }
+    }
+
+    /// A model answer is a paragraph; a callout chip is one line. Take the first
+    /// sentence-ish chunk so the thing on screen stays readable — the full text is in
+    /// the store for anyone who wants it.
+    static func wrap(_ text: String, limit: Int = 110) -> String {
+        let flat = text.replacingOccurrences(of: "\n", with: " ")
+            .trimmingCharacters(in: .whitespaces)
+        guard flat.count > limit else { return flat }
+        let cut = flat.prefix(limit)
+        if let space = cut.lastIndex(of: " ") { return String(cut[..<space]) + "…" }
+        return String(cut) + "…"
+    }
+
     // ── TTL collection ──
 
     /// Ephemeral marks need a clock, but an overlay that ticks forever is a battery
@@ -673,6 +885,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let manager = OverlayManager()
     private var statusItem: NSStatusItem!
     private var hotKeyRef: EventHotKeyRef?
+    private var drawKeyRefs: [EventHotKeyRef] = []
     private var helpWindow: NSWindow?
     private var inbox: InboxWatcher?
 
@@ -690,7 +903,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         registerHotKey()
         startInbox()
         registerControlChannel()
-        manager.onModeChange = { [weak self] _ in self?.refreshStatusItem() }
+        manager.onModeChange = { [weak self] mode in
+            self?.refreshStatusItem()
+            self?.setDrawModeKeys(active: mode == .draw)
+        }
         refreshStatusItem()
 
         NotificationCenter.default.addObserver(
@@ -828,6 +1044,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             [weak self] _ in
             self?.manager.toggleMode()
         }
+        // "ask about the last thing I drew" — same entry point as ⌘Return in draw
+        // mode, so the CLI and the keyboard cannot drift apart.
+        center.addObserver(forName: OverlayControl.ask, object: nil, queue: .main) {
+            [weak self] note in
+            let question = (note.object as? String).flatMap { $0.isEmpty ? nil : $0 }
+            self?.manager.askLastRegion(question: question)
+        }
     }
 
     // ── global hotkey ──
@@ -848,7 +1071,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                               nil, MemoryLayout<EventHotKeyID>.size, nil, &id)
             let me = Unmanaged<AppDelegate>.fromOpaque(userData).takeUnretainedValue()
             NSLog("Overlay: hotkey fired id=\(id.id)")
-            DispatchQueue.main.async { if id.id == 1 { me.toggleDraw() } }
+            DispatchQueue.main.async {
+                switch id.id {
+                case 1:  me.toggleDraw()
+                default: me.handleDrawKey(id.id)   // Esc / undo / colours / width
+                }
+            }
             return noErr
         }, 1, &spec, selfPtr, nil)
 
@@ -858,6 +1086,72 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                          GetApplicationEventTarget(), 0, &hotKeyRef)
         if status != noErr {
             NSLog("Overlay: ⌃⌥⌘D registration failed with OSStatus \(status)")
+        }
+    }
+
+    /// Every draw-mode key, registered globally for exactly as long as draw mode is on.
+    ///
+    /// The view's `keyDown` handles all of these too — but only when the panel is the
+    /// key window, and on a menu-bar (.accessory) app it never becomes key: macOS's
+    /// cooperative activation refuses to let a background app take focus, so
+    /// `NSApp.activate` is a no-op. Measured, not assumed: `appActive=false key=false`
+    /// in the log on the very first real run, which is why Esa got a canvas he could
+    /// draw on but no Esc, no ⌘Z and no colours.
+    ///
+    /// Carbon hotkeys need no permission, no activation and no key window — they fire
+    /// whatever is frontmost. Grabbing bare 1-6 and [ ] globally is only acceptable
+    /// because it lasts precisely as long as the mode does, and the mode is now
+    /// impossible to miss. Leaving draw mode hands every key straight back.
+    private func setDrawModeKeys(active: Bool) {
+        if active {
+            guard drawKeyRefs.isEmpty else { return }
+            // (virtual key, modifiers, id)
+            var wanted: [(Int, UInt32, UInt32)] = [
+                (kVK_Escape,     0,                    2),   // exit — the escape hatch
+                (kVK_ANSI_Z,     UInt32(cmdKey),              20),   // undo
+                (kVK_ANSI_Z,     UInt32(cmdKey | shiftKey),   21),   // redo
+                (kVK_Delete,     UInt32(cmdKey),              22),   // clear canvas
+                (kVK_ANSI_LeftBracket,  0,             23),   // thinner
+                (kVK_ANSI_RightBracket, 0,             24),   // thicker
+                (kVK_Return,     UInt32(cmdKey),              30),   // ASK about the last shape
+            ]
+            let numbers = [kVK_ANSI_1, kVK_ANSI_2, kVK_ANSI_3,
+                           kVK_ANSI_4, kVK_ANSI_5, kVK_ANSI_6]
+            for (index, key) in numbers.enumerated() {
+                wanted.append((key, 0, UInt32(10 + index)))   // colour 1-6
+            }
+
+            for (key, mods, id) in wanted {
+                var ref: EventHotKeyRef?
+                let hotKeyID = EventHotKeyID(signature: OSType(0x4F564C4B), id: id)  // 'OVLK'
+                let status = RegisterEventHotKey(UInt32(key), mods, hotKeyID,
+                                                 GetApplicationEventTarget(), 0, &ref)
+                if status == noErr, let ref = ref {
+                    drawKeyRefs.append(ref)
+                } else {
+                    NSLog("Overlay: draw-mode key id=\(id) failed with OSStatus \(status)")
+                }
+            }
+            NSLog("Overlay: draw-mode keys armed (\(drawKeyRefs.count)/\(wanted.count))")
+        } else {
+            for ref in drawKeyRefs { UnregisterEventHotKey(ref) }
+            drawKeyRefs.removeAll()
+        }
+    }
+
+    /// Apply a draw-mode key to whichever canvases are on this Space.
+    fileprivate func handleDrawKey(_ id: UInt32) {
+        guard manager.mode == .draw else { return }
+        switch id {
+        case 2:  manager.setMode(.passthrough)
+        case 20: manager.undoHere()
+        case 21: manager.redoHere()
+        case 22: manager.clearHere()
+        case 23: manager.nudgeWidth(-1)
+        case 24: manager.nudgeWidth(+1)
+        case 30: manager.askLastRegion()
+        case 10...15: manager.setColor(index: Int(id) - 10)
+        default: break
         }
     }
 }

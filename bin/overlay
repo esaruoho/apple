@@ -20,6 +20,9 @@ P1 verbs — the agent side:
     overlay kinds                               what can be posted
     overlay clear [--actor A]                   remove all marks, or one actor's
     overlay draw                                toggle draw mode
+    overlay ask [--question "..."]              crop the LAST shape you drew,
+                                                OCR it, ask a model, and post
+                                                the answer at that region
 
 Examples:
     overlay post box   --rel 0.1,0.2,0.3,0.1 --actor agent:fm --ttl ephemeral
@@ -121,12 +124,20 @@ def cmd_dump(as_json):
         return 0
     for m in marks:
         pts = m.get("points", [])
-        xs = [p.get("x", 0) for p in pts] or [0]
-        ys = [p.get("y", 0) for p in pts] or [0]
+        # Swift encodes CGPoint as a two-element ARRAY, not {"x":..,"y":..}. Accept
+        # both so a hand-written store file also dumps.
+        def xy(p):
+            if isinstance(p, dict):
+                return p.get("x", 0), p.get("y", 0)
+            return (p[0], p[1]) if len(p) >= 2 else (0, 0)
+        pairs = [xy(p) for p in pts] or [(0, 0)]
+        xs = [a for a, _ in pairs]
+        ys = [b for _, b in pairs]
         box = f"{min(xs):.0f},{min(ys):.0f} {max(xs)-min(xs):.0f}x{max(ys)-min(ys):.0f}"
         print(f"{m.get('kind','?'):<8} {m.get('actor','?'):<12} "
               f"{len(pts):>4}pts  {m.get('colorHex','')}  "
-              f"w{m.get('width','')}  [{box}]  {m.get('lifetime','')}")
+              f"w{m.get('width','')}  [{box}]  {m.get('lifetime','')}"
+              + (f"  \u201c{m['text']}\u201d" if m.get("text") else ""))
     return 0
 
 
@@ -294,6 +305,22 @@ def cmd_clear(argv):
     return rc
 
 
+def cmd_ask(argv):
+    """Ask a model about the LAST thing drawn: crop that region of the screen, OCR it
+    on-device, send it to the model, post the answer back as a callout at the region."""
+    if not running():
+        print("Overlay is not running.", file=sys.stderr)
+        return 1
+    if not load():
+        print("nothing drawn yet — enter draw mode and drag a square around "
+              "something first, then ask.", file=sys.stderr)
+        return 1
+    question = _flag(argv, "--question", "") or ""
+    rc = control("com.esaruoho.overlay.ask", question)
+    print("asking\u2026 blue callout = thinking, green = answered.")
+    return rc
+
+
 def cmd_draw():
     if not running():
         print("Overlay is not running.", file=sys.stderr)
@@ -324,6 +351,8 @@ def main(argv):
         return cmd_clear(argv)
     if verb == "draw":
         return cmd_draw()
+    if verb == "ask":
+        return cmd_ask(argv)
     print(f"unknown verb: {verb}\n", file=sys.stderr)
     print(__doc__, file=sys.stderr)
     return 2

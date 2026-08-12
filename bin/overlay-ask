@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""overlay-ask — the point of the overlay.
+
+Takes a PNG crop of the screen region a human circled and returns ONE line of answer,
+which Overlay.app renders as a callout pointing back at that region.
+
+    overlay-ask <crop.png> [--question "what is wrong here?"] [--raw]
+
+The chain, all Apple-native, no Homebrew, no pip, nothing leaves the LAN:
+
+    crop.png
+       │
+       ├─ bin/vision-ocr      Apple Vision, Neural Engine, on THIS Mac.
+       │                      Turns the pixels into text. For a whiteboard, a
+       │                      terminal, an error dialog or a form, this is most of
+       │                      the meaning.
+       │
+       └─ bin/fm-submit       Apple FoundationModels, on the Mini over Syncthing
+                              (macOS 26 only, this laptop is 15.x). Reads the text
+                              and answers the question.
+
+If the model is unreachable the OCR itself is the answer — degraded, but still
+useful, and it says so rather than pretending.
+
+Exit 0 with the answer on stdout. Anything on stderr is diagnostics.
+"""
+
+import os
+import subprocess
+import sys
+
+BIN = os.path.dirname(os.path.realpath(__file__))
+DEFAULT_QUESTION = "What is this, and is anything wrong with it?"
+OCR_LIMIT = 4000        # keep the prompt sane; a screen region is never a novel
+TIMEOUT_OCR = 45
+# Short on purpose. The model lives on the Mini across Syncthing, and when that
+# transport is blocked (classically: this laptop under Syncthing's minDiskFree
+# guard) a long timeout turns "no answer" into a two-minute hang with a "thinking…"
+# bubble stuck on screen. Fail fast, say why, show the OCR.
+TIMEOUT_MODEL = 30
+HEALTH = os.path.expanduser("~/work/comms/queue/fm-health.json")
+HEARTBEAT = os.path.expanduser("~/work/comms/queue/fm-worker-heartbeat.json")
+STALE_AFTER = 120       # seconds; the worker beats every few seconds when alive
+
+
+def run(argv, timeout, stdin_text=None):
+    """Run a tool, return (ok, output). Never raises — a broken link in the chain
+    must degrade to a readable message, not a traceback on the user's screen."""
+    try:
+        p = subprocess.run(argv, capture_output=True, text=True,
+                           timeout=timeout, input=stdin_text)
+        out = (p.stdout or "").strip()
+        if p.returncode != 0:
+            return False, (p.stderr or out or f"exit {p.returncode}").strip()
+        return True, out
+    except subprocess.TimeoutExpired:
+        return False, f"timed out after {timeout}s"
+    except FileNotFoundError:
+        return False, f"{argv[0]} not found"
+    except Exception as e:                                  # noqa: BLE001
+        return False, str(e)
+
+
+def ocr(png):
+    ok, text = run([os.path.join(BIN, "vision-ocr"), png], TIMEOUT_OCR)
+    if not ok:
+        print(f"overlay-ask: OCR failed: {text}", file=sys.stderr)
+        return ""
+    return text.strip()
+
+
+def classify(png, floor=0.25, keep=6):
+    """What the region LOOKS like, via Vision's image classifier.
+
+    OCR alone answers "what does it say", which is the wrong question for a
+    whiteboard, a diagram or a photo — exactly the case this whole overlay exists
+    for. Apple's on-device FoundationModels is text-only and cannot see a picture,
+    so classification labels are how a drawing gets described to it at all. Shallow
+    compared to a real vision-language model, but on-device, instant, and honest."""
+    ok, out = run([os.path.join(BIN, "vision-ocr"), "--classify", png], TIMEOUT_OCR)
+    if not ok:
+        return []
+    labels = []
+    for line in out.splitlines():
+        parts = line.split("\t")
+        if len(parts) != 2:
+            continue
+        try:
+            score = float(parts[1])
+        except ValueError:
+            continue
+        if score >= floor:
+            labels.append(f"{parts[0]} ({score:.2f})")
+    return labels[:keep]
+
+
+def model_reachable():
+    """Is the Mini's FoundationModels worker actually going to answer?
+
+    Checked BEFORE submitting, because the failure is common and silent: the
+    heartbeat is a Syncthing-mirrored file, so a stale one means either the worker
+    stopped or the transport is blocked. Either way, submitting would just hang.
+    Returns (ok, reason)."""
+    import time
+    try:
+        age = time.time() - os.path.getmtime(HEARTBEAT)
+    except OSError:
+        return False, "no FM worker heartbeat on this machine"
+    if age > STALE_AFTER:
+        return False, (f"FM worker heartbeat is {int(age)}s stale — the Mini or the "
+                       f"Syncthing bridge is down (try: bridge-doctor)")
+    return True, ""
+
+
+def ask_model(question, seen, looks):
+    """Ask the on-device model on whichever node has FoundationModels.
+
+    fm-submit routes to the Mini over Syncthing, so this works from the laptop even
+    though the laptop itself is too old for FoundationModels."""
+    prompt = (
+        "You are looking at a region of a Mac screen that the user circled. "
+        "You cannot see the image. You are given two on-device Vision readings of "
+        "it: the text found inside it, and what the image classifier thinks it "
+        "looks like.\n\n"
+        f"--- text found ---\n{seen[:OCR_LIMIT] or '(none)'}\n"
+        f"--- looks like ---\n{', '.join(looks) or '(no confident labels)'}\n"
+        "--- end ---\n\n"
+        f"Question: {question}\n\n"
+        "Answer in ONE short sentence. Be concrete. Do not invent detail that is "
+        "not supported by the two readings; if they are too thin to answer, say so."
+    )
+    for tool in ("fm-submit", "fm"):
+        path = os.path.join(BIN, tool)
+        if not os.path.exists(path):
+            continue
+        ok, out = run([path, prompt], TIMEOUT_MODEL)
+        if ok and out:
+            return out
+        print(f"overlay-ask: {tool} unavailable: {out}", file=sys.stderr)
+    return ""
+
+
+def main(argv):
+    if len(argv) < 2 or argv[1] in ("-h", "--help"):
+        print(__doc__)
+        return 0
+
+    png = argv[1]
+    if not os.path.exists(png):
+        print(f"no such crop: {png}", file=sys.stderr)
+        return 2
+
+    question = DEFAULT_QUESTION
+    if "--question" in argv:
+        i = argv.index("--question")
+        if i + 1 < len(argv):
+            question = argv[i + 1]
+
+    seen = ocr(png)
+    looks = classify(png)
+    if "--raw" in argv:
+        print(seen)
+        if looks:
+            print("\nlooks like: " + ", ".join(looks))
+        return 0
+
+    if not seen and not looks:
+        print("Nothing readable and nothing recognisable in that region.")
+        return 0
+
+    reachable, why = model_reachable()
+    answer = ask_model(question, seen, looks) if reachable else ""
+    if answer:
+        print(answer)
+    else:
+        # Degrade honestly: name the reason, then give what we DO have. An answer
+        # that quietly pretends the model spoke would be worse than no answer.
+        reason = why or "model gave no answer"
+        if seen:
+            print(f"[{reason}] read: " + " ".join(seen.split())[:130])
+        else:
+            print(f"[{reason}] looks like: " + ", ".join(looks[:4]))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

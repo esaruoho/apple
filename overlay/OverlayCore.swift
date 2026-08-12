@@ -591,5 +591,7 @@ public enum OverlayPaths {
     }
     public static var store: URL { root.appendingPathComponent("store") }
     public static var inbox: URL { root.appendingPathComponent("inbox") }
+    /// Screen crops taken by "ask", kept so an answer can be traced to a picture.
+    public static var asks: URL { root.appendingPathComponent("asks") }
     public static var session: URL { store.appendingPathComponent("session.json") }
 }
