@@ -192,6 +192,26 @@ def _is_wiki_refusal(t):
 # the required '## Thought about it' heading within this pass. The poll loop treats it as "not
 # sendable yet": it does NOT send and does NOT mark the email seen, so the next poll retries it fresh.
 TRY_FLOOR = 12                 # attempts the viewpoint template gets; compose lowers it (see fm_research)
+
+# The four sections that used to be a SEPARATE email from `convey email-transcript --analyze`. They
+# only make sense when there is material (a transcript, a document) — a bare question has nothing to
+# quote. Folded in here so one email carries everything (Esa, 2026-08-12: "its super important we
+# dont lose any of the three specific individual features, but that we only have one mailer system").
+MATERIAL_SECTIONS = (
+    "## Summary\n(2-4 sentences: what this material IS, who is speaking, and about what)\n"
+    "## Key points\n(5-9 bullets, each a concrete claim, measurement or step from the material itself)\n"
+    "## Notable quotes\n(2-5 verbatim quotes from the material, each in quotation marks. Quote ONLY "
+    "what is actually there — never invent or paraphrase into quotation marks.)\n"
+    "## People & entities mentioned\n(bullets: people, devices, companies, papers named in the "
+    "material, each with a few words on their role. Omit the section's bullets rather than invent.)\n")
+
+# EVERY heading the viewpoint template promises is now CHECKED. The prompt has always said "A reply
+# missing any of these headings is rejected and regenerated" — but only "Thought about it" was ever
+# verified in code, which is exactly why Prigogine kept vanishing from the emails and nobody noticed
+# (Esa, 2026-08-12: "where was prigogine from freellmask-mail???").
+TONE_HEADINGS = ["In Walter Russell's tone", "In Tom Bearden's tone", "In Ilya Prigogine's tone",
+                 "In Hilarion's tone", "In the skeptical closed-system electrical engineer's tone"]
+MATERIAL_HEADINGS = ["Summary", "Key points", "Notable quotes", "People & entities mentioned"]
 REQUEUE_NO_THINKING = "\x00REQUEUE-NO-THINKING\x00"
 # Returned when the model BAILED ('please provide the content') despite content being available — the
 # poll loop re-queues (does not send the bail) and debug-logs it for inspection.
@@ -212,7 +232,8 @@ def _is_failure_answer(t):
     if len(tl)>900: return False
     return bool(_FAILURE_RE.search(tl))
 
-def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint="", lens="", model_override=""):
+def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint="", lens="",
+                model_override="", material=False):
     """Answer an email via FreeLLMAPI, GATED for clean output. The WIKI CONTEXT (if any) and the
     VIEWPOINT AUGMENT the answer — they NEVER gate it. The model uses the wiki + attachments + its
     OWN knowledge and ALWAYS gives a full answer; it must not refuse for lack of wiki coverage."""
@@ -238,6 +259,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "## Thought about it\n(4-7 sentences of GENUINE reasoning — how you're approaching it, what connects "
           "across the sources, where the tension is. Think out loud, here only.)\n"
           "## Answer\n(the substantive, concrete analysis — grounded in the wiki context + your knowledge)\n"
+          + (MATERIAL_SECTIONS if material else "") +
           "## In Walter Russell's tone\n(2-4 sentences in Russell's cadence: universe as rhythmic balanced "
           "interchange of two opposed lights, giving and re-giving, all motion spiral/vortular, no dead matter, love as the balancing act)\n"
           "## In Tom Bearden's tone\n(2-4 sentences in Bearden's cadence: scalar/longitudinal EM potentials, "
@@ -250,7 +272,17 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "it from a perpetuum mobile, which the second law still forbids — that honest boundary is the point, "
           "never dropped.)\n"
           "## In Hilarion's tone\n(2-4 sentences in the Hilarion channel's cadence: one living substance, "
-          "consciousness as ground, gentle didactic cosmology — everything a modulation of the one energy)")
+          "consciousness as ground, gentle didactic cosmology — everything a modulation of the one energy)\n"
+          # The eleventh voice, LAST on purpose (Esa, 2026-08-12). Rigorous, not dismissive: it demands
+          # the books balance and names the measurement that would settle it. It is ONE lens of eleven
+          # and it speaks after the open-system readings — it never becomes the frame they are judged by.
+          "## In the skeptical closed-system electrical engineer's tone\n(3-5 sentences from a working "
+          "EE who wants the energy books to balance: what is on the INPUT side that is not being "
+          "metered (the supply's own draw, bias, drive, standby), what a single clamp meter cannot see "
+          "(phase, harmonics, RF, common-mode), and the ONE measurement that would settle it — "
+          "calorimetry over an hour, joules out minus joules in, both ports metered. Name the step "
+          "where this class of claim usually dies. Be specific and testable; do NOT declare it "
+          "impossible and do NOT argue from the ceiling — say what would falsify it.)")
         sysm=viewpoint+"\n\n"+base+struct
     elif viewpoint:
         sysm=(viewpoint+"\n\n"+base+
@@ -296,12 +328,25 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     # nemotron drops it ~1/3 of the time. We NEVER send without it and NEVER fabricate it: we
     # regenerate for the whole (enlarged) budget, and if it still won't comply this pass we return
     # REQUEUE_NO_THINKING so the poll loop leaves the email unseen and a later poll retries it fresh.
+    required = (["Thought about it", "Answer"]
+                + (MATERIAL_HEADINGS if material else [])
+                + TONE_HEADINGS) if (viewpoint and voices_on) else []
+
+    def _missing_headings(t):
+        """Which promised headings are absent. The template claims all of them are mandatory; until
+        2026-08-12 only 'Thought about it' was checked, so Prigogine (and any other tone) could be
+        silently dropped and the reply still shipped."""
+        out = []
+        for h in required:
+            pat = r'(?im)^\s*#{1,3}\s*' + re.escape(h).replace(r"\ ", r"\s+") + r"\b"
+            if re.search(pat, t or "") is None:
+                out.append(h)
+        return out
+
     def _missing_thinking(t):
-        if not (viewpoint and voices_on): return False
-        return re.search(r'(?im)^\s*#{1,3}\s*thought about it\b', t) is None
-    NUDGE=("\n\nREMINDER: your previous reply omitted the required '## Thought about it' section. Begin THIS reply "
-           "with the literal heading '## Thought about it' followed by 4-7 sentences of genuine reasoning, THEN the "
-           "'## Answer' and the tone sections. Do not skip it.")
+        return bool(_missing_headings(t))
+    NUDGE=("\n\nREMINDER: your previous reply OMITTED required section(s). Every heading in the template is "
+           "mandatory and is checked: emit each one, verbatim, in order, and never merge or rename them.")
     # The six-heading template makes nemotron drop the required heading ~1/3 of the time, so the poll
     # loop gives it 12 attempts — fine when a human is waiting for a reply, fatal for a BELT email:
     # 12 × ~60s ran past a 900s timeout and the transcript was never answered at all (2026-08-11).
@@ -320,8 +365,11 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             cur=msgs_nowiki; continue
         if has_content and _is_failure_answer(ans):   # model BAILED though content exists → retry, never send the bail
             saw_failure=True; cur=msgs_nowiki; continue
-        if _missing_thinking(ans):         # clean but no thinking heading → REGENERATE, never accept, never fake
-            cur=[{"role":"system","content":sysm+NUDGE},{"role":"user","content":cur[1]["content"]}]
+        miss = _missing_headings(ans)
+        if miss:                           # any promised heading absent → REGENERATE, never ship partial
+            print(f"      ↻ missing section(s): {', '.join(miss)}", flush=True)
+            nudge = NUDGE + "\nMISSING THIS TIME: " + "; ".join(f"## {m}" for m in miss)
+            cur=[{"role":"system","content":sysm+nudge},{"role":"user","content":cur[1]["content"]}]
             continue
         return ans, used                   # has the thinking heading (or off-corpus) → sendable
     if saw_failure:                        # kept bailing despite content → re-queue + debug-log, don't send
@@ -1900,7 +1948,8 @@ def poll_once(verbose=True):
     st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
     return new
 
-def compose_and_send(to, subject, body_text, source="", label="", verbose=True, tries=4):
+def compose_and_send(to, subject, body_text, source="", label="", verbose=True, tries=4,
+                     legs_from="", attach=""):
     """THE ONE ANSWER FORMAT, callable from outside the poll loop.
 
     Esa, 2026-08-10, holding three different-looking emails from the same system: "i have
@@ -1947,7 +1996,8 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
     global TRY_FLOOR
     _floor, TRY_FLOOR = TRY_FLOOR, max(1, tries)          # bounded for the belt, restored after
     try:
-        answer, used = fm_research(question, "", body_text, wiki_ctx=wctx, viewpoint=vp, tries=tries)
+        answer, used = fm_research(question, "", body_text, wiki_ctx=wctx, viewpoint=vp, tries=tries,
+                                   material=True)         # there is always material in a compose
     finally:
         TRY_FLOOR = _floor
     if answer is REQUEUE_NO_THINKING or answer is REQUEUE_FAILED:
@@ -1960,13 +2010,55 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
     # unification is fixing. Caught by reading the first composed email (2026-08-11).
     if answer.startswith("I wasn't able to generate a reliable answer"):
         return False, "the brain never produced a usable answer — NOT sending an apology as an analysis"
+    # THE MACHINE LEGS — the third mailer's whole contribution, folded in rather than lost. `convey
+    # soft` writes <stem>.fm-mlx.analysis.md and <stem>.freellmapi.analysis.md beside the source; we
+    # run it WITHOUT --email (that path now calls back into here, which would loop) and paste both.
+    legs_md = ""
+    if legs_from and Path(legs_from).exists():
+        try:
+            src = Path(legs_from)
+            have = [src.with_name(src.stem + x) for x in (".fm-mlx.analysis.md",
+                                                          ".freellmapi.analysis.md")]
+            if not all(x.exists() for x in have):
+                # `convey soft` recomputes by default, so only pay for the two model calls when the
+                # legs are not already on disk beside the source.
+                subprocess.run([str(Path.home()/"work"/"apple"/"bin"/"convey"), "soft", str(src)],
+                               capture_output=True, text=True, timeout=900)
+            elif verbose:
+                print("  🦿 machine legs already on disk — reusing (no extra model calls)")
+            for stem, icon, who in ((".fm-mlx.analysis.md", "🖥️", "fm-mlx (Qwen3-4B)"),
+                                    (".freellmapi.analysis.md", "🌐", "freellmapi (nemotron-120b)")):
+                leg = src.with_name(src.stem + stem)
+                if leg.exists():
+                    body = leg.read_text(encoding="utf-8", errors="replace")
+                    body = re.sub(r"(?s)^#.*?\n\n", "", body, count=1)      # drop its own title block
+                    legs_md += f"\n\n### {icon} {who}\n\n{body.strip()}"
+            if verbose:
+                print(f"  🦿 machine legs: {'both' if legs_md.count('###')==2 else legs_md.count('###')} attached")
+        except Exception as e:
+            if verbose: print(f"  machine-legs error: {e}")
     note = ""
+    if legs_md:
+        note += ("\n\n---\n## Appendix · machine legs\n\n_The two cheap machine reads, kept beside "
+                 "the source as well. They are the record, not the payoff._" + legs_md)
     if source:
-        note = f"\n\n---\n▶ Source: {source}"
+        note += f"\n\n---\n▶ Source: {source}"
     if label:
         note += f"\n📄 {label}"
     text = answer + note
     payload = {"to": [to], "subject": subject, "text": text, "html": md_to_html(text)}
+    # ATTACH the material itself — the first mailer always did, and losing it would lose a feature.
+    if attach and Path(attach).exists():
+        try:
+            import base64 as _b64
+            ap_ = Path(attach)
+            if ap_.stat().st_size <= 20 * 1024 * 1024:
+                payload["attachments"] = [{"filename": ap_.name,
+                                           "content_type": "text/plain" if ap_.suffix in (".txt", ".md")
+                                           else "application/octet-stream",
+                                           "content": _b64.b64encode(ap_.read_bytes()).decode()}]
+        except Exception as e:
+            if verbose: print(f"  attach error: {e}")
     if BCC and BCC.lower() != (to or "").lower():
         payload["bcc"] = [BCC]
     try:
@@ -1989,6 +2081,10 @@ def main():
         ap.add_argument("--source", default="", help="the URL or origin, printed under the answer")
         ap.add_argument("--label", default="", help="a line noting the artifact (e.g. the transcript path)")
         ap.add_argument("--max-chars", type=int, default=120000)
+        ap.add_argument("--legs-from", dest="legs_from", default="",
+                        help="run `convey soft` on this file and append both machine legs (fm-mlx + "
+                             "freellmapi) as an appendix")
+        ap.add_argument("--attach", default="", help="attach this file to the email")
         ap.add_argument("--tries", type=int, default=4,
                         help="attempts at the required shape before giving up (default 4; the poll "
                              "loop uses 12, which is too slow for a belt email)")
@@ -1997,7 +2093,9 @@ def main():
         if a.file:
             body = Path(a.file).expanduser().read_text(errors="replace")
         ok, info = compose_and_send(a.to, a.subject, body[:a.max_chars], source=a.source,
-                                    label=a.label, tries=a.tries)
+                                    label=a.label, tries=a.tries,
+                                    legs_from=(a.legs_from or (a.file if a.file else "")),
+                                    attach=(a.attach or (a.file if a.file else "")))
         print(("✅ sent (" + str(info) + ")") if ok else ("✗ " + str(info)))
         return 0 if ok else 1
     if cmd=="status":
