@@ -55,9 +55,28 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-echo "==> Ad-hoc signing..."
-codesign --force --deep --sign - "$APP" 2>/dev/null || \
-    echo "   (codesign skipped — unsigned build still runs locally)"
+# Signing identity matters more here than it looks.
+#
+# Overlay needs Screen Recording. TCC remembers that grant against the app's code
+# identity — and for an AD-HOC signature (`codesign -s -`) that identity includes the
+# code hash, which changes on every single build. Result: you grant Screen Recording,
+# the next rebuild silently voids it, the toggle still reads ON in System Settings,
+# and macOS quietly hands the app the DESKTOP WALLPAPER instead of the screen.
+#
+# A real signing identity has a stable designated requirement (team + bundle id), so
+# the grant survives rebuilds. Use one if the machine has one; fall back to ad-hoc
+# with a loud warning, because the fallback has that nasty failure mode.
+IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
+            | grep -m1 -o '"Apple Development: [^"]*"' | tr -d '"')"
+if [ -n "$IDENTITY" ]; then
+    echo "==> Signing with: $IDENTITY"
+    codesign --force --deep --sign "$IDENTITY" "$APP"
+else
+    echo "==> Ad-hoc signing (no developer identity found)"
+    echo "    WARNING: Screen Recording permission will be lost on every rebuild."
+    codesign --force --deep --sign - "$APP" 2>/dev/null || \
+        echo "   (codesign skipped — unsigned build still runs locally)"
+fi
 
 # Launch Services caches Info.plist; without this the old bundle's metadata sticks
 # around (feedback_lsregister_after_app_bundle_changes).

@@ -964,7 +964,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.showHelp(nil)
             }
 
-        NSLog("Overlay: ready — ⌃⌥⌘D toggles draw mode")
+        NSLog("Overlay: ready — ⌃⌥⌘D toggles draw mode; "
+            + "screenRecording=\(CGPreflightScreenCaptureAccess())")
     }
 
     // ── menu bar ──
@@ -1096,6 +1097,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         // "ask about the last thing I drew" — same entry point as ⌘Return in draw
         // mode, so the CLI and the keyboard cannot drift apart.
+        center.addObserver(forName: OverlayControl.probe, object: nil, queue: .main) {
+            [weak self] _ in
+            // Ground truth: capture the full screen ignoring the preflight, so the
+            // PNG itself can be inspected for whether any window is present. The
+            // preflight API and the actual capture can disagree for an ad-hoc app.
+            let out = "/tmp/overlay-probe.png"
+            for c in self?.manager.canvases ?? [] { c.panel.alphaValue = 0 }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                let p = Process()
+                p.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
+                p.arguments = ["-x", out]
+                var env = ProcessInfo.processInfo.environment
+                env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin"
+                p.environment = env
+                try? p.run(); p.waitUntilExit()
+                for c in self?.manager.canvases ?? [] { c.panel.alphaValue = 1 }
+                NSLog("Overlay: probe capture -> \(out) exit=\(p.terminationStatus) "
+                    + "preflight=\(CGPreflightScreenCaptureAccess())")
+            }
+        }
         center.addObserver(forName: OverlayControl.ask, object: nil, queue: .main) {
             [weak self] note in
             let question = (note.object as? String).flatMap { $0.isEmpty ? nil : $0 }
