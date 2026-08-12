@@ -173,6 +173,18 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
                 try: wait=max(RL_WAIT, int(ra)) if ra else RL_WAIT
                 except (ValueError, TypeError): wait=RL_WAIT
                 time.sleep(wait); continue
+            # 5xx = the gateway itself faltering (502 Bad Gateway is routine on the free leg,
+            # especially on big payloads), NOT a bad request. Until 2026-08-12 only 429 was retried,
+            # so a transient 502 killed the attempt outright — and since every rejection path was
+            # silent, twelve attempts of pure gateway noise were reported as "the model would not
+            # produce the required shape". The model never got the chance to produce anything.
+            if e.code in (500, 502, 503, 504) and attempt < 5:
+                time.sleep(min(60, 5 * (2 ** attempt))); continue
+            raise
+        except (urllib.error.URLError, TimeoutError) as e:
+            # A dropped connection or a read timeout is the same class of event: the gateway, not us.
+            if attempt < 5:
+                time.sleep(min(60, 5 * (2 ** attempt))); continue
             raise
     return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
 
