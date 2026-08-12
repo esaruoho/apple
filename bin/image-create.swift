@@ -75,6 +75,9 @@ if let rf = popValue(["--result-file"]) {
 let checkOnly = args.contains("--check"); args.removeAll { $0 == "--check" }
 let styleName = popValue(["--style", "-s"])
 let outPath   = popValue(["--output", "-o"])
+// A sketch to build from: the drawing IS the subject, not a description
+// of it. ImagePlaygroundConcept.image(CGImage) is the documented route.
+let fromImagePath = popValue(["--from-image"])
 let limitStr  = popValue(["--limit", "-n"])
 let limit     = max(1, Int(limitStr ?? "1") ?? 1)
 // The on-device generator intermittently throws a vague "The image creation
@@ -132,8 +135,9 @@ func run() async {
         print("styles: " + available.map { "\($0)" }.joined(separator: ", "))
         exit(0)
     }
-    guard !prompt.isEmpty else {
-        die("usage: image-create \"a tiger\" -o tiger.png   ·   image-create --check", 2)
+    guard !prompt.isEmpty || fromImagePath != nil else {
+        die("usage: image-create \"a tiger\" -o tiger.png   ·   " +
+            "image-create --from-image sketch.png -o out.png   ·   image-create --check", 2)
     }
 
     let style = styleFor(styleName, available: available)
@@ -142,7 +146,20 @@ func run() async {
     var lastError: Error?
     for attempt in 1...retries {
         do {
-            let stream = creator.images(for: [.text(prompt)], style: style, limit: limit)
+            // Concepts, in the order Image Playground should weigh them. A sketch
+            // supplied with --from-image is THE subject: the user drew a cube and
+            // wants a cube, not a picture of the words "a cube".
+            var concepts: [ImagePlaygroundConcept] = []
+            if let sketch = fromImagePath {
+                guard let src = CGImageSourceCreateWithURL(
+                        URL(fileURLWithPath: sketch) as CFURL, nil),
+                      let cg = CGImageSourceCreateImageAtIndex(src, 0, nil) else {
+                    die("image-create: cannot read --from-image \(sketch)", 2)
+                }
+                concepts.append(.image(cg))
+            }
+            if !prompt.isEmpty { concepts.append(.text(prompt)) }
+            let stream = creator.images(for: concepts, style: style, limit: limit)
             var saved = 0
             for try await created in stream {
                 let path = saved == 0 ? out : numbered(out, saved)

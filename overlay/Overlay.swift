@@ -57,7 +57,9 @@ final class InkView: NSView {
     /// primary gesture of this app is "this bit", not "draw me a picture". `f`
     /// switches to freehand ink.
     enum Tool { case region, ink }
-    var tool: Tool = .region
+    /// The pen is the default: "draw a cube and get a cube" is the headline, and a
+    /// marquee is the secondary gesture for asking about part of the screen (`r`).
+    var tool: Tool = .ink
 
     /// The last selected rectangle, and the on-screen buttons acting on it. Buttons
     /// are painted by draw() and hit-tested by mouseDown, so they are always where
@@ -158,7 +160,8 @@ final class InkView: NSView {
     ///   Ask about this   crop → Vision OCR → FoundationModels → answer at the region
     ///   Make an image    crop → prompt → Image Playground → picture INTO the region
     private func drawRegionActions(for region: CGRect) {
-        let titles = ["Ask about this  ⌘⏎", "Make an image  ⌥⏎"]
+        let titles = [tool == .ink ? "Ask about this  ⌘⏎" : "Ask about this  ⌘⏎",
+                      tool == .ink ? "Render my drawing  ⌥⏎" : "Make an image  ⌥⏎"]
         let font = NSFont.systemFont(ofSize: 13, weight: .semibold)
         let attrs: [NSAttributedString.Key: Any] = [.font: font,
                                                     .foregroundColor: NSColor.white]
@@ -413,8 +416,8 @@ final class InkView: NSView {
         border.stroke()
 
         let text = tool == .region
-            ? "SELECT A REGION  ·  drag a box, then click a button  ·  f freehand  ·  esc exit"
-            : "FREEHAND  ·  a drawn square becomes a region  ·  r select  ·  1-6 colour  ·  esc exit"
+            ? "SELECT A REGION  ·  drag a box, then click a button  ·  f draw instead  ·  esc exit"
+            : "DRAW  ·  sketch something, then Render my drawing  ·  r select a region  ·  1-6 colour  ·  esc exit"
         let attrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .semibold),
             .foregroundColor: NSColor.white,
@@ -551,9 +554,18 @@ final class InkView: NSView {
         }
 
         store.add(object)
-        // Anything with a real area is askable, so the button appears the moment you
-        // let go — rather than an invisible keystroke the user has to be told about.
-        askableRegion = object.kind == .box ? object.rect : nil
+        // Buttons appear the moment you let go — for a marquee, over the marquee; for
+        // ink, over the WHOLE drawing so far, because a cube is several strokes and
+        // the action applies to the drawing, not to the last line of it.
+        if object.kind == .box {
+            askableRegion = object.rect
+        } else {
+            var box = CGRect.null
+            for o in store.objects where o.kind == .ink || o.kind == .line {
+                box = box.isNull ? o.bounds : box.union(o.bounds)
+            }
+            askableRegion = box.isNull ? nil : box.insetBy(dx: -12, dy: -12)
+        }
         needsDisplay = true
         manager?.persist()
     }
@@ -938,7 +950,103 @@ final class OverlayManager {
 
     /// Generate a picture from the selected region and drop it INTO that region.
     /// Same capture path as ask; different tool on the other end.
+    /// Rasterise the human's own ink to a white-background PNG.
+    ///
+    /// This is what makes "draw a cube, get a cube" work: Image Playground accepts
+    /// the drawing itself as a concept, so nothing has to put the word "cube" into
+    /// words. No screenshot, no OCR, no Screen Recording grant — just the strokes.
+    private func rasterizeInk(_ objects: [OverlayObject], pad: CGFloat = 24) -> (URL, CGRect)? {
+        let strokes = objects.filter { $0.kind == .ink || $0.kind == .line }
+        guard !strokes.isEmpty else { return nil }
+
+        var box = CGRect.null
+        for o in strokes { box = box.isNull ? o.bounds : box.union(o.bounds) }
+        guard !box.isNull, box.width > 4, box.height > 4 else { return nil }
+        let frame = box.insetBy(dx: -pad, dy: -pad)
+
+        let image = NSImage(size: frame.size)
+        image.lockFocus()
+        // White, not clear: the generator reads this as a sketch on paper, and a
+        // transparent background composites to black and swamps the drawing.
+        NSColor.white.setFill()
+        NSBezierPath(rect: CGRect(origin: .zero, size: frame.size)).fill()
+        NSColor.black.setStroke()
+        for o in strokes {
+            guard o.points.count > 1 else { continue }
+            let path = NSBezierPath()
+            // Thin ink barely registers; the drawn weight is a UI choice, not intent.
+            path.lineWidth = max(5, CGFloat(o.width) * 1.6)
+            path.lineCapStyle = .round
+            path.lineJoinStyle = .round
+            path.move(to: CGPoint(x: o.points[0].x - frame.minX,
+                                  y: o.points[0].y - frame.minY))
+            for p in o.points.dropFirst() {
+                path.line(to: CGPoint(x: p.x - frame.minX, y: p.y - frame.minY))
+            }
+            path.stroke()
+        }
+        image.unlockFocus()
+
+        guard let tiff = image.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let png = rep.representation(using: .png, properties: [:]) else { return nil }
+        let url = OverlayPaths.asks
+            .appendingPathComponent("drawing-\(Int(Date().timeIntervalSince1970)).png")
+        try? FileManager.default.createDirectory(at: OverlayPaths.asks,
+                                                 withIntermediateDirectories: true)
+        do { try png.write(to: url) } catch { return nil }
+        return (url, frame)
+    }
+
     func imagineLastRegion(prompt: String? = nil) {
+        // If there is ink on this canvas, THE DRAWING IS THE SUBJECT. Only fall back
+        // to photographing the screen when the user selected a region instead of
+        // drawing something.
+        if let canvas = here.first(where: { !$0.view.store.objects.isEmpty }),
+           let (png, frame) = rasterizeInk(canvas.view.store.objects) {
+            let placeholder = OverlayObject(
+                kind: .callout,
+                points: [CGPoint(x: frame.midX, y: frame.midY),
+                         CGPoint(x: frame.midX, y: frame.maxY + 46)],
+                colorHex: "#AF52DE", width: 3, actor: "agent:imagine",
+                lifetime: .session, anchor: OverlayAnchor(type: .screen),
+                text: "rendering your drawing…")
+            canvas.view.store.add(placeholder)
+            canvas.view.needsDisplay = true
+
+            runTool("/Users/esaruoho/work/apple/bin/overlay-imagine",
+                    args: [png.path, "--from-drawing"]
+                        + (prompt.map { ["--prompt", $0] } ?? [])) { output in
+                canvas.view.store.remove(id: placeholder.id)
+                let path = output.split(separator: "\n").last.map(String.init) ?? ""
+                if FileManager.default.fileExists(atPath: path) {
+                    // The render replaces the sketch, in the same place and at the
+                    // same size — you drew a cube there, now a cube is there.
+                    for o in canvas.view.store.objects
+                        where (o.kind == .ink || o.kind == .line) && o.actor.hasPrefix("human:") {
+                        canvas.view.store.remove(id: o.id)
+                    }
+                    canvas.view.store.add(OverlayObject(
+                        kind: .image,
+                        points: [frame.origin, CGPoint(x: frame.maxX, y: frame.maxY)],
+                        colorHex: "#AF52DE", width: 2, actor: "agent:imagine",
+                        lifetime: .session,
+                        anchor: OverlayAnchor(type: .screen), imagePath: path))
+                } else {
+                    canvas.view.store.add(OverlayObject(
+                        kind: .callout,
+                        points: [CGPoint(x: frame.midX, y: frame.midY),
+                                 CGPoint(x: frame.midX, y: frame.maxY + 46)],
+                        colorHex: "#FF9F0A", width: 3, actor: "agent:imagine",
+                        lifetime: .session, anchor: OverlayAnchor(type: .screen),
+                        text: OverlayManager.wrap(output)))
+                }
+                canvas.view.needsDisplay = true
+                self.persist()
+            }
+            return
+        }
+
         captureLastRegion(waiting: "imagining…", waitColor: "#AF52DE") {
             png, region, canvas, placeholder in
             self.runTool("/Users/esaruoho/work/apple/bin/overlay-imagine",

@@ -132,6 +132,26 @@ def main(argv):
     prompt = flag("--prompt")
     style = flag("--style", "illustration")
 
+    # --from-drawing: the PNG is the user's OWN ink, not a screenshot. Image
+    # Playground takes it as ImagePlaygroundConcept.image, so a drawn cube becomes a
+    # rendered cube with no words involved at any point. This is the whole idea:
+    # the drawing IS the prompt.
+    if "--from-drawing" in argv:
+        os.makedirs(OUT_DIR, exist_ok=True)
+        out = flag("-o", os.path.join(OUT_DIR, f"gen-{int(time.time())}.png"))
+        cmd = [os.path.join(BIN, "image-create"), "--from-image", png,
+               "-o", out, "-s", style, "--no-open"]
+        if prompt:
+            cmd.insert(1, prompt)
+        ok, err = run(cmd, TIMEOUT_IMAGE)
+        if not ok or not os.path.exists(out):
+            print("Image Playground could not build on that drawing — try a bolder, "
+                  "simpler shape")
+            print(f"image-create said: {err}", file=sys.stderr)
+            return 0
+        print(out)
+        return 0
+
     if not prompt:
         seen, labels = read_region(png)
         prompt = distil(seen, labels)

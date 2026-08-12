@@ -8,6 +8,7 @@
 #
 #   image-create robot                    → robot.png in the cwd, then opens it
 #   image-create "a tiger" -o tiger.png   pick the filename
+#   image-create --from-image sketch.png -o out.png   build FROM a drawing
 #   image-create "a tiger" -s sketch      pick a style (animation|illustration|sketch)
 #   image-create "a tiger" --no-open      don't auto-open the result
 #   image-create --check                  availability + styles
@@ -62,6 +63,10 @@ while [ $# -gt 0 ]; do
       DO_OPEN=1; shift ;;          # wrapper-only flags — not forwarded to the app
     --no-open)
       DO_OPEN=0; shift ;;
+    --from-image)
+      # Must be absolutised: `open --args` launches the app with a different cwd,
+      # so a relative sketch path would simply not exist by the time it is read.
+      ARGS+=("--from-image" "$(abspath "${2:-}")"); shift 2 ;;
     -s|--style|-n|--limit|--retries)
       ARGS+=("$1" "${2:-}"); shift 2 ;;
     -*)
