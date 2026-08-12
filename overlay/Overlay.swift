@@ -713,6 +713,41 @@ final class OverlayManager {
     ///   4. restore the canvases, drop a "thinking" mark so something visibly happens
     ///   5. hand the PNG to bin/overlay-ask, which OCRs it and asks a model, then
     ///      posts the answer back through the ordinary inbox as a callout
+    /// Screen Recording is not optional for "ask", and its failure mode is vicious.
+    ///
+    /// Without the grant macOS does NOT refuse the screenshot — it hands back the
+    /// desktop with every window stripped out. So the crop looks plausible, the OCR
+    /// succeeds, and the answer confidently describes the user's WALLPAPER. Esa spent
+    /// a morning being told his screen said "WORLD WIRELESS" because that is what his
+    /// desktop picture says.
+    ///
+    /// Note the ad-hoc signature caveat: `codesign -s -` gives a new cdhash on every
+    /// rebuild, so TCC forgets the grant each time Overlay.app is rebuilt and it must
+    /// be re-added. That is why this checks on every ask rather than once at launch.
+    private func hasScreenRecording() -> Bool {
+        if CGPreflightScreenCaptureAccess() { return true }
+        // Fires the system prompt the first time; a no-op once the user has answered.
+        _ = CGRequestScreenCaptureAccess()
+        return CGPreflightScreenCaptureAccess()
+    }
+
+    private func demandScreenRecording(on canvas: Canvas, at region: CGRect) {
+        canvas.view.store.add(OverlayObject(
+            kind: .callout,
+            points: [CGPoint(x: region.midX, y: region.midY),
+                     CGPoint(x: region.midX, y: region.maxY + 46)],
+            colorHex: "#FF9F0A", width: 3, actor: "agent:ask",
+            lifetime: .session, anchor: OverlayAnchor(type: .screen),
+            text: "Grant Overlay Screen Recording — without it macOS returns your "
+                + "wallpaper, not your screen. Opening Settings…"))
+        canvas.view.needsDisplay = true
+        persist()
+        NSWorkspace.shared.open(URL(string:
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")!)
+        NSLog("Overlay: ask blocked — no Screen Recording grant; captures would be "
+            + "desktop-only. Re-add Overlay.app after every rebuild (ad-hoc signed).")
+    }
+
     func askLastRegion(question: String? = nil) {
         guard let canvas = here.first(where: { !$0.view.store.objects.isEmpty })
                         ?? here.first,
@@ -724,6 +759,13 @@ final class OverlayManager {
         let crop = last.cropRect(in: canvas.view.bounds, pad: 8)
         guard crop.width > 8, crop.height > 8 else {
             NSLog("Overlay: ask — the region is too small to be worth capturing")
+            return
+        }
+
+        // Checked BEFORE capturing: a desktop-only screenshot is worse than none,
+        // because it produces a confident answer about the wrong picture.
+        guard hasScreenRecording() else {
+            demandScreenRecording(on: canvas, at: crop)
             return
         }
 
