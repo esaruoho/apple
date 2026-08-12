@@ -529,8 +529,15 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     # table!)". The delivered email came back with it as prose, which loses the whole point: a table
     # forces one performable verification PER claim instead of a paragraph that can hand-wave. So a
     # section with a shape requirement is not "held" until it has that shape (2026-08-12).
-    _SHAPE = {"What is worth checking": lambda s: ("|---" in s.replace(" ", "")
-                                                  or s.count("|") >= 6)}
+    # A markdown separator row is legally any of |---|, | :--- |, |---:|, |:---:| — alignment colons
+    # are standard. A bare "|---" substring test misses every aligned table, which is what the model
+    # actually emits; the pipe-count clause was quietly carrying the check (2026-08-12).
+    _SEP_ROW = re.compile(r'(?m)^\s*\|(?:\s*:?-{2,}:?\s*\|)+\s*$')
+
+    def _looks_tabular(s):
+        return bool(_SEP_ROW.search(s or "")) and (s or "").count("|") >= 6
+
+    _SHAPE = {"What is worth checking": _looks_tabular}
 
     def _substantive(h, body):
         """A heading with nothing under it is not a section — keeping it would let an empty shell
@@ -2571,7 +2578,7 @@ def belt_subject(p: Path) -> str:
 
 
 def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", chapters=False,
-             tries=4, limit=0, once=False, verbose=True):
+             tries=4, limit=0, once=False, verbose=True, no_legs=False):
     """Drain a folder one proper analysis at a time. Returns (n_sent, n_failed)."""
     folder = Path(folder).expanduser()
     sent = failed = 0
@@ -2616,7 +2623,8 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
             try:
                 body = p.read_text(errors="replace")[:120000]
                 ok, info = compose_and_send(to, subj, body, source=str(p), tries=tries,
-                                            legs_from=str(p), attach=str(p), chapters=chapters,
+                                            legs_from=("" if no_legs else str(p)),
+                                            attach=str(p), chapters=chapters,
                                             space_hint=space, verbose=verbose)
             except Exception as e:                      # one bad file must never stop the belt
                 ok, info = False, f"belt error: {e}"
@@ -2656,6 +2664,11 @@ def main():
         ap.add_argument("--tries", type=int, default=4)
         ap.add_argument("--limit", type=int, default=0, help="stop after N emails (0 = no limit)")
         ap.add_argument("--once", action="store_true", help="one pass over the folder, then exit")
+        # On a 300-item belt the appendix is the difference between finishing and not: it runs
+        # `convey soft` against the local brain, which at ~300s/request outlasts the analysis it
+        # decorates and blocks every item behind it.
+        ap.add_argument("--no-legs", dest="no_legs", action="store_true",
+                        help="skip the machine-legs appendix (it waits on the local brain)")
         ap.add_argument("--status", action="store_true", help="print ledger counts and exit")
         a = ap.parse_args(sys.argv[2:])
         if a.status:
@@ -2666,7 +2679,8 @@ def main():
                   f"  ledger  {_belt_ledger(a.tag + '-sent')}")
             return 0
         s, f = belt_run(a.dir, a.to, every=a.every, tag=a.tag, pattern=a.pattern, space=a.space,
-                        chapters=a.chapters, tries=a.tries, limit=a.limit, once=a.once)
+                        chapters=a.chapters, tries=a.tries, limit=a.limit, once=a.once,
+                        no_legs=a.no_legs)
         print(f"\n🎢 belt done: {s} sent, {f} failed")
         return 0
     if cmd == "compose":
