@@ -884,6 +884,9 @@ final class OverlayManager {
     private let maxCanvases = 32
 
     var onModeChange: ((OverlayMode) -> Void)?
+    /// True while the typing field is up. The AppDelegate uses this to release
+    /// the global keys so letters reach the field instead of the canvas.
+    var onChatVisible: ((Bool) -> Void)?
 
     /// The self-test drives real panels but must not yank focus away from whatever
     /// Esa is doing, so it turns this off. Always true in normal operation.
@@ -1350,7 +1353,14 @@ final class OverlayManager {
             self.persist()
             self.askLastRegion(question: text, region: anchorView)
         }, onCancel: { [weak self] in self?.chat = nil })
+        panel.onDismiss = { [weak self] in
+            self?.chat = nil
+            self?.onChatVisible?(false)
+        }
         chat = panel
+        // Release the global keys BEFORE the field takes focus, or the first
+        // keystroke is still eaten.
+        onChatVisible?(true)
         panel.present()
     }
 
@@ -1576,6 +1586,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var clearHotKeyRef: EventHotKeyRef?
     private var helpWindow: NSWindow?
     private var inbox: InboxWatcher?
+    private var chatIsOpen = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // --selftest drives the real panels in-process and exits. It runs from inside
@@ -1592,8 +1603,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         startInbox()
         registerControlChannel()
         manager.onModeChange = { [weak self] mode in
-            self?.refreshStatusItem()
-            self?.setDrawModeKeys(active: mode == .draw)
+            guard let self = self else { return }
+            self.refreshStatusItem()
+            // Never re-arm the keys underneath an open text field.
+            self.setDrawModeKeys(active: mode == .draw && !self.chatIsOpen)
+        }
+        // Typing "free" lost its f to the freehand tool and its r to the region
+        // tool, because the draw-mode shortcuts are GLOBAL Carbon hotkeys and fire
+        // whatever has focus — including our own text field. They are released for
+        // as long as the field is up.
+        manager.onChatVisible = { [weak self] visible in
+            guard let self = self else { return }
+            self.chatIsOpen = visible
+            self.setDrawModeKeys(active: !visible && self.manager.mode == .draw)
         }
         refreshStatusItem()
 
@@ -1874,8 +1896,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             NSLog("Overlay: draw-mode keys armed (\(drawKeyRefs.count)/\(wanted.count))")
         } else {
+            let n = drawKeyRefs.count
             for ref in drawKeyRefs { UnregisterEventHotKey(ref) }
             drawKeyRefs.removeAll()
+            if n > 0 { NSLog("Overlay: draw-mode keys released (\(n)) — letters go to the field") }
         }
     }
 
@@ -1936,6 +1960,10 @@ final class ChatPanel: NSPanel, NSTextFieldDelegate {
     private let field = NSTextField()
     private let onSubmit: (String) -> Void
     private let onCancel: () -> Void
+    /// Fires on EVERY dismissal path — send, esc, the titlebar close button — so the
+    /// global draw keys can be re-armed exactly once, no matter how you left.
+    var onDismiss: (() -> Void)?
+    private var dismissed = false
 
     override var canBecomeKey: Bool { true }
 
@@ -2023,6 +2051,7 @@ final class ChatPanel: NSPanel, NSTextFieldDelegate {
 
     override func close() {
         restorePolicy()
+        if !dismissed { dismissed = true; onDismiss?() }
         super.close()
     }
 
