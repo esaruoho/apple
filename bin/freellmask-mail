@@ -180,7 +180,11 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
                 ra=e.headers.get("Retry-After") if e.headers else None
                 try: wait=max(RL_WAIT, int(ra)) if ra else RL_WAIT
                 except (ValueError, TypeError): wait=RL_WAIT
-                print(f"        ⏸ rate-limited, waiting {wait}s", flush=True)
+                # A rate-limit wait is LEGITIMATE pacing, not the gateway faltering — the deadline
+                # must not abort it, or we would give up precisely when the server told us exactly
+                # when to come back. The deadline bounds brokenness, not politeness.
+                print(f"        ⏸ rate-limited, waiting {wait}s (Retry-After)", flush=True)
+                DEADLINE += wait
                 time.sleep(wait); continue
             # 5xx = the gateway itself faltering (502 Bad Gateway is routine on the free leg,
             # especially on big payloads), NOT a bad request. Until 2026-08-12 only 429 was retried,
@@ -273,6 +277,7 @@ def _is_failure_answer(t):
     return bool(_FAILURE_RE.search(tl))
 
 def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", viewpoint="", lens="",
+                honour_tries=False,
                 model_override="", material=False):
     """Answer an email via FreeLLMAPI, GATED for clean output. The WIKI CONTEXT (if any) and the
     VIEWPOINT AUGMENT the answer — they NEVER gate it. The model uses the wiki + attachments + its
@@ -419,7 +424,13 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     # loop gives it 12 attempts — fine when a human is waiting for a reply, fatal for a BELT email:
     # 12 × ~60s ran past a 900s timeout and the transcript was never answered at all (2026-08-11).
     # TRY_FLOOR lets a caller bound it; compose sets it, the poll loop keeps 12.
-    eff_tries = max(tries, TRY_FLOOR) if (viewpoint and voices_on) else max(1, tries)
+    # TRY_FLOOR exists because the template used to need many shots at the same all-or-nothing
+    # lottery. With the MOSAIC each attempt contributes, so a floor of twelve is no longer a safety
+    # net — it is a liability: the free gateway rate-limits with Retry-After ~545s, so twelve
+    # attempts is over an hour and a half of waiting for ONE email. A caller that states its budget
+    # is now believed (2026-08-12).
+    eff_tries = (max(1, tries) if honour_tries
+                 else (max(tries, TRY_FLOOR) if (viewpoint and voices_on) else max(1, tries)))
     has_content = bool((question or "").strip()) or bool((attachments or "").strip())
     used=chosen_model; cur=msgs; saw_failure=False; have={}
     # Every rejection SAYS WHY. Until 2026-08-12 only the missing-heading branch printed, so a run that
@@ -2242,6 +2253,7 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
     _floor, TRY_FLOOR = TRY_FLOOR, max(1, tries)          # bounded for the belt, restored after
     try:
         answer, used = fm_research(question, "", body_text, wiki_ctx=wctx, viewpoint=vp, tries=tries,
+                                   honour_tries=True,
                                    material=True)         # there is always material in a compose
     finally:
         TRY_FLOOR = _floor
