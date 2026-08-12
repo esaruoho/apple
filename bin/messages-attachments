@@ -1,0 +1,340 @@
+#!/usr/bin/env python3
+"""Inventory Messages attachments by REAL on-disk size, joined to the conversation.
+
+Why this exists: chat.db's `attachment.total_bytes` is unreliable — it records the
+size negotiated at transfer time, not what landed on disk. Observed on this Mac:
+a PNG stored as 5.4 MB in the DB is 777 MB on disk (a 143x error). Any tool that
+sorts by total_bytes (including some storage panels) will therefore hide the worst
+offenders. This tool stats the filesystem and treats the DB only as a lookup table.
+
+Read-only. It never writes to chat.db and never deletes anything on its own.
+Deletion of a LINKED attachment must go through Messages.app so the CloudKit
+tombstone propagates — see `messages-attachments --why`.
+
+Usage:
+  messages-attachments                 top 40 linked attachments by real size
+  messages-attachments --top N         change the count
+  messages-attachments --min-mb N      only files at least N MB (default 100)
+  messages-attachments --orphans       files on disk with NO chat.db row (safe to rm)
+  messages-attachments --dupes         byte-identical files stored more than once
+  messages-attachments --summary       totals: linked vs orphaned vs duplicate waste
+  messages-attachments --reveal PATH   reveal a file in Finder
+  messages-attachments --open N        open the conversation for row N of the listing
+  messages-attachments --json          machine-readable output
+  messages-attachments --why           explain the safe-deletion rules
+"""
+import argparse
+import hashlib
+import json
+import os
+import sqlite3
+import stat
+import subprocess
+import sys
+import unicodedata
+from collections import defaultdict
+
+HOME = os.path.expanduser("~")
+ATTACH_DIR = os.path.join(HOME, "Library/Messages/Attachments")
+CHAT_DB = os.path.join(HOME, "Library/Messages/chat.db")
+APPLE_EPOCH = 978307200  # 2001-01-01 UTC, Apple's Core Data reference date
+
+WHY = """\
+THE RULES (macOS 15, Messages in iCloud ON)
+
+1. A LINKED attachment (a file chat.db still references) must be deleted from
+   inside Messages.app, not from Finder or the shell.
+
+   Deleting the file alone leaves the attachment row in place. The conversation
+   then shows a message whose attachment is missing, and because the attachment
+   still exists in iCloud, nothing is freed there and the file is a candidate to
+   come back down. You save local disk temporarily and lose nothing else — it is
+   futile rather than destructive, but it is not the fix you want.
+
+2. Never edit chat.db by hand. It is the local replica of a CloudKit sync zone.
+   Removing rows with sqlite does not produce a tombstone, so iCloud still holds
+   the attachment and can reconcile your edit away. It also risks leaving the
+   message/attachment joins inconsistent. There is no supported repair.
+
+3. Messages.app exposes no scripting verb for this. Its dictionary has exactly
+   three commands — send, login, logout — and no attachment class. There is no
+   AppleScript, ASObjC, or Shortcuts path to deleting an attachment. The UI is
+   the only supported surface. That is a hard ceiling, not an oversight on our part.
+
+4. ORPHANED files (on disk, no chat.db row) are the exception. Nothing references
+   them, so `rm` is safe and complete. `--orphans` lists them.
+
+THE SUPPORTED DELETION SURFACES
+
+  a. System Settings > General > Storage > Messages — sorted list with a delete
+     button. Fastest for bulk. Note it can under-report sizes for the reason in
+     this tool's docstring, so cross-check against this inventory.
+  b. In a conversation: Command-I (Info) > the attachments grid > right-click >
+     Delete. Precise, one item at a time.
+  c. Messages > Settings > General > "Keep messages" > 30 Days or 1 Year. Blunt,
+     automatic, and consistent everywhere. It deletes messages, not just files.
+
+All three write the tombstone, free iCloud storage, and keep chat.db coherent.
+"""
+
+
+def key(path):
+    """Identity of an attachment = its per-attachment GUID directory, normalised.
+
+    Matching on the full path does not work, for three independent reasons all
+    observed on this Mac:
+
+      1. Case. chat.db keeps the extension as the sender wrote it (`IMG_6510.mov`)
+         while the file on disk carries another (`IMG_6510.MOV`). APFS is
+         case-insensitive, so both name one file.
+      2. Unicode form. APFS returns NFD-decomposed names where the DB holds NFC,
+         which splits every filename containing ä/ö.
+      3. Rename. The DB often keeps the sender's transfer name (`IMG_7134.mov`)
+         while the file landed under its own UUID (`E1629902-….mov`) in the same
+         directory.
+
+    (3) is fatal to any filename-based join and is why this keys on the containing
+    directory instead: Messages gives every attachment its own GUID directory, so
+    the directory is the durable identity. Skipping this cost a near-miss where
+    10.9 GB of live attachments were reported as safe-to-delete orphans.
+    """
+    return unicodedata.normalize("NFC", os.path.dirname(path)).casefold()
+
+
+def db_rows():
+    """Map normalised path -> attachment metadata. Empty dict if the DB is unreadable."""
+    if not os.path.exists(CHAT_DB):
+        return {}
+    try:
+        con = sqlite3.connect(f"file:{CHAT_DB}?mode=ro", uri=True)
+    except sqlite3.Error as exc:
+        print(f"warning: cannot open chat.db read-only ({exc})", file=sys.stderr)
+        return {}
+    con.text_factory = lambda b: b.decode("utf-8", "replace")
+    sql = """
+        SELECT a.ROWID, a.filename, a.total_bytes, a.is_outgoing,
+               a.created_date, m.is_from_me,
+               COALESCE(NULLIF(c.display_name,''), c.chat_identifier),
+               h.id
+        FROM attachment a
+        LEFT JOIN message_attachment_join maj ON maj.attachment_id = a.ROWID
+        LEFT JOIN message m ON m.ROWID = maj.message_id
+        LEFT JOIN handle h ON h.ROWID = m.handle_id
+        LEFT JOIN chat_message_join cmj ON cmj.message_id = m.ROWID
+        LEFT JOIN chat c ON c.ROWID = cmj.chat_id
+    """
+    out = {}
+    try:
+        for rid, fn, tb, outgoing, created, from_me, chat, handle in con.execute(sql):
+            if not fn:
+                continue
+            path = os.path.join(HOME, fn[2:]) if fn.startswith("~/") else fn
+            k = key(path)
+            # An attachment can join several chats; first non-empty chat name wins.
+            prev = out.get(k)
+            if prev and prev["chat"]:
+                continue
+            out[k] = {
+                "rowid": rid,
+                "db_bytes": tb or 0,
+                "outgoing": bool(outgoing or from_me),
+                "created": created or 0,
+                "chat": chat or "",
+                "handle": handle or "",
+            }
+    except sqlite3.Error as exc:
+        print(f"warning: chat.db query failed ({exc})", file=sys.stderr)
+    finally:
+        con.close()
+    return out
+
+
+def disk_files():
+    """Every regular file under the attachment store, with its real size."""
+    found = []
+    for root, _dirs, names in os.walk(ATTACH_DIR):
+        for name in names:
+            if name == ".DS_Store":
+                continue
+            path = os.path.join(root, name)
+            try:
+                st = os.lstat(path)
+            except OSError:
+                continue
+            if not stat.S_ISREG(st.st_mode):
+                continue  # skip symlinks — their target is counted separately or absent
+            found.append((path, st.st_size))
+    return found
+
+
+def human(nbytes):
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if abs(nbytes) < 1024 or unit == "TB":
+            return f"{nbytes:,.1f} {unit}" if unit != "B" else f"{nbytes} B"
+        nbytes /= 1024.0
+    return f"{nbytes:.1f} TB"
+
+
+def when(created):
+    if not created:
+        return "—"
+    import datetime
+
+    # Apple stores either seconds or nanoseconds since 2001-01-01 depending on version.
+    secs = created / 1_000_000_000 if created > 1e11 else created
+    try:
+        dt = datetime.datetime.fromtimestamp(secs + APPLE_EPOCH)
+    except (ValueError, OverflowError, OSError):
+        return "—"
+    return dt.strftime("%Y-%m-%d")
+
+
+def sha_head(path, nbytes=1 << 20):
+    """Hash the first and last MB — enough to separate same-size non-duplicates."""
+    h = hashlib.sha256()
+    try:
+        size = os.path.getsize(path)
+        with open(path, "rb") as fh:
+            h.update(fh.read(nbytes))
+            if size > 2 * nbytes:
+                fh.seek(-nbytes, os.SEEK_END)
+                h.update(fh.read(nbytes))
+    except OSError:
+        return None
+    return h.hexdigest()
+
+
+def collect(min_bytes):
+    rows = db_rows()
+    linked, orphans = [], []
+    for path, size in disk_files():
+        if size < min_bytes:
+            continue
+        meta = rows.get(key(path))
+        entry = {"path": path, "size": size, "name": os.path.basename(path)}
+        if meta:
+            entry.update(meta)
+            linked.append(entry)
+        else:
+            orphans.append(entry)
+    linked.sort(key=lambda e: -e["size"])
+    orphans.sort(key=lambda e: -e["size"])
+    return linked, orphans
+
+
+def print_table(entries, show_chat=True):
+    if not entries:
+        print("  (none)")
+        return
+    for i, e in enumerate(entries, 1):
+        size = human(e["size"])
+        head = f"{i:>3}. {size:>11}  {e['name'][:64]}"
+        print(head)
+        bits = []
+        if show_chat:
+            who = e.get("chat") or e.get("handle") or "(unknown conversation)"
+            arrow = "sent by you to" if e.get("outgoing") else "received from"
+            bits.append(f"{arrow} {who}")
+            bits.append(when(e.get("created")))
+            db_b = e.get("db_bytes") or 0
+            if db_b and abs(db_b - e["size"]) > max(db_b, 1) * 0.5:
+                bits.append(f"DB claims {human(db_b)} — understated {e['size']/db_b:.0f}x")
+        print(f"      {'  ·  '.join(bits)}")
+        print(f"      {e['path']}")
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("--top", type=int, default=40)
+    ap.add_argument("--min-mb", type=float, default=100.0)
+    ap.add_argument("--orphans", action="store_true")
+    ap.add_argument("--dupes", action="store_true")
+    ap.add_argument("--summary", action="store_true")
+    ap.add_argument("--reveal")
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--why", action="store_true")
+    ap.add_argument("-h", "--help", action="store_true")
+    args = ap.parse_args()
+
+    if args.help:
+        print(__doc__)
+        return 0
+    if args.why:
+        print(WHY)
+        return 0
+    if args.reveal:
+        subprocess.run(["open", "-R", args.reveal], check=False)
+        return 0
+
+    if not os.path.isdir(ATTACH_DIR):
+        print(f"error: {ATTACH_DIR} not found", file=sys.stderr)
+        return 1
+
+    min_bytes = int(args.min_mb * 1024 * 1024)
+
+    if args.summary:
+        # Summary always scans everything, not just the >min slice.
+        linked, orphans = collect(0)
+        lb = sum(e["size"] for e in linked)
+        ob = sum(e["size"] for e in orphans)
+        by_hash = defaultdict(list)
+        for e in linked + orphans:
+            if e["size"] >= min_bytes:
+                by_hash[(e["size"], sha_head(e["path"]))].append(e)
+        waste = sum(k[0] * (len(v) - 1) for k, v in by_hash.items() if len(v) > 1)
+        print("Messages attachment store")
+        print(f"  linked to a message   {len(linked):>7,} files   {human(lb):>12}")
+        print(f"  orphaned (no DB row)  {len(orphans):>7,} files   {human(ob):>12}   <- safe to rm")
+        print(f"  duplicate waste       {'':>7}         {human(waste):>12}   (among files >= {args.min_mb:g} MB)")
+        print(f"  total                 {len(linked)+len(orphans):>7,} files   {human(lb+ob):>12}")
+        return 0
+
+    linked, orphans = collect(min_bytes)
+
+    if args.dupes:
+        by_hash = defaultdict(list)
+        for e in linked + orphans:
+            by_hash[(e["size"], sha_head(e["path"]))].append(e)
+        groups = sorted(
+            (v for v in by_hash.values() if len(v) > 1),
+            key=lambda v: -v[0]["size"] * (len(v) - 1),
+        )
+        if args.json:
+            print(json.dumps(groups, indent=2))
+            return 0
+        print(f"Byte-identical files stored more than once (>= {args.min_mb:g} MB)\n")
+        for g in groups[: args.top]:
+            reclaim = g[0]["size"] * (len(g) - 1)
+            print(f"{human(g[0]['size'])} x{len(g)}  — {human(reclaim)} reclaimable  {g[0]['name'][:60]}")
+            for e in g:
+                tag = "linked" if e.get("rowid") else "ORPHAN"
+                print(f"      [{tag}] {e['path']}")
+            print()
+        return 0
+
+    entries = orphans if args.orphans else linked
+    if args.json:
+        print(json.dumps(entries[: args.top], indent=2))
+        return 0
+
+    if args.orphans:
+        total = sum(e["size"] for e in orphans)
+        print(f"Orphaned attachment files >= {args.min_mb:g} MB — no chat.db row references these.")
+        print(f"Nothing points at them, so deleting them is safe and complete.")
+        print(f"{len(orphans)} files, {human(total)} total.\n")
+        print_table(orphans[: args.top], show_chat=False)
+        print("\nTo delete them all:")
+        print("  messages-attachments --orphans --min-mb 0 --json \\")
+        print("    | python3 -c 'import json,os,sys; [os.remove(e[\"path\"]) for e in json.load(sys.stdin)]'")
+        print("(quit Messages.app first)")
+    else:
+        total = sum(e["size"] for e in linked)
+        print(f"Linked attachments >= {args.min_mb:g} MB, by REAL on-disk size.")
+        print(f"{len(linked)} files, {human(total)} total. Delete these from inside Messages.app —")
+        print("run `messages-attachments --why` for the reason.\n")
+        print_table(linked[: args.top])
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
