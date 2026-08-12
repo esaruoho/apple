@@ -68,7 +68,11 @@ BCC       = os.environ.get("FREELLMASK_MAIL_BCC", "esaruoho@gmail.com")   # blin
 FORWARD_TO= os.environ.get("FREELLMASK_MAIL_FORWARD", "esaruoho@gmail.com")  # forward inbound + answer + attachments here
 VISION_OCR= Path.home()/"work"/"apple"/"bin"/"vision-ocr"                  # Apple Vision OCR (PDFs + images, on the Mini)
 MAX_ATT   = int(os.environ.get("FREELLMASK_MAIL_MAX_ATT_MB","25"))*1024*1024
-MAX_CHARS = int(os.environ.get("FREELLMASK_MAIL_MAX_ATT_CHARS","12000"))   # per-attachment text cap (free-tier context)
+# 12000 was a free-tier-era relic and it truncated SILENTLY. Esa forwarded "Tom Bearden Talks
+# Tesla.txt" — a full transcript — and the mailer read its first 12,000 characters and analysed that
+# as though it were the talk. The models in the chain hold 256k-1M tokens; the cap only needs to stop
+# a runaway, not amputate a transcript. And when it DOES bite, it now says so (2026-08-12).
+MAX_CHARS = int(os.environ.get("FREELLMASK_MAIL_MAX_ATT_CHARS","160000"))  # per-attachment text cap
 
 def env_bool(name, default="1"):
     return str(os.environ.get(name, default)).strip().lower() in {"1", "true", "yes", "on"}
@@ -139,7 +143,13 @@ def _extract_one(k, mid, att):
     if raw is None: return name, "[no download url]"
     # text / markdown / json / xml → decode directly (no OCR)
     if ct.startswith("text/") or low.endswith((".md",".txt",".markdown",".csv")) or ct in ("application/json","application/xml"):
-        return name, raw.decode("utf-8","ignore")[:MAX_CHARS]
+        _txt = raw.decode("utf-8","ignore")
+        if len(_txt) > MAX_CHARS:
+            print(f"    ⚠️ {name}: {len(_txt):,} chars — reading first {MAX_CHARS:,}, "
+                  f"{len(_txt)-MAX_CHARS:,} NOT read", flush=True)
+            _txt = _txt[:MAX_CHARS] + f"\n\n[TRUNCATED: {len(_txt)-MAX_CHARS:,} further characters "
+            _txt += "of this attachment were not read.]"
+        return name, _txt
     # pdf / image → Apple Vision OCR on the Mini (synchronous; handles text PDFs AND scans/images)
     if ct=="application/pdf" or ct.startswith("image/") or low.endswith((".pdf",".png",".jpg",".jpeg",".heic",".tiff",".tif",".gif",".bmp",".webp")):
         suffix=os.path.splitext(name)[1] or (".pdf" if "pdf" in ct else ".png")
@@ -720,8 +730,11 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
         # every attempt died at the gateway and the model never saw the prompt — a sentence about
         # the model describing an event it was not part of. Carry the causes out with the failure.
         return (REQUEUE_NO_THINKING + ("\x00" + " | ".join(why[-3:]) if why else ""), used)
-    return ("I wasn't able to generate a reliable answer this time — the model returned an unusable "
-            "response on every attempt. Please reply to this email to try again.", used)
+    # DO NOT SEND AN APOLOGY. Esa got one for "Tom Bearden Talks Tesla.txt" and called it what it is:
+    # an email that costs him attention and delivers nothing. Re-queue instead — the message stays
+    # unseen, a later poll retries it, and the gateway that was 429/502-ing gets a chance to recover.
+    # Silence that self-heals beats a polite failure in the inbox (2026-08-12).
+    return (REQUEUE_FAILED + "\x00" + " | ".join(why[-3:]) if why else REQUEUE_FAILED, used)
 
 def _md_inline(t):
     t=(t.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;"))
