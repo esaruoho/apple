@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""overlay — drive the spatial overlay canvas from the terminal.
+
+The agent-facing half of Overlay.app (overlay/Overlay.swift). Python stdlib only —
+no Homebrew, no pip — so anything on this Mac, or any Fleet peer with a shell, can
+inspect and steer the overlay without a compile step.
+
+P0 verbs:
+    overlay open            launch Overlay.app (no-op if already running)
+    overlay quit            quit it
+    overlay status          is it running, how many marks, where the store is
+    overlay dump [--json]   print the marks currently mirrored to disk
+    overlay reveal          open the store folder in Finder
+
+P1 adds `post` (put an object on the screen from an agent) and `watch`.
+
+Plan: wiki/operations/spatial-overlay-plan.md
+"""
+
+import json
+import os
+import subprocess
+import sys
+
+HOME = os.path.expanduser("~")
+ROOT = os.path.join(HOME, ".overlay")
+STORE = os.path.join(ROOT, "store")
+SESSION = os.path.join(STORE, "session.json")
+APP = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),
+                   "overlay", "Overlay.app")
+BUNDLE_ID = "com.esaruoho.overlay"
+
+
+def running():
+    """True if Overlay.app is up. pgrep -x matches the executable name exactly, so a
+    stray `vim Overlay.swift` can't be mistaken for the app."""
+    return subprocess.run(["/usr/bin/pgrep", "-x", "Overlay"],
+                          capture_output=True).returncode == 0
+
+
+def load():
+    try:
+        with open(SESSION) as fh:
+            return json.load(fh)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
+def cmd_open():
+    if running():
+        print("Overlay is already running.")
+        return 0
+    if not os.path.isdir(APP):
+        print(f"Overlay.app not built yet — run {os.path.dirname(APP)}/build.sh",
+              file=sys.stderr)
+        return 1
+    subprocess.run(["/usr/bin/open", APP], check=True)
+    print("Overlay launched — ⌃⌥⌘D toggles draw mode.")
+    return 0
+
+
+def cmd_quit():
+    if not running():
+        print("Overlay is not running.")
+        return 0
+    # osascript 'quit app id' rather than kill: it lets the app finish its final
+    # persist() instead of losing the last stroke.
+    subprocess.run(["/usr/bin/osascript", "-e",
+                    f'quit app id "{BUNDLE_ID}"'], capture_output=True)
+    print("Overlay quit.")
+    return 0
+
+
+def cmd_status():
+    marks = load()
+    print(f"running   {'yes' if running() else 'no'}")
+    print(f"app       {APP}")
+    print(f"store     {SESSION}")
+    print(f"marks     {len(marks)}")
+    if marks:
+        actors = {}
+        for m in marks:
+            actors[m.get("actor", "?")] = actors.get(m.get("actor", "?"), 0) + 1
+        for actor, n in sorted(actors.items()):
+            print(f"            {n:>4}  {actor}")
+    return 0
+
+
+def cmd_dump(as_json):
+    marks = load()
+    if as_json:
+        print(json.dumps(marks, indent=2, sort_keys=True))
+        return 0
+    if not marks:
+        print("(no marks)")
+        return 0
+    for m in marks:
+        pts = m.get("points", [])
+        xs = [p.get("x", 0) for p in pts] or [0]
+        ys = [p.get("y", 0) for p in pts] or [0]
+        box = f"{min(xs):.0f},{min(ys):.0f} {max(xs)-min(xs):.0f}x{max(ys)-min(ys):.0f}"
+        print(f"{m.get('kind','?'):<8} {m.get('actor','?'):<12} "
+              f"{len(pts):>4}pts  {m.get('colorHex','')}  "
+              f"w{m.get('width','')}  [{box}]  {m.get('lifetime','')}")
+    return 0
+
+
+def cmd_reveal():
+    os.makedirs(STORE, exist_ok=True)
+    subprocess.run(["/usr/bin/open", STORE])
+    return 0
+
+
+def main(argv):
+    verb = argv[1] if len(argv) > 1 else "status"
+    if verb in ("-h", "--help", "help"):
+        print(__doc__)
+        return 0
+    if verb == "open":
+        return cmd_open()
+    if verb == "quit":
+        return cmd_quit()
+    if verb == "status":
+        return cmd_status()
+    if verb == "dump":
+        return cmd_dump("--json" in argv)
+    if verb == "reveal":
+        return cmd_reveal()
+    print(f"unknown verb: {verb}\n", file=sys.stderr)
+    print(__doc__, file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
