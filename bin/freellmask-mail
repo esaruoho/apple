@@ -206,22 +206,28 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
     return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
 
 def _mlx_alive(timeout=25):
-    """Cheap PREFLIGHT: does the served model actually GENERATE? /v1/models answers in 0.1s even when
-    generation has been dead for hours (measured: HTTP 000 after 600s), so reachability proves
-    nothing. Ask for two tokens and find out in 25s instead of hanging a 300s fill on a dead brain —
-    on a 300-item belt that difference is the whole run (2026-08-12)."""
-    try:
-        body={"model":MLX_MODEL,"messages":[{"role":"user","content":"OK"}],"max_tokens":2}
-        req=urllib.request.Request(MLX_HOST.rstrip('/')+"/chat/completions",
-                                   data=json.dumps(body).encode(),
-                                   headers={"Content-Type":"application/json"})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            json.load(r)
-        return True
-    except Exception as e:
-        print(f"      ✗ local brain not generating ({type(e).__name__}) — skipping the local leg",
-              flush=True)
-        return False
+    """Find the model this server will actually GENERATE with, and remember it. /v1/models answers in
+    0.1s even when generation has been dead for hours (measured: HTTP 000 after 600s), so
+    reachability proves nothing — and asking for an unserved model HANGS rather than erroring, which
+    with --prompt-concurrency 1 blocks every other caller. Two tokens is the whole test."""
+    global MLX_MODEL
+    for cand in MLX_CANDIDATES:
+        try:
+            body={"model":cand,"messages":[{"role":"user","content":"OK"}],"max_tokens":2}
+            req=urllib.request.Request(MLX_HOST.rstrip('/')+"/chat/completions",
+                                       data=json.dumps(body).encode(),
+                                       headers={"Content-Type":"application/json"})
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                json.load(r)
+            if cand != MLX_MODEL:
+                print(f"      🖥️ served model is {cand}", flush=True)
+            MLX_MODEL = cand
+            return True
+        except Exception as e:
+            print(f"      · {cand}: {type(e).__name__}", flush=True)
+    print("      ✗ local brain not generating for any known model — skipping the local leg",
+          flush=True)
+    return False
 
 def _mlx_call(messages, max_tokens=2200, temperature=0.3, timeout=300):
     """One call to the LOCAL MLX brain. Same shape as _fm_call, no rate limiting to wait out."""
@@ -255,22 +261,24 @@ TRY_FLOOR = 12                 # attempts the viewpoint template gets; compose l
 # the local brain finishes what the gateway would not — a smaller voice on a few sections beats an
 # email that never arrives, and beats one with holes in it.
 MLX_HOST  = os.environ.get("FREELLMASK_MAIL_MLX_HOST", "http://cloudcitymacmini:8080/v1")
-# The Mini serves ONE model at a time, chosen by CONVEY_MLX_MODEL in ~/work/convey/.env — that file
-# is the authority, not bin/fm-mlx's default and not /v1/models. /v1/models happily lists seven ids
-# while only the served one can answer; asking for any other appears to make the server try to load
-# it, which is how a "Say OK" probe ended up hanging for minutes (2026-08-12, self-inflicted).
-def _served_mlx_model():
-    env = os.environ.get("FREELLMASK_MAIL_MLX_MODEL") or os.environ.get("CONVEY_MLX_MODEL")
-    if env: return env
-    try:
-        for line in (Path.home()/"work"/"convey"/".env").read_text().splitlines():
-            line=line.strip()
-            if line.startswith("CONVEY_MLX_MODEL=") and not line.startswith("#"):
-                return line.split("=",1)[1].strip()
-    except Exception: pass
-    return "mlx-community/Qwen3-4B-Instruct-2507-8bit"
-
-MLX_MODEL = _served_mlx_model()
+# WHICH MODEL IS SERVED IS DISCOVERED, NOT READ. Every config source lied about it in turn:
+#   · bin/fm-mlx defaults to Qwen3-14B-MLX-4bit
+#   · convey/.env's active CONVEY_MLX_MODEL line says a 4B
+#   · the mailer's appendix printed "Qwen3-4B" as a hardcoded label
+#   · /v1/models advertises SEVEN ids
+# and the running process — the only authority — was started with --model Qwen/Qwen3-14B-MLX-4bit.
+# Asking for a model the server is NOT serving does not error; it HANGS (measured: HTTP 000 after
+# 30s for the 4B, while the 14B is what is loaded). With --prompt-concurrency 1 that hang blocks
+# every other caller too, so guessing wrong is not a private mistake.
+# So: try the candidates in order and keep the first that actually GENERATES. Probing is the only
+# check that cannot go stale (2026-08-12).
+MLX_CANDIDATES = [c for c in [
+    os.environ.get("FREELLMASK_MAIL_MLX_MODEL"),
+    os.environ.get("CONVEY_MLX_MODEL"),
+    "Qwen/Qwen3-14B-MLX-4bit",
+    "mlx-community/Qwen3-4B-Instruct-2507-8bit",
+] if c]
+MLX_MODEL = MLX_CANDIDATES[0]          # provisional; _mlx_alive() settles it against the server
 
 # The four sections that used to be a SEPARATE email from `convey email-transcript --analyze`. They
 # only make sense when there is material (a transcript, a document) — a bare question has nothing to
