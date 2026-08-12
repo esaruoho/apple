@@ -132,7 +132,7 @@ this is AppKit, Vision, FoundationModels and Image Playground, no dependencies.
 
 **Roughly 70% of the vision** (60% before the Converse bridge and chat landed). The blackboard, the primitives, the lifecycle, the agent
 channel, the deictic human→agent loop and the chat all work. The **anchoring model —
-window, AX element, vision region — is the missing 40%**, and it is the part the source
+window, AX element, vision region — is the bulk of the missing 30%**, and it is the part the source
 thread called the most important. Until it exists, every mark is pinned to screen
 coordinates and nothing follows the thing it is about.
 
