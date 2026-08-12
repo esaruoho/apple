@@ -315,6 +315,21 @@ TONE_HEADINGS = ["In Walter Russell's tone", "In Tom Bearden's tone", "In Ilya P
 MATERIAL_HEADINGS = ["Summary", "Key points", "Notable quotes", "People & entities mentioned",
                      "What holds up", "What is worth checking", "Overall assessment"]
 REQUEUE_NO_THINKING = "\x00REQUEUE-NO-THINKING\x00"
+
+def _is_requeue(a, sentinel=None):
+    """The sentinels now CARRY the failure causes appended after a NUL, so identity (`is`) no longer
+    matches them — and an `is` test that silently stops matching would send the raw sentinel string
+    to Esa as the body of an email. Match on the prefix instead."""
+    if not isinstance(a, str):
+        return False
+    if sentinel is not None:
+        return a.startswith(sentinel)
+    return a.startswith(REQUEUE_NO_THINKING) or a.startswith(REQUEUE_FAILED)
+
+def _requeue_why(a):
+    """The causes the attempts actually died of, for the log and the operator."""
+    parts = (a or "").split("\x00")
+    return parts[-1] if len(parts) > 3 and parts[-1] else ""
 # Returned when the model BAILED ('please provide the content') despite content being available — the
 # poll loop re-queues (does not send the bail) and debug-logs it for inspection.
 REQUEUE_FAILED = "\x00REQUEUE-FAILED\x00"
@@ -490,7 +505,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     eff_tries = (max(1, tries) if honour_tries
                  else (max(tries, TRY_FLOOR) if (viewpoint and voices_on) else max(1, tries)))
     has_content = bool((question or "").strip()) or bool((attachments or "").strip())
-    used=chosen_model; cur=msgs; saw_failure=False; have={}
+    used=chosen_model; cur=msgs; saw_failure=False; have={}; why=[]
     # Every rejection SAYS WHY. Until 2026-08-12 only the missing-heading branch printed, so a run that
     # burned twelve attempts on 502s looked identical to one that burned them on a refusal — the log
     # said only "would not produce the required shape", which was not even true.
@@ -498,9 +513,9 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
         try:
             ans, used = _fm_call(cur, model=chosen_model)
         except Exception as e:
-            print(f"      ↻ {_attempt}/{eff_tries} call failed: {e}", flush=True); continue
+            why.append(f"call failed: {e}"); print(f"      ↻ {_attempt}/{eff_tries} call failed: {e}", flush=True); continue
         if not ans:
-            print(f"      ↻ {_attempt}/{eff_tries} empty reply", flush=True); continue
+            why.append("empty reply"); print(f"      ↻ {_attempt}/{eff_tries} empty reply", flush=True); continue
         if _looks_garbage(ans):
             print(f"      ↻ {_attempt}/{eff_tries} garbage ({len(ans.split())}w)", flush=True); continue
         if _has_leak(ans):
@@ -581,7 +596,10 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             body += ("\n\n---\n\n_Not produced this pass, after "
                      f"{eff_tries} attempts: {', '.join(miss)}. Reply to this email to try again._")
             return body, used
-        return (REQUEUE_NO_THINKING, used)
+        # Report the REAL reason. "would not produce the required shape" was printed even when
+        # every attempt died at the gateway and the model never saw the prompt — a sentence about
+        # the model describing an event it was not part of. Carry the causes out with the failure.
+        return (REQUEUE_NO_THINKING + ("\x00" + " | ".join(why[-3:]) if why else ""), used)
     return ("I wasn't able to generate a reliable answer this time — the model returned an unusable "
             "response on every attempt. Please reply to this email to try again.", used)
 
@@ -2107,13 +2125,17 @@ def poll_once(verbose=True):
                                            model_override=card.get("model",""))
             except Exception as e:
                 print(f"  research failed for {mid}: {e}"); continue
-            if answer is REQUEUE_NO_THINKING or answer is REQUEUE_FAILED:
+            if _is_requeue(answer):
                 # Not sendable this pass → do NOT send, do NOT mark seen (next poll retries fresh), and
                 # DEBUG-LOG it (flagged + saved) so the failure is visible, never silently emitted.
-                kind = "no-thinking-heading" if answer is REQUEUE_NO_THINKING else "model-bailed"
+                kind = ("no-thinking-heading" if _is_requeue(answer, REQUEUE_NO_THINKING)
+                        else "model-bailed")
+                _why = _requeue_why(answer)
                 subj = full.get("subject","(no subject)")
-                print(f"  ↻ re-queued {mid} [{kind}] — will retry next poll")
-                debug_log(kind, mid, subj, question=question, note="re-queued (not sent); will retry next poll")
+                print(f"  ↻ re-queued {mid} [{kind}]{' — ' + _why if _why else ''} "
+                      f"— will retry next poll")
+                debug_log(kind, mid, subj, question=question,
+                          note=f"re-queued (not sent); will retry next poll. causes: {_why or 'n/a'}")
                 continue
             reply={"text": answer, "html": md_to_html(answer)}
             if WANT_PDF.search(question or ""):     # a NEW question that also wants a PDF
@@ -2361,9 +2383,13 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
                                    material=True)         # there is always material in a compose
     finally:
         TRY_FLOOR = _floor
-    if answer is REQUEUE_NO_THINKING or answer is REQUEUE_FAILED:
-        return False, ("model would not produce the required shape — NOT sending "
-                       "(the same gate the poll loop uses)")
+    if _is_requeue(answer):
+        # Name the ACTUAL causes. This message used to read "model would not produce the required
+        # shape" even when all three attempts died at the gateway and the model never saw the prompt.
+        _why = _requeue_why(answer)
+        return False, ("not sending — " + (_why if _why
+                       else "the model would not produce the required shape")
+                       + " (the same gate the poll loop uses)")
     if not answer:
         return False, "no answer from the brain"
     # fm_research's LAST resort is an apology string. The poll loop can afford to send that as a reply
