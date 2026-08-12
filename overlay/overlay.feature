@@ -187,6 +187,32 @@ Feature: A spatial canvas that floats over everything and is invisible until ask
     # The self-test runs with activatesOnDraw = false so it cannot steal Esa's focus,
     # which means this specific path is unexercised by it.
 
+  @verified
+  Scenario: A question and its answer never cover each other
+    Given a question chip and an answer chip anchored to the SAME region
+    When the canvas is drawn
+    Then the chips are stacked, the reply below the question, with no overlap
+    # They share an anchor by design, so drawing each at its own anchor guaranteed a
+    # collision — the answer landed on top of the question and hid it. A layout pass
+    # measures every chip first and slides colliding ones clear.
+    # Verified by screenshotting the running app, not by reading the object store.
+
+  @verified
+  Scenario: Typing does not trigger the drawing shortcuts
+    Given the chat field has focus
+    Then all 17 global draw-mode hotkeys are released, and re-armed on dismissal
+    # "free" lost its f to the freehand tool and its r to the region tool: the draw
+    # keys are GLOBAL Carbon hotkeys — the only way to give a menu-bar app's canvas a
+    # keyboard — and they fire whatever has focus, including our own text field.
+    # Log evidence, in order: armed (17/17) → released (17) → chat key=true.
+
+  @verified
+  Scenario: Chat asks about the region it was opened for
+    Given a question is submitted and posted as a "you: …" label
+    Then the capture still crops the region the chat was opened for
+    # The label became "the last object", so the crop was of the label itself and
+    # every answer was "Nothing readable in that region".
+
   # ─────────────────────────── known limits ───────────────────────────
 
   @todo
