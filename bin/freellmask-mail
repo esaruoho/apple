@@ -1704,6 +1704,20 @@ def poll_once(verbose=True):
             seen.add(mid)
             st["seen"]=list(seen)[-SEEN_CAP:]; save_state(st)
             continue
+        # CLAIM IT BEFORE DOING THE WORK. The ledger was only written AFTER a successful send, so the
+        # whole span between picking a message and finishing its reply was unguarded — and the poll
+        # runs every 45s. Generation used to take seconds; now the free gateway answers 429 with
+        # Retry-After up to 545s, so that window grew to many minutes and the next dozen polls each
+        # picked up the SAME message and answered it again. That is the Bifilar storm: one inbound
+        # message, twelve replies, each in a fresh thread — which is also why the per-thread ceiling
+        # never tripped, since every reply looked like a brand-new thread.
+        #
+        # The slower the brain gets, the wider the unguarded window: the storm was a race, and rate
+        # limiting is what widened it. Claiming up front closes it. A claimed message that then fails
+        # to send is a MISSED reply Esa can retrigger — strictly better than twelve duplicates.
+        replied_add(mid, m.get("thread_id"), m.get("subject", "") or "")
+        replied_mids.add(mid)
+        replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
         full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
         # body: prefer extracted/plain text; fall back to HTML (forwards are often HTML-only)
         # AgentMail's `extracted_text` is USUALLY the clean body — but sometimes it extracts ONLY the
