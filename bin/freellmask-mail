@@ -203,7 +203,21 @@ MATERIAL_SECTIONS = (
     "## Notable quotes\n(2-5 verbatim quotes from the material, each in quotation marks. Quote ONLY "
     "what is actually there — never invent or paraphrase into quotation marks.)\n"
     "## People & entities mentioned\n(bullets: people, devices, companies, papers named in the "
-    "material, each with a few words on their role. Omit the section's bullets rather than invent.)\n")
+    "material, each with a few words on their role. Omit the section's bullets rather than invent.)\n"
+    # Esa, 2026-08-12, on an email he liked: "summary of the paper / what holds up plausible aspects /
+    # whats worth checking, needs verification (this was a table!) / overall assessment". The
+    # holds-up-vs-needs-checking SPLIT is the useful part — it separates what the material earns from
+    # what it merely asserts, without collapsing into either credulity or dismissal.
+    "## What holds up\n(3-6 bullets: the parts that are plausible ON THE MATERIAL'S OWN TERMS — "
+    "sound method, a measurement actually taken, a mechanism consistent with known physics or with "
+    "an open-system reading. Say WHY each holds up, concretely.)\n"
+    "## What is worth checking\n(a MARKDOWN TABLE, exactly these columns: | Claim | Why it needs "
+    "verification | How to verify it |. 3-6 rows. Each 'how' must be a real, specific measurement or "
+    "document anyone could actually perform — calorimetry over an hour, both ports metered; a named "
+    "paper to pull; a scope measurement with the probe placement stated. No vague 'more research "
+    "needed'.)\n"
+    "## Overall assessment\n(3-5 sentences: what this material is worth, what it establishes versus "
+    "what it only claims, and what would change the verdict. Land somewhere — never a shrug.)\n")
 
 # EVERY heading the viewpoint template promises is now CHECKED. The prompt has always said "A reply
 # missing any of these headings is rejected and regenerated" — but only "Thought about it" was ever
@@ -211,7 +225,8 @@ MATERIAL_SECTIONS = (
 # (Esa, 2026-08-12: "where was prigogine from freellmask-mail???").
 TONE_HEADINGS = ["In Walter Russell's tone", "In Tom Bearden's tone", "In Ilya Prigogine's tone",
                  "In Hilarion's tone", "In the skeptical closed-system electrical engineer's tone"]
-MATERIAL_HEADINGS = ["Summary", "Key points", "Notable quotes", "People & entities mentioned"]
+MATERIAL_HEADINGS = ["Summary", "Key points", "Notable quotes", "People & entities mentioned",
+                     "What holds up", "What is worth checking", "Overall assessment"]
 REQUEUE_NO_THINKING = "\x00REQUEUE-NO-THINKING\x00"
 # Returned when the model BAILED ('please provide the content') despite content being available — the
 # poll loop re-queues (does not send the bail) and debug-logs it for inspection.
@@ -349,6 +364,30 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
 
     def _missing_thinking(t):
         return bool(_missing_headings(t))
+
+    def _sections(t):
+        """Split a reply into {required heading: body}. Only the headings we asked for are harvested,
+        so a stray heading the model invents cannot displace a real one."""
+        found, order = {}, []
+        for h in required:
+            pat = r'(?im)^\s*#{1,3}\s*' + re.escape(h).replace(r"\ ", r"\s+") + r"\b[^\n]*\n"
+            m = re.search(pat, t or "")
+            if m:
+                order.append((m.start(), m.end(), h))
+        order.sort()
+        for i, (s, e, h) in enumerate(order):
+            end = order[i + 1][0] if i + 1 < len(order) else len(t)
+            found[h] = (t[e:end] or "").strip()
+        return found
+
+    def _substantive(h, body):
+        """A heading with nothing under it is not a section — keeping it would let an empty shell
+        satisfy the gate forever and ship a hollow email."""
+        w = len((body or "").split())
+        return w >= (18 if h in TONE_HEADINGS else 8)
+
+    def _assemble(have):
+        return "\n\n".join(f"## {h}\n\n{have[h]}" for h in required if h in have)
     NUDGE=("\n\nREMINDER: your previous reply OMITTED required section(s). Every heading in the template is "
            "mandatory and is checked: emit each one, verbatim, in order, and never merge or rename them.")
     # The six-heading template makes nemotron drop the required heading ~1/3 of the time, so the poll
@@ -357,28 +396,65 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     # TRY_FLOOR lets a caller bound it; compose sets it, the poll loop keeps 12.
     eff_tries = max(tries, TRY_FLOOR) if (viewpoint and voices_on) else max(1, tries)
     has_content = bool((question or "").strip()) or bool((attachments or "").strip())
-    used=chosen_model; cur=msgs; saw_failure=False
-    for _ in range(eff_tries):
+    used=chosen_model; cur=msgs; saw_failure=False; have={}
+    # Every rejection SAYS WHY. Until 2026-08-12 only the missing-heading branch printed, so a run that
+    # burned twelve attempts on 502s looked identical to one that burned them on a refusal — the log
+    # said only "would not produce the required shape", which was not even true.
+    for _attempt in range(1, eff_tries + 1):
         try:
             ans, used = _fm_call(cur, model=chosen_model)
-        except Exception:
-            continue
-        if not ans or _looks_garbage(ans) or _has_leak(ans):
-            continue
+        except Exception as e:
+            print(f"      ↻ {_attempt}/{eff_tries} call failed: {e}", flush=True); continue
+        if not ans:
+            print(f"      ↻ {_attempt}/{eff_tries} empty reply", flush=True); continue
+        if _looks_garbage(ans):
+            print(f"      ↻ {_attempt}/{eff_tries} garbage ({len(ans.split())}w)", flush=True); continue
+        if _has_leak(ans):
+            print(f"      ↻ {_attempt}/{eff_tries} reasoning leak", flush=True); continue
         if _is_wiki_refusal(ans):          # the wiki context biased it into refusing → drop it, retry
+            print(f"      ↻ {_attempt}/{eff_tries} wiki refusal — dropping wiki", flush=True)
             cur=msgs_nowiki; continue
         if has_content and _is_failure_answer(ans):   # model BAILED though content exists → retry, never send the bail
+            print(f"      ↻ {_attempt}/{eff_tries} model bailed despite content", flush=True)
             saw_failure=True; cur=msgs_nowiki; continue
-        miss = _missing_headings(ans)
-        if miss:                           # any promised heading absent → REGENERATE, never ship partial
-            print(f"      ↻ missing section(s): {', '.join(miss)}", flush=True)
-            nudge = NUDGE + "\nMISSING THIS TIME: " + "; ".join(f"## {m}" for m in miss)
-            cur=[{"role":"system","content":sysm+nudge},{"role":"user","content":cur[1]["content"]}]
-            continue
-        return ans, used                   # has the thinking heading (or off-corpus) → sendable
+        if not required:
+            return ans, used               # off-corpus: no section contract to satisfy
+        # THE MOSAIC (Esa, 2026-08-12): "analyze = got 3, missed 2 does not result in oh, chuck 3,
+        # re-do". Sections that came back GOOD are kept; only the missing ones are re-asked. The old
+        # loop threw away eleven good sections because one was absent, so each attempt had to win the
+        # whole lottery at once — which is why twelve attempts could produce nothing at all.
+        got_now = []
+        for h, body in _sections(ans).items():
+            if h not in have and _substantive(h, body):
+                have[h] = body; got_now.append(h)
+        miss = [h for h in required if h not in have]
+        if got_now:
+            print(f"      🧩 {_attempt}/{eff_tries} +{len(got_now)} kept "
+                  f"({len(have)}/{len(required)} held)", flush=True)
+        if not miss:
+            return _assemble(have), used   # every section held — assemble the mosaic and send
+        print(f"      ↻ {_attempt}/{eff_tries} still missing: {', '.join(miss)}", flush=True)
+        # Ask ONLY for what is missing. Re-requesting sections we already hold wastes the attempt and
+        # invites the model to spend its tokens rewriting work that was already good.
+        nudge = ("\n\nWRITE ONLY THESE SECTIONS, nothing else — the rest of the reply is already "
+                 "written and will be kept:\n" + "\n".join(f"## {m}" for m in miss) +
+                 "\n\nEmit each heading verbatim, in that order, with its full content beneath. Do "
+                 "not write any other heading, and do not apologise or explain.")
+        cur=[{"role":"system","content":sysm+nudge},{"role":"user","content":cur[1]["content"]}]
+        continue
     if saw_failure:                        # kept bailing despite content → re-queue + debug-log, don't send
         return (REQUEUE_FAILED, used)
-    if viewpoint and voices_on:            # exhausted this pass without the heading → not sendable; re-queue
+    if viewpoint and voices_on:
+        # Exhausted — but a mosaic that is MOSTLY built is worth more than silence. If the thinking
+        # and the answer are present and two-thirds of the sections held, send what stands and say
+        # plainly which sections could not be produced, rather than mailing nothing.
+        miss = [h for h in required if h not in have]
+        if have.get("Thought about it") and have.get("Answer") and len(have) >= (2 * len(required)) // 3:
+            print(f"      🧩 sending partial mosaic: {len(have)}/{len(required)} sections", flush=True)
+            body = _assemble(have)
+            body += ("\n\n---\n\n_Not produced this pass, after "
+                     f"{eff_tries} attempts: {', '.join(miss)}. Reply to this email to try again._")
+            return body, used
         return (REQUEUE_NO_THINKING, used)
     return ("I wasn't able to generate a reliable answer this time — the model returned an unusable "
             "response on every attempt. Please reply to this email to try again.", used)
