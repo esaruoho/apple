@@ -237,12 +237,22 @@ TRY_FLOOR = 12                 # attempts the viewpoint template gets; compose l
 # the local brain finishes what the gateway would not — a smaller voice on a few sections beats an
 # email that never arrives, and beats one with holes in it.
 MLX_HOST  = os.environ.get("FREELLMASK_MAIL_MLX_HOST", "http://cloudcitymacmini:8080/v1")
-# Copied from the PROVEN path rather than guessed: bin/fm-mlx uses Qwen3-14B-MLX-4bit against
-# :8080 with a 180s curl timeout, and that is the leg which keeps arriving in Esa's inbox. I briefly
-# switched this to a 4B because the mailer prints "fm-mlx (Qwen3-4B)" — but that string is a
-# hardcoded DISPLAY LABEL, not the model in use. Reading the label instead of the caller was the
-# same mistake as trusting /v1/models latency for generation latency (2026-08-12).
-MLX_MODEL = os.environ.get("FREELLMASK_MAIL_MLX_MODEL", "Qwen/Qwen3-14B-MLX-4bit")
+# The Mini serves ONE model at a time, chosen by CONVEY_MLX_MODEL in ~/work/convey/.env — that file
+# is the authority, not bin/fm-mlx's default and not /v1/models. /v1/models happily lists seven ids
+# while only the served one can answer; asking for any other appears to make the server try to load
+# it, which is how a "Say OK" probe ended up hanging for minutes (2026-08-12, self-inflicted).
+def _served_mlx_model():
+    env = os.environ.get("FREELLMASK_MAIL_MLX_MODEL") or os.environ.get("CONVEY_MLX_MODEL")
+    if env: return env
+    try:
+        for line in (Path.home()/"work"/"convey"/".env").read_text().splitlines():
+            line=line.strip()
+            if line.startswith("CONVEY_MLX_MODEL=") and not line.startswith("#"):
+                return line.split("=",1)[1].strip()
+    except Exception: pass
+    return "mlx-community/Qwen3-4B-Instruct-2507-8bit"
+
+MLX_MODEL = _served_mlx_model()
 
 # The four sections that used to be a SEPARATE email from `convey email-transcript --analyze`. They
 # only make sense when there is material (a transcript, a document) — a bare question has nothing to
