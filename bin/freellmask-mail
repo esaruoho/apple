@@ -1219,7 +1219,10 @@ WIKI_CORPORA = [c.strip() for c in os.environ.get("FREELLMASK_WIKI","free-energy
 _WIKI_JUNK = {"http","https","www","com","org","net","html","htm","php","aspx","post","posts","threads",
     "status","watch","share","index","page","view","click","here","more","link","html","utm","amp",
     "this","that","with","from","have","your","yours","about","which","their","would","could","there",
-    "were","they","them","what","when","where","will","into","been","also","such","than","then","some"}
+    "were","they","them","what","when","where","will","into","been","also","such","than","then","some",
+    # greetings/pleasantries: a bare "hey how are you today" must not summon Lao Russell.
+    "hello","hey","hi","thanks","thank","please","today","tomorrow","yesterday","good","morning",
+    "evening","night","cheers","regards","best","dear","sorry","doing","going","just","like","want"}
 # All-caps SHORT tokens that are not archive acronyms: mail/URL structure, shouty English, and
 # units/timezones. Everything else in \b[A-Z]{2,6}\b is treated as a retrievable acronym.
 _WIKI_CAPS_JUNK = {"re","fw","fwd","cc","bcc","to","the","and","for","you","are","not","all","new","now",
@@ -1275,7 +1278,9 @@ def wiki_context(question, k_pages=8):
         if not ents.exists(): continue
         for p in ents.glob("*.md"):
             t=p.read_text(errors="ignore").lower()
-            s=sum(t.count(w) for w in qw) + sum(len(apat[w].findall(t)) for w in qa)
+            # acronyms weigh 3x: "MRA" is far more discriminating than a generic word like "final",
+            # which otherwise drowns the acronym in any subject line ("MRA Final Word").
+            s=sum(t.count(w) for w in qw) + 3*sum(len(apat[w].findall(t)) for w in qa)
             if any(w in p.stem for w in qw) or any(apat[w].search(p.stem.replace('-',' ')) for w in qa):
                 s+=25
             if s: scored.append((s,p,corpus))
