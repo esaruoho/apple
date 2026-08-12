@@ -2735,11 +2735,25 @@ SKIP_NAMES = {
 }
 SKIP_PREFIXES = ("license", "licence", "copying", "code_of_conduct", "code-of-conduct")
 
+# WHOLE DIRECTORIES that must never be walked for analysis. node_modules alone is tens of thousands
+# of files — mailing it is unbounded spend on a paid key and an inbox flood, and not one of those
+# files is archive material. Esa, 2026-08-12: "IT IS EATING MRAVIDEO NODEMODULES FILES". A name
+# filter was not enough; the containing PATH has to disqualify a file outright.
+SKIP_DIRS = {"node_modules", ".git", ".venv", "venv", "__pycache__", "site-packages", "dist",
+             "build", ".next", ".cache", "vendor", "Pods", "target", ".terraform", ".tox",
+             "bower_components", ".gradle", ".idea", ".pytest_cache", "coverage", ".stversions",
+             ".stfolder", "DerivedData", "Carthage", ".mypy_cache", ".ruff_cache", "eggs",
+             ".eggs", "htmlcov", ".parcel-cache", ".turbo", ".svelte-kit"}
+
 
 def is_boilerplate(p) -> bool:
     """True for files whose analysis would say nothing anyone needs."""
-    name = Path(p).name.lower()
-    stem = Path(p).stem.lower()
+    pp = Path(p)
+    # Path first: one vendored directory outweighs any per-file judgement.
+    if any(part in SKIP_DIRS for part in pp.parts):
+        return True
+    name = pp.name.lower()
+    stem = pp.stem.lower()
     if name in SKIP_NAMES or stem in SKIP_NAMES:
         return True
     return any(stem.startswith(x) or name.startswith(x) for x in SKIP_PREFIXES)
