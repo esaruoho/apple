@@ -13,7 +13,7 @@ title: Automation for the Rest of Us
 
 Apple ships an extraordinary automation stack — AppleScript, Automator, Shortcuts, App Intents, JXA, ASObjC, sdef, NSUserScriptTask, Vocal Shortcuts, Apple Foundation Models — and almost no one outside the power-user circle knows how to wire it together. This site (and the [esaruoho/apple](https://github.com/esaruoho/apple) repo behind it) is the working pattern book: every layer, every trigger surface, every recipe, in one place, runnable today.
 
-**Start here:** [Trigger surfaces](./triggers) · [Eleven-tier atlas](./tiers) · [Sal corpus](./sal-corpus) · [Trigger→worker chassis](./chassis) · [ASObjC](./asobjc) · [Finder-tag pipeline](./finder-tag-pipeline) · [Spotlight](./spotlight) · [WWSD](./wwsd) · [Automator vs Shortcuts](./automator-vs-shortcuts)
+**Start here:** [Painpoints](./painpoints/) · [Trigger surfaces](./triggers) · [Eleven-tier atlas](./tiers) · [Sal corpus](./sal-corpus) · [Trigger→worker chassis](./chassis) · [ASObjC](./asobjc) · [Finder-tag pipeline](./finder-tag-pipeline) · [Spotlight](./spotlight) · [WWSD](./wwsd) · [Automator vs Shortcuts](./automator-vs-shortcuts)
 
 One verb. One result. Local first. The Mac doing what the Mac is already capable of, without a roundtrip across the world to fetch a value it already holds.
 
@@ -44,6 +44,10 @@ Full catalogs (auto-generated, always in sync):
 ## What this site walks (in progress)
 
 The full public wiki is being built incrementally. Tracked in [`TODO.md`](https://github.com/esaruoho/apple/blob/main/TODO.md). What's already drafted:
+
+### [Fourteen automation painpoints](./painpoints/)
+
+Every place the Mac already holds the capability and refuses to hand it over — reproduced, measured, and written up with what should happen instead. Thirteen are automation walls: an app shipping a dictionary with the verbs missing, or none at all. The fourteenth is different. [**The Hidden 7.4 Gigabytes**](./painpoints/system-settings-002.html) documents a tool Apple built correctly for a real problem and then wired to the wrong number — System Settings' Messages storage panel filters on a database field wrong by up to **8279×**, concealing 7.4 GB of the 12.3 GB it exists to surface, including the largest file in the store.
 
 ### [Seven trigger surfaces](./triggers)
 
