@@ -337,6 +337,23 @@ def main():
     if args.strays:
         rows = db_rows()
         by_path = {p for p in rows}          # rows is keyed by directory
+
+        # Guard: a stray is only disposable if the SAME BYTES survive elsewhere.
+        # Identical content implies identical size, so a file whose size appears
+        # nowhere in the attachment store cannot have a counterpart there — it is
+        # the only copy Messages holds. Observed here: 141 such files (151 MB),
+        # including a 45 MB vocal .wav, a Paketti .xrnx build and nine voice memos.
+        # Derived artefacts are exempt: a .ktx is a re-encoded thumbnail, so it
+        # never size-matches its source and its uniqueness means nothing.
+        DERIVED = {".ktx", ".plist"}
+        store_sizes = set()
+        for r, _d, names in os.walk(ATTACH_DIR):
+            for name in names:
+                try:
+                    store_sizes.add(os.lstat(os.path.join(r, name)).st_size)
+                except OSError:
+                    pass
+
         exact = set()
         if os.path.exists(CHAT_DB):
             con = sqlite3.connect(f"file:{CHAT_DB}?mode=ro", uri=True)
@@ -354,7 +371,7 @@ def main():
             if not os.path.isdir(root):
                 print(f"{label}: not present\n")
                 continue
-            keep_n = keep_b = free_n = free_b = 0
+            keep_n = keep_b = free_n = free_b = only_n = only_b = 0
             for r, _d, names in os.walk(root):
                 for name in names:
                     p = os.path.join(r, name)
@@ -370,14 +387,21 @@ def main():
                     if nk in exact or key(p) in by_path:
                         keep_n += 1
                         keep_b += st.st_size
-                    else:
-                        free_n += 1
-                        free_b += st.st_size
-                        payload.append({"path": p, "size": st.st_size})
+                        continue
+                    ext = os.path.splitext(name)[1].lower()
+                    if (st.st_size and ext not in DERIVED and name != ".DS_Store"
+                            and st.st_size not in store_sizes):
+                        only_n += 1          # no counterpart anywhere in the store
+                        only_b += st.st_size
+                        continue
+                    free_n += 1
+                    free_b += st.st_size
+                    payload.append({"path": p, "size": st.st_size})
             print(f"{label}")
             print(f"  {root.replace(HOME,'~')}")
             print(f"    referenced by chat.db  {keep_n:>7,} files  {human(keep_b):>12}   keep")
-            print(f"    unreferenced           {free_n:>7,} files  {human(free_b):>12}   reclaimable\n")
+            print(f"    only copy in the store {only_n:>7,} files  {human(only_b):>12}   keep — no counterpart")
+            print(f"    duplicated or derived  {free_n:>7,} files  {human(free_b):>12}   reclaimable\n")
             grand_keep += keep_b
             grand_free += free_b
 
@@ -385,9 +409,12 @@ def main():
             print(json.dumps(payload, indent=2))
             return 0
         print(f"Total reclaimable without touching Messages or iCloud: {human(grand_free)}")
-        print("\nQuit Messages.app, then:")
-        print("  messages-attachments --strays --json \\")
-        print("    | python3 -c 'import json,os,sys; [os.remove(e[\"path\"]) for e in json.load(sys.stdin)]'")
+        print("\nQuit Messages.app, then move them to the Trash — recoverable until you")
+        print("empty it, which is worth the temporary disk cost on a first run:")
+        print("  messages-attachments --strays --json | python3 -c '\\")
+        print("import json,os,sys,shutil; t=os.path.expanduser(\"~/.Trash\"); [\\")
+        print("shutil.move(e[\"path\"], os.path.join(t, str(i)+\"-\"+os.path.basename(e[\"path\"]))) \\")
+        print("for i,e in enumerate(json.load(sys.stdin))]'")
         return 0
 
     if args.by_chat:
