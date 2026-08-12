@@ -71,6 +71,40 @@ final class InkView: NSView {
     /// clicking it. Rebuilt on every draw so it always matches what is painted.
     var dismissTargets: [(rect: CGRect, id: String)] = []
 
+    /// Strokes currently being rendered by Image Playground. They pulse in place —
+    /// "I am working on THIS" — which is what a sketch turning into a picture should
+    /// look like. It replaced a text bubble saying "rendering your drawing…", which
+    /// told you nothing about which drawing and looked like more clutter.
+    var renderingIDs: Set<String> = [] {
+        didSet { syncPulse() }
+    }
+    private var pulseTimer: Timer?
+    private var pulsePhase: CGFloat = 0
+
+    private func syncPulse() {
+        if renderingIDs.isEmpty {
+            pulseTimer?.invalidate(); pulseTimer = nil; pulsePhase = 0
+            needsDisplay = true
+            return
+        }
+        guard pulseTimer == nil else { return }
+        // 20fps is plenty for a breathing opacity and costs nothing measurable.
+        pulseTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) {
+            [weak self] _ in
+            guard let self = self else { return }
+            self.pulsePhase += 0.05
+            for o in self.store.objects where self.renderingIDs.contains(o.id) {
+                self.setNeedsDisplay(o.bounds.insetBy(dx: -CGFloat(o.width) - 4,
+                                                      dy: -CGFloat(o.width) - 4))
+            }
+        }
+    }
+
+    /// 0.25…1.0, a smooth breath rather than a blink.
+    private var pulseAlpha: CGFloat {
+        0.25 + 0.75 * (0.5 + 0.5 * sin(pulsePhase * 3.0))
+    }
+
     var colorHex = Hex.palette[0]
     var strokeWidth: Double = 3
     var displayName = ""
@@ -81,6 +115,11 @@ final class InkView: NSView {
             // Dropping the live stroke on a mode flip prevents a half-drawn line
             // being stranded on screen when you hit Esc mid-drag.
             live = []
+            // Leaving draw mode must take the offer with it. Esa hit esc, went back
+            // to his app, and was still being asked whether to render a blank space.
+            askableRegion = nil
+            askButtonRect = nil
+            makeButtonRect = nil
             needsDisplay = true
             if mode == .draw { NSCursor.crosshair.set() } else { NSCursor.arrow.set() }
         }
@@ -256,7 +295,8 @@ final class InkView: NSView {
     private func render(_ o: OverlayObject) {
         switch o.kind {
         case .ink, .line:
-            stroke(points: o.points, hex: o.colorHex, width: o.width)
+            stroke(points: o.points, hex: o.colorHex, width: o.width,
+                   alpha: renderingIDs.contains(o.id) ? pulseAlpha : 1)
 
         case .arrow:
             guard o.points.count >= 2 else { return }
@@ -430,7 +470,8 @@ final class InkView: NSView {
                   options: [.usesLineFragmentOrigin, .usesFontLeading])
     }
 
-    private func stroke(points: [CGPoint], hex: String, width: Double) {
+    private func stroke(points: [CGPoint], hex: String, width: Double,
+                        alpha: CGFloat = 1) {
         guard points.count > 1 else {
             // A single-point stroke is a dot — a zero-length NSBezierPath paints
             // nothing at all, so it gets an explicit disc instead.
@@ -448,7 +489,7 @@ final class InkView: NSView {
         path.lineJoinStyle = .round
         path.move(to: points[0])
         for p in points.dropFirst() { path.line(to: p) }
-        color(hex).setStroke()
+        color(hex).withAlphaComponent(alpha).setStroke()
         path.stroke()
     }
 
@@ -1092,20 +1133,19 @@ final class OverlayManager {
 
         if let canvas = here.first(where: { !$0.view.store.objects.isEmpty }),
            let (png, frame) = rasterizeInk(canvas.view.store.objects, within: canvasFrame) {
-            let placeholder = OverlayObject(
-                kind: .callout,
-                points: [CGPoint(x: frame.midX, y: frame.midY),
-                         CGPoint(x: frame.midX, y: frame.maxY + 46)],
-                colorHex: "#AF52DE", width: 3, actor: "agent:imagine",
-                lifetime: .session, anchor: OverlayAnchor(type: .screen),
-                text: "rendering your drawing…")
-            canvas.view.store.add(placeholder)
+            // The drawing itself shows that it is working, by breathing. No bubble.
+            let pulsing = Set(canvas.view.store.objects
+                .filter { ($0.kind == .ink || $0.kind == .line)
+                       && (canvasFrame == nil || canvasFrame!.intersects($0.bounds)) }
+                .map(\.id))
+            canvas.view.renderingIDs = pulsing
+            canvas.view.askableRegion = nil
             canvas.view.needsDisplay = true
 
             runTool("/Users/esaruoho/work/apple/bin/overlay-imagine",
                     args: [png.path, "--from-drawing"]
                         + (prompt.map { ["--prompt", $0] } ?? [])) { output in
-                canvas.view.store.remove(id: placeholder.id)
+                canvas.view.renderingIDs = []
                 let path = output.split(separator: "\n").last.map(String.init) ?? ""
                 if FileManager.default.fileExists(atPath: path) {
                     // The render replaces the sketch, in the same place and at the

@@ -42,10 +42,18 @@ final class GenDelegate: NSObject, NSApplicationDelegate {
     init(_ body: @escaping (@escaping () -> Void) -> Void) { self.body = body }
 
     func applicationDidFinishLaunching(_ n: Notification) {
-        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 240, height: 80),
-                         styleMask: [.titled], backing: .buffered, defer: false)
-        w.title = "Image Playground…"
-        w.center()
+        // The window has to EXIST and be on screen for ImageCreator to run, but
+        // nothing says it has to be seen. A titled 240x80 panel flashed up in the
+        // middle of the display on every generation, which is intolerable when the
+        // overlay is meant to render a sketch in place. So: 1x1, borderless, almost
+        // transparent, parked in a corner. Not zero alpha — a fully transparent
+        // window can read as not-visible and the API refuses again.
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1, height: 1),
+                         styleMask: [.borderless], backing: .buffered, defer: false)
+        w.alphaValue = 0.02
+        w.level = .normal
+        w.ignoresMouseEvents = true
+        w.setFrameOrigin(NSPoint(x: 0, y: 0))
         w.makeKeyAndOrderFront(nil)
         window = w
         NSApp.activate(ignoringOtherApps: true)
