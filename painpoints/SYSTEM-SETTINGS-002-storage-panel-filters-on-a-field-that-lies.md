@@ -17,7 +17,7 @@ without navigating to a years-old conversation by hand.
 
 It does not show you your largest files.
 
-On the machine that prompted this filing, the biggest single attachment in a 141 GB
+On the machine that prompted this filing, the biggest single attachment in a 135 GB
 store — a **776.8 MiB PNG** — is absent from the panel entirely. Not buried at the
 bottom, not mis-sorted. Absent. The user went looking for it, sorted by size, and it
 was not there.
@@ -66,7 +66,7 @@ the exact value does not change the conclusion.
 
 **The damage, counted:** of 53 attachments at or above 100 MB on disk (12.3 GB
 total), the panel surfaces **27 files / 4.8 GB** and conceals **26 files / 7.4 GB**.
-It hides more than it shows. The user was at 52 GB free on a 1.8 TB disk when they
+It hides more than it shows. The user was at 49 GB free on a 1.8 TB disk when they
 went looking.
 
 ---
@@ -111,7 +111,7 @@ argument — the panel already stats every file it lists in order to render the 
 correctly. It stats the survivors. It needs to stat the candidates.
 
 While there: the panel should also surface **duplicates**. Sending one video to three
-people stores it three times, and this machine carries 4.0 GB of byte-identical
+people stores it three times, and this machine carries 3.2 GB of byte-identical
 redundancy among files ≥100 MB alone. The panel has every path it needs to spot them.
 
 ---

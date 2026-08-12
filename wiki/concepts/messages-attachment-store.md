@@ -5,8 +5,9 @@ description: How ~/Library/Messages/Attachments really works, why chat.db sizes 
 # Messages attachment store
 
 The on-disk backing for iMessage/SMS attachments, at `~/Library/Messages/Attachments`.
-Measured on this Mac 2026-08-12: **105,018 files / 141.1 GB**, with `chat.db` itself
-another 963 MB — 153 GB total, against 52 GB free on the boot volume.
+Measured on this Mac 2026-08-12, after a clearing pass: **104,961 files / 135.0 GB**,
+with `chat.db` itself another 919 MB — 147 GB total, against 49 GB free on the boot
+volume. The store was 141.1 GB / 105,018 files before the pass.
 
 Tool: [`bin/messages-attachments`](../../bin/messages-attachments) — read-only inventory
 by real on-disk size, joined to the conversation. `--why` prints the deletion rules.
@@ -118,26 +119,39 @@ The supported surfaces, all of which write the tombstone and stay consistent:
 
 ## The two stores nothing shows you
 
-Messages keeps 33 GB outside the attachment tree, in places no UI lists and iCloud
+Messages keeps ~30 GB outside the attachment tree, in places no UI lists and iCloud
 never touches. Measured 2026-08-12:
 
 | Store | Files | Size | Status |
 |---|---|---|---|
-| `~/Library/Containers/com.apple.MobileSMS/Data/tmp/TemporaryItems` | 11,930 | 21.9 GB | scratch |
-| `~/Library/Messages/Caches` | 22,411 | 10.8 GB | regenerable |
+| `~/Library/Containers/com.apple.MobileSMS/Data/tmp/TemporaryItems` | 11,915 | 18.8 GB | scratch |
+| `~/Library/Messages/Caches` | 22,412 | 10.8 GB | regenerable |
 
 **Neither is CloudKit-backed**, so unlike the attachment store, `rm` is the correct
 tool here — no tombstone required, nothing to reconcile.
 
-`Caches/Previews` is 20,234 `.ktx` GPU textures, the thumbnails drawn in conversation
+`Caches/Previews` is ~20,200 `.ktx` GPU textures, the thumbnails drawn in conversation
 view. Derived from attachments, regenerated on demand. Zero rows in `chat.db` reference
 it. Deleting costs a re-render.
 
 `TemporaryItems` gives every file its own random-GUID directory — the shape of a
 scratch dir. Messages copies an attachment here when it composes, previews, or
-QuickLooks, then never returns for it. 15.35 GB of it had not been touched in over a
-year; one 776.8 MiB PNG was present **three times** with a sha256 identical to the copy
-in the attachment store.
+QuickLooks, then never returns for it.
+
+Ages, by creation time (birth and modify agree — no copied-timestamp artefact, so the
+folder is genuinely stratified rather than mis-measured):
+
+| Age | Files | Size |
+|---|---|---|
+| under 30 days | 61 | 0.07 GB |
+| 30 days – 1 year | 5,340 | 6.11 GB |
+| 1–3 years | 6,452 | 11.97 GB |
+| over 3 years | 62 | 0.61 GB |
+
+So it is **both** actively used and full of 2024 — say "12 GB of it is 1–3 years old",
+never "the folder is untouched", which invites the obvious objection that there are
+files from this week. One 776.8 MiB PNG was present **three times** with a sha256
+identical to the copy in the attachment store; all three are now deleted.
 
 ### Is everything in TemporaryItems deletable?
 
@@ -162,7 +176,7 @@ rule applies — see the deletion rules above.
 ## Duplicates
 
 The same file is commonly stored once per conversation it was sent to — sending one
-video to three people costs three copies. 4.0 GB of byte-identical duplication among
+video to three people costs three copies. 3.2 GB of byte-identical duplication among
 files ≥100 MB on this Mac; one 777 MB PNG is stored twice for 1.55 GB. Deduplication
 is not possible without deleting from one of the conversations. `--dupes` lists them.
 

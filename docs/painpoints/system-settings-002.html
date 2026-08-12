@@ -496,13 +496,13 @@
     <p class="standfirst">
       macOS ships one purpose-built tool for reclaiming space from Messages. It decides
       what to show you using a number that is wrong by up to eight thousand times — so
-      the largest file in a 141&nbsp;GB store simply is not in the list.
+      the largest file in a 135&nbsp;GB store simply is not in the list.
     </p>
     <div class="filing">
       <div><span class="k">App</span><span class="v">System Settings ▸ General ▸ Storage ▸ Messages</span></div>
       <div><span class="k">Severity</span><span class="v">Correctness bug — hides 60% of the bytes it exists to surface</span></div>
       <div><span class="k">Filed</span><span class="v">12 August 2026</span></div>
-      <div><span class="k">Status</span><span class="v">Open</span></div>
+      <div><span class="k">Status</span><span class="v">Open · figures re-verified after a clearing pass, 12 Aug 2026</span></div>
     </div>
   </header>
 
@@ -544,7 +544,7 @@
     </p>
     <p>
       On the machine that prompted this filing, the biggest single attachment in a
-      141&nbsp;GB store — a <strong>776.8 MiB PNG</strong> — is absent from the panel
+      135&nbsp;GB store — a <strong>776.8 MiB PNG</strong> — is absent from the panel
       entirely. Not buried at the bottom, not mis-sorted. Absent. The user went looking
       for it, sorted by size, and it was not there.
     </p>
@@ -670,6 +670,13 @@
         sliver. Sizes in MiB from <code>stat</code>; the panel renders the same values in
         decimal MB, so 757.7 MiB appears there as “794,5 MB”.
       </p>
+      <p class="scale-note">
+        <strong>Re-verified after a clearing pass.</strong> The user has since deleted
+        6 GB from the store, taking it from 141 to 135 GB. All eight files above are
+        still present at the same sizes, and the counted damage — 53 files, 27 shown,
+        26 hidden, 8279× worst — is unchanged, because the panel showed no route to any
+        of the hidden ones. That is the point of the filing, restated by accident.
+      </p>
     </div>
   </section>
 
@@ -723,7 +730,7 @@
       another way. A tool that silently omits the answer sends them away believing there
       is nothing more to find. The user in this case deleted several hundred megabytes of
       family videos from the visible list while a 1.55 GB duplicated PNG sat two rows
-      above the top of it, invisible — with 52 GB free on a 1.8 TB disk.
+      above the top of it, invisible — with 49 GB free on a 1.8 TB disk.
     </p>
     <p>
       <strong>Principle #5 — use what the user already has.</strong> The user already has
@@ -752,7 +759,7 @@
     </p>
     <p>
       While there: the panel should also surface <strong>duplicates</strong>. Sending one
-      video to three people stores it three times, and this machine carries 4.0 GB of
+      video to three people stores it three times, and this machine carries 3.2 GB of
       byte-identical redundancy among files ≥100 MB alone. The panel has every path it
       needs to spot them.
     </p>
