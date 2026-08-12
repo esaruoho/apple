@@ -67,6 +67,9 @@ final class InkView: NSView {
     var askableRegion: CGRect?
     var askButtonRect: CGRect?
     var makeButtonRect: CGRect?
+    /// A ✕ hit target per object, so anything on screen can be thrown away by
+    /// clicking it. Rebuilt on every draw so it always matches what is painted.
+    var dismissTargets: [(rect: CGRect, id: String)] = []
 
     var colorHex = Hex.palette[0]
     var strokeWidth: Double = 3
@@ -123,7 +126,15 @@ final class InkView: NSView {
 
         // The action buttons live above everything, including the mode chrome.
         askButtonRect = nil; makeButtonRect = nil
-        if mode == .draw, let region = askableRegion { drawRegionActions(for: region) }
+        dismissTargets = []
+        if mode == .draw {
+            // Everything that is not raw ink gets a ✕. Esa had a screen full of
+            // generated images and callouts with no way to remove any of them.
+            for o in store.objects where o.kind != .ink && o.kind != .line {
+                drawDismissBadge(for: o)
+            }
+            if let region = askableRegion { drawRegionActions(for: region) }
+        }
 
         if mode == .draw { drawModeChrome() }
     }
@@ -159,9 +170,42 @@ final class InkView: NSView {
     ///
     ///   Ask about this   crop → Vision OCR → FoundationModels → answer at the region
     ///   Make an image    crop → prompt → Image Playground → picture INTO the region
+    /// A ✕ in the corner of an object. Only in draw mode — in passthrough the
+    /// overlay must not offer anything to click.
+    private func drawDismissBadge(for o: OverlayObject) {
+        let box = o.kind.isRectangular ? o.rect : o.bounds
+        guard box.width > 0 || box.height > 0 else { return }
+        let size: CGFloat = 22
+        let badge = CGRect(x: min(box.maxX - size / 2, bounds.maxX - size - 2),
+                           y: min(box.maxY - size / 2, bounds.maxY - size - 2),
+                           width: size, height: size)
+
+        NSColor(srgbRed: 0.15, green: 0.15, blue: 0.17, alpha: 0.95).setFill()
+        NSBezierPath(ovalIn: badge).fill()
+        NSColor.white.withAlphaComponent(0.8).setStroke()
+        let ring = NSBezierPath(ovalIn: badge)
+        ring.lineWidth = 1
+        ring.stroke()
+
+        let cross = NSBezierPath()
+        let inset: CGFloat = 7
+        cross.move(to: CGPoint(x: badge.minX + inset, y: badge.minY + inset))
+        cross.line(to: CGPoint(x: badge.maxX - inset, y: badge.maxY - inset))
+        cross.move(to: CGPoint(x: badge.minX + inset, y: badge.maxY - inset))
+        cross.line(to: CGPoint(x: badge.maxX - inset, y: badge.minY + inset))
+        cross.lineWidth = 2
+        cross.lineCapStyle = .round
+        NSColor.white.setStroke()
+        cross.stroke()
+
+        dismissTargets.append((badge, o.id))
+    }
+
     private func drawRegionActions(for region: CGRect) {
-        let titles = [tool == .ink ? "Ask about this  ⌘⏎" : "Ask about this  ⌘⏎",
-                      tool == .ink ? "Render my drawing  ⌥⏎" : "Make an image  ⌥⏎"]
+        // Plain verbs. "Ask about this" told Esa nothing about what it would do —
+        // he asked outright what he could turn into text. Now the button says so.
+        let titles = ["Read text here  ⌘⏎",
+                      tool == .ink ? "Render drawing  ⌥⏎" : "Make image here  ⌥⏎"]
         let font = NSFont.systemFont(ofSize: 13, weight: .semibold)
         let attrs: [NSAttributedString.Key: Any] = [.font: font,
                                                     .foregroundColor: NSColor.white]
@@ -416,8 +460,8 @@ final class InkView: NSView {
         border.stroke()
 
         let text = tool == .region
-            ? "SELECT A REGION  ·  drag a box, then click a button  ·  f draw instead  ·  esc exit"
-            : "DRAW  ·  sketch something, then Render my drawing  ·  r select a region  ·  1-6 colour  ·  esc exit"
+            ? "REGION  ·  drag a box over anything  →  Read text here  ·  f = pen  ·  ✕ removes  ·  esc"
+            : "PEN  ·  sketch, then Render drawing  ·  r = box a screen area  ·  ✕ removes  ·  ⌘⌫ clears  ·  esc"
         let attrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .semibold),
             .foregroundColor: NSColor.white,
@@ -425,9 +469,10 @@ final class InkView: NSView {
         let size = (text as NSString).size(withAttributes: attrs)
         let swatchWidth: CGFloat = 44
         let chip = CGRect(x: area.midX - (size.width + swatchWidth + 34) / 2,
-                          // Pinned just below the menu bar: the top of the screen is
-                          // where the eye goes, and nothing occludes it there.
-                          y: area.maxY - size.height - 22,
+                          // BOTTOM, not top. At the top it sat on the menu bar and
+                          // covered AppleToolbox — the status readout hid the thing
+                          // it was reporting about.
+                          y: area.minY + 14,
                           width: size.width + swatchWidth + 34,
                           height: size.height + 14)
         color(colorHex).withAlphaComponent(0.95).setFill()
@@ -473,6 +518,15 @@ final class InkView: NSView {
 
         // The Ask button is part of the canvas, so a click on it must be caught here
         // before it is mistaken for the start of a new drag.
+        // A ✕ wins over everything: getting rid of something must never be
+        // outcompeted by an action button sitting near it.
+        if let hit = dismissTargets.first(where: { $0.rect.contains(p) }) {
+            store.remove(id: hit.id)
+            askableRegion = nil
+            needsDisplay = true
+            manager?.persist()
+            return
+        }
         if let button = askButtonRect, button.contains(p) {
             manager?.askLastRegion()
             askableRegion = nil
@@ -531,26 +585,15 @@ final class InkView: NSView {
                                    actor: "human:esa", lifetime: .persistent,
                                    anchor: OverlayAnchor(type: .screen, display: displayName))
         } else {
-            // Freehand, but not blindly: a stroke that was MEANT to be a rectangle
-            // becomes one, so "draw a square around it" works with the pen too. This
-            // is what ShapeDetect was built for and was, embarrassingly, never wired
-            // to the pen until Esa drew a square and got a squiggle.
-            let points = Geometry.decimate(drawn, minDistance: 1.5)
-            let guess = ShapeDetect.classify(points)
-            if guess.shape == .rectangle, guess.confidence > 0.7,
-               guess.rect.width > 12, guess.rect.height > 12 {
-                object = OverlayObject(kind: .box,
-                                       points: [guess.rect.origin,
-                                                CGPoint(x: guess.rect.maxX, y: guess.rect.maxY)],
-                                       colorHex: colorHex, width: strokeWidth,
-                                       actor: "human:esa", lifetime: .persistent,
-                                       anchor: OverlayAnchor(type: .screen, display: displayName))
-            } else {
-                object = OverlayObject(points: points,
-                                       colorHex: colorHex, width: strokeWidth,
-                                       actor: "human:esa", lifetime: .persistent,
-                                       anchor: OverlayAnchor(type: .screen, display: displayName))
-            }
+            // NO shape snapping. It was added so "draw a square" would work with
+            // the pen, and it promptly turned Esa's cross into a square — silently
+            // destroying the thing he actually drew. A drawing tool that edits your
+            // drawing is not a drawing tool. ShapeDetect stays available for
+            // measuring a region; it no longer rewrites ink.
+            object = OverlayObject(points: Geometry.decimate(drawn, minDistance: 1.5),
+                                   colorHex: colorHex, width: strokeWidth,
+                                   actor: "human:esa", lifetime: .persistent,
+                                   anchor: OverlayAnchor(type: .screen, display: displayName))
         }
 
         store.add(object)
@@ -955,14 +998,23 @@ final class OverlayManager {
     /// This is what makes "draw a cube, get a cube" work: Image Playground accepts
     /// the drawing itself as a concept, so nothing has to put the word "cube" into
     /// words. No screenshot, no OCR, no Screen Recording grant — just the strokes.
-    private func rasterizeInk(_ objects: [OverlayObject], pad: CGFloat = 24) -> (URL, CGRect)? {
-        let strokes = objects.filter { $0.kind == .ink || $0.kind == .line }
+    private func rasterizeInk(_ objects: [OverlayObject], within frame: CGRect? = nil,
+                              pad: CGFloat = 24) -> (URL, CGRect)? {
+        let frameRect = frame
+        var strokes = objects.filter { $0.kind == .ink || $0.kind == .line }
+        // A canvas frame scopes the render to what was drawn INSIDE it, so several
+        // sketches can live on one screen and be sent one at a time.
+        if let frame = frame {
+            strokes = strokes.filter { frame.intersects($0.bounds) }
+        }
         guard !strokes.isEmpty else { return nil }
 
         var box = CGRect.null
         for o in strokes { box = box.isNull ? o.bounds : box.union(o.bounds) }
         guard !box.isNull, box.width > 4, box.height > 4 else { return nil }
-        let frame = box.insetBy(dx: -pad, dy: -pad)
+        // Inside a canvas frame the frame itself is the output rectangle, so the
+        // render lands exactly where the frame was drawn.
+        let frame = frameRect ?? box.insetBy(dx: -pad, dy: -pad)
 
         let image = NSImage(size: frame.size)
         image.lockFocus()
@@ -1002,8 +1054,17 @@ final class OverlayManager {
         // If there is ink on this canvas, THE DRAWING IS THE SUBJECT. Only fall back
         // to photographing the screen when the user selected a region instead of
         // drawing something.
+        // Prefer a canvas frame: if boxes exist, use the LAST one that actually has
+        // ink in it, so "draw an area, sketch in it, send it" works.
+        let canvasFrame: CGRect? = here.first?.view.store.objects
+            .last(where: { o in
+                o.kind == .box && here.first!.view.store.objects.contains {
+                    ($0.kind == .ink || $0.kind == .line) && o.rect.intersects($0.bounds)
+                }
+            })?.rect
+
         if let canvas = here.first(where: { !$0.view.store.objects.isEmpty }),
-           let (png, frame) = rasterizeInk(canvas.view.store.objects) {
+           let (png, frame) = rasterizeInk(canvas.view.store.objects, within: canvasFrame) {
             let placeholder = OverlayObject(
                 kind: .callout,
                 points: [CGPoint(x: frame.midX, y: frame.midY),
@@ -1023,7 +1084,10 @@ final class OverlayManager {
                     // The render replaces the sketch, in the same place and at the
                     // same size — you drew a cube there, now a cube is there.
                     for o in canvas.view.store.objects
-                        where (o.kind == .ink || o.kind == .line) && o.actor.hasPrefix("human:") {
+                        where (o.kind == .ink || o.kind == .line || o.kind == .box)
+                           && o.actor.hasPrefix("human:")
+                           && (canvasFrame == nil
+                               || canvasFrame!.intersects(o.kind == .box ? o.rect : o.bounds)) {
                         canvas.view.store.remove(id: o.id)
                     }
                     canvas.view.store.add(OverlayObject(
