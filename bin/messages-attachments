@@ -16,6 +16,7 @@ Usage:
   messages-attachments --top N         change the count
   messages-attachments --min-mb N      only files at least N MB (default 100)
   messages-attachments --orphans       files on disk with NO chat.db row (safe to rm)
+  messages-attachments --strays        temp/cache files outside the store (safe to rm)
   messages-attachments --dupes         byte-identical files stored more than once
   messages-attachments --summary       totals: linked vs orphaned vs duplicate waste
   messages-attachments --reveal PATH   reveal a file in Finder
@@ -37,6 +38,17 @@ from collections import defaultdict
 HOME = os.path.expanduser("~")
 ATTACH_DIR = os.path.join(HOME, "Library/Messages/Attachments")
 CHAT_DB = os.path.join(HOME, "Library/Messages/chat.db")
+
+# Two stores outside the attachment tree that no supported UI ever shows you.
+# Neither is synced to iCloud, so unlike the attachment store these CAN be
+# reclaimed with rm — but only after checking each file against chat.db, because
+# a minority of live attachments really do live in the container's tmp.
+STRAY_DIRS = [
+    ("Messages container temp",
+     os.path.join(HOME, "Library/Containers/com.apple.MobileSMS/Data/tmp/TemporaryItems")),
+    ("Messages preview caches",
+     os.path.join(HOME, "Library/Messages/Caches")),
+]
 APPLE_EPOCH = 978307200  # 2001-01-01 UTC, Apple's Core Data reference date
 
 WHY = """\
@@ -248,6 +260,7 @@ def main():
     ap.add_argument("--top", type=int, default=40)
     ap.add_argument("--min-mb", type=float, default=100.0)
     ap.add_argument("--by-chat", action="store_true")
+    ap.add_argument("--strays", action="store_true")
     ap.add_argument("--open-chat", metavar="HANDLE")
     ap.add_argument("--orphans", action="store_true")
     ap.add_argument("--dupes", action="store_true")
@@ -319,6 +332,62 @@ def main():
         # conversation; there is no per-message anchor, so pair it with the
         # date printed by --by-chat and scroll the Command-I grid.
         subprocess.run(["open", f"imessage://{args.open_chat}"], check=False)
+        return 0
+
+    if args.strays:
+        rows = db_rows()
+        by_path = {p for p in rows}          # rows is keyed by directory
+        exact = set()
+        if os.path.exists(CHAT_DB):
+            con = sqlite3.connect(f"file:{CHAT_DB}?mode=ro", uri=True)
+            con.text_factory = lambda b: b.decode("utf-8", "replace")
+            for (fn,) in con.execute("SELECT filename FROM attachment WHERE filename IS NOT NULL"):
+                p = os.path.join(HOME, fn[2:]) if fn.startswith("~/") else fn
+                exact.add(unicodedata.normalize("NFC", p).casefold())
+            con.close()
+
+        grand_keep = grand_free = 0
+        payload = []
+        print("Files outside the attachment store. No UI shows these, and they are not")
+        print("synced to iCloud — so unreferenced ones can simply be deleted.\n")
+        for label, root in STRAY_DIRS:
+            if not os.path.isdir(root):
+                print(f"{label}: not present\n")
+                continue
+            keep_n = keep_b = free_n = free_b = 0
+            for r, _d, names in os.walk(root):
+                for name in names:
+                    p = os.path.join(r, name)
+                    try:
+                        st = os.lstat(p)
+                    except OSError:
+                        continue
+                    if not stat.S_ISREG(st.st_mode):
+                        continue
+                    # Conservative: referenced if the exact path OR its directory is
+                    # named in chat.db. Either match keeps the file.
+                    nk = unicodedata.normalize("NFC", p).casefold()
+                    if nk in exact or key(p) in by_path:
+                        keep_n += 1
+                        keep_b += st.st_size
+                    else:
+                        free_n += 1
+                        free_b += st.st_size
+                        payload.append({"path": p, "size": st.st_size})
+            print(f"{label}")
+            print(f"  {root.replace(HOME,'~')}")
+            print(f"    referenced by chat.db  {keep_n:>7,} files  {human(keep_b):>12}   keep")
+            print(f"    unreferenced           {free_n:>7,} files  {human(free_b):>12}   reclaimable\n")
+            grand_keep += keep_b
+            grand_free += free_b
+
+        if args.json:
+            print(json.dumps(payload, indent=2))
+            return 0
+        print(f"Total reclaimable without touching Messages or iCloud: {human(grand_free)}")
+        print("\nQuit Messages.app, then:")
+        print("  messages-attachments --strays --json \\")
+        print("    | python3 -c 'import json,os,sys; [os.remove(e[\"path\"]) for e in json.load(sys.stdin)]'")
         return 0
 
     if args.by_chat:
