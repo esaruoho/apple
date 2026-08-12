@@ -12,7 +12,8 @@ already PUBLIC Apple API, and most of it is already built in this repo. Electron
 a second rendering engine, a second update path, and a Homebrew dependency, to reach a
 place `swiftc` reaches in an afternoon.
 
-Status: **plan only, nothing built yet** (2026-08-11).
+Status: **P0 + P1 shipped 2026-08-12** — `overlay/Overlay.app`, `bin/overlay`, `/overlay`.
+171 assertions green (105 core + 66 AppKit). P2 (window anchoring) is next.
 
 ---
 
@@ -170,8 +171,8 @@ agents cannot litter the screen forever.
 
 | Phase | Deliverable | Proves |
 |---|---|---|
-| **P0** | Fork LiveEnvelopePanel → `overlay/Overlay.app`: transparent panel, ⌥⌘D click-through toggle, PencilKit ink, screen-anchored, per-Space | the interaction feels right |
-| **P1** | Object protocol + `~/.overlay/inbox` + `bin/overlay post/list/clear` + semantic objects (arrow/box/highlight/spotlight/label/sticker) | **an agent can point at something** |
+| **P0** ✅ | Fork LiveEnvelopePanel → `overlay/Overlay.app`: transparent panel, ⌥⌘D click-through toggle, PencilKit ink, screen-anchored, per-Space | the interaction feels right |
+| **P1** ✅ | Object protocol + `~/.overlay/inbox` + `bin/overlay post/list/clear` + semantic objects (arrow/box/highlight/spotlight/label/sticker) | **an agent can point at something** |
 | **P2** | Window anchoring: tier A CGWindowList, then tier B AXObserver; window-relative geometry | ink follows Safari when Safari moves |
 | **P3** | Chat bubble + context capture (SCK crop + vision-ocr + AX dump) + fm responder | the bidirectional loop closes |
 | **P4** | Element + Vision region anchors, multi-actor provenance, TTL GC, Fleet peer posting, Envoy/Convey ingress | it becomes infrastructure |

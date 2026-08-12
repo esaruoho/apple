@@ -27,7 +27,7 @@ rm -rf "$APP"
 echo "==> Compiling Swift..."
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 xcrun swiftc -O -parse-as-library \
-    OverlayCore.swift Overlay.swift OverlaySelfTest.swift ../shared/SupportHelp.swift \
+    OverlayCore.swift Overlay.swift OverlayInbox.swift OverlaySelfTest.swift ../shared/SupportHelp.swift \
     -o "$APP/Contents/MacOS/$NAME" \
     -framework Cocoa \
     -framework SwiftUI \

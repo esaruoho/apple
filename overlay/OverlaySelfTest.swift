@@ -203,7 +203,79 @@ enum OverlaySelfTest {
         check(canvas.view.store.objects.isEmpty, "Clear This Canvas empties it")
         check(manager.markCount == 0, "…and the total mark count goes to zero")
 
+        // ═══════════════ P1: agents ═══════════════
+
+        // 14. an agent posts, and it lands — without disturbing the input mode
+        manager.setMode(.passthrough)
+        let failure = manager.post([
+            decode(#"{"kind":"box","rel":{"x":0.1,"y":0.2,"w":0.3,"h":0.1},"actor":"agent:fm"}"#)
+        ])
+        check(failure == nil, "a valid post is accepted")
+        check(manager.markCount == 1, "…and appears on a canvas")
+        check(manager.mode == .passthrough,
+              "posting NEVER enters draw mode — Esa keeps typing while an agent draws")
+        check(panel.ignoresMouseEvents,
+              "…and the overlay stays click-through while agent marks are up")
+        if let posted = canvas.view.store.objects.last {
+            check(posted.actor == "agent:fm", "the actor is recorded")
+            check(posted.lifetime == .session, "an omitted ttl defaults to session")
+            check(abs(posted.rect.width - canvas.view.bounds.width * 0.3) < 1,
+                  "rel geometry resolved against this display's real size")
+        }
+
+        // 15. a bad post is refused with a reason, and nothing lands
+        let refused = manager.post([decode(#"{"kind":"label","at":[10,10]}"#)])
+        check(refused != nil, "a label with no text is refused")
+        check(refused?.contains("requires text") == true, "…with a reason worth reading")
+        check(manager.markCount == 1, "…and nothing was added")
+
+        // 16. every kind actually renders — a smoke test through the real draw path
+        manager.clear(actor: nil)
+        let mid = CGPoint(x: canvas.view.bounds.midX, y: canvas.view.bounds.midY)
+        for kind in ObjectKind.allCases {
+            let points: [CGPoint] = kind.minimumPoints >= 2
+                ? [CGPoint(x: mid.x - 120, y: mid.y - 80), CGPoint(x: mid.x + 120, y: mid.y + 80)]
+                : [mid]
+            canvas.view.store.add(OverlayObject(kind: kind, points: points,
+                                                actor: "agent:selftest",
+                                                lifetime: .session,
+                                                text: kind.needsText ? "test \(kind.rawValue)" : nil))
+        }
+        check(canvas.view.store.objects.count == ObjectKind.allCases.count,
+              "one object of every kind (\(ObjectKind.allCases.count)) is on the canvas")
+        // display() runs the real draw(_:) — a crash or a bad path shows up here.
+        canvas.view.display()
+        check(true, "all \(ObjectKind.allCases.count) kinds render without crashing")
+
+        // 17. clear by actor leaves human ink alone
+        canvas.view.store.add(OverlayObject(points: [mid, CGPoint(x: mid.x + 10, y: mid.y)],
+                                            actor: "human:esa"))
+        let total = manager.markCount
+        manager.clear(actor: "agent:selftest")
+        check(manager.markCount == 1, "clearing one actor removed only its marks")
+        check(canvas.view.store.objects.first?.actor == "human:esa",
+              "…and the human's ink survived (was \(total) marks)")
+
+        // 18. the TTL collector only exists while something ephemeral does
+        manager.clear(actor: nil)
+        manager.syncTTLCollector()
+        check(manager.hasTTLCollector == false,
+              "no ephemeral marks → no timer running (nothing ticks at idle)")
+        _ = manager.post([decode(
+            #"{"kind":"box","rel":{"x":0,"y":0,"w":0.2,"h":0.2},"ttl":"ephemeral"}"#)])
+        check(manager.hasTTLCollector, "an ephemeral mark starts the collector")
+        manager.clear(actor: nil)
+        check(manager.hasTTLCollector == false, "…and removing it stops the collector again")
+
         return finish()
+    }
+
+    /// Test-local convenience: a PostRequest from a literal, or a fatal error — a
+    /// malformed literal in the test file is a bug in the test, not a finding.
+    private static func decode(_ json: String) -> PostRequest {
+        guard let r = try? PostRequest.decodeBatch(Data(json.utf8)).first, let one = Optional(r)
+        else { fatalError("self-test literal is not a valid PostRequest: \(json)") }
+        return one
     }
 
     private static func finish() -> Int {

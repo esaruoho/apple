@@ -12,7 +12,23 @@ P0 verbs:
     overlay dump [--json]   print the marks currently mirrored to disk
     overlay reveal          open the store folder in Finder
 
-P1 adds `post` (put an object on the screen from an agent) and `watch`.
+P1 verbs — the agent side:
+    overlay post <kind> --rel X,Y,W,H [--text T] [--color #RRGGBB] [--ttl T] [--actor A]
+    overlay post <kind> --rect X,Y,W,H          absolute pixels instead of 0..1
+    overlay post <kind> --at X,Y                a single point (label / sticker)
+    overlay post --stdin                        read one object, or an array, as JSON
+    overlay kinds                               what can be posted
+    overlay clear [--actor A]                   remove all marks, or one actor's
+    overlay draw                                toggle draw mode
+
+Examples:
+    overlay post box   --rel 0.1,0.2,0.3,0.1 --actor agent:fm --ttl ephemeral
+    overlay post arrow --rect 400,300,200,150 --color '#FF3B30'
+    overlay post callout --rel 0.5,0.5,0.1,0.1 --text "this is the stuck process"
+    echo '[{"kind":"spotlight","rel":{"x":.3,"y":.3,"w":.4,"h":.3}}]' | overlay post --stdin
+
+Coordinates are AppKit's: origin bottom-left, y grows upward. `--rel` is 0..1 of the
+screen and is what an agent should prefer — it needs to know nothing about pixels.
 
 Plan: wiki/operations/spatial-overlay-plan.md
 """
@@ -21,6 +37,8 @@ import json
 import os
 import subprocess
 import sys
+import time
+import uuid
 
 HOME = os.path.expanduser("~")
 ROOT = os.path.join(HOME, ".overlay")
@@ -77,6 +95,13 @@ def cmd_status():
     print(f"app       {APP}")
     print(f"store     {SESSION}")
     print(f"marks     {len(marks)}")
+    rejected = [f for f in os.listdir(INBOX)] if os.path.isdir(INBOX) else []
+    bad = [f for f in rejected if f.endswith(".bad")]
+    queued = [f for f in rejected if f.endswith(".json")]
+    if queued:
+        print(f"queued    {len(queued)} (not yet consumed — is Overlay running?)")
+    if bad:
+        print(f"rejected  {len(bad)} in {INBOX} (see the .error.txt beside each)")
     if marks:
         actors = {}
         for m in marks:
@@ -111,6 +136,171 @@ def cmd_reveal():
     return 0
 
 
+# ───────────────────────────── P1: the agent side ─────────────────────────────
+
+INBOX = os.path.join(ROOT, "inbox")
+KINDS = ["ink", "line", "arrow", "box", "highlight", "spotlight",
+         "label", "callout", "sticker"]
+
+
+def cmd_kinds():
+    """The vocabulary, with what each kind's geometry means."""
+    meanings = {
+        "ink":       "a freehand polyline (--stdin points)",
+        "line":      "tail -> head, no arrowhead",
+        "arrow":     "tail -> head, arrowhead at the head",
+        "box":       "an outlined rectangle",
+        "highlight": "a translucent marker rectangle",
+        "spotlight": "dim everything OUTSIDE the rectangle",
+        "label":     "a text chip at a point            (needs --text)",
+        "callout":   "a text chip with a leader line    (needs --text)",
+        "sticker":   "text/emoji drawn large at a point (needs --text)",
+    }
+    for k in KINDS:
+        print(f"  {k:<10} {meanings[k]}")
+    print("\nttl: ephemeral (5s) | session | space | window | persistent")
+    print("     posted objects default to 'session' so an agent cannot litter forever")
+    return 0
+
+
+def _numbers(flag, value, count):
+    parts = [p for p in value.replace(" ", "").split(",") if p]
+    if len(parts) != count:
+        raise SystemExit(f"{flag} needs {count} comma-separated numbers, got {len(parts)}")
+    try:
+        return [float(p) for p in parts]
+    except ValueError:
+        raise SystemExit(f"{flag} must be numeric: {value}")
+
+
+def _flag(argv, name, default=None):
+    """Read `--name value`. Kept hand-rolled rather than argparse so the verb-first
+    shape (`overlay post box --rel ...`) stays natural."""
+    if name in argv:
+        i = argv.index(name)
+        if i + 1 >= len(argv):
+            raise SystemExit(f"{name} needs a value")
+        return argv[i + 1]
+    return default
+
+
+def deliver(payload):
+    """Write one inbox file. The name is unique and the write is atomic (write to a
+    dot-file, then rename) so the watcher can never read a half-written request."""
+    os.makedirs(INBOX, exist_ok=True)
+    stamp = f"{time.time():.6f}-{uuid.uuid4().hex[:8]}"
+    final = os.path.join(INBOX, f"{stamp}.json")
+    temp = os.path.join(INBOX, f".{stamp}.tmp")
+    with open(temp, "w") as fh:
+        json.dump(payload, fh, indent=2)
+    os.rename(temp, final)
+    return final
+
+
+def report(path, timeout=2.0):
+    """Wait briefly for the app's verdict. A consumed file means it went on screen; a
+    .error.txt beside it means it was rejected and why."""
+    if not running():
+        print(f"queued {os.path.basename(path)} — Overlay is not running "
+              f"(start it with: overlay open)")
+        return 0
+    err, bad = path + ".error.txt", path + ".bad"
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        # Rejection is checked FIRST and again after the file vanishes: the app
+        # writes the reason before renaming the request away, so "the file is gone"
+        # alone does not mean it succeeded.
+        if os.path.exists(err) or os.path.exists(bad):
+            reason = "rejected"
+            if os.path.exists(err):
+                with open(err) as fh:
+                    reason = f"rejected: {fh.read().strip()}"
+            print(reason, file=sys.stderr)
+            return 1
+        if not os.path.exists(path):
+            print("posted.")
+            return 0
+        time.sleep(0.05)
+    print(f"queued {os.path.basename(path)} (no verdict within {timeout}s)")
+    return 0
+
+
+def cmd_post(argv):
+    if "--stdin" in argv:
+        try:
+            payload = json.load(sys.stdin)
+        except json.JSONDecodeError as e:
+            print(f"stdin is not valid JSON: {e}", file=sys.stderr)
+            return 2
+        return report(deliver(payload))
+
+    if len(argv) < 3 or argv[2].startswith("--"):
+        print(f"usage: overlay post <kind> --rel|--rect X,Y,W,H | --at X,Y [...]\n"
+              f"kinds: {', '.join(KINDS)}", file=sys.stderr)
+        return 2
+
+    kind = argv[2]
+    if kind not in KINDS:
+        print(f"unknown kind '{kind}' — expected one of {', '.join(KINDS)}",
+              file=sys.stderr)
+        return 2
+
+    obj = {"kind": kind}
+    if (v := _flag(argv, "--rel")):
+        x, y, w, h = _numbers("--rel", v, 4)
+        obj["rel"] = {"x": x, "y": y, "w": w, "h": h}
+    elif (v := _flag(argv, "--rect")):
+        obj["rect"] = _numbers("--rect", v, 4)
+    elif (v := _flag(argv, "--at")):
+        obj["at"] = _numbers("--at", v, 2)
+    else:
+        print("no geometry: give --rel, --rect or --at", file=sys.stderr)
+        return 2
+
+    for flag, key in (("--text", "text"), ("--color", "color"),
+                      ("--actor", "actor"), ("--ttl", "ttl"),
+                      ("--display", "display")):
+        if (v := _flag(argv, flag)) is not None:
+            obj[key] = v
+    if (v := _flag(argv, "--width")) is not None:
+        obj["width"] = float(v)
+
+    return report(deliver(obj))
+
+
+def control(name, payload=""):
+    """Post a distributed notification via AppleScript-ObjC — the skill's tier-1
+    default. No pip, no PyObjC, no socket."""
+    script = f'''
+    use framework "Foundation"
+    current application's NSDistributedNotificationCenter's defaultCenter()'s ¬
+        postNotificationName:"{name}" object:"{payload}" userInfo:(missing value) ¬
+        deliverImmediately:true
+    '''
+    result = subprocess.run(["/usr/bin/osascript", "-e", script],
+                            capture_output=True, text=True)
+    if result.returncode != 0:
+        print(result.stderr.strip(), file=sys.stderr)
+    return result.returncode
+
+
+def cmd_clear(argv):
+    if not running():
+        print("Overlay is not running.")
+        return 0
+    actor = _flag(argv, "--actor", "") or ""
+    rc = control("com.esaruoho.overlay.clear", actor)
+    print(f"cleared {actor or 'all marks'}.")
+    return rc
+
+
+def cmd_draw():
+    if not running():
+        print("Overlay is not running.", file=sys.stderr)
+        return 1
+    return control("com.esaruoho.overlay.draw")
+
+
 def main(argv):
     verb = argv[1] if len(argv) > 1 else "status"
     if verb in ("-h", "--help", "help"):
@@ -126,6 +316,14 @@ def main(argv):
         return cmd_dump("--json" in argv)
     if verb == "reveal":
         return cmd_reveal()
+    if verb == "post":
+        return cmd_post(argv)
+    if verb == "kinds":
+        return cmd_kinds()
+    if verb == "clear":
+        return cmd_clear(argv)
+    if verb == "draw":
+        return cmd_draw()
     print(f"unknown verb: {verb}\n", file=sys.stderr)
     print(__doc__, file=sys.stderr)
     return 2

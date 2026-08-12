@@ -175,9 +175,63 @@ Feature: A spatial canvas that floats over everything and is invisible until ask
   Scenario: Ink attaches to another app's window and follows it
     # P2: CGWindowList fingerprint first (no permission), then AXObserver.
 
-  @todo
-  Scenario: An agent posts an object without a compile step
-    # P1: ~/.overlay/inbox/*.json + `overlay post` + semantic object kinds.
+  # ─────────────────────────── P1: agents can point ───────────────────────────
+
+  @verified
+  Scenario: A rough hand-drawn square becomes a region
+    Given a traced 300x200 square, jitter and all
+    When ShapeDetect classifies it
+    Then it is a rectangle with confidence above 0.8
+    And the rect it reports is the region to crop
+    # The bridge to what this is actually for: circling part of a whiteboard is how
+    # you say "this bit". A circle is recognised as an ellipse, a straight drag as a
+    # line, and a genuine zigzag stays freehand — we never rewrite what was drawn.
+
+  @verified
+  Scenario: An agent posts an object with no compile step and no permission
+    When a JSON file lands in ~/.overlay/inbox/
+    Then the object appears on the canvas of the Space currently in front
+    And the file is consumed
+    # Fifth instance of the trigger->worker chassis. The directory can be a Syncthing
+    # folder, at which point a Fleet peer annotates this Mac for free.
+
+  @verified
+  Scenario: An agent may draw while Esa keeps working
+    Given the overlay is in passthrough
+    When an agent posts a spotlight, an arrow and a callout
+    Then they appear immediately
+    And the mode is still passthrough and the panel still ignores the mouse
+    # Posting NEVER steals input. This is the property that makes an agent overlay
+    # tolerable rather than an interruption.
+
+  @verified
+  Scenario: An agent cannot litter the desktop forever
+    When an object is posted with no ttl
+    Then its lifetime is session, not persistent
+    And an ephemeral object is collected 5 seconds later
+    And the collector timer only exists while something ephemeral is on screen
+
+  @verified
+  Scenario: Bad agent input is refused by name, with the reason readable back
+    When "hilight" is posted
+    Then it is rejected with "unknown kind 'hilight' — expected one of ink, line, …"
+    And the request is renamed .bad with the reason written beside it
+    # Also covered: missing text, bad colour, bad ttl, no geometry, too few points.
+    # Regression: the reason used to be written AFTER the rename, so a caller watching
+    # its file vanish read rejection as success. Caught end-to-end, fixed both sides.
+
+  @verified
+  Scenario: All nine object kinds render
+    When one of every kind is placed and the view is drawn for real
+    Then nothing crashes
+    # ink line arrow box highlight spotlight label callout sticker
+
+  @verified
+  Scenario: An agent cleans up after itself without touching the human's ink
+    When `overlay clear --actor agent:fm` runs
+    Then only that actor's marks are removed
+    # Control verbs travel as distributed notifications, so the CLI needs nothing but
+    # a one-line AppleScript-ObjC post — no port, no socket, no entitlement.
 
   @todo
   Scenario: A drawn square becomes a question with a picture attached

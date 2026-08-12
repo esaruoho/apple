@@ -535,10 +535,14 @@ public final class OverlayStore {
         objects.removeAll { $0.id == id }
     }
 
-    /// Drop objects whose lifetime has run out. `.ephemeral` is the only TTL P0 can
-    /// evaluate from time alone; the anchor-dependent ones land in P2/P4.
-    public func expire(now: Double, ephemeralSeconds: Double = 5) {
+    /// Drop objects whose lifetime has run out, returning how many went. `.ephemeral`
+    /// is the only TTL that time alone can evaluate; the anchor-dependent ones land
+    /// in P2/P4. The count is what lets the caller skip a redraw when nothing changed.
+    @discardableResult
+    public func expire(now: Double, ephemeralSeconds: Double = 5) -> Int {
+        let before = objects.count
         objects.removeAll { $0.lifetime == .ephemeral && now - $0.created > ephemeralSeconds }
+        return before - objects.count
     }
 
     // JSON is the wire format, the disk format and the agent API — one shape, so an

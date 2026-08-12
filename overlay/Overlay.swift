@@ -81,13 +81,20 @@ final class InkView: NSView {
     override func draw(_ dirtyRect: NSRect) {
         NSGraphicsContext.current?.cgContext.setShouldAntialias(true)
 
-        for object in store.objects {
+        // Spotlights dim everything outside themselves, so they are painted first and
+        // always in full — a spotlight clipped to a dirty rect would leave a bright
+        // rectangle where the previous frame's dimming used to be.
+        let spotlights = store.objects.filter { $0.kind == .spotlight }
+        if !spotlights.isEmpty {
+            for s in spotlights { render(s) }
+        }
+
+        for object in store.objects where object.kind != .spotlight {
             // Only paint what intersects the invalidated rect. Without this, every
             // mouse-drag sample would re-stroke the entire canvas.
-            let box = object.bounds.insetBy(dx: -CGFloat(object.width) - 2,
-                                            dy: -CGFloat(object.width) - 2)
+            let box = paintedBounds(of: object)
             guard box.isNull || box.intersects(dirtyRect) else { continue }
-            stroke(points: object.points, hex: object.colorHex, width: object.width)
+            render(object)
         }
 
         if !live.isEmpty {
@@ -95,6 +102,149 @@ final class InkView: NSView {
         }
 
         if mode == .draw { drawModeChrome() }
+    }
+
+    /// How much of the canvas an object actually covers, including its stroke width
+    /// and any chip that hangs off its geometry.
+    private func paintedBounds(of object: OverlayObject) -> CGRect {
+        let slack = CGFloat(object.width) + 4
+        switch object.kind {
+        case .label, .callout, .sticker:
+            // Text extends well past the anchor point; be generous rather than
+            // compute the layout twice.
+            return object.bounds.insetBy(dx: -400, dy: -80)
+        default:
+            return object.bounds.insetBy(dx: -slack, dy: -slack)
+        }
+    }
+
+    // ── the object vocabulary ──
+
+    private func render(_ o: OverlayObject) {
+        switch o.kind {
+        case .ink, .line:
+            stroke(points: o.points, hex: o.colorHex, width: o.width)
+
+        case .arrow:
+            guard o.points.count >= 2 else { return }
+            drawArrow(from: o.points[0], to: o.points[1], hex: o.colorHex, width: o.width)
+
+        case .box:
+            let path = NSBezierPath(roundedRect: o.rect, xRadius: 4, yRadius: 4)
+            path.lineWidth = CGFloat(o.width)
+            color(o.colorHex).setStroke()
+            path.stroke()
+
+        case .highlight:
+            // A marker pen, not a paint bucket: translucent enough to read through.
+            color(o.colorHex).withAlphaComponent(0.3).setFill()
+            NSBezierPath(roundedRect: o.rect, xRadius: 3, yRadius: 3).fill()
+
+        case .spotlight:
+            // Even-odd fill of (whole canvas + the hole) dims everything outside.
+            let path = NSBezierPath(rect: bounds)
+            path.append(NSBezierPath(roundedRect: o.rect, xRadius: 6, yRadius: 6))
+            path.windingRule = .evenOdd
+            NSColor.black.withAlphaComponent(0.55).setFill()
+            path.fill()
+            let ring = NSBezierPath(roundedRect: o.rect, xRadius: 6, yRadius: 6)
+            ring.lineWidth = CGFloat(o.width)
+            color(o.colorHex).setStroke()
+            ring.stroke()
+
+        case .label:
+            guard let p = o.points.first else { return }
+            drawChip(o.text ?? "", at: p, hex: o.colorHex, actor: o.actor, centred: true)
+
+        case .callout:
+            guard o.points.count >= 2 else { return }
+            let target = o.points[0], chip = o.points[1]
+            let leader = NSBezierPath()
+            leader.move(to: chip)
+            leader.line(to: target)
+            leader.lineWidth = max(1, CGFloat(o.width) - 1)
+            color(o.colorHex).withAlphaComponent(0.85).setStroke()
+            leader.stroke()
+            // A dot on the thing being talked about, so the reference is unambiguous.
+            color(o.colorHex).setFill()
+            let r = max(3, CGFloat(o.width))
+            NSBezierPath(ovalIn: CGRect(x: target.x - r, y: target.y - r,
+                                        width: r * 2, height: r * 2)).fill()
+            drawChip(o.text ?? "", at: chip, hex: o.colorHex, actor: o.actor, centred: true)
+
+        case .sticker:
+            guard let p = o.points.first, let text = o.text else { return }
+            let size = max(18, CGFloat(o.width) * 8)
+            let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: size)]
+            let measured = (text as NSString).size(withAttributes: attrs)
+            (text as NSString).draw(at: CGPoint(x: p.x - measured.width / 2,
+                                                y: p.y - measured.height / 2),
+                                    withAttributes: attrs)
+        }
+    }
+
+    private func drawArrow(from tail: CGPoint, to head: CGPoint, hex: String, width: Double) {
+        let w = CGFloat(width)
+        let angle = atan2(head.y - tail.y, head.x - tail.x)
+        let headLength = max(10, w * 4)
+
+        // Stop the shaft short of the tip so the line doesn't poke through the head.
+        let stop = CGPoint(x: head.x - cos(angle) * headLength * 0.8,
+                           y: head.y - sin(angle) * headLength * 0.8)
+        let shaft = NSBezierPath()
+        shaft.move(to: tail)
+        shaft.line(to: stop)
+        shaft.lineWidth = w
+        shaft.lineCapStyle = .round
+        color(hex).setStroke()
+        shaft.stroke()
+
+        let spread = CGFloat.pi / 7
+        let barb = NSBezierPath()
+        barb.move(to: head)
+        barb.line(to: CGPoint(x: head.x - cos(angle - spread) * headLength,
+                              y: head.y - sin(angle - spread) * headLength))
+        barb.line(to: CGPoint(x: head.x - cos(angle + spread) * headLength,
+                              y: head.y - sin(angle + spread) * headLength))
+        barb.close()
+        color(hex).setFill()
+        barb.fill()
+    }
+
+    /// A text chip. Agent provenance rides along as a small tag rather than a colour
+    /// convention, so several agents can annotate at once without a colour war.
+    private func drawChip(_ text: String, at p: CGPoint, hex: String,
+                          actor: String, centred: Bool) {
+        guard !text.isEmpty else { return }
+        let font = NSFont.systemFont(ofSize: 13, weight: .medium)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font,
+                                                    .foregroundColor: NSColor.white]
+        let size = (text as NSString).size(withAttributes: attrs)
+
+        let showActor = !actor.hasPrefix("human:")
+        let tag = showActor ? actor : ""
+        let tagFont = NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
+        let tagAttrs: [NSAttributedString.Key: Any] = [
+            .font: tagFont, .foregroundColor: NSColor.white.withAlphaComponent(0.65)]
+        let tagSize = showActor ? (tag as NSString).size(withAttributes: tagAttrs) : .zero
+
+        let width = max(size.width, tagSize.width) + 20
+        let height = size.height + (showActor ? tagSize.height + 2 : 0) + 12
+        let chip = CGRect(x: centred ? p.x - width / 2 : p.x,
+                          y: p.y - height / 2,
+                          width: width, height: height)
+
+        color(hex).withAlphaComponent(0.92).setFill()
+        NSBezierPath(roundedRect: chip, xRadius: 6, yRadius: 6).fill()
+
+        var textY = chip.minY + 6
+        if showActor {
+            (tag as NSString).draw(at: CGPoint(x: chip.minX + 10, y: textY),
+                                   withAttributes: tagAttrs)
+            textY += tagSize.height + 2
+        }
+        (text as NSString).draw(at: CGPoint(x: chip.minX + 10, y: textY),
+                                withAttributes: attrs)
     }
 
     private func stroke(points: [CGPoint], hex: String, width: Double) {
@@ -320,7 +470,7 @@ final class OverlayManager {
     var here: [Canvas] { canvases.filter { $0.isHere } }
 
     /// Make sure every display has a canvas on the Space you are looking at right now.
-    private func ensureCanvasesHere() {
+    func ensureCanvasesHere() {
         for screen in NSScreen.screens {
             let existing = here.contains { $0.matches(screen: screen) }
             guard !existing, canvases.count < maxCanvases else {
@@ -411,6 +561,95 @@ final class OverlayManager {
 
     var markCount: Int { canvases.reduce(0) { $0 + $1.view.store.objects.count } }
 
+    /// Remove every mark posted by one actor, or all marks if `actor` is nil. This is
+    /// how an agent cleans up after itself without touching a human's ink.
+    func clear(actor: String?) {
+        for canvas in canvases {
+            let store = canvas.view.store
+            let doomed = store.objects.filter { actor == nil || $0.actor == actor }
+            for o in doomed { store.remove(id: o.id) }
+            if !doomed.isEmpty { canvas.view.needsDisplay = true }
+        }
+        syncTTLCollector()
+        persist()
+    }
+
+    // ── the agent side ──
+
+    /// Put posted objects on screen. Returns nil on success or a reason on rejection;
+    /// the inbox uses that verdict to decide whether to consume or quarantine a file.
+    ///
+    /// Posting never changes the input mode. An agent may draw all over the screen
+    /// while Esa keeps typing — the overlay stays click-through throughout.
+    @discardableResult
+    func post(_ requests: [PostRequest]) -> String? {
+        ensureCanvasesHere()
+        guard !here.isEmpty else { return "no canvas available on the active Space" }
+
+        var failures: [String] = []
+        var touched = Set<ObjectIdentifier>()
+
+        for request in requests {
+            // An agent may name a display; otherwise the mark lands on the first
+            // canvas of the Space currently in front of Esa.
+            let target = request.display.flatMap { name in
+                here.first { $0.displayName == name }
+            } ?? here[0]
+
+            do {
+                let object = try request.resolve(in: target.view.bounds)
+                target.view.store.add(object)
+                touched.insert(ObjectIdentifier(target))
+            } catch let e as PostRequest.PostError {
+                failures.append(e.description)
+            } catch {
+                failures.append("\(error)")
+            }
+        }
+
+        for canvas in canvases where touched.contains(ObjectIdentifier(canvas)) {
+            canvas.view.needsDisplay = true
+        }
+        if !touched.isEmpty { persist(); syncTTLCollector() }
+
+        return failures.isEmpty ? nil : failures.joined(separator: "; ")
+    }
+
+    // ── TTL collection ──
+
+    /// Ephemeral marks need a clock, but an overlay that ticks forever is a battery
+    /// leak. The collector only exists while something ephemeral is on screen, and
+    /// stops itself the moment the last one is gone.
+    private var ttlCollector: Timer?
+
+    /// Exposed so the self-test can assert that nothing is ticking at idle.
+    var hasTTLCollector: Bool { ttlCollector != nil }
+
+    func syncTTLCollector() {
+        let hasEphemeral = canvases.contains { canvas in
+            canvas.view.store.objects.contains { $0.lifetime == .ephemeral }
+        }
+        if hasEphemeral, ttlCollector == nil {
+            ttlCollector = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) {
+                [weak self] _ in self?.collectExpired()
+            }
+        } else if !hasEphemeral, let timer = ttlCollector {
+            timer.invalidate()
+            ttlCollector = nil
+        }
+    }
+
+    private func collectExpired() {
+        let now = Date().timeIntervalSince1970
+        var removed = 0
+        for canvas in canvases {
+            let n = canvas.view.store.expire(now: now)
+            if n > 0 { removed += n; canvas.view.needsDisplay = true }
+        }
+        if removed > 0 { persist() }
+        syncTTLCollector()
+    }
+
     /// Mirror every canvas to ~/.overlay/store/session.json.
     ///
     /// P0 writes but deliberately does NOT restore: without a durable Space identity
@@ -435,6 +674,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var hotKeyRef: EventHotKeyRef?
     private var helpWindow: NSWindow?
+    private var inbox: InboxWatcher?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // --selftest drives the real panels in-process and exits. It runs from inside
@@ -448,6 +688,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         buildStatusItem()
         registerHotKey()
+        startInbox()
+        registerControlChannel()
         manager.onModeChange = { [weak self] _ in self?.refreshStatusItem() }
         refreshStatusItem()
 
@@ -556,6 +798,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         helpWindow = window
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
+    }
+
+    // ── agent ingress ──
+
+    private func startInbox() {
+        inbox = InboxWatcher { [weak self] requests in
+            guard let self = self else { return "overlay is shutting down" }
+            let failure = self.manager.post(requests)
+            self.refreshStatusItem()
+            return failure
+        }
+        inbox?.start()
+    }
+
+    /// Control verbs arrive as distributed notifications so `bin/overlay clear` needs
+    /// nothing but a one-line osascript. The object field carries the actor to filter
+    /// on, or is empty for "everything".
+    private func registerControlChannel() {
+        let center = DistributedNotificationCenter.default()
+        center.addObserver(forName: OverlayControl.clear, object: nil, queue: .main) {
+            [weak self] note in
+            let actor = (note.object as? String).flatMap { $0.isEmpty ? nil : $0 }
+            self?.manager.clear(actor: actor)
+            NSLog("Overlay: control clear actor=\(actor ?? "*")")
+            self?.refreshStatusItem()
+        }
+        center.addObserver(forName: OverlayControl.draw, object: nil, queue: .main) {
+            [weak self] _ in
+            self?.manager.toggleMode()
+        }
     }
 
     // ── global hotkey ──

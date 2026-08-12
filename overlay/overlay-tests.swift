@@ -247,6 +247,192 @@ enum OverlayCoreTests {
             check(OverlayPaths.session.path.contains("/store/"), "session lives under store/")
         }
 
+        // ═══════════════ P1: object kinds ═══════════════
+
+        do {
+            check(ObjectKind.box.isRectangular && ObjectKind.highlight.isRectangular
+                  && ObjectKind.spotlight.isRectangular, "the three rect kinds agree")
+            check(!ObjectKind.arrow.isRectangular, "an arrow is not a rectangle")
+            check(ObjectKind.label.needsText && ObjectKind.callout.needsText
+                  && ObjectKind.sticker.needsText, "text kinds demand text")
+            check(!ObjectKind.ink.needsText, "ink needs no text")
+            check(ObjectKind.arrow.minimumPoints == 2, "an arrow needs a tail and a head")
+            check(ObjectKind.label.minimumPoints == 1, "a label needs one point")
+
+            // Corners in any order describe the same rectangle — an agent should not
+            // have to normalise before posting.
+            let forward = OverlayObject(kind: .box, points: [CGPoint(x: 10, y: 10),
+                                                             CGPoint(x: 110, y: 60)])
+            let reversed = OverlayObject(kind: .box, points: [CGPoint(x: 110, y: 60),
+                                                              CGPoint(x: 10, y: 10)])
+            check(forward.rect == reversed.rect, "reversed corners give the same rect")
+            check(near(forward.rect.width, 100) && near(forward.rect.height, 50),
+                  "rect has a positive size either way")
+
+            check(OverlayObject(kind: .callout, points: [.zero], text: "hi").isRenderable == false,
+                  "a callout with one point is rejected")
+            check(OverlayObject(kind: .label, points: [.zero], text: "").isRenderable == false,
+                  "a label with empty text is rejected")
+            check(OverlayObject(kind: .label, points: [.zero], text: "ok").isRenderable,
+                  "a label with a point and text is fine")
+        }
+
+        // ═══════════════ P1: shape recognition ═══════════════
+
+        do {
+            /// Trace a closed rectangle with `per` samples along each edge.
+            func square(_ r: CGRect, per: Int = 12) -> [CGPoint] {
+                let cs = [CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.maxX, y: r.minY),
+                          CGPoint(x: r.maxX, y: r.maxY), CGPoint(x: r.minX, y: r.maxY),
+                          CGPoint(x: r.minX, y: r.minY)]
+                var out: [CGPoint] = []
+                for i in 1..<cs.count {
+                    for s in 0..<per {
+                        let t = CGFloat(s) / CGFloat(per)
+                        out.append(CGPoint(x: cs[i-1].x + (cs[i].x - cs[i-1].x) * t,
+                                           y: cs[i-1].y + (cs[i].y - cs[i-1].y) * t))
+                    }
+                }
+                out.append(cs[0])
+                return out
+            }
+            func circle(_ c: CGPoint, _ radius: CGFloat, steps: Int = 48) -> [CGPoint] {
+                (0...steps).map { i in
+                    let a = 2 * CGFloat.pi * CGFloat(i) / CGFloat(steps)
+                    return CGPoint(x: c.x + cos(a) * radius, y: c.y + sin(a) * radius)
+                }
+            }
+
+            // THE headline case: Esa draws a square around part of a whiteboard.
+            let drawn = ShapeDetect.classify(square(CGRect(x: 100, y: 100,
+                                                           width: 300, height: 200)))
+            check(drawn.shape == .rectangle, "a traced square is recognised as a rectangle")
+            check(drawn.confidence > 0.8, "…with high confidence")
+            check(near(drawn.rect.width, 300) && near(drawn.rect.height, 200),
+                  "…and the rect it reports is the region to crop")
+
+            let round = ShapeDetect.classify(circle(CGPoint(x: 200, y: 200), 80))
+            check(round.shape == .ellipse, "a traced circle is recognised as an ellipse")
+            check(near(round.rect.width, 160, 1), "the ellipse's rect is its bounding box")
+
+            let straight = ShapeDetect.classify((0..<30).map { CGPoint(x: CGFloat($0) * 10, y: 5) })
+            check(straight.shape == .line, "a straight drag is a line")
+            check(straight.confidence > 0.9, "…with high confidence")
+
+            // A genuine scribble must NOT be silently straightened into a shape.
+            let scribble = (0..<40).map { i -> CGPoint in
+                CGPoint(x: CGFloat(i) * 7, y: CGFloat((i % 5) * 40 - 80))
+            }
+            check(ShapeDetect.classify(scribble).shape == .freehand,
+                  "a zigzag scribble stays freehand — we never rewrite what was drawn")
+
+            check(ShapeDetect.classify([]).shape == .freehand, "no points → freehand")
+            check(ShapeDetect.classify([CGPoint(x: 1, y: 1), CGPoint(x: 2, y: 2)]).shape
+                  == .freehand, "too few points → freehand, not a lucky guess")
+
+            // A hand-drawn square is never perfect; jitter must not break recognition.
+            var wobbly = square(CGRect(x: 0, y: 0, width: 240, height: 240))
+            for i in stride(from: 0, to: wobbly.count, by: 3) {
+                wobbly[i].x += (i % 2 == 0 ? 4 : -4)
+                wobbly[i].y += (i % 3 == 0 ? -3 : 3)
+            }
+            check(ShapeDetect.classify(wobbly).shape == .rectangle,
+                  "a wobbly hand-drawn square is still a rectangle")
+
+            check(near(ShapeDetect.pathLength([CGPoint(x: 0, y: 0), CGPoint(x: 3, y: 4)]), 5),
+                  "pathLength measures the polyline")
+        }
+
+        // ═══════════════ P1: the agent post protocol ═══════════════
+
+        do {
+            let screen = CGRect(x: 0, y: 0, width: 1000, height: 800)
+
+            func post(_ json: String) throws -> OverlayObject {
+                let reqs = try PostRequest.decodeBatch(Data(json.utf8))
+                return try reqs[0].resolve(in: screen, now: 1_700_000_000)
+            }
+
+            // The canonical agent call from the plan.
+            let box = try! post("""
+            {"kind":"box","rel":{"x":0.1,"y":0.2,"w":0.3,"h":0.1},
+             "color":"#FF3B30","actor":"agent:fm","ttl":"ephemeral"}
+            """)
+            check(box.kind == .box, "kind decodes")
+            check(near(box.rect.minX, 100) && near(box.rect.minY, 160),
+                  "rel is resolved against the surface")
+            check(near(box.rect.width, 300) && near(box.rect.height, 80),
+                  "…including its size")
+            check(box.actor == "agent:fm" && box.lifetime == .ephemeral,
+                  "provenance and TTL come through")
+
+            // An agent that omits the TTL gets .session, never .persistent — it must
+            // not be able to litter the desktop permanently by forgetting a field.
+            let defaulted = try! post("""
+            {"kind":"highlight","rel":{"x":0,"y":0,"w":0.5,"h":0.5}}
+            """)
+            check(defaulted.lifetime == .session, "a posted object defaults to .session")
+            check(defaulted.actor == "agent:unknown", "…and to an explicit unknown actor")
+            check(defaulted.colorHex == Hex.palette[3],
+                  "agent default colour is blue, distinct from human red")
+
+            // Absolute pixels also work, for an agent that already knows the geometry.
+            let abs = try! post("""
+            {"kind":"arrow","points":[[10,20],[300,400]],"actor":"agent:claude"}
+            """)
+            check(abs.points.count == 2 && near(abs.points[1].y, 400),
+                  "explicit points are taken verbatim")
+
+            let label = try! post("""
+            {"kind":"label","at":[500,500],"text":"click this"}
+            """)
+            check(label.points.count == 1 && label.text == "click this", "label at a point")
+
+            // A rect given for a single-point kind collapses to its centre, so the same
+            // `rel` works whether the agent asks for a box or a label.
+            let centred = try! post("""
+            {"kind":"sticker","rel":{"x":0.4,"y":0.4,"w":0.2,"h":0.2},"text":"⚠️"}
+            """)
+            check(near(centred.points[0].x, 500) && near(centred.points[0].y, 400),
+                  "a rel rect for a sticker resolves to its centre")
+
+            let callout = try! post("""
+            {"kind":"callout","rel":{"x":0.1,"y":0.1,"w":0.2,"h":0.1},"text":"here"}
+            """)
+            check(callout.points.count == 2, "a callout gets a target and a chip position")
+            check(callout.points[1].y > callout.points[0].y, "the chip floats above the target")
+
+            // ── rejection: every one of these must fail loudly, not paint nothing ──
+            func fails(_ json: String, _ expect: PostRequest.PostError, _ msg: String) {
+                do { _ = try post(json); check(false, msg + " (accepted!)") }
+                catch let e as PostRequest.PostError { check(e == expect, msg) }
+                catch { check(false, msg + " (wrong error type)") }
+            }
+            fails(#"{"kind":"hilight","rel":{"x":0,"y":0,"w":1,"h":1}}"#,
+                  .unknownKind("hilight"), "a misspelled kind is rejected by name")
+            fails(#"{"kind":"box"}"#, .noGeometry, "no geometry is rejected")
+            fails(#"{"kind":"label","at":[1,2]}"#, .missingText(.label),
+                  "a label without text is rejected")
+            fails(#"{"kind":"box","rel":{"x":0,"y":0,"w":1,"h":1},"color":"nope"}"#,
+                  .badColor("nope"), "a bad colour is rejected")
+            fails(#"{"kind":"box","rel":{"x":0,"y":0,"w":1,"h":1},"ttl":"forever"}"#,
+                  .badTTL("forever"), "a bad ttl is rejected")
+            fails(#"{"kind":"arrow","points":[[1,2]]}"#, .notRenderable(.arrow),
+                  "an arrow with one point is rejected")
+
+            // A batch drops in atomically.
+            let batch = try! PostRequest.decodeBatch(Data("""
+            [{"kind":"box","rel":{"x":0,"y":0,"w":0.5,"h":0.5}},
+             {"kind":"label","at":[5,5],"text":"two"}]
+            """.utf8))
+            check(batch.count == 2, "an array of requests decodes as a batch")
+            check((try? batch[1].resolve(in: screen))?.text == "two", "…and each resolves")
+
+            var threw = false
+            do { _ = try PostRequest.decodeBatch(Data("nonsense".utf8)) } catch { threw = true }
+            check(threw, "a malformed inbox file throws")
+        }
+
         print("\n\(passed) passed, \(failed) failed")
         exit(failed == 0 ? 0 : 1)
     }
