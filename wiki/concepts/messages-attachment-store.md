@@ -156,11 +156,13 @@ never touches. Measured 2026-08-12:
 
 | Store | Files | Size | Status |
 |---|---|---|---|
-| `~/Library/Containers/com.apple.MobileSMS/Data/tmp/TemporaryItems` | 11,915 | 18.8 GB | scratch |
+| `~/Library/Containers/com.apple.MobileSMS/Data/tmp/TemporaryItems` | 11,915 | 18.8 GB | 99.2% duplicate — see the audit below |
 | `~/Library/Messages/Caches` | 22,412 | 10.8 GB | regenerable |
 
 **Neither is CloudKit-backed**, so unlike the attachment store, `rm` is the correct
-tool here — no tombstone required, nothing to reconcile.
+tool here — no tombstone required, nothing to reconcile. That makes them *safe to
+delete* in the sync sense; it does **not** make every file in them a duplicate. Read
+"Is everything in TemporaryItems deletable?" below before any bulk pass.
 
 `Caches/Previews` is ~20,200 `.ktx` GPU textures, the thumbnails drawn in conversation
 view. Derived from attachments, regenerated on demand. Zero rows in `chat.db` reference
@@ -185,22 +187,49 @@ never "the folder is untouched", which invites the obvious objection that there 
 files from this week. One 776.8 MiB PNG was present **three times** with a sha256
 identical to the copy in the attachment store; all three are now deleted.
 
-### Is everything in TemporaryItems deletable?
+### Is everything in TemporaryItems deletable? No — and "delete freely" was wrong
 
-Effectively yes, and the reason is the container contract, not a file-by-file audit.
-`Data/tmp` is the app's `NSTemporaryDirectory()`. macOS documents container `tmp` as
-purgeable — the system may clear it when the app is not running, so **no app is
-permitted to depend on anything surviving there**.
+An earlier version of this page said the container contract settles it: `Data/tmp` is
+the app's `NSTemporaryDirectory()`, macOS documents container `tmp` as purgeable, so no
+app is permitted to depend on anything surviving there, so delete freely. The contract
+part is true. **The conclusion was not**, and it was reached by reasoning about what the
+directory is *called* rather than measuring what is *in* it.
 
-There is one wrinkle worth knowing. 48 files in `TemporaryItems` *are* referenced by
-`attachment` rows — Messages relying on something the contract says it cannot. They
-total 17.9 MB, the largest is 4.0 MB, and every one belongs to a message dated
-2025-09 or later, well inside the Messages-in-iCloud era. So even deleting those costs
-at most a re-download, not data loss.
+The measurement that settles it: identical content implies identical size, so a file
+whose size appears nowhere in the attachment store **cannot have a counterpart there**.
+Index the store's distinct sizes (64,539 of them here) and check every stray against it.
 
-`bin/messages-attachments --strays` excludes them anyway, matching on both exact path
-and containing directory. Practical rule: **delete freely in `TemporaryItems`; use
-`--strays` if you want the 0.4% respected without thinking about it.**
+Result on this Mac — three buckets, not two:
+
+| Bucket | Files | Size | |
+|---|---|---|---|
+| referenced by `chat.db` | 48 | 17.9 MB | keep |
+| **no counterpart in the store** | **118** | **143.5 MB** | **keep** |
+| duplicated or derived | 11,749 | 18.6 GB | reclaimable |
+
+18.6 of 18.8 GB really is duplicate. But that 143.5 MB is not scratch:
+
+- `intefin_pylväs_vocals_v2.wav` ×2 — 91 MB of vocal recording
+- nine `Audio Message.caf` voice memos
+- six TIFFs (`IMG_9375`, `IMG_3264`, `IMG_1700`, each twice)
+- `org.lackluster.Paketti_V3.54.xrnx` ×2 — a Paketti release build
+- `VTT_CR_00092_26.pdf`, `Maasäteilyraportti.pdf`, `путь-мистики--семинар-2.pdf`
+- two `.numbers`, a `.shortcut`, a `.gif`
+
+Two limits on that test, both worth stating. It compares against the **attachment
+store only**, not the whole disk — the `.xrnx` is near-certainly also in the Paketti
+repo, so those files are unique *to Messages*, not necessarily unique in the world.
+And **derived extensions are exempt** (`.ktx`, `.plist`): a re-encoded thumbnail never
+size-matches its source, so testing it for uniqueness would flag all 20,000 of them
+meaninglessly.
+
+`Caches` survives the same test as a genuine cache. Its 307 MB of non-`.ktx` files are
+all named `PhotosSearchSection-at_0_<attachment-GUID>` — renders *of* an attachment,
+named after the attachment they came from. Derived by construction.
+
+Practical rule: **use `--strays`, which reports all three buckets and offers only the
+third.** The guard costs 450 MB of 29.7 GB — 1.5% — to remove the entire category of
+risk. On a first bulk run move to `~/.Trash` rather than `rm`, so it is undoable.
 
 Do not confuse this directory with `~/Library/Messages/Attachments`, where the opposite
 rule applies — see the deletion rules above.
@@ -211,6 +240,29 @@ The same file is commonly stored once per conversation it was sent to — sendin
 video to three people costs three copies. 3.2 GB of byte-identical duplication among
 files ≥100 MB on this Mac; one 777 MB PNG is stored twice for 1.55 GB. Deduplication
 is not possible without deleting from one of the conversations. `--dupes` lists them.
+
+## Claims this page has had to retract
+
+Everything here was established on 2026-08-12, and five confident figures on the way to
+it were wrong. They are kept because the failure mode is more reusable than the facts:
+**every one came from trusting a proxy for the truth — a filename, a path string, a
+directory's name, a database column — instead of the truth.**
+
+| Claimed | Reality | The proxy that lied |
+|---|---|---|
+| 16.5 GB of orphans | live attachments | full-path string equality |
+| 10.9 GB of orphans | **100% live** on spot-check | filename, after case+Unicode fixes |
+| `TemporaryItems` is all scratch | 48 files are live attachments | the directory's name |
+| `Keep messages ▸ 1 Year` frees 109.7 GB | destroys 8.57 GB of irreplaceable originals | the size column |
+| 29.5 GB of temp + caches reclaimable | 118 files / 143.5 MB have no counterpart | the container contract |
+
+The correct move in every case was the same and cheap: check each candidate against the
+authority that would know otherwise — `chat.db` for anything it references, a size
+index for anything it does not — and spot-check the answer independently before
+reporting a number.
+
+A wrong "safe to delete" is unrecoverable in a way a wrong "keep" never is. State what
+is lost before what is gained, and prefer `~/.Trash` to `rm` on any first bulk run.
 
 ## Related
 
