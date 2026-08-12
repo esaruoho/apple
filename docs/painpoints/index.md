@@ -14,8 +14,8 @@ happen instead.
 > — [Sal Soghoian](https://github.com/esaruoho/apple/blob/main/wiki/entities/sal-soghoian.md)
 
 Most of these are **automation walls**: an app that ships a scripting dictionary with
-the verbs missing, or none at all. One of them is different — SYSTEM-SETTINGS-002 is a
-**correctness bug**, where Apple built the right tool and wired it to the wrong number.
+the verbs missing, or none at all. One is different — SYSTEM-SETTINGS-002 is a
+**data-loss hazard**, where Apple keeps something on your behalf and tells no one.
 
 ---
 

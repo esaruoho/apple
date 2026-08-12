@@ -47,7 +47,7 @@ The full public wiki is being built incrementally. Tracked in [`TODO.md`](https:
 
 ### [Fourteen automation painpoints](./painpoints/)
 
-Every place the Mac already holds the capability and refuses to hand it over — reproduced, measured, and written up with what should happen instead. Thirteen are automation walls: an app shipping a dictionary with the verbs missing, or none at all. The fourteenth is different. [**The Hidden 7.4 Gigabytes**](./painpoints/system-settings-002.html) documents a tool Apple built correctly for a real problem and then wired to the wrong number — System Settings' Messages storage panel filters on a database field wrong by up to **8279×**, concealing 7.4 GB of the 12.3 GB it exists to surface, including the largest file in the store.
+Every place the Mac already holds the capability and refuses to hand it over — reproduced, measured, and written up with what should happen instead. Thirteen are automation walls: an app shipping a dictionary with the verbs missing, or none at all. The fourteenth is worse. [**The Copy You Never Sent**](./painpoints/system-settings-002.html) documents what Messages does when you send a file too big for iMessage: it compresses a copy, sends that, and quietly keeps your original. The original is counted at the size that was *sent*, so no storage panel lists it. It was never in the conversation, so it has no bubble to find. And it is usually the only full-quality copy you own — **8.57 GB across 43 conversations** on one machine, which Apple's own one-click storage remedy would delete without a word.
 
 ### [Seven trigger surfaces](./triggers)
 
