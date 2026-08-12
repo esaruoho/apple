@@ -511,7 +511,14 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     # said only "would not produce the required shape", which was not even true.
     for _attempt in range(1, eff_tries + 1):
         try:
-            ans, used = _fm_call(cur, model=chosen_model)
+            # FOURTEEN sections do not fit in 3000 tokens. Observed 2026-08-12: the reply held 11
+            # sections and then simply stopped — the three missing ones were the LAST three headings
+            # in the template, which is truncation wearing the costume of a disobedient model. Give
+            # the full template room; a re-ask for a few sections needs far less, so scale by how
+            # much is still outstanding rather than always paying for the maximum.
+            _need = len([h for h in required if h not in have]) or len(required) or 1
+            _budget = 1400 + 620 * min(_need, len(required) or 1)
+            ans, used = _fm_call(cur, model=chosen_model, max_tokens=max(3000, min(_budget, 12000)))
         except Exception as e:
             why.append(f"call failed: {e}"); print(f"      ↻ {_attempt}/{eff_tries} call failed: {e}", flush=True); continue
         if not ans:
