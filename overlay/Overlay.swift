@@ -688,7 +688,7 @@ final class InkView: NSView {
             // repeatedly expecting a clean screen and kept getting a screen still
             // full of marks. Nothing is lost — everything is mirrored to
             // ~/.overlay/store/session.json.
-            manager?.clearHere()
+            manager?.clearScratchHere()
             manager?.setMode(.passthrough)
             return
         case kVK_ANSI_Z where cmd:
@@ -921,6 +921,24 @@ final class OverlayManager {
 
     func clearHere() {
         for canvas in here { canvas.view.store.clear(); canvas.view.needsDisplay = true }
+        persist()
+    }
+
+    /// What Esc does: remove the working marks, keep the finished work.
+    ///
+    /// Esc used to clear EVERYTHING, which was added because Esa could not get rid
+    /// of anything — and then it destroyed his rendered images too, so drawing a
+    /// second thing wiped the first picture. Scribbles and results are different
+    /// things: ink is scaffolding, a render is the output. Esc clears scaffolding.
+    func clearScratchHere() {
+        for canvas in here {
+            let store = canvas.view.store
+            for o in store.objects where o.kind != .image {
+                store.remove(id: o.id)
+            }
+            canvas.view.askableRegion = nil
+            canvas.view.needsDisplay = true
+        }
         persist()
     }
 
@@ -1414,6 +1432,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var hotKeyRef: EventHotKeyRef?
     private var drawKeyRefs: [EventHotKeyRef] = []
+    private var clearHotKeyRef: EventHotKeyRef?
     private var helpWindow: NSWindow?
     private var inbox: InboxWatcher?
 
@@ -1455,12 +1474,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let draw = NSMenuItem(title: "Draw Mode", action: #selector(toggleDraw), keyEquivalent: "")
         draw.target = self
         menu.addItem(draw)
+
+        // First real item, because this is what someone opens the menu to find.
+        let wipe = NSMenuItem(title: "Clear Everything  ⌃⌥⌘C",
+                              action: #selector(clearAll), keyEquivalent: "")
+        wipe.target = self
+        menu.addItem(wipe)
         menu.addItem(.separator())
 
         for (title, selector, key) in [
             ("Undo Last Mark", #selector(undoHere), "z"),
             ("Clear This Canvas", #selector(clearHere), ""),
-            ("Clear All Canvases", #selector(clearAll), ""),
         ] {
             let item = NSMenuItem(title: title, action: selector, keyEquivalent: key)
             item.target = self
@@ -1628,6 +1652,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async {
                 switch id.id {
                 case 1:  me.toggleDraw()
+                case 3:  me.manager.clearAll()   // ⌃⌥⌘C — always available
                 default: me.handleDrawKey(id.id)   // Esc / undo / colours / width
                 }
             }
@@ -1640,6 +1665,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                          GetApplicationEventTarget(), 0, &hotKeyRef)
         if status != noErr {
             NSLog("Overlay: ⌃⌥⌘D registration failed with OSStatus \(status)")
+        }
+
+        // ⌃⌥⌘C — wipe everything, armed ALWAYS, not just in draw mode.
+        //
+        // Esa ended up looking at a generated image he could not remove: the ✕ only
+        // exists in draw mode and Esc is only armed in draw mode, so from
+        // passthrough there was no way out at all. There is now always one key that
+        // clears the screen, whatever state the overlay is in.
+        let clearID = EventHotKeyID(signature: OSType(0x4F564C43), id: 3)   // 'OVLC'
+        let clearStatus = RegisterEventHotKey(UInt32(kVK_ANSI_C), mods, clearID,
+                                              GetApplicationEventTarget(), 0, &clearHotKeyRef)
+        if clearStatus != noErr {
+            NSLog("Overlay: ⌃⌥⌘C registration failed with OSStatus \(clearStatus)")
         }
     }
 
@@ -1700,7 +1738,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     fileprivate func handleDrawKey(_ id: UInt32) {
         guard manager.mode == .draw else { return }
         switch id {
-        case 2:  manager.clearHere(); manager.setMode(.passthrough)
+        case 2:  manager.clearScratchHere(); manager.setMode(.passthrough)
         case 20: manager.undoHere()
         case 21: manager.redoHere()
         case 22: manager.clearHere()
