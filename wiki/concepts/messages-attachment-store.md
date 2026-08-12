@@ -116,6 +116,49 @@ The supported surfaces, all of which write the tombstone and stay consistent:
 3. **Messages ▸ Settings ▸ General ▸ Keep messages ▸ 30 Days / 1 Year** — blunt and
    automatic; deletes messages, not just files.
 
+## The two stores nothing shows you
+
+Messages keeps 33 GB outside the attachment tree, in places no UI lists and iCloud
+never touches. Measured 2026-08-12:
+
+| Store | Files | Size | Status |
+|---|---|---|---|
+| `~/Library/Containers/com.apple.MobileSMS/Data/tmp/TemporaryItems` | 11,930 | 21.9 GB | scratch |
+| `~/Library/Messages/Caches` | 22,411 | 10.8 GB | regenerable |
+
+**Neither is CloudKit-backed**, so unlike the attachment store, `rm` is the correct
+tool here — no tombstone required, nothing to reconcile.
+
+`Caches/Previews` is 20,234 `.ktx` GPU textures, the thumbnails drawn in conversation
+view. Derived from attachments, regenerated on demand. Zero rows in `chat.db` reference
+it. Deleting costs a re-render.
+
+`TemporaryItems` gives every file its own random-GUID directory — the shape of a
+scratch dir. Messages copies an attachment here when it composes, previews, or
+QuickLooks, then never returns for it. 15.35 GB of it had not been touched in over a
+year; one 776.8 MiB PNG was present **three times** with a sha256 identical to the copy
+in the attachment store.
+
+### Is everything in TemporaryItems deletable?
+
+Effectively yes, and the reason is the container contract, not a file-by-file audit.
+`Data/tmp` is the app's `NSTemporaryDirectory()`. macOS documents container `tmp` as
+purgeable — the system may clear it when the app is not running, so **no app is
+permitted to depend on anything surviving there**.
+
+There is one wrinkle worth knowing. 48 files in `TemporaryItems` *are* referenced by
+`attachment` rows — Messages relying on something the contract says it cannot. They
+total 17.9 MB, the largest is 4.0 MB, and every one belongs to a message dated
+2025-09 or later, well inside the Messages-in-iCloud era. So even deleting those costs
+at most a re-download, not data loss.
+
+`bin/messages-attachments --strays` excludes them anyway, matching on both exact path
+and containing directory. Practical rule: **delete freely in `TemporaryItems`; use
+`--strays` if you want the 0.4% respected without thinking about it.**
+
+Do not confuse this directory with `~/Library/Messages/Attachments`, where the opposite
+rule applies — see the deletion rules above.
+
 ## Duplicates
 
 The same file is commonly stored once per conversation it was sent to — sending one
