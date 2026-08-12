@@ -784,6 +784,14 @@ final class OverlayManager {
             let process = Process()
             process.executableURL = tool
             process.arguments = [png.path] + (question.map { ["--question", $0] } ?? [])
+            // A GUI app's child gets a minimal PATH, and vision-ocr shells out to
+            // xcrun/swiftc internally — so OCR silently returned nothing here while
+            // the identical command worked from a terminal. Measured, twice, on the
+            // same PNG. (feedback_carbon_hotkey_gotchas #4.)
+            var env = ProcessInfo.processInfo.environment
+            env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin"
+            env["HOME"] = NSHomeDirectory()
+            process.environment = env
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = Pipe()

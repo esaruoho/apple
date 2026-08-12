@@ -173,13 +173,16 @@ def main(argv):
     if answer:
         print(answer)
     else:
-        # Degrade honestly: name the reason, then give what we DO have. An answer
-        # that quietly pretends the model spoke would be worse than no answer.
-        reason = why or "model gave no answer"
+        # Degrade honestly — but CONTENT FIRST. The callout is one short line, and a
+        # long diagnostic prefix ate the whole thing: Esa saw the excuse and none of
+        # what was actually read. The reason is a short tag at the end instead, and
+        # the full explanation goes to stderr for whoever is debugging.
+        print(f"overlay-ask: {why}", file=sys.stderr)
+        tag = "no model" if why else "model silent"
         if seen:
-            print(f"[{reason}] read: " + " ".join(seen.split())[:130])
+            print(" ".join(seen.split())[:120] + f"  ⟨{tag}⟩")
         else:
-            print(f"[{reason}] looks like: " + ", ".join(looks[:4]))
+            print("looks like: " + ", ".join(looks[:4]) + f"  ⟨{tag}⟩")
     return 0
 
 
