@@ -41,14 +41,38 @@ LSOF_TIMEOUT = 6                # seconds; bounded so a stuck lsof can't hang us
 _CODEX_META_CACHE = {}
 GUIDANCE_STATE = os.path.expanduser("~/.config/guidance")
 SEND_LOG = os.path.join(GUIDANCE_STATE, "send.log")
+SESSION_LEDGER = os.path.join(GUIDANCE_STATE, "session-ledger.jsonl")
+SESSION_LATEST = os.path.join(GUIDANCE_STATE, "sessions-latest.json")
 MAX_MESSAGE_CHARS = 12000       # expanded card "LATEST" payload cap
+LIMIT_KIND_RE = r"(?:session|weekly)"
+MONTH_NAME_RE = (
+    r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|"
+    r"jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|"
+    r"nov(?:ember)?|dec(?:ember)?)"
+)
 SESSION_LIMIT_RE = re.compile(
-    r"(?:you(?:'ve| have)\s+hit\s+your\s+session\s+limit|hit\s+your\s+session\s+limit|session\s+limit)"
-    r".{0,80}?\bresets?\s+(?:at\s+)?"
-    r"([0-9]{1,2}(?::[0-9]{2}|[.][0-9]{2})?\s*(?:am|pm)?)"
-    r"(?:\s*\(([^)]+)\))?",
+    rf"(?:you(?:'ve| have)\s+hit\s+your\s+{LIMIT_KIND_RE}\s+limit|"
+    rf"hit\s+your\s+{LIMIT_KIND_RE}\s+limit|{LIMIT_KIND_RE}\s+limit)"
+    rf".{{0,120}}?\bresets?\s+((?:{MONTH_NAME_RE}\s+[0-9]{{1,2}}"
+    r"(?:,?\s+[0-9]{4})?\s+)?(?:at\s+)?"
+    r"[0-9]{1,2}(?::[0-9]{2}|[.][0-9]{2})?\s*(?:am|pm)?"
+    r"(?:\s*\([^)]+\))?)",
     re.I | re.S,
 )
+MONTHS = {
+    "jan": 1, "january": 1,
+    "feb": 2, "february": 2,
+    "mar": 3, "march": 3,
+    "apr": 4, "april": 4,
+    "may": 5,
+    "jun": 6, "june": 6,
+    "jul": 7, "july": 7,
+    "aug": 8, "august": 8,
+    "sep": 9, "sept": 9, "september": 9,
+    "oct": 10, "october": 10,
+    "nov": 11, "november": 11,
+    "dec": 12, "december": 12,
+}
 
 
 # ─────────────────────── process discovery (ps only) ───────────────────────
@@ -475,15 +499,30 @@ def space_of(cwd):
 def _parse_reset_wall_time(raw, tz_name=""):
     """Parse a reset wall-clock and roll it forward.
 
-    Reset banners say things like "resets 1am (Europe/Helsinki)". Human-entered
-    times often use "01.01". Both mean the next future occurrence, never a time
-    in the past. Returns (epoch, display_text) or (0, "").
+    Reset banners say things like "resets 1am (Europe/Helsinki)" or
+    "resets Jul 11 at 7am (Europe/Helsinki)". Human-entered times often use
+    "01.01". Undated times mean the next future occurrence, never a time in the
+    past. Returns (epoch, display_text) or (0, "").
     """
-    raw = (raw or "").strip().lower().replace(".", ":")
-    m = re.fullmatch(r"([0-9]{1,2})(?::([0-9]{2}))?\s*(am|pm)?", raw)
+    raw = (raw or "").strip()
+    if not tz_name:
+        tz_m = re.search(r"\(([^)]+)\)", raw)
+        if tz_m:
+            tz_name = tz_m.group(1).strip()
+    raw = re.sub(r"\s*\([^)]+\)", "", raw).strip().lower().replace(".", ":")
+    raw = raw.rstrip(" .")
+    m = re.fullmatch(
+        r"(?:(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|"
+        r"jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|"
+        r"nov(?:ember)?|dec(?:ember)?)\s+([0-9]{1,2})(?:,?\s+([0-9]{4}))?\s+)?"
+        r"(?:at\s+)?"
+        r"([0-9]{1,2})(?::([0-9]{2}))?\s*(am|pm)?",
+        raw,
+    )
     if not m:
         return 0, ""
-    hh, mm, ampm = int(m.group(1)), int(m.group(2) or "0"), m.group(3)
+    month_name, day_text, year_text, hh_text, mm_text, ampm = m.groups()
+    hh, mm = int(hh_text), int(mm_text or "0")
     if mm > 59:
         return 0, ""
     if ampm:
@@ -505,10 +544,43 @@ def _parse_reset_wall_time(raw, tz_name=""):
             tz = None
     if tz is not None:
         n = datetime.now(tz)
-        cand = n.replace(hour=hh, minute=mm, second=0, microsecond=0)
-        if cand.timestamp() <= now:
-            cand = cand + timedelta(days=1)
-        return int(cand.timestamp()), f"{hh:02d}:{mm:02d}"
+        if month_name and day_text:
+            month = MONTHS[month_name]
+            day = int(day_text)
+            year = int(year_text) if year_text else n.year
+            try:
+                cand = n.replace(year=year, month=month, day=day,
+                                 hour=hh, minute=mm, second=0, microsecond=0)
+            except ValueError:
+                return 0, ""
+            if not year_text and cand.timestamp() <= now:
+                try:
+                    cand = cand.replace(year=year + 1)
+                except ValueError:
+                    return 0, ""
+        else:
+            cand = n.replace(hour=hh, minute=mm, second=0, microsecond=0)
+            if cand.timestamp() <= now:
+                cand = cand + timedelta(days=1)
+        label = f"{month_name.title()} {int(day_text)} {hh:02d}:{mm:02d}" if month_name else f"{hh:02d}:{mm:02d}"
+        return int(cand.timestamp()), label
+
+    if month_name and day_text:
+        n = datetime.fromtimestamp(now)
+        month = MONTHS[month_name]
+        day = int(day_text)
+        year = int(year_text) if year_text else n.year
+        try:
+            cand_dt = n.replace(year=year, month=month, day=day,
+                                hour=hh, minute=mm, second=0, microsecond=0)
+        except ValueError:
+            return 0, ""
+        if cand_dt.timestamp() <= now:
+            try:
+                cand_dt = cand_dt.replace(year=year + 1)
+            except ValueError:
+                return 0, ""
+        return int(cand_dt.timestamp()), f"{month_name.title()} {day} {hh:02d}:{mm:02d}"
 
     t = list(time.localtime(now))
     t[3], t[4], t[5] = hh, mm, 0
@@ -523,9 +595,13 @@ def session_limit_info(focus, synopsis):
     m = SESSION_LIMIT_RE.search(haystack)
     if not m:
         low = haystack.lower()
-        limited = ("session limit" in low and "reset" in low) or "hit your session limit" in low
+        limited = (
+            (("session limit" in low or "weekly limit" in low) and "reset" in low)
+            or "hit your session limit" in low
+            or "hit your weekly limit" in low
+        )
         return {"limited": limited, "reset_epoch": 0, "reset_text": ""}
-    reset_epoch, reset_text = _parse_reset_wall_time(m.group(1), m.group(2) or "")
+    reset_epoch, reset_text = _parse_reset_wall_time(m.group(1))
     return {"limited": True, "reset_epoch": reset_epoch, "reset_text": reset_text}
 
 
@@ -889,6 +965,86 @@ def find_collisions(agents):
     return collisions
 
 
+def save_session_ledger(agents, source="scan"):
+    """Persist enough session state to recover after iTerm or the app dies."""
+    if not agents:
+        return load_latest_session_snapshot()
+    now = int(time.time())
+    rows = []
+    for a in agents:
+        syn = a.get("synopsis") or {}
+        rows.append({
+            "observed_epoch": now,
+            "tty": a.get("tty", ""),
+            "pid": a.get("pid", ""),
+            "tool": a.get("tool", ""),
+            "cmd": a.get("cmd", ""),
+            "session_id": a.get("session_id", ""),
+            "cwd": a.get("cwd", ""),
+            "space": a.get("space", ""),
+            "name": a.get("name", ""),
+            "mapped": a.get("mapped", ""),
+            "last_ts": a.get("last_ts", 0),
+            "focus": a.get("focus", ""),
+            "files": a.get("files", []),
+            "session_limit": a.get("session_limit", False),
+            "session_limit_reset_epoch": a.get("session_limit_reset_epoch", 0),
+            "recap": (syn.get("recap") or [])[-6:],
+        })
+    snap = {"generated": now, "source": source, "agents": rows}
+    try:
+        os.makedirs(GUIDANCE_STATE, exist_ok=True)
+        with open(SESSION_LEDGER, "a") as f:
+            f.write(json.dumps(snap, ensure_ascii=False) + "\n")
+        tmp = SESSION_LATEST + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(snap, f, indent=2, ensure_ascii=False)
+        os.replace(tmp, SESSION_LATEST)
+    except Exception:
+        pass
+    return snap
+
+
+def load_latest_session_snapshot():
+    try:
+        with open(SESSION_LATEST) as f:
+            return json.load(f)
+    except Exception:
+        pass
+    try:
+        with open(SESSION_LEDGER) as f:
+            lines = [ln.strip() for ln in f if ln.strip()]
+        return json.loads(lines[-1]) if lines else {"agents": []}
+    except Exception:
+        return {"agents": []}
+
+
+def recovery_report(json_out=False):
+    snap = load_latest_session_snapshot()
+    agents = snap.get("agents") or []
+    if json_out:
+        return json.dumps(snap, indent=2, ensure_ascii=False)
+    if not agents:
+        return "No Guidance session snapshot has been recorded yet."
+    when = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(snap.get("generated", 0)))
+    lines = [f"GUIDANCE RECOVERY SNAPSHOT — {when}", "-" * 96]
+    lines.append(f"{'TTY':<11} {'TOOL':<7} {'SPACE':<24} {'LAST':<19} RESUME / FOCUS")
+    for a in sorted(agents, key=lambda x: (x.get("space", ""), x.get("tty", ""))):
+        last = a.get("last_ts", 0)
+        last_s = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(last)) if last else "-"
+        cwd = a.get("cwd") or "."
+        sid = a.get("session_id") or ""
+        if a.get("tool") == "claude" and sid:
+            resume = f"cd {shlex.quote(cwd)} && claude --resume {sid}"
+        else:
+            resume = f"cd {shlex.quote(cwd)}"
+        focus = (a.get("focus") or "").replace("\n", " ")[:120]
+        lines.append(f"{a.get('tty','').replace('/dev/',''):<11} {a.get('tool',''):<7} {a.get('space',''):<24} {last_s:<19} {resume}")
+        if focus:
+            lines.append(f"{'':<66}{focus}")
+    return "\n".join(lines)
+
+
 def board(agents, collisions):
     if not agents:
         return "No agent processes found (looked for claude / codex / copilot via ps)."
@@ -1106,7 +1262,7 @@ SCHED_DIR = os.path.expanduser("~/.config/guidance")
 SCHED_FILE = os.path.join(SCHED_DIR, "schedule.json")
 SCHED_LOCK = os.path.join(SCHED_DIR, "schedule.lock")
 SCHED_LOG = os.path.join(SCHED_DIR, "schedule.log")
-MAX_ATTEMPTS = 30               # ~ retry window if the session is briefly gone
+MAX_ATTEMPTS = 3                # small retry window for notfound; never storm iTerm
 
 
 def _sched_log(msg):
@@ -1293,6 +1449,11 @@ def schedule_run_due():
                 it["fired_epoch"] = int(time.time())
                 sent.append(it["id"])
                 _sched_log(f"SENT {it['id']} -> {it['tty']} ({res})")
+            elif "timed out" in res.lower() or "osascript" in res.lower():
+                it["status"] = "failed"
+                it["fired_epoch"] = int(time.time())
+                failed.append(it["id"])
+                _sched_log(f"FAILED {it['id']} -> {it['tty']} terminal AppleEvent failure ({res})")
             elif it["attempts"] >= MAX_ATTEMPTS:
                 it["status"] = "failed"
                 it["fired_epoch"] = int(time.time())
@@ -1387,6 +1548,11 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == "schedule":
         sys.exit(schedule_cli(sys.argv[2:]))
 
+    # `guidance recovery [--json]` — last known session map after iTerm/app loss.
+    if len(sys.argv) > 1 and sys.argv[1] in {"recovery", "sessions"}:
+        print(recovery_report(json_out="--json" in sys.argv))
+        return
+
     # `guidance write <tty> <text> [--dry-run]` — send ONE line to ONE session.
     if len(sys.argv) > 1 and sys.argv[1] == "write":
         rest = [a for a in sys.argv[2:] if a != "--dry-run"]
@@ -1421,6 +1587,7 @@ def main():
         return
 
     agents = collect()
+    save_session_ledger(agents)
     collisions = find_collisions(agents)
     if "--json" in sys.argv:
         print(json.dumps({"generated": int(time.time()),

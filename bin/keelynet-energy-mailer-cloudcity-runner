@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+
+HOME_DIR="/Users/esaruoho"
+APPLE_DIR="$HOME_DIR/work/apple"
+QUEUE_DIR="$HOME_DIR/work/comms/queue"
+LOG_DIR="$HOME_DIR/work/comms/logs"
+STATE_DIR="$APPLE_DIR/var/keelynet-energy-mailer"
+LOCK_DIR="$STATE_DIR/lock"
+LOG="$STATE_DIR/keelynet-energy-mailer.log"
+
+mkdir -p "$STATE_DIR"
+exec >>"$LOG" 2>&1
+
+echo "[$(date '+%Y-%m-%dT%H:%M:%S%z')] keelynet-energy-mailer tick"
+
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  echo "[$(date '+%Y-%m-%dT%H:%M:%S%z')] already running; skip"
+  exit 0
+fi
+trap 'rmdir "$LOCK_DIR" 2>/dev/null || true' EXIT
+
+cd "$APPLE_DIR"
+
+if [ ! -f "$STATE_DIR/state.json" ] && [ -f "$QUEUE_DIR/keelynet-energy-mailer-state.json" ]; then
+  cp "$QUEUE_DIR/keelynet-energy-mailer-state.json" "$STATE_DIR/state.json" 2>/dev/null || true
+fi
+
+export KEELYNET_MAILER_STATE="$STATE_DIR/state.json"
+export KEELYNET_MLX_HOST="http://127.0.0.1:8080/v1/chat/completions"
+export KEELYNET_MLX_MODEL="Qwen/Qwen3-14B-MLX-4bit"
+export KEELYNET_MLX_LABEL="Qwen3-14B-MLX-4bit"
+
+bin/keelynet-energy-mailer --limit "${KEELYNET_MAILER_LIMIT:-1}"

@@ -1,0 +1,246 @@
+#!/bin/bash
+# mailfe — Mail a free-energy analysis of pasted text or a local file.
+#
+# This is the "mail me analysis" front door:
+#   - stdin text is sent directly to Cloudcity's mail-free-energy-analysis
+#   - text/Markdown/code files are read as text
+#   - RTF/HTML/Office-ish files go through textutil
+#   - PDFs/images go through Apple Vision OCR via bin/file-to-text
+#   - image inputs are also attached to the outgoing email
+#   - --whiteboards generates Gemini whiteboard PNGs from the assembled packet
+#     and attaches those generated artifacts too
+#   - the resulting text is emailed as a rich AgentMail analysis
+#
+# Usage:
+#   mailfe <file> [<file> ...]
+#   mailfe --combine --title "Newman packet" NEWMAN*.md board*.png
+#   mailfe --combine --whiteboards --whiteboard-count 3 NEWMAN*.md board*.png
+#   mailfe --title "My title" < paste.txt
+#   pbpaste | mailfe --title "Pasted source"
+#
+# For audio/video/YouTube transcription, keep using `process`; that path lands
+# in whisp and returns transcripts. mailfe is for text-bearing material.
+
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+REMOTE="${MAILFE_REMOTE:-cloudcitymacmini.local}"
+REMOTE_DIR="${MAILFE_REMOTE_DIR:-/Users/esaruoho/work/apple}"
+TO="${MAILFE_TO:-esaruoho@gmail.com}"
+TITLE=""
+NO_LESSER=0
+KEEP_GOING=0
+COMBINE=0
+WHITEBOARDS=0
+WHITEBOARD_COUNT=5
+WHITEBOARD_OUTPUT_DIR=""
+REMOTE_TMP=""
+ATTACHMENTS=()
+
+usage() {
+  sed -n '2,18p' "$0"
+}
+
+q() {
+  /usr/bin/python3 -c 'import shlex,sys; print(shlex.quote(sys.argv[1]))' "$1"
+}
+
+is_image() {
+  case "${1##*.}" in
+    png|PNG|jpg|JPG|jpeg|JPEG|gif|GIF|tif|TIF|tiff|TIFF|heic|HEIC|heif|HEIF|bmp|BMP|webp|WEBP) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+cleanup_remote_tmp() {
+  if [[ -n "$REMOTE_TMP" ]]; then
+    ssh -n "$REMOTE" "rm -rf $(q "$REMOTE_TMP")" >/dev/null 2>&1 || true
+  fi
+}
+
+ensure_remote_tmp() {
+  if [[ -z "$REMOTE_TMP" ]]; then
+    REMOTE_TMP="$(ssh -n "$REMOTE" 'mktemp -d /tmp/mailfe-attach.XXXXXX')"
+  fi
+}
+
+stage_attachment() {
+  local path="$1"
+  ensure_remote_tmp
+  local send_path="$path"
+  local base="$(basename "$path")"
+  local bytes ext
+  ext="${path##*.}"
+  bytes="$(/usr/bin/stat -f '%z' "$path" 2>/dev/null || echo 0)"
+  if is_image "$path" && [[ "$bytes" -gt "${MAILFE_ATTACH_MAX_BYTES:-700000}" && -x /usr/bin/sips ]]; then
+    base="${base%.*}.mailfe.jpg"
+    send_path="$tmpdir/$base"
+    /usr/bin/sips -Z "${MAILFE_ATTACH_MAX_DIM:-1400}" -s format jpeg -s formatOptions "${MAILFE_ATTACH_JPEG_QUALITY:-65}" "$path" --out "$send_path" >/dev/null
+  fi
+  local dest="$REMOTE_TMP/$base"
+  scp "$send_path" "$REMOTE:$dest" </dev/null >/dev/null
+  ATTACHMENTS+=("$dest")
+}
+
+slugify() {
+  /usr/bin/python3 -c 'import re,sys; s=sys.argv[1].lower(); s=re.sub(r"[^a-z0-9]+","-",s).strip("-"); print(s[:80] or "mailfe-whiteboards")' "$1"
+}
+
+generate_whiteboards() {
+  local title="$1"
+  local input="$2"
+  local wb_script="${MAILFE_WHITEBOARD_BIN:-/Users/esaruoho/.claude/skills/whiteboard/bin/whiteboard-generate.sh}"
+  if [[ ! -x "$wb_script" ]]; then
+    echo "mailfe: whiteboard generator not found: $wb_script" >&2
+    return 1
+  fi
+  local outdir="${WHITEBOARD_OUTPUT_DIR:-$PWD/whiteboards/mailfe/$(date +%Y-%m-%d)-$(slugify "$title")}"
+  mkdir -p "$outdir"
+  local marker="$tmpdir/whiteboard-start-$(date +%s)-$RANDOM"
+  : > "$marker"
+  "$wb_script" --full --smart-prompts --narrative --count "$WHITEBOARD_COUNT" --title "$title" --output-dir "$outdir" "$input"
+  local found=0
+  while IFS= read -r artifact; do
+    stage_attachment "$artifact"
+    found=$((found + 1))
+  done < <(find "$outdir" -maxdepth 1 -type f -newer "$marker" \( -name "*.png" -o -name "*.pdf" \) | sort)
+  if [[ "$found" -eq 0 ]]; then
+    echo "mailfe: whiteboard generator produced no attachable PNG/PDF artifacts in $outdir" >&2
+    return 1
+  fi
+  echo "mailfe: attached $found generated whiteboard artifact(s) from $outdir" >&2
+}
+
+send_text() {
+  local title="$1"
+  local input="$2"
+  local cmd
+  cmd="cd $(q "$REMOTE_DIR") && FREE_ENERGY_LENS_VOICES=${FREE_ENERGY_LENS_VOICES:-1} bin/mail-free-energy-analysis --to $(q "$TO") --title $(q "$title")"
+  if [[ "$NO_LESSER" == "1" ]]; then
+    cmd="$cmd --no-lesser"
+  fi
+  for a in "${ATTACHMENTS[@]}"; do
+    cmd="$cmd --attach $(q "$a")"
+  done
+  ssh "$REMOTE" "$cmd" < "$input"
+}
+
+if [[ $# -eq 0 && -t 0 ]]; then
+  usage
+  exit 0
+fi
+
+ARGS=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --title|-t)
+      [[ $# -ge 2 ]] || { echo "mailfe: --title needs a value" >&2; exit 2; }
+      TITLE="$2"; shift 2 ;;
+    --to)
+      [[ $# -ge 2 ]] || { echo "mailfe: --to needs a value" >&2; exit 2; }
+      TO="$2"; shift 2 ;;
+    --no-lesser)
+      NO_LESSER=1; shift ;;
+    --keep-going)
+      KEEP_GOING=1; shift ;;
+    --combine)
+      COMBINE=1; shift ;;
+    --whiteboards)
+      WHITEBOARDS=1; shift ;;
+    --whiteboard-count)
+      [[ $# -ge 2 ]] || { echo "mailfe: --whiteboard-count needs a value" >&2; exit 2; }
+      WHITEBOARD_COUNT="$2"; shift 2 ;;
+    --whiteboard-output-dir)
+      [[ $# -ge 2 ]] || { echo "mailfe: --whiteboard-output-dir needs a value" >&2; exit 2; }
+      WHITEBOARD_OUTPUT_DIR="$2"; shift 2 ;;
+    --help|-h)
+      usage; exit 0 ;;
+    --)
+      shift; ARGS+=("$@"); break ;;
+    -*)
+      echo "mailfe: unknown option: $1" >&2; exit 2 ;;
+    *)
+      ARGS+=("$1"); shift ;;
+  esac
+done
+
+tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/mailfe.XXXXXX")"
+trap 'rm -rf "$tmpdir"; cleanup_remote_tmp' EXIT
+
+exit_code=0
+
+if [[ "${#ARGS[@]}" -eq 0 ]]; then
+  input="$tmpdir/stdin.txt"
+  cat > "$input"
+  if [[ ! -s "$input" ]]; then
+    echo "mailfe: stdin was empty" >&2
+    exit 1
+  fi
+  if [[ "$WHITEBOARDS" == "1" ]]; then
+    generate_whiteboards "${TITLE:-Pasted free-energy source}" "$input"
+  fi
+  send_text "${TITLE:-Pasted free-energy source}" "$input"
+  exit $?
+fi
+
+if [[ "$COMBINE" == "1" ]]; then
+  combined="$tmpdir/combined.txt"
+  : > "$combined"
+  for path in "${ARGS[@]}"; do
+    if [[ ! -f "$path" ]]; then
+      echo "mailfe: no such file: $path" >&2
+      if [[ "$KEEP_GOING" == "1" ]]; then exit_code=1; continue; else exit 1; fi
+    fi
+    abs="$(/usr/bin/python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$path")"
+    if is_image "$abs"; then
+      stage_attachment "$abs"
+    fi
+    {
+      printf '\n\n===== SOURCE FILE: %s =====\n\n' "$abs"
+      "$HERE/file-to-text" "$abs"
+    } >> "$combined" || {
+      echo "mailfe: could not extract text from $path" >&2
+      if [[ "$KEEP_GOING" == "1" ]]; then exit_code=1; continue; else exit 1; fi
+    }
+  done
+  if [[ ! -s "$combined" ]]; then
+    echo "mailfe: combined extraction was empty" >&2
+    exit 1
+  fi
+  if [[ "$WHITEBOARDS" == "1" ]]; then
+    generate_whiteboards "${TITLE:-Combined free-energy source packet}" "$combined"
+  fi
+  send_text "${TITLE:-Combined free-energy source packet}" "$combined"
+  exit $?
+fi
+
+for path in "${ARGS[@]}"; do
+  if [[ ! -f "$path" ]]; then
+    echo "mailfe: no such file: $path" >&2
+    if [[ "$KEEP_GOING" == "1" ]]; then exit_code=1; continue; else exit 1; fi
+  fi
+  abs="$(/usr/bin/python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$path")"
+  ATTACHMENTS=()
+  if is_image "$abs"; then
+    stage_attachment "$abs"
+  fi
+  out="$tmpdir/$(basename "$path").txt"
+  if ! "$HERE/file-to-text" "$abs" > "$out"; then
+    echo "mailfe: could not extract text from $path" >&2
+    if [[ "$KEEP_GOING" == "1" ]]; then exit_code=1; continue; else exit 1; fi
+  fi
+  if [[ ! -s "$out" ]]; then
+    echo "mailfe: extracted text was empty: $path" >&2
+    if [[ "$KEEP_GOING" == "1" ]]; then exit_code=1; continue; else exit 1; fi
+  fi
+  title="${TITLE:-$(basename "$path")}"
+  if [[ "$WHITEBOARDS" == "1" ]]; then
+    generate_whiteboards "$title" "$out"
+  fi
+  if ! send_text "$title" "$out"; then
+    exit_code=$?
+    if [[ "$KEEP_GOING" != "1" ]]; then exit "$exit_code"; fi
+  fi
+done
+
+exit "$exit_code"

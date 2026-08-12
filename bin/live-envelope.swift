@@ -244,6 +244,10 @@ func nudgeTransposition(by semitones: Int32) {
     sendOSC("/live/view/nudge_clip_transposition", int32: semitones)
 }
 
+func setTransposition(to semitones: Int32) {
+    sendOSC("/live/view/set_clip_transposition", int32: semitones)
+}
+
 //--------------------------------------------------------------------------------
 
 let usage = """
@@ -252,6 +256,7 @@ usage: live-envelope <command>
   gain                                    toggle Gain <-> Transposition
   smart | sample offset | transposition   Beats: toggle the two; else Transposition
   transpose-up-12 | transpose-down-12      snap the clip's transposition by an octave
+  transpose-set-0 | transpose-set-12       set the clip's transposition to an absolute value
   exact <name>                            select <name> verbatim, no substitution
   next | prev                             cycle only what the warp mode offers
   link | unlink | toggle-link             Link/Unlink the displayed envelope
@@ -521,6 +526,25 @@ default:
         wanted = OTHER_PARTNER
     case "transpose-down-12", "transpose-12", "transpose-down":
         nudgeTransposition(by: -12)
+        wanted = OTHER_PARTNER
+    //--------------------------------------------------------------------------------
+    // Sets the clip's transposition to an absolute value, same caveat as the nudge
+    // commands: this is the scalar base value, and a previously-drawn Transposition
+    // curve will still play back as drawn (Live's API has no way to clear a single
+    // warp parameter's envelope -- see AbletonOSC's set_clip_transposition docstring).
+    //--------------------------------------------------------------------------------
+    case _ where command.hasPrefix("transpose-set-"):
+        //--------------------------------------------------------------------------------
+        // "transpose-set-<n>", n possibly negative. A literal "-" cannot sit inside a
+        // command word passed as one shell argument without quoting, so "neg" is also
+        // accepted, e.g. "transpose-set-neg24" for -24.
+        //--------------------------------------------------------------------------------
+        let suffix = command.dropFirst("transpose-set-".count)
+        let numeric = suffix.hasPrefix("neg") ? "-" + suffix.dropFirst(3) : String(suffix)
+        guard let semitones = Int32(numeric) else {
+            fail("transpose-set-<n> needs an integer, got \"\(suffix)\"")
+        }
+        setTransposition(to: semitones)
         wanted = OTHER_PARTNER
     //--------------------------------------------------------------------------------
     // Gain is a toggle too: pressing it while Gain is already shown goes to

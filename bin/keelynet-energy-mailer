@@ -3,7 +3,7 @@
 
 For every file in keelynet/ENERGY/, produce a grounded analysis from BOTH brains:
   - freellmapi (Mini gateway :3001, nemotron-3-super-120b) = the main analysis
-  - fm-mlx     (Mini MLX :8080, Qwen3-4B)                   = a shorter "lesser take"
+  - fm-mlx     (Mini MLX :8080, Qwen3-14B-MLX-4bit)         = a shorter "lesser take"
 …and send it as one HTML email via AgentMail. Idempotent + resumable (state file), so it
 can be stopped/restarted and never re-mails a file. Sequential, one email per file.
 
@@ -16,34 +16,65 @@ factually; NO mainstream-dismissal verdicts ("pseudoscientific"/"debunked"/"viol
 open-system framing (which reservoir + is capture demonstrated); grounded strictly in the text.
 Keys: ~/.agentmail.key, ~/.fm-free.key. Never in git.
 """
-import json, os, re, sys, time, html as _html, urllib.parse, urllib.request
+import json, os, random, re, subprocess, sys, time, html as _html, urllib.parse, urllib.request
 from pathlib import Path
 
 HOME = Path.home()
 SRCDIR = HOME/"work"/"merlib-dump"/"keelynet"/"ENERGY"
 STATE  = Path(os.environ.get("KEELYNET_MAILER_STATE", HOME/"work"/"comms"/"queue"/"keelynet-energy-mailer-state.json"))
 TO     = os.environ.get("KEELYNET_MAILER_TO", "esaruoho@gmail.com")
+ANALYSIS_DIR = Path(os.environ.get("KEELYNET_ANALYSIS_DIR", HOME/"work"/"apple"/"var"/"keelynet-energy-mailer"/"analyses"))
+GRAPH_CORPUS = os.environ.get("KEELYNET_GRAPH_CORPUS", "keelynet-energy")
+MERLIB_REPO = Path(os.environ.get("KEELYNET_MERLIB_REPO", HOME/"work"/"merlib-dump"))
+MERLIB_WIKI_DIR = Path(os.environ.get("KEELYNET_MERLIB_WIKI_DIR", MERLIB_REPO/"wiki"))
 
 FM_HOST   = "http://cloudcitymacmini:3001/v1/chat/completions"     # freellmapi gateway
 FM_MODEL  = os.environ.get("KEELYNET_FM_MODEL", "nemotron-3-super-120b")
-MLX_HOST  = "http://cloudcitymacmini:8080/v1/chat/completions"     # fm-mlx
-MLX_MODEL = "mlx-community/Qwen3-4B-Instruct-2507-8bit"
+MLX_HOST  = os.environ.get("KEELYNET_MLX_HOST", "http://cloudcitymacmini:8080/v1/chat/completions")
+MLX_MODEL = os.environ.get("KEELYNET_MLX_MODEL", "Qwen/Qwen3-14B-MLX-4bit")
+MLX_LABEL = os.environ.get("KEELYNET_MLX_LABEL", "Qwen3-14B-MLX-4bit")
 AM_BASE   = "https://api.agentmail.to/v0"
 INBOX     = "cloudcity-llm@agentmail.to"
 SCRUB     = re.compile(r"kortela", re.I)
 
-MAIN_SYS = ("You are a senior free-energy archivist analyzing ONE KeelyNet primary text file "
-            "(BBS-era ASCII, often fragmentary). Produce a grounded analysis (~400 words): (1) what "
-            "this document is (kind, author/date if stated); (2) the people, devices, and central "
-            "claims; (3) archive relevance and cross-connections a researcher would draw. DISCIPLINE: "
-            "tag claims as Claimed; state absence of verification factually; do NOT add mainstream-"
+def env_bool(name, default="1"):
+    return str(os.environ.get(name, default)).strip().lower() in {"1", "true", "yes", "on"}
+
+MAIN_SYS = ("You are a senior free-energy archivist analyzing one source file from an archive email queue. "
+            "The email subject/header already says KeelyNet, ENERGY, source path, model names, and claimed/unverified status. "
+            "Do not waste words restating those wrapper facts. Never say merely that it is an ASCII file, text file, BBS file, "
+            "or ENERGY-category file unless that fact changes the interpretation. Produce a concise, grounded analysis "
+            "(~350 words; hard cap 550) with these Markdown sections: "
+            "## Claimed Mechanism; ## People and Devices; ## Citations and Mentions Re-grasped; ## Research Value; ## Cross-Connections. "
+            "Focus on the substance: what is being claimed, how it is supposed to work, what evidence or build details are present, "
+            "what is missing, and why an archive researcher should care. Do not add generic disclaimers about diagrams/images being absent "
+            "or analysis being limited to text; mention missing figures only when a specific claim depends on them. "
+            "For Citations and Mentions Re-grasped: extract cited books, articles, named people, devices, papers, and named concepts from the source; "
+            "use any provided SOURCE CITATIONS, LOCAL CONTEXT, and RELATED FILE CONTEXT to explain why each mention matters in this archive; preserve findable bibliographic locators exactly when present (publication name, article date/issue date, byline, book title, publisher, page/issue if stated); explicitly connect series files such as NEWMAN1/NEWMAN2 when provided; ignore sponsor-only/distributor-only names such as Vangard/Vanguard Sciences unless the text gives them a substantive role. DISCIPLINE: "
+            "The email already carries Claimed / unverified status, so do not append '(Claimed)' to every sentence or bullet. Use natural prose such as 'the text claims' only where needed. State absence of verification factually; do NOT add mainstream-"
             "dismissal verdicts ('pseudoscientific', 'debunked', 'violates thermodynamics'); use open-"
             "system framing — the honest question is which reservoir and whether capture is demonstrated, "
             "never 'is it real'. Ground STRICTLY in the provided text; invent nothing; if the text is "
-            "fragmentary or garbled, say so. Output Markdown with ## headings.")
+            "fragmentary or garbled, say so. Output Markdown with ## headings. Do not use tables. Use short bullets only where they improve scanning.")
 LESSER_SYS = ("You are a local model writing a short 'lesser take' (~180 words) — a plain-language second "
               "reading of the same KeelyNet file, explicitly subordinate to the main analysis. Same "
               "discipline: grounded, Claimed, no dismissal verdicts. Output plain paragraphs.")
+
+LENS_VOICE_SYS = (
+    "\n\nBecause FREE_ENERGY_LENS_VOICES is enabled, include one final section exactly named "
+    "## Cross-Lens Reads. Keep it compact: four bullets, one for **Russell**, **Bearden**, "
+    "**Prigogine**, and **Hilarion**. Each bullet should interpret the source through that lens "
+    "without repeating wrapper facts, and without inventing dates, devices, measurements, "
+    "citations, or demonstrations not present in the source/context."
+)
+
+def keelynet_lens_voices_enabled():
+    if "KEELYNET_LENS_VOICES" in os.environ:
+        return env_bool("KEELYNET_LENS_VOICES", "1")
+    return env_bool("FREE_ENERGY_LENS_VOICES", "1")
+
+def main_system_prompt():
+    return MAIN_SYS + (LENS_VOICE_SYS if keelynet_lens_voices_enabled() else "")
 
 def key(env, path):
     k = os.environ.get(env, "")
@@ -53,31 +84,267 @@ def key(env, path):
 def chat(host, model, sysmsg, user, bearer=None, timeout=300, max_tokens=900):
     hdr = {"Content-Type": "application/json"}
     if bearer: hdr["Authorization"] = "Bearer " + bearer
-    body = {"model": model, "temperature": 0.3, "max_tokens": max_tokens,
-            "messages": [{"role": "system", "content": sysmsg},
-                         {"role": "user", "content": user}]}
-    req = urllib.request.Request(host, data=json.dumps(body).encode(), headers=hdr)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.load(r)["choices"][0]["message"]["content"].strip()
+    messages = [{"role": "system", "content": sysmsg}, {"role": "user", "content": user}]
+    parts = []
+    finish_reason = None
+    for attempt in range(6):
+        body = {"model": model, "temperature": 0.3, "max_tokens": max_tokens, "messages": messages}
+        req = urllib.request.Request(host, data=json.dumps(body).encode(), headers=hdr)
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            choice = json.load(r)["choices"][0]
+        content = choice_text(choice).strip()
+        if content:
+            parts.append(content)
+        finish_reason = choice.get("finish_reason")
+        if finish_reason != "length":
+            break
+        messages.append({"role": "assistant", "content": content})
+        messages.append({"role": "user", "content": "Continue exactly where you stopped. Finish the incomplete sentence first. Do not restart or summarize."})
+        max_tokens = max(500, max_tokens // 2)
+    if finish_reason == "length":
+        raise RuntimeError("model response was still truncated after continuation retries")
+    out = join_continuations(parts)
+    if not out:
+        raise RuntimeError("model response contained no extractable text")
+    return out
+
+def chat_retry(label, attempts, delays, *args, **kwargs):
+    last = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return chat(*args, **kwargs)
+        except Exception as e:
+            last = e
+            if attempt >= attempts:
+                break
+            delay = delays[min(attempt - 1, len(delays) - 1)]
+            print("  RETRY %s attempt %d/%d failed: %s; sleeping %ss" %
+                  (label, attempt, attempts, e, delay), flush=True)
+            time.sleep(delay)
+    raise RuntimeError("%s unavailable after %d attempts: %s" % (label, attempts, last))
+
+def choice_text(choice):
+    msg = choice.get("message") or {}
+    return (
+        msg.get("content")
+        or msg.get("reasoning_content")
+        or msg.get("reasoning")
+        or choice.get("text")
+        or ""
+    )
+
+def join_continuations(parts):
+    if not parts:
+        return ""
+    out = parts[0].rstrip()
+    for part in parts[1:]:
+        p = part.lstrip()
+        if not p:
+            continue
+        if re.match(r"^(#{1,6}|\s*[-*]\s+|\d+[.)]\s+)", p) or re.search(r"[.!?:;)\]`]\s*$", out):
+            out += "\n\n" + p
+        elif re.match(r"^[,.;:!?/)\]]", p):
+            out += p
+        else:
+            out += " " + p
+    return out.strip()
 
 def md_to_html(md):
-    out = []
-    for block in re.split(r"\n\s*\n", md.strip()):
-        b = block.strip()
-        h = re.match(r"^(#{1,4})\s+(.*)$", b)
-        if h:
-            lvl = len(h.group(1)); out.append("<h%d>%s</h%d>" % (lvl+1, _inline(h.group(2)), lvl+1)); continue
-        if all(re.match(r"^\s*[-*]\s+", ln) for ln in b.splitlines()):
-            items = "".join("<li>%s</li>" % _inline(re.sub(r"^\s*[-*]\s+", "", ln)) for ln in b.splitlines())
-            out.append("<ul>%s</ul>" % items); continue
-        out.append("<p>%s</p>" % _inline(b).replace("\n", "<br>"))
+    out, para, in_ul, table = [], [], False, None
+
+    def close_para():
+        nonlocal para
+        if para:
+            out.append("<p>%s</p>" % "<br>".join(_inline(line) for line in para))
+            para = []
+
+    def close_ul():
+        nonlocal in_ul
+        if in_ul:
+            out.append("</ul>")
+            in_ul = False
+
+    def close_table():
+        nonlocal table
+        if not table:
+            return
+        out.append("<table style='border-collapse:collapse;width:100%;margin:12px 0;font-size:14px'>")
+        if table["head"]:
+            out.append("<thead><tr>")
+            for cell in table["head"]:
+                out.append("<th style='border:1px solid #555;padding:6px 8px;text-align:left'>%s</th>" % _inline(cell))
+            out.append("</tr></thead>")
+        out.append("<tbody>")
+        for row in table["rows"]:
+            out.append("<tr>")
+            for cell in row:
+                out.append("<td style='border:1px solid #555;padding:6px 8px;vertical-align:top'>%s</td>" % _inline(cell))
+            out.append("</tr>")
+        out.append("</tbody></table>")
+        table = None
+
+    def close_all():
+        close_para()
+        close_ul()
+        close_table()
+
+    def table_cells(line):
+        s = line.strip()
+        if not (s.startswith("|") and s.endswith("|")):
+            return None
+        return [cell.strip() for cell in s.strip("|").split("|")]
+
+    def table_sep(cells):
+        return bool(cells) and all(re.match(r"^:?-{3,}:?$", cell.strip()) for cell in cells)
+
+    lines = md.strip().splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        s = line.strip()
+        cells = table_cells(line)
+        next_cells = table_cells(lines[i + 1]) if i + 1 < len(lines) else None
+        # Some models emit bold-wrapped headings like **## Document Overview**.
+        h = re.match(r"^\s*(?:\*\*)?(#{1,6})(?:\s+|(?=\d+(?:[.)]\s*|\s+)))(.*?)(?:\*\*)?\s*$", line)
+        ul = re.match(r"^\s*[-*]\s+(.*)$", line)
+        if cells and next_cells and table_sep(next_cells):
+            close_all()
+            table = {"head": cells, "rows": []}
+            i += 2
+            continue
+        elif cells and table:
+            width = len(table["head"]) if table["head"] else len(cells)
+            table["rows"].append(cells + [""] * max(0, width - len(cells)))
+        elif h:
+            close_all()
+            lvl = min(len(h.group(1)) + 1, 6)
+            out.append("<h%d>%s</h%d>" % (lvl, _inline(h.group(2).strip()), lvl))
+        elif re.match(r"^-{3,}$", s):
+            close_all()
+            out.append("<hr>")
+        elif ul:
+            close_table()
+            close_para()
+            if not in_ul:
+                out.append("<ul>")
+                in_ul = True
+            out.append("<li>%s</li>" % _inline(ul.group(1)))
+        elif s == "":
+            close_all()
+        else:
+            close_table()
+            close_ul()
+            para.append(line)
+        i += 1
+    close_all()
     return "\n".join(out)
 
 def _inline(t):
     t = _html.escape(t)
     t = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
+    t = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", t)
     t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
     return t
+
+BOILERPLATE_FIELDS = {
+    "kind", "kind of text", "source", "file", "category", "completeness", "note"
+}
+
+def boilerplate_value(label, value):
+    low = clean_subject_text(value).lower()
+    if label in {"kind", "kind of text", "source", "file", "category"}:
+        return True
+    if label == "completeness":
+        return any(x in low for x in ("fragment", "garbled", "ends abruptly", "incomplete"))
+    if label == "note":
+        return any(x in low for x in ("diagram", "image", "not included", "provided excerpt", "textual content"))
+    return False
+
+def clean_analysis(md):
+    """Remove queue/archive wrapper boilerplate that the user already knows from the mail."""
+    out = []
+    in_overview = False
+    skip_identification = False
+    skip_table_row = False
+    for line in md.splitlines():
+        if re.match(r"^\s*\|", line):
+            cells = [clean_subject_text(c).lower() for c in line.strip().strip("|").split("|")]
+            if any(re.search(r"\bvan(?:guard|gard) sciences\b", c, re.I) for c in cells) and any(
+                re.search(r"\b(no further detail|listed under persons|sponsor|distribution note|keelynet)\b", c, re.I)
+                for c in cells
+            ):
+                skip_table_row = True
+                continue
+            if skip_table_row and all(re.match(r"^:?-{3,}:?$", c.strip()) for c in cells):
+                skip_table_row = False
+                continue
+            skip_table_row = False
+
+        h = re.match(r"^\s*(#{1,6})\s+(.+?)\s*$", line)
+        if h:
+            title = clean_subject_text(h.group(2)).lower()
+            in_overview = title in {"document overview", "document identification"}
+            skip_identification = title == "identification"
+            if in_overview:
+                continue
+            if skip_identification:
+                continue
+            out.append(line)
+            continue
+
+        m = re.match(r"^(\s*(?:[-*]\s*)?)(?:\*\*)?([A-Za-z /_-]+)(?:\*\*)?\s*:\s*(.+?)\s*$", line)
+        if m:
+            label_raw = m.group(2).strip()
+            label = label_raw.lower().replace("/", " ").strip()
+            value = m.group(3).strip()
+            if label == "kind":
+                tm = re.search(r"\btitled\s+(.+?)(?:\.|$)", value, re.I)
+                if tm:
+                    out.append(f"{m.group(1)}Title: {tm.group(1).strip()}")
+                continue
+            if label == "author date":
+                value = re.sub(r";?\s*file name\s+.+?\s*$", "", value, flags=re.I).strip()
+            if label in BOILERPLATE_FIELDS and boilerplate_value(label, value):
+                continue
+            if label in {"title", "author date", "author", "date"}:
+                continue
+            if in_overview and label not in {"title", "author date", "author", "date", "core subject", "subject"}:
+                continue
+            if skip_identification and label in {"title", "author date", "author", "date", "core subject", "subject"}:
+                continue
+
+        low = clean_subject_text(line).lower()
+        if (in_overview or skip_identification) and not line.strip():
+            continue
+        if any(x in low for x in (
+            "keelynet bbs primary text file",
+            "ascii format",
+            "category energy",
+            "analysis is limited to the textual content",
+            "not included in the provided excerpt",
+        )):
+            continue
+        if re.search(r"\bvan(?:guard|gard) sciences\b", low) and re.search(r"\b(no further detail|listed under persons|sponsor|distribution note|keelynet)\b", low):
+            continue
+        out.append(line)
+
+    cleaned = "\n".join(out)
+    cleaned = remove_claim_spam(cleaned)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned).strip()
+    return cleaned or md.strip()
+
+def remove_claim_spam(md):
+    lines = []
+    for line in md.splitlines():
+        if re.match(r"^\s*#{1,6}\s+", line):
+            lines.append(line)
+            continue
+        s = re.sub(r"\s*\((?:Claimed|claimed)\)(?=\.?\s*(?:\||$))", "", line)
+        s = re.sub(r"(?i)(\|\s*)\*{0,2}claimed\*{0,2}\s*:\s*", r"\1", s)
+        s = re.sub(r"(?i)^(\s*[-*]\s+)\*{0,2}claimed\*{0,2}\s*:\*{0,2}\s*", r"\1", s)
+        s = re.sub(r"(?i)^(\s*)\*{0,2}claimed\*{0,2}\s*:\*{0,2}\s*", r"\1", s)
+        lines.append(s)
+    return "\n".join(lines)
 
 def send_email(subject, text, html_body):
     k = key("AGENTMAIL_API_KEY", "~/.agentmail.key")
@@ -89,6 +356,325 @@ def send_email(subject, text, html_body):
     with urllib.request.urlopen(req, timeout=90) as r:
         return json.load(r)
 
+def normalize_subject_chars(s):
+    return str(s or "").translate(str.maketrans({
+        "\u2010": "-", "\u2011": "-", "\u2012": "-", "\u2013": "-", "\u2014": "-", "\u2212": "-",
+        "\u202f": " ", "\u00a0": " ",
+    }))
+
+def clean_subject_text(s):
+    s = normalize_subject_chars(s)
+    s = re.sub(r"`([^`]+)`", r"\1", str(s or ""))
+    s = re.sub(r"\*\*([^*]+)\*\*", r"\1", s)
+    s = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"\1", s)
+    s = s.replace("*", "")
+    s = s.replace("“", "\"").replace("”", "\"").replace("‘", "'").replace("’", "'")
+    s = re.sub(r"\s+", " ", s).strip(" -:;.")
+    s = s.strip("\"'")
+    return s
+
+def analysis_field(md, *names):
+    labels = "|".join(re.escape(n) for n in names)
+    m = re.search(r"(?im)^\s*(?:[-*]\s*)?(?:\*\*)?(%s)(?:\*\*)?\s*:\s*(.+?)\s*$" % labels, md)
+    return clean_subject_text(m.group(2)) if m else ""
+
+def analysis_metadata(name, main_an):
+    title = analysis_field(main_an, "Title")
+    author_date = analysis_field(main_an, "Author/date", "Author/Date")
+    author = analysis_field(main_an, "Author")
+    date = analysis_field(main_an, "Date")
+    if not author_date:
+        if author and date:
+            author_date = f"{author}, {date}"
+        else:
+            author_date = author or date
+    core = analysis_field(main_an, "Core subject", "Subject")
+    return {"name": name, "title": title, "author_date": author_date, "core": core}
+
+def strip_saved_analysis_wrapper(md):
+    s = md.strip()
+    if s.startswith("---"):
+        s = re.sub(r"(?s)^---\n.*?\n---\n+", "", s, count=1)
+    s = re.sub(r"(?m)^#\s+KeelyNet ENERGY\s+—\s+.+?\s*$", "", s)
+    s = re.sub(r"(?m)^Source:\s+`?keelynet/ENERGY/.+?`?\s*$", "", s)
+    s = re.sub(r"(?m)^##\s+Freellmapi Analysis\s*$", "", s)
+    s = re.sub(r"\n{3,}", "\n\n", s)
+    return s.strip()
+
+def frontmatter(text):
+    m = re.match(r"(?s)^---\n(.*?)\n---\n", text)
+    if not m:
+        return {}, text
+    meta, current = {}, None
+    for line in m.group(1).splitlines():
+        km = re.match(r"^([A-Za-z_][A-Za-z0-9_-]*):\s*(.*)$", line)
+        if km:
+            current = km.group(1)
+            val = clean_subject_text(km.group(2))
+            meta[current] = [] if val == "" else val
+        elif current and re.match(r"^\s+-\s+", line):
+            if not isinstance(meta.get(current), list):
+                meta[current] = []
+            meta[current].append(clean_subject_text(re.sub(r"^\s+-\s+", "", line)))
+    return meta, text[m.end():]
+
+def generic_title(title):
+    return bool(re.search(r"\b(absolutely no restrictions|file'?s heading)\b", clean_subject_text(title), re.I))
+
+def source_title(meta, body):
+    title = clean_subject_text(meta.get("title", ""))
+    if title and not generic_title(title):
+        return title
+    h1 = re.search(r"(?m)^#\s+(.+?)\s*$", body)
+    if h1:
+        title = clean_subject_text(h1.group(1))
+        if title and not generic_title(title):
+            return title
+    for line in body.splitlines():
+        cand = clean_subject_text(line)
+        if len(cand) < 12 or generic_title(cand):
+            continue
+        if re.search(r"(?i)\b(the following|taken from keelynet|sponsored by|word processor parameters|vangard note|po box|mesquite)\b", cand):
+            continue
+        if re.match(r"(?i)^(discourse|all about|how |the |phase |time |vortex)", cand):
+            return cand
+    return ""
+
+def source_author(meta, body):
+    if meta.get("contributed_by"):
+        return clean_subject_text(meta.get("contributed_by"))
+    m = re.search(r"(?m)^\s*[Bb]y\s*\n\s*([A-Z][A-Za-z .'-]+)\s*$", body)
+    if m:
+        return clean_subject_text(re.sub(r"(?i)\bstaff writer\b", "", m.group(1)))
+    m = re.search(r"(?m)^\s*[Bb]y\s+([A-Z][A-Za-z .'-]+?)(?:,\s*c?\d{4})?\s*$", body)
+    if m:
+        return clean_subject_text(re.sub(r"(?i)\bstaff writer\b", "", m.group(1)))
+    m = re.search(r"(?is)i may be reached at\s*\n\s*([A-Z][A-Za-z .'-]+)\s*\n", body)
+    if m:
+        return clean_subject_text(m.group(1))
+    m = re.search(r"(?im)^\s*(?:contributed|written|compiled|prepared|transcribed)\s+by\s+([A-Z][A-Za-z .'-]+?)(?:\s*$|[,;])", body)
+    if m:
+        cand = clean_subject_text(m.group(1))
+        if re.search(r"^[A-Z][A-Za-z.'-]+(?:\s+[A-Z][A-Za-z.'-]+)+$", cand) and not re.search(r"vangard sciences|keelynet", cand, re.I):
+            return clean_subject_text(re.sub(r"(?i)\bstaff writer\b", "", cand))
+    people = meta.get("persons") if isinstance(meta.get("persons"), list) else []
+    people = [p for p in people if p and not re.search(r"vangard sciences|keelynet", p, re.I)]
+    if people:
+        return people[0]
+    return ""
+
+def source_date(meta, body):
+    for c in source_citations("---\n---\n" + body):
+        m = re.search(r"\b(\d{1,2})/(\d{1,2})/(\d{2,4})\b", c)
+        if m:
+            y = int(m.group(3))
+            if y < 100:
+                y += 1900 if y >= 70 else 2000
+            return "%02d-%02d-%04d" % (int(m.group(2)), int(m.group(1)), y)
+    m = re.search(r"(?im)^\s*by\s+[A-Z][A-Za-z .'-]+?,\s*(c?\d{4})\s*$", body)
+    if m:
+        return clean_subject_text(m.group(1))
+    m = re.search(r"(?im)\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},\s*\d{4}\s+by\b", body)
+    if m:
+        return subject_date(m.group(0).replace(" by", ""))
+    m = re.search(r"(?im)\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2},\s*\d{4}\b", body)
+    if m:
+        return subject_date(m.group(0))
+    return subject_date(meta.get("online_date", ""))
+
+def source_metadata(name, text):
+    meta, body = frontmatter(text)
+    return {
+        "name": name,
+        "title": source_title(meta, body),
+        "author": source_author(meta, body),
+        "date": source_date(meta, body),
+    }
+
+def truncate_subject(subject, limit=200):
+    if len(subject) <= limit:
+        return subject
+    return subject[:limit - 1].rstrip(" -—:;,") + "..."
+
+def compact_title(title, limit=86):
+    title = clean_subject_text(title)
+    if generic_title(title):
+        return ""
+    title = title.replace('"', "")
+    title = re.sub(r"^(?:the\s+)?", "", title, flags=re.I)
+    if len(title) <= limit:
+        return title
+    return title[:limit - 3].rstrip(" -—:;,") + "..."
+
+def subject_date(author_date):
+    s = clean_subject_text(author_date)
+    months = {
+        "january": "01", "february": "02", "march": "03", "april": "04",
+        "may": "05", "june": "06", "july": "07", "august": "08",
+        "september": "09", "october": "10", "november": "11", "december": "12",
+    }
+    m = re.search(r"\b(" + "|".join(months) + r")\s+(\d{1,2}),\s*(\d{4})\b", s, re.I)
+    if m:
+        return "%02d-%s-%s" % (int(m.group(2)), months[m.group(1).lower()], m.group(3))
+    m = re.search(r"\b(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})\b", s)
+    if m:
+        return "%02d-%02d-%s" % (int(m.group(3)), int(m.group(2)), m.group(1))
+    m = re.search(r"\b(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})\b", s)
+    if m:
+        y = int(m.group(3))
+        if y < 100:
+            y += 1900 if y >= 70 else 2000
+        return "%02d-%02d-%04d" % (int(m.group(1)), int(m.group(2)), y)
+    return ""
+
+def subject_author(author_date):
+    s = clean_subject_text(author_date)
+    s = re.sub(r"\([^)]*\)", "", s)
+    s = re.sub(r"\b(as stated in (?:the )?file|article date|online date|posted online)\b", "", s, flags=re.I)
+    s = re.sub(r"\b(?:contributed by|author)\s*:?\s*", "", s, flags=re.I)
+    s = re.sub(r"\b(" + "january|february|march|april|may|june|july|august|september|october|november|december" + r")\s+\d{1,2},\s*\d{4}\b", "", s, flags=re.I)
+    s = re.sub(r"\b\d{4}[-/.]\d{1,2}[-/.]\d{1,2}\b", "", s)
+    s = re.sub(r"\b\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}\b", "", s)
+    s = re.sub(r"\bfile name\s+.+$", "", s, flags=re.I)
+    s = re.sub(r"[,;:]+", " ", s)
+    s = re.sub(r"\s+", " ", s).strip(" -")
+    return s
+
+def email_subject(meta):
+    title = compact_title(meta.get("title") or meta.get("core") or "")
+    author = meta.get("author") or subject_author(meta.get("author_date", ""))
+    date = meta.get("date") or subject_date(meta.get("author_date", ""))
+    head = "KeelyNET"
+    if title and title.upper() != meta["name"].upper():
+        head += f": \"{title}\""
+    else:
+        head += f": {meta['name']}"
+    tail = ", ".join(clean_subject_text(p) for p in (author, date) if p)
+    if date.lower().startswith("c"):
+        tail = clean_subject_text(author)
+    parts = [head]
+    if tail:
+        parts.append(tail)
+    if title and title.upper() != meta["name"].upper():
+        parts.append(meta["name"])
+    return truncate_subject(" — ".join(parts))
+
+def analysis_markdown(name, main_an, lesser):
+    return (
+        "---\n"
+        f"name: KeelyNet ENERGY — {name}\n"
+        f"slug: keelynet-energy-{slugify(name)}\n"
+        "kind: keelynet-energy-analysis\n"
+        f"source: keelynet/ENERGY/{name}.md\n"
+        f"updated: {time.strftime('%Y-%m-%d')}\n"
+        f"models: freellmapi {FM_MODEL} + {MLX_LABEL}\n"
+        "---\n\n"
+        f"# KeelyNet ENERGY — {name}\n\n"
+        f"Source: `keelynet/ENERGY/{name}.md`\n\n"
+        "## Freellmapi Analysis\n\n"
+        f"{main_an.strip()}\n\n"
+        "## Qwen Lesser Take\n\n"
+        f"{lesser.strip()}\n"
+    )
+
+def slugify(s):
+    return re.sub(r"[^a-z0-9]+", "-", (s or "file").lower()).strip("-")[:80]
+
+def save_analysis(name, main_an, lesser):
+    ANALYSIS_DIR.mkdir(parents=True, exist_ok=True)
+    path = ANALYSIS_DIR / f"{slugify(name)}.md"
+    path.write_text(analysis_markdown(name, main_an, lesser))
+    return path
+
+def yaml_string(s):
+    return json.dumps(str(s), ensure_ascii=False)
+
+def merlib_wiki_markdown(name, main_an, lesser):
+    source_rel = f"keelynet/ENERGY/{name}.md"
+    meta = analysis_metadata(name, main_an)
+    title = f"KeelyNet — {name}"
+    if meta.get("title"):
+        title += f" — {meta['title']}"
+    one_liner = meta.get("core") or (
+        f"Generated digest for {name}.md; claims are preserved as claimed and not independently verified."
+    )
+    return (
+        "---\n"
+        f"title: {yaml_string(title)}\n"
+        "wiki_page: keelynet-note\n"
+        f"generated_by: {yaml_string('keelynet-energy-mailer: freellmapi ' + FM_MODEL + ' + ' + MLX_LABEL)}\n"
+        f"source: {source_rel}\n"
+        "status: derived\n"
+        "evidence: Claimed\n"
+        "cloud_tokens: 0\n"
+        f"updated: {time.strftime('%Y-%m-%d')}\n"
+        f"one_liner: {yaml_string(one_liner)}\n"
+        "note: generated digest of KeelyNet primary text; unverified; read the source\n"
+        "---\n\n"
+        f"# {title}\n\n"
+        f"> **Derived digest** (Claimed / unverified). {one_liner}\n\n"
+        f"**Archive file:** `{name}.md`  \n"
+        f"**Source:** [`{source_rel}`](../../{source_rel})  \n"
+        f"**Author/date:** {meta.get('author_date') or 'not stated'}  \n"
+        f"**Generated:** {time.strftime('%Y-%m-%d')}  \n"
+        f"**Models:** freellmapi `{FM_MODEL}` + qwen lesser `{MLX_LABEL}`\n\n"
+        "## Freellmapi Analysis\n\n"
+        f"{main_an.strip()}\n\n"
+        "## Qwen Lesser Take\n\n"
+        f"{lesser.strip()}\n"
+    )
+
+def update_merlib_wiki(name, main_an, lesser):
+    wiki_dir = MERLIB_WIKI_DIR / "keelynet"
+    wiki_dir.mkdir(parents=True, exist_ok=True)
+    page = wiki_dir / f"{name}.md"
+    page.write_text(merlib_wiki_markdown(name, main_an, lesser))
+
+    index = HOME/"work"/"apple"/"bin"/"wiki-index.py"
+    view = HOME/"work"/"apple"/"bin"/"wiki-view.py"
+    for tool in (index, view):
+        if not tool.exists():
+            print("  WARN %s merlib-wiki: %s not found" % (name, tool.name), flush=True)
+            return False
+        try:
+            res = subprocess.run(
+                [sys.executable, str(tool), str(MERLIB_WIKI_DIR)],
+                cwd=str(HOME/"work"/"apple"),
+                text=True,
+                capture_output=True,
+                timeout=180,
+            )
+        except Exception as e:
+            print("  WARN %s merlib-wiki: %s" % (name, e), flush=True)
+            return False
+        if res.returncode != 0:
+            print("  WARN %s merlib-wiki: %s" % (name, (res.stderr or res.stdout).strip()[:500]), flush=True)
+            return False
+    print("  MERLIB-WIKI %-11s → %s" % (name, page), flush=True)
+    return True
+
+def ingest_analysis(path, name):
+    fa = HOME/"work"/"apple"/"bin"/"fa-paper"
+    if not fa.exists():
+        print("  WARN %s headspace: fa-paper not found" % name, flush=True)
+        return False
+    try:
+        res = subprocess.run(
+            [sys.executable, str(fa), str(path), "--corpus", GRAPH_CORPUS, "--name", "KeelyNet ENERGY — %s" % name],
+            cwd=str(HOME/"work"/"apple"),
+            text=True,
+            capture_output=True,
+            timeout=180,
+        )
+    except Exception as e:
+        print("  WARN %s headspace: %s" % (name, e), flush=True)
+        return False
+    if res.returncode != 0:
+        print("  WARN %s headspace: %s" % (name, (res.stderr or res.stdout).strip()[:500]), flush=True)
+        return False
+    print("  HEADSPACE %-14s → %s" % (name, (res.stdout or "").strip().splitlines()[-1]), flush=True)
+    return True
+
 def load_state():
     if STATE.exists():
         try: return set(json.loads(STATE.read_text()).get("done", []))
@@ -98,6 +684,221 @@ def load_state():
 def save_state(done):
     STATE.parent.mkdir(parents=True, exist_ok=True)
     STATE.write_text(json.dumps({"done": sorted(done)}, indent=0))
+
+def useful_mention(s):
+    s = clean_subject_text(s)
+    if len(s) < 4:
+        return False
+    if re.search(r"(?i)\b(van(?:guard|gard) sciences|keelynet|po box|mesquite|absolutely no restrictions|word processor parameters)\b", s):
+        return False
+    if re.search(r"(?i)\b(the following|please feel free|to date the finest|with reference to|their whole frame|surface of a body|press for each coin)\b", s):
+        return False
+    if re.fullmatch(r"\d+|\d{1,2}[-/]\d{1,2}[-/]\d{2,4}", s):
+        return False
+    return True
+
+def title_like(s):
+    words = re.findall(r"[A-Za-z][A-Za-z'-]*", clean_subject_text(s))
+    if len(words) < 2:
+        return False
+    small = {"the", "of", "and", "or", "to", "for", "in", "on", "a", "an", "with", "by"}
+    caps = [w for w in words if w[:1].isupper() or w.lower() in small]
+    return len(caps) / max(len(words), 1) >= 0.65
+
+def extract_mentions(text, limit=12):
+    meta, body = frontmatter(text)
+    found = []
+
+    def add(v):
+        v = clean_subject_text(v)
+        v = re.sub(r"\.\s+(?:If|The|This|It|In|For|A|An)\b.*$", "", v).strip(" .")
+        if useful_mention(v) and v not in found:
+            found.append(v)
+
+    for key in ("persons", "related_files"):
+        vals = meta.get(key)
+        if isinstance(vals, list):
+            for v in vals:
+                add(v)
+    for key in ("contributed_by",):
+        if meta.get(key):
+            add(meta[key])
+
+    for q in re.findall(r'"([^"]{8,100})"', body):
+        if title_like(q):
+            add(q)
+
+    for m in re.finditer(r"(?m)\b(?:by|courtesy of)[ \t]+([A-Z][A-Za-z.'-]+(?:[ \t]+[A-Z][A-Za-z.'-]+){1,4})\b", body):
+        add(m.group(1))
+
+    for m in re.finditer(r"(?m)\b((?:The[ \t]+)?[A-Z][A-Za-z0-9'-]+(?:[ \t]+[A-Z][A-Za-z0-9'/-]+){2,10})[ \t]+by[ \t]+([A-Z][A-Za-z.'-]+(?:[ \t]+[A-Z][A-Za-z.'-]+){1,4})", body):
+        add(m.group(1))
+        add(m.group(2))
+
+    for line in body.splitlines():
+        s = clean_subject_text(line)
+        numbered_ref = bool(re.match(r"^\d{1,2}\.", s))
+        publicationish = bool(re.search(r"(?i)\b(journal|constitution|times|tribune|gazette|magazine|newsletter|proceedings|isbn)\b", s))
+        has_locator = bool(re.search(r"\b(\d{1,2}/\d{1,2}/\d{2,4}|19\d{2}|20\d{2})\b", s))
+        if numbered_ref or (publicationish and has_locator and title_like(s)):
+            if 12 <= len(s) <= 180:
+                add(s)
+
+    return found[:limit]
+
+def source_citations(text, limit=8):
+    _meta, body = frontmatter(text)
+    lines = [clean_subject_text(ln) for ln in body.splitlines()]
+    lines = [ln for ln in lines if ln]
+    out = []
+
+    def add(c):
+        c = clean_subject_text(c)
+        if re.search(r"(?i)\b(a book\?|technical process|press release|television news show)\b", c):
+            return
+        if c and c not in out and not re.search(r"(?i)\b(keelynet bbs|sponsored by|absolutely no restrictions|po box|word processor)\b", c):
+            out.append(c)
+
+    for i, line in enumerate(lines[:180]):
+        if re.search(r"(?i)\b(journal-constitution|journal|constitution|times|tribune|gazette|magazine|newsletter|proceedings)\b", line):
+            date = ""
+            byline = ""
+            title = line
+            for nxt in lines[i + 1:i + 8]:
+                if not date and re.search(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b", nxt):
+                    date = re.search(r"\b\d{1,2}/\d{1,2}/\d{2,4}\b", nxt).group(0)
+                    continue
+                if not byline and re.search(r"(?i)^by\s+", nxt):
+                    byline = clean_subject_text(re.sub(r"(?i)^by\s+", "", nxt))
+                    byline = clean_subject_text(re.sub(r"(?i)\bstaff writer\b", "", byline))
+                    continue
+                if date and byline:
+                    break
+            bits = [title]
+            if date:
+                bits.append(date)
+            if byline:
+                bits.append("by " + byline)
+            add(", ".join(bits))
+
+    for m in re.finditer(r"(?im)^\s*(\d{1,2}\.\s+.+)$", body):
+        add(m.group(1))
+        if len(out) >= limit:
+            break
+    return out[:limit]
+
+def rag_search(query, root, top=4):
+    rag = HOME/"work"/"apple"/"bin"/"vault-rag"
+    if not rag.exists() or not root.exists() or not query.strip():
+        return []
+    try:
+        res = subprocess.run(
+            [str(rag), query, "--root", str(root), "--top", str(top), "--json"],
+            text=True,
+            capture_output=True,
+            timeout=int(os.environ.get("KEELYNET_RAG_TIMEOUT", "25")),
+        )
+    except Exception:
+        return []
+    if res.returncode != 0:
+        return []
+    try:
+        return json.loads(res.stdout)
+    except Exception:
+        return []
+
+def literal_mention_hits(mentions, root, limit=4):
+    if not root.exists():
+        return []
+    hits = []
+    lowered = [(m, m.lower()) for m in mentions if len(m) >= 5]
+    for path in root.rglob("*.md"):
+        if len(hits) >= limit:
+            break
+        try:
+            text = path.read_text(errors="ignore")
+        except Exception:
+            continue
+        low = text.lower()
+        for mention, needle in lowered:
+            idx = low.find(needle)
+            if idx < 0:
+                continue
+            start = max(0, idx - 180)
+            end = min(len(text), idx + len(mention) + 280)
+            snippet = re.sub(r"\s+", " ", text[start:end]).strip()
+            hits.append({"file": str(path.relative_to(root)), "text": snippet})
+            break
+    return hits
+
+def mention_context_block(mentions):
+    if not mentions:
+        return ""
+    query = "; ".join(mentions[:10])
+    roots = [
+        ("headspace graph", HOME/"work"/"convey"/"kb"/"graph"),
+        ("merlib wiki", HOME/"work"/"merlib-dump"/"wiki"),
+    ]
+    lines = ["LOCAL CONTEXT FOR CITATIONS / MENTIONS", "Extracted mentions: " + "; ".join(mentions)]
+    seen = set()
+    for label, root in roots:
+        hits = literal_mention_hits(mentions, root)
+        if len(hits) < 2 and os.environ.get("KEELYNET_RAG", "1") != "0":
+            hits += rag_search(query, root, top=max(1, 4 - len(hits)))
+        if not hits:
+            continue
+        lines.append("")
+        lines.append(label + ":")
+        for h in hits[:4]:
+            key = (h.get("file"), h.get("text", "")[:80])
+            if key in seen:
+                continue
+            seen.add(key)
+            snippet = re.sub(r"\s+", " ", h.get("text", "")).strip()
+            if len(snippet) > 450:
+                snippet = snippet[:447].rstrip() + "..."
+            lines.append("- %s: %s" % (h.get("file", "?"), snippet))
+    return "\n".join(lines) if len(lines) > 2 else "\n".join(lines)
+
+def citation_context_block(citations):
+    if not citations:
+        return ""
+    lines = ["SOURCE CITATIONS EXTRACTED"]
+    for c in citations:
+        lines.append("- " + c)
+    return "\n".join(lines)
+
+def related_source_context(text, limit=5):
+    meta, _body = frontmatter(text)
+    vals = meta.get("related_files")
+    if not isinstance(vals, list):
+        return ""
+    lines = ["RELATED SOURCE FILES RE-GRASPED"]
+    added = 0
+    for val in vals:
+        m = re.search(r"\[\[([^]]+)\]\]", val)
+        rel = m.group(1) if m else val
+        rel = rel.strip().strip("/")
+        if not rel.upper().startswith("ENERGY/"):
+            continue
+        stem = rel.split("/", 1)[1]
+        path = SRCDIR / (stem + ".md")
+        if not path.exists():
+            continue
+        try:
+            rtext = path.read_text(errors="replace")
+        except Exception:
+            continue
+        rmeta, rbody = frontmatter(rtext)
+        title = source_title(rmeta, rbody) or stem
+        excerpt = re.sub(r"\s+", " ", rbody).strip()
+        if len(excerpt) > 900:
+            excerpt = excerpt[:897].rstrip() + "..."
+        lines.append("- %s: %s — %s" % (stem, title, excerpt))
+        added += 1
+        if added >= limit:
+            break
+    return "\n".join(lines) if added else ""
 
 def main():
     limit = None
@@ -109,45 +910,66 @@ def main():
     done = load_state()
     files = sorted(p for p in SRCDIR.glob("*.md"))
     todo = [p for p in files if p.name not in done]
-    print("KeelyNet ENERGY mailer → %s | %d files, %d done, %d remaining%s" %
+    random.shuffle(todo)
+    print("KeelyNet ENERGY mailer → %s | %d files, %d done, %d remaining | random pick order%s" %
           (TO, len(files), len(done), len(todo), "" if limit is None else " (this run: %d)" % limit))
     sent = 0
     for p in todo:
         if limit is not None and sent >= limit: break
         name = p.stem
+        print("  NEXT %-14s → analyzing, then emailing %s" % (name, TO), flush=True)
         text = p.read_text(errors="replace")
         if SCRUB.search(text):
             print("  SKIP %s (kortela)" % name); done.add(p.name); save_state(done); continue
         t0 = time.time()
+        mentions = extract_mentions(text)
+        citations = source_citations(text)
+        mention_context = mention_context_block(mentions)
+        citation_context = citation_context_block(citations)
+        related_context = related_source_context(text)
+        user_text = "KeelyNet file: %s.md\n\n%s" % (name, text[:14000])
+        if citation_context:
+            user_text += "\n\n=== SOURCE CITATIONS EXTRACTED ===\n%s\n" % citation_context
+        if mention_context:
+            user_text += "\n\n=== LOCAL CONTEXT RETRIEVED FROM HEADSPACE/WIKI ===\n%s\n" % mention_context
+        if related_context:
+            user_text += "\n\n=== RELATED FILE CONTEXT ===\n%s\n" % related_context
         try:
-            main_an = chat(FM_HOST, FM_MODEL, MAIN_SYS, "KeelyNet file: %s.md\n\n%s" % (name, text[:14000]),
-                           bearer=fmk, max_tokens=1100)
+            main_an = chat(FM_HOST, FM_MODEL, main_system_prompt(), user_text,
+                           bearer=fmk, max_tokens=2500)
         except Exception as e:
             print("  FAIL %s freellmapi: %s" % (name, e)); break
         try:
-            lesser = chat(MLX_HOST, MLX_MODEL, LESSER_SYS, "KeelyNet file: %s.md\n\n%s" % (name, text[:6000]),
-                          max_tokens=500)
+            lesser = chat_retry(
+                "qwen lesser take", 3, [20, 60],
+                MLX_HOST, MLX_MODEL, LESSER_SYS, "KeelyNet file: %s.md\n\n%s" % (name, text[:6000]),
+                max_tokens=500,
+            )
         except Exception as e:
-            lesser = "(fm-mlx lesser take unavailable: %s)" % e
+            print("  FAIL %s qwen lesser take: %s" % (name, e))
+            print("  HOLD %s — not emailing or marking done; next scheduled run will retry" % name)
+            break
         for v in ("main_an", "lesser"):
             if SCRUB.search(locals()[v]):
                 if v == "main_an": main_an = SCRUB.sub("[redacted]", main_an)
                 else: lesser = SCRUB.sub("[redacted]", lesser)
         dt = time.time() - t0
-        subject = "KeelyNet ENERGY — %s" % name
-        text_body = ("KeelyNet ENERGY file: %s.md\nSource: keelynet/ENERGY/%s.md\n"
-                     "Analysis: freellmapi (%s) + fm-mlx lesser take (Qwen3-4B). Claimed/unverified.\n\n"
-                     "=== FREELLMAPI ANALYSIS ===\n%s\n\n=== FM-MLX LESSER TAKE ===\n%s\n"
-                     % (name, name, FM_MODEL, main_an, lesser))
+        meta = source_metadata(name, text)
+        main_an = clean_analysis(main_an)
+        subject = email_subject(meta)
+        display_title = meta.get("title") or name
+        if meta.get("author") and meta["author"].lower() not in display_title.lower():
+            display_title = "%s — %s" % (display_title, meta["author"])
+        text_body = ("%s\n\n%s\n\n=== QWEN LESSER TAKE ===\n%s\n" %
+                     (subject, main_an, lesser))
         html_body = (
             "<div style='font-family:-apple-system,Segoe UI,sans-serif;max-width:680px'>"
-            "<p style='color:#888;font-size:12px'>KeelyNet ENERGY · <code>keelynet/ENERGY/%s.md</code> · "
-            "freellmapi <b>%s</b> + fm-mlx lesser (Qwen3-4B) · <b>Claimed / unverified</b></p>"
+            "<p style='color:#888;font-size:12px'><code>%s.md</code> · <b>Claimed / unverified</b></p>"
             "<h2>%s</h2>%s<hr>"
-            "<h3 style='color:#888'>fm-mlx lesser take</h3>%s"
+            "<h3 style='color:#888'>qwen lesser take</h3>%s"
             "<p style='color:#aaa;font-size:11px'>Generated on the Mac Mini (freellmapi :3001 + MLX :8080), "
             "zero-cloud-cost brains where local. Grounded in the source file; not independently verified.</p></div>"
-            % (name, FM_MODEL, _html.escape(name), md_to_html(main_an), md_to_html(lesser)))
+            % (name, _html.escape(display_title), md_to_html(main_an), md_to_html(lesser)))
         try:
             res = send_email(subject, text_body, html_body)
         except Exception as e:
@@ -155,6 +977,9 @@ def main():
         done.add(p.name); save_state(done); sent += 1
         print("  SENT %-14s %5.1fs  (main %dw, lesser %dw)  msg=%s"
               % (name, dt, len(main_an.split()), len(lesser.split()), (res or {}).get("message_id", "?")))
+        analysis_path = save_analysis(name, main_an, lesser)
+        ingest_analysis(analysis_path, name)
+        update_merlib_wiki(name, main_an, lesser)
     print("done: %d sent this run, %d/%d total" % (sent, len(done), len(files)))
 
 if __name__ == "__main__":

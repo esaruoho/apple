@@ -1,0 +1,9 @@
+#!/bin/bash
+# Bedini isolate batch progress: done vs queued vs in-flight
+INBOX=~/work/comms/queue/convey-isolate-inbox
+RESULTS=~/work/comms/queue/convey-isolate-results
+done=$(ls "$RESULTS"/*/done.json 2>/dev/null | grep -cE "eftv-|forum-|verify-")
+queued=$(ls "$INBOX"/*.json 2>/dev/null | wc -l | tr -d ' ')
+hb=$(python3 -c "import json,time;d=json.load(open('$HOME/work/comms/queue/convey-isolate-heartbeat.json'));print(d.get('status'),'·',d.get('detail',''),'(',int(time.time())-d.get('ts',0),'s ago)')" 2>/dev/null)
+echo "Bedini batch — done: $done  ·  still queued: $queued  ·  worker: $hb"
+echo "results dir: $RESULTS"

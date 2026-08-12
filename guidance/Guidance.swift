@@ -53,8 +53,12 @@ struct Agent: Codable, Identifiable {
         let haystack = ([focus] + synopsis.recap).joined(separator: "\n").lowercased()
         return haystack.contains("you've hit your session limit")
             || haystack.contains("you have hit your session limit")
+            || haystack.contains("you've hit your weekly limit")
+            || haystack.contains("you have hit your weekly limit")
             || haystack.contains("hit your session limit")
+            || haystack.contains("hit your weekly limit")
             || haystack.contains("session limit · resets")
+            || haystack.contains("weekly limit · resets")
     }
     var resetEpoch: Int { session_limit_reset_epoch ?? 0 }
     var autoContinueEpoch: Int { resetEpoch > 0 ? resetEpoch + 60 : 0 }
@@ -173,7 +177,7 @@ final class GuidanceModel: ObservableObject {
     }
     @Published var autoContinueLimits: Bool = {
         let k = "guidance.autoContinueLimits"
-        if UserDefaults.standard.object(forKey: k) == nil { return true }
+        if UserDefaults.standard.object(forKey: k) == nil { return false }
         return UserDefaults.standard.bool(forKey: k)
     }() {
         didSet { UserDefaults.standard.set(autoContinueLimits, forKey: "guidance.autoContinueLimits") }
@@ -208,7 +212,6 @@ final class GuidanceModel: ObservableObject {
     }
 
     func boot() {
-        DispatchQueue.global(qos: .utility).async { Self.runDue() }
         reload(manual: true)
         setAuto(true)
     }
@@ -223,10 +226,6 @@ final class GuidanceModel: ObservableObject {
         timer?.invalidate(); timer = nil
         guard on else { return }
         timer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
-            // Fire due pings every tick regardless of whether the board reload is
-            // skipped (it skips while a card is open). Firing must never wait on
-            // the UI. The board reload then follows and picks up status changes.
-            DispatchQueue.global(qos: .utility).async { Self.runDue() }
             self?.reload()
         }
     }
@@ -260,9 +259,8 @@ final class GuidanceModel: ObservableObject {
         }
     }
 
-    /// Run every due scheduled ping. Lock-guarded and idempotent in the CLI.
-    /// Called off the main thread on each refresh — this is the reliable firer
-    /// (Guidance.app has the Automation grant that a launchd context lacks).
+    /// Run every due scheduled ping. Deliberately not called from auto-refresh:
+    /// iTerm AppleEvents are write-side effects and must not be looped.
     static func runDue() {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/usr/bin/env")

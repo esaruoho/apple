@@ -1,0 +1,183 @@
+#!/bin/bash
+# paketti-ship — push a Paketti change, sync it to Gumroad, announce it, syndicate it.
+#
+# One gesture for the whole release loop:
+#   1. push     — fast-forward local master to origin (only if ahead; never force)
+#   2. gumroad  — kick off `gumroad-paketti` DETACHED so CI's ~5-10 min .xrnx build
+#                 never blocks the caller
+#   3. announce — post to #paketti-updates as PakettiUpdateMirror, with !tta on the end
+#   4. verify   — watch the message for PakettiBot's ✅ (or a "Failed:" reply) so you know
+#                 the syndication actually happened instead of hoping it did
+#
+# ONE message does both jobs: Discord people read it in the channel, and the trailing
+# !tta makes PakettiBot syndicate it to Bluesky / Mastodon / Tumblr.
+#
+# That works because of pakettibot-agent commits 3bcc48d + 1dd04e1 (self-syndication):
+# before those, setupMessageHandler bailed on `message.author.bot` before detectTrigger()
+# ran, so a bot-posted !tta silently did nothing and this script needed an ugly two-step
+# workaround. If syndication ever stops working, check those commits are still in the
+# running bot before touching this script.
+#
+# Usage:
+#   paketti-ship -f announcement.txt          # text must END with !tta
+#   paketti-ship -m "Fix: foo is fixed. !tta"
+#   paketti-ship -f a.txt --dry-run           # show every step, mutate nothing
+#   paketti-ship -f a.txt --no-syndicate      # channel note only, no social trigger
+#   paketti-ship -f a.txt --no-gumroad --no-push
+set -uo pipefail
+
+REPO="/Users/esaruoho/work/paketti"
+BOT_DIR="/Users/esaruoho/work/pakettibot-agent"
+CHANNEL_ID="1251654831047839876"        # #paketti-updates (lives in LISTEN_CHANNEL_IDS)
+API="https://discord.com/api/v10"
+VERIFY_SECS=90
+
+TEXT=""; DRY=0; DO_GUMROAD=1; DO_PUSH=1; SYNDICATE=1
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -f|--file)      TEXT="$(cat "$2")"; shift 2 ;;
+    -m|--message)   TEXT="$2"; shift 2 ;;
+    --dry-run)      DRY=1; shift ;;
+    --no-gumroad)   DO_GUMROAD=0; shift ;;
+    --no-push)      DO_PUSH=0; shift ;;
+    --no-syndicate) SYNDICATE=0; shift ;;
+    -h|--help)      sed -n '2,26p' "$0"; exit 0 ;;
+    *) echo "unknown arg: $1" >&2; exit 2 ;;
+  esac
+done
+[ -n "$TEXT" ] || { echo "ERROR: need -f <file> or -m <text>" >&2; exit 2; }
+
+# --- checks on the announcement text ----------------------------------------
+# The trigger must be the LAST thing in the message (social.js detectTrigger); mid-sentence
+# it does nothing at all. Mirror that regex here so the mistake is caught before it is public.
+TRIGGER=$(printf '%s' "$TEXT" | python3 -c "
+import re,sys
+t=sys.stdin.read().strip()
+m=re.search(r'(?:^|\s)!(tta|bsky|threads|tumblr|vk)(?:[.!?,;:])?\s*\$', t, re.I)
+print(m.group(1).lower() if m else '')")
+
+if [ "$SYNDICATE" = 1 ] && [ -z "$TRIGGER" ]; then
+  echo "ERROR: the text does not end with a social trigger, so it would post to Discord" >&2
+  echo "       and syndicate NOTHING. Append ' !tta' (or pass --no-syndicate on purpose)." >&2
+  exit 2
+fi
+if [ "$SYNDICATE" = 0 ] && [ -n "$TRIGGER" ]; then
+  echo "ERROR: --no-syndicate was passed but the text ends with '!$TRIGGER'." >&2
+  echo "       Pick one: drop the trigger, or drop the flag." >&2
+  exit 2
+fi
+
+CHARS=$(printf '%s' "$TEXT" | wc -c | tr -d ' ')
+[ "$CHARS" -le 2000 ] || { echo "ERROR: $CHARS chars, over the 2000 limit." >&2; exit 2; }
+
+echo "== announcement: $CHARS chars ${TRIGGER:+(trigger: !$TRIGGER)} =="
+echo "-- first 300 chars — this is ALL Bluesky shows in the lead post:"
+printf '%s' "$TEXT" | head -c 300; echo; echo "--"
+if [ "$CHARS" -gt 300 ]; then
+  echo "   (over 300 → Bluesky posts a thread; make sure that lead stands alone)"
+fi
+
+# --- 1. push -----------------------------------------------------------------
+if [ "$DO_PUSH" = 1 ]; then
+  git -C "$REPO" fetch origin -q
+  LOCAL=$(git -C "$REPO" rev-parse master); REMOTE=$(git -C "$REPO" rev-parse origin/master)
+  if [ "$LOCAL" = "$REMOTE" ]; then
+    echo "1. push     : already in sync ($(git -C "$REPO" rev-parse --short master))"
+  elif git -C "$REPO" merge-base --is-ancestor "$REMOTE" "$LOCAL"; then
+    if [ "$DRY" = 1 ]; then echo "1. push     : WOULD push $LOCAL -> origin/master"
+    else git -C "$REPO" push origin "$LOCAL:master" && echo "1. push     : pushed $(git -C "$REPO" rev-parse --short master)"; fi
+  else
+    echo "1. push     : ABORT — local master is not ahead of origin/master." >&2
+    echo "              Sort the divergence out by hand; refusing to guess." >&2
+    exit 1
+  fi
+fi
+
+# --- 2. gumroad (detached — CI build takes 5-10 min) -------------------------
+if [ "$DO_GUMROAD" = 1 ]; then
+  if [ "$DRY" = 1 ]; then echo "2. gumroad  : WOULD launch gumroad-paketti detached"
+  else
+    # The binary is `gumroad-paketti`, NOT `gumroad paketti` (unknown subcommand). It writes
+    # $REPO/.gumroad-sync.log itself, so redirect to /dev/null or every line lands twice.
+    #
+    # CI skips its own `docs: ... [skip ci]` commits, so when HEAD is one of those there is
+    # never a release for HEAD and the default wait hangs until timeout. Sync the newest
+    # finished build instead.
+    GUMROAD_ARGS=""
+    if git -C "$REPO" log -1 --pretty=%s | grep -q '\[skip ci\]'; then
+      GUMROAD_ARGS="--no-wait"
+      echo "2. gumroad  : HEAD is a [skip ci] commit, using --no-wait (CI never builds it)"
+    fi
+    nohup gumroad-paketti $GUMROAD_ARGS >/dev/null 2>&1 &
+    echo "2. gumroad  : launched detached (pid $!); log: $REPO/.gumroad-sync.log"
+  fi
+fi
+
+# --- 3. announce -------------------------------------------------------------
+if [ "$DRY" = 1 ]; then
+  echo "3. announce : WOULD post $CHARS chars to #paketti-updates"
+  if [ -n "$TRIGGER" ]; then echo "4. verify   : WOULD wait for ✅ (syndication via !$TRIGGER)"
+  else echo "4. verify   : WOULD skip (no trigger — channel note only)"; fi
+  echo "== done (dry run) =="; exit 0
+fi
+
+TOKEN=$(python3 -c "
+import pathlib,re
+m=re.search(r'(?m)^DISCORD_BOT_TOKEN=(.*)\$', pathlib.Path('$BOT_DIR/.env').read_text())
+print(m.group(1).strip().strip('\"').strip(\"'\") if m else '')")
+[ -n "$TOKEN" ] || { echo "3. announce : ABORT — no DISCORD_BOT_TOKEN in $BOT_DIR/.env" >&2; exit 1; }
+
+printf '%s' "$TEXT" > /tmp/pk_ship_text.txt
+python3 -c "import json;open('/tmp/pk_ship_body.json','w').write(json.dumps({'content':open('/tmp/pk_ship_text.txt').read()}))"
+CODE=$(curl -s -o /tmp/pk_ship_res.json -w '%{http_code}' -X POST \
+  -H "Authorization: Bot $TOKEN" -H "Content-Type: application/json" \
+  -d @/tmp/pk_ship_body.json "$API/channels/$CHANNEL_ID/messages")
+if [ "$CODE" != "200" ]; then
+  echo "3. announce : FAILED http=$CODE" >&2; head -c 400 /tmp/pk_ship_res.json >&2; echo >&2; exit 1
+fi
+MID=$(python3 -c "import json;print(json.load(open('/tmp/pk_ship_res.json'))['id'])")
+echo "3. announce : posted to #paketti-updates, id $MID"
+
+# --- 4. verify syndication ---------------------------------------------------
+# PakettiBot reacts 📨 while working, ✅ once at least one platform accepted, and replies
+# only on failure. Watch for that rather than assuming — a silent no-op is exactly the bug
+# this flow exists to eliminate.
+if [ -z "$TRIGGER" ]; then
+  echo "4. verify   : skipped (no trigger — channel note only)"
+  echo "== done =="; exit 0
+fi
+
+echo "4. verify   : waiting for ✅ from PakettiBot (up to ${VERIFY_SECS}s) ..."
+WAITED=0; OK=0
+while [ "$WAITED" -lt "$VERIFY_SECS" ]; do
+  sleep 5; WAITED=$((WAITED+5))
+  curl -s -H "Authorization: Bot $TOKEN" "$API/channels/$CHANNEL_ID/messages/$MID" -o /tmp/pk_ship_msg.json
+  STATE=$(python3 -c "
+import json
+d=json.load(open('/tmp/pk_ship_msg.json'))
+e=[r['emoji']['name'] for r in (d.get('reactions') or [])]
+print('done' if '✅' in e else ('working' if '\U0001F4E8' in e else 'none'))")
+  if [ "$STATE" = "done" ]; then OK=1; break; fi
+done
+
+if [ "$OK" = 1 ]; then
+  echo "4. verify   : ✅ syndicated (after ${WAITED}s)"
+  # Surface any per-platform failure the bot replied with.
+  curl -s -H "Authorization: Bot $TOKEN" "$API/channels/$CHANNEL_ID/messages?after=$MID&limit=5" -o /tmp/pk_ship_after.json
+  python3 -c "
+import json
+for m in json.load(open('/tmp/pk_ship_after.json')):
+    if m.get('content','').startswith('Failed:'):
+        print('   partial failure reported:', m['content'])"
+  # Report what actually came back. This used to assert "Threads is disabled, its token
+  # expired" unconditionally — which was flatly wrong on the run that proved Threads working
+  # again (2026-08-04). Never hardcode a platform's state; the bot's reply is the source.
+  echo "   no failures reported by PakettiBot (it replies only when a platform rejects)"
+  echo "== done =="
+else
+  echo "4. verify   : NO ✅ after ${VERIFY_SECS}s — the message IS in Discord but may not" >&2
+  echo "              have syndicated. Check the bot is alive and still has the" >&2
+  echo "              self-syndication commits:" >&2
+  echo "                ssh cloudcity \"tail -20 $BOT_DIR/logs/pakettibot-\$(date +%F).log\"" >&2
+  exit 1
+fi

@@ -6,6 +6,15 @@
 //   Transpose:  -12 | 0 | +12        (relative nudge / absolute reset via AbletonOSC)
 //   Envelope:   Gain | Transpose | Sample Offset   (direct select, no toggling)
 // A status line along the bottom shows the last result or error.
+//
+// Keyboard, while the panel is focused (it is the frontmost window, so this needs no
+// event tap, no Accessibility permission and no hover detection):
+//   <-  ->    Prev / Next envelope   — same as the buttons
+//   ^   v     step the transposition ladder by an octave, i.e. along the top row:
+//             -48 -36 -24 -12 0 +12 +24 +36 +48
+//             This is a relative nudge, and AbletonOSC's nudge_clip_transposition
+//             already clamps to Live's -48..48, so the ends need no handling here.
+// Without this, AppKit has nothing to route an arrow key to and macOS just beeps.
 
 import Cocoa
 
@@ -35,6 +44,9 @@ func runLiveEnvelope(_ args: [String], completion: @escaping (String, Bool) -> V
 }
 
 let DEFAULT_TITLE = "Live Clip Envelopes"
+
+/// US-layout virtual key codes for the arrow keys.
+let KEY_LEFT = 123, KEY_RIGHT = 124, KEY_DOWN = 125, KEY_UP = 126
 
 final class PanelController: NSObject {
     let panel: NSPanel
@@ -124,6 +136,37 @@ final class PanelController: NSObject {
 
         panel.center()
         panel.makeKeyAndOrderFront(nil)
+
+        installKeyboardMonitor()
+    }
+
+    //--------------------------------------------------------------------------------
+    // Arrow keys, handled with a local event monitor rather than a keyDown override:
+    // the monitor sees the event whichever control happens to be first responder, so a
+    // button that has picked up focus from an earlier click cannot swallow the arrow
+    // (AppKit would otherwise use it to move focus between buttons).
+    //
+    // Returning nil consumes the event, which is also what stops the beep.
+    //--------------------------------------------------------------------------------
+    private func installKeyboardMonitor() {
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self else { return event }
+
+            //--------------------------------------------------------------------------------
+            // Let anything with a modifier through untouched, so Cmd-Q, Cmd-W and the like
+            // still reach the menu.
+            //--------------------------------------------------------------------------------
+            let modifiers: NSEvent.ModifierFlags = [.command, .option, .control, .shift]
+            guard event.modifierFlags.intersection(modifiers).isEmpty else { return event }
+
+            switch Int(event.keyCode) {
+            case KEY_LEFT:  self.perform(["prev"]);              return nil
+            case KEY_RIGHT: self.perform(["next"]);              return nil
+            case KEY_UP:    self.perform(["transpose-up-12"]);   return nil
+            case KEY_DOWN:  self.perform(["transpose-down-12"]); return nil
+            default:        return event
+            }
+        }
     }
 
     func row(_ views: [NSView]) -> NSStackView {
@@ -152,9 +195,14 @@ final class PanelController: NSObject {
     var commandTable: [String] = []
 
     @objc func pressed(_ sender: NSButton) {
+        perform(commandTable[sender.tag].split(separator: " ").map(String.init))
+    }
+
+    /// Runs one `live-envelope` command and reports it in the title. Shared by the
+    /// buttons and the arrow keys so both paths behave identically.
+    func perform(_ args: [String]) {
         generation += 1
         let thisPress = generation
-        let args = commandTable[sender.tag].split(separator: " ").map(String.init)
 
         runLiveEnvelope(args) { [weak self] text, ok in
             guard let self = self else { return }

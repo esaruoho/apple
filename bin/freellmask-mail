@@ -252,9 +252,9 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "plausible-looking ones.")
     voices_on = lens_voices_enabled()
     if viewpoint and voices_on:   # in-corpus (free-energy) → think out loud + speak in four voices, ONE call, no extra roundtrip
-        struct=("\n\nYour reply MUST contain ALL SIX of the following markdown headings, in this EXACT order and "
+        struct=("\n\nYour reply MUST contain ALL SEVEN of the following markdown headings, in this EXACT order and "
           "spelling. The FIRST line of your reply MUST be the heading '## Thought about it' — never open with the "
-          "answer, never omit the thinking section, never rename it. A reply missing any of these six headings is "
+          "answer, never omit the thinking section, never rename it. A reply missing any of these seven headings is "
           "rejected and regenerated.\n"
           "## Thought about it\n(4-7 sentences of GENUINE reasoning — how you're approaching it, what connects "
           "across the sources, where the tension is. Think out loud, here only.)\n"
@@ -2054,7 +2054,7 @@ def _fm_looks_garbage_local(t):
 
 
 def compose_and_send(to, subject, body_text, source="", label="", verbose=True, tries=4,
-                     legs_from="", attach="", chapters=False, chapter_chars=9000):
+                     legs_from="", attach="", chapters=False, chapter_chars=9000, space_hint=""):
     """THE ONE ANSWER FORMAT, callable from outside the poll loop.
 
     Esa, 2026-08-10, holding three different-looking emails from the same system: "i have
@@ -2084,7 +2084,7 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
     # CHAPTER-BY-CHAPTER: read each part on its own first, then write the eleven sections over the
     # assembled digest — so a long document is answered from a real read, not a skim of a skim.
     chapter_md = ""
-    if chapters and len(body_text) > 12000:
+    if chapters and len(body_text) > 4000:      # asked for → do it; 12k skipped a 14-page PDF
         parts = split_chapters(body_text, target_chars=chapter_chars)
         if verbose:
             print(f"  📚 chapter-by-chapter: {len(parts)} part(s)")
@@ -2102,10 +2102,21 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
         wctx, wslugs = wiki_context(route_text)
     except Exception as e:
         if verbose: print(f"  wiki context error: {e}")
-    try:
-        space, why = route_space(FORWARD_TO, subject, route_text, wslugs)
-    except Exception as e:
-        space, why = "free-energy", f"routing error ({e}) → free-energy"
+    # ROUTING, in order of trust: an explicit --space wins; then ARCHIVE PROVENANCE (a file under
+    # merlib-dump / convey-packs / whisp-transcripts IS free-energy material by definition); only then
+    # the keyword/LLM router. A Stiffler electrolysis paper scored two "admin" keywords and routed to
+    # the admin space — no viewpoint, no voices, wrong format again (2026-08-12). Provenance is a fact;
+    # keyword scoring is a guess, and the guess must not outrank the fact.
+    ARCHIVE_ROOTS = ("work/merlib-dump", "work/convey-packs", "work/whisp-transcripts")
+    if space_hint:
+        space, why = space_hint, "explicit --space"
+    elif any(r in str(source) or r in str(legs_from) or r in str(attach) for r in ARCHIVE_ROOTS):
+        space, why = "free-energy", "archive provenance"
+    else:
+        try:
+            space, why = route_space(FORWARD_TO, subject, route_text, wslugs)
+        except Exception as e:
+            space, why = "free-energy", f"routing error ({e}) → free-energy"
     in_fe = (space == "free-energy")
     vp = VIEWPOINT if in_fe else ""
     if not in_fe:
@@ -2204,6 +2215,8 @@ def main():
         ap.add_argument("--source", default="", help="the URL or origin, printed under the answer")
         ap.add_argument("--label", default="", help="a line noting the artifact (e.g. the transcript path)")
         ap.add_argument("--max-chars", type=int, default=120000)
+        ap.add_argument("--space", default="", help="force a space (e.g. free-energy); otherwise "
+                                                    "archive provenance, then the router, decides")
         ap.add_argument("--chapters", action="store_true",
                         help="read the document part by part first, then answer over the whole read")
         ap.add_argument("--chapter-chars", dest="chapter_chars", type=int, default=9000)
@@ -2222,7 +2235,8 @@ def main():
                                     label=a.label, tries=a.tries,
                                     legs_from=(a.legs_from or (a.file if a.file else "")),
                                     attach=(a.attach or (a.file if a.file else "")),
-                                    chapters=a.chapters, chapter_chars=a.chapter_chars)
+                                    chapters=a.chapters, chapter_chars=a.chapter_chars,
+                                    space_hint=a.space)
         print(("✅ sent (" + str(info) + ")") if ok else ("✗ " + str(info)))
         return 0 if ok else 1
     if cmd=="status":

@@ -169,11 +169,41 @@ public enum Hex {
 
 // ─────────────────────────────── objects ───────────────────────────────
 
-/// P0 ships exactly one object kind — ink. P1 adds arrow / box / highlight /
-/// spotlight / label / sticker / callout, which is why this is an enum from day one
-/// rather than an implicit assumption that every object is a stroke.
-public enum ObjectKind: String, Codable, Sendable {
-    case ink
+/// The vocabulary an agent has for pointing at things.
+///
+/// `points` means something different per kind, and that meaning is the contract:
+///
+///   ink        a polyline — every point
+///   line       [tail, head]
+///   arrow      [tail, head]      — drawn with a head at points[1]
+///   box        [cornerA, cornerB] — outlined
+///   highlight  [cornerA, cornerB] — translucent marker fill
+///   spotlight  [cornerA, cornerB] — everything OUTSIDE is dimmed
+///   label      [position]         — a text chip
+///   callout    [target, chip]     — a text chip with a leader line to the target
+///   sticker    [position]         — `text` drawn large (emoji works)
+public enum ObjectKind: String, Codable, Sendable, CaseIterable {
+    case ink, line, arrow, box, highlight, spotlight, label, callout, sticker
+
+    /// Kinds whose rectangle is defined by two opposite corners.
+    public var isRectangular: Bool {
+        self == .box || self == .highlight || self == .spotlight
+    }
+
+    /// Kinds that carry text and are meaningless without it.
+    public var needsText: Bool {
+        self == .label || self == .callout || self == .sticker
+    }
+
+    /// How many points the kind requires to render at all.
+    public var minimumPoints: Int {
+        switch self {
+        case .ink:                                  return 1
+        case .label, .sticker:                      return 1
+        case .line, .arrow, .callout:               return 2
+        case .box, .highlight, .spotlight:          return 2
+        }
+    }
 }
 
 /// One thing on the blackboard.
@@ -190,6 +220,8 @@ public struct OverlayObject: Codable, Equatable, Sendable {
     public var lifetime: Lifetime
     public var created: Double
     public var anchor: OverlayAnchor
+    /// Label / callout / sticker content. Optional so P0's files still decode.
+    public var text: String?
 
     public init(id: String = UUID().uuidString,
                 kind: ObjectKind = .ink,
@@ -199,18 +231,267 @@ public struct OverlayObject: Codable, Equatable, Sendable {
                 actor: String = "human:esa",
                 lifetime: Lifetime = .persistent,
                 created: Double = Date().timeIntervalSince1970,
-                anchor: OverlayAnchor = .screen) {
+                anchor: OverlayAnchor = .screen,
+                text: String? = nil) {
         self.id = id; self.kind = kind; self.points = points
         self.colorHex = colorHex; self.width = width; self.actor = actor
         self.lifetime = lifetime; self.created = created; self.anchor = anchor
+        self.text = text
     }
 
     public var bounds: CGRect { Geometry.bounds(points) }
+
+    /// The rectangle a two-corner kind describes. Corners may arrive in any order —
+    /// an agent saying "from (500,400) to (200,100)" means the same rect as the
+    /// reverse, so this normalises rather than producing a negative size.
+    public var rect: CGRect {
+        guard points.count >= 2 else { return bounds }
+        return Geometry.bounds([points[0], points[1]])
+    }
+
+    /// Enough points, and text where text is mandatory. Agent-supplied objects are
+    /// checked against this before they are allowed onto the screen — a `callout`
+    /// with one point would otherwise render as an invisible nothing.
+    public var isRenderable: Bool {
+        guard points.count >= kind.minimumPoints else { return false }
+        if kind.needsText, (text ?? "").isEmpty { return false }
+        return true
+    }
 
     /// The rect an agent should be shown for this object: the ink's box plus enough
     /// margin that whatever was circled is actually inside the crop.
     public func cropRect(in surface: CGRect, pad: CGFloat = 24) -> CGRect {
         Geometry.padded(bounds, by: pad, clampedTo: surface)
+    }
+}
+
+// ─────────────────────────────── shape recognition ───────────────────────────────
+
+/// What a freehand stroke was probably meant to be.
+///
+/// This is the bridge from "Esa scribbled something" to "there is a REGION here that a
+/// model should look at". Drawing a rough square around part of a whiteboard is the
+/// most natural way to say *this bit* — recognising it turns the ink into a crop rect
+/// with an intent attached, instead of a decorative squiggle.
+public enum ShapeGuess: String, Codable, Sendable {
+    case rectangle, ellipse, line, arrow, freehand
+}
+
+public struct ShapeResult: Equatable, Sendable {
+    public let shape: ShapeGuess
+    /// 0…1. Below ~0.6 the caller should treat the stroke as freehand and not
+    /// silently replace what the human actually drew.
+    public let confidence: Double
+    public let rect: CGRect
+}
+
+public enum ShapeDetect {
+
+    /// Classify a stroke. Pure geometry — no model, no training, no network.
+    ///
+    /// The tests are deliberately cheap and in this order:
+    ///   1. too few points        → freehand
+    ///   2. endpoints far apart   → line-ish (straight?) else freehand
+    ///   3. closed, and the path length matches the bounding box perimeter → rectangle
+    ///   4. closed, and it matches the inscribed ellipse's circumference   → ellipse
+    public static func classify(_ points: [CGPoint],
+                                closeTolerance: CGFloat = 0.22) -> ShapeResult {
+        let box = Geometry.bounds(points)
+        guard points.count >= 4, !box.isNull else {
+            return ShapeResult(shape: .freehand, confidence: 0, rect: box)
+        }
+
+        let diagonal = hypot(box.width, box.height)
+        guard diagonal > 1 else {
+            return ShapeResult(shape: .freehand, confidence: 0, rect: box)
+        }
+
+        let gap = hypot(points[0].x - points[points.count - 1].x,
+                        points[0].y - points[points.count - 1].y)
+        let closed = gap <= diagonal * closeTolerance
+
+        let length = pathLength(points)
+
+        if !closed {
+            // A straight line's path length equals the distance between its ends.
+            let span = hypot(points[points.count - 1].x - points[0].x,
+                             points[points.count - 1].y - points[0].y)
+            let straightness = span == 0 ? 0 : min(1, span / max(length, 0.0001))
+            if straightness > 0.93 {
+                return ShapeResult(shape: .line, confidence: straightness, rect: box)
+            }
+            return ShapeResult(shape: .freehand, confidence: 1 - straightness, rect: box)
+        }
+
+        // Closed. Compare the traced length against the two candidate ideals.
+        let perimeter = 2 * (box.width + box.height)
+        // Ramanujan's approximation — exact enough at these scales and cheap.
+        let a = box.width / 2, b = box.height / 2
+        let h = (a + b) == 0 ? 0 : pow(a - b, 2) / pow(a + b, 2)
+        let circumference = Double.pi * Double(a + b) * (1 + 3 * Double(h) / (10 + (4 - 3 * Double(h)).squareRoot()))
+
+        let rectError = perimeter == 0 ? 1 : abs(length - Double(perimeter)) / Double(perimeter)
+        let ellipseError = circumference == 0 ? 1 : abs(length - circumference) / circumference
+
+        // A very thin closed shape is a scribble, not a square.
+        let aspect = min(box.width, box.height) / max(box.width, box.height)
+        guard aspect > 0.06 else {
+            return ShapeResult(shape: .freehand, confidence: 0, rect: box)
+        }
+
+        let bestError = min(rectError, ellipseError)
+        guard bestError < 0.35 else {
+            return ShapeResult(shape: .freehand, confidence: 1 - min(1, bestError), rect: box)
+        }
+        return ShapeResult(shape: rectError <= ellipseError ? .rectangle : .ellipse,
+                           confidence: max(0, 1 - bestError / 0.35),
+                           rect: box)
+    }
+
+    public static func pathLength(_ points: [CGPoint]) -> Double {
+        guard points.count > 1 else { return 0 }
+        var total = 0.0
+        for i in 1..<points.count {
+            total += Double(hypot(points[i].x - points[i - 1].x,
+                                  points[i].y - points[i - 1].y))
+        }
+        return total
+    }
+}
+
+// ─────────────────────────────── the agent API ───────────────────────────────
+
+/// One posted object, as an agent writes it into `~/.overlay/inbox/*.json`.
+///
+/// Deliberately forgiving in what it accepts and strict in what it produces: an agent
+/// may give absolute pixels (`rect` / `at` / `points`) or normalized 0…1 (`rel`), and
+/// `resolve(in:)` turns any of them into one validated OverlayObject. Anything the app
+/// cannot render is rejected here rather than painted as an invisible artefact.
+public struct PostRequest: Decodable, Sendable {
+    /// Held as a raw string, not an ObjectKind, so a typo produces "unknown kind
+    /// 'hilight' — expected one of …" instead of an opaque DecodingError.
+    public var kind: String?
+    /// Normalized 0…1 of the target surface — the form an agent should prefer, since
+    /// it needs to know nothing about the display's pixel size.
+    public var rel: NormRect?
+    /// Absolute [x, y, w, h].
+    public var rect: [Double]?
+    /// Absolute single position [x, y] — for label / sticker.
+    public var at: [Double]?
+    /// Absolute polyline, for ink and for arrows that want an exact tail and head.
+    public var points: [[Double]]?
+    public var text: String?
+    public var color: String?
+    public var width: Double?
+    public var actor: String?
+    public var ttl: String?
+    public var display: String?
+
+    public enum PostError: Error, CustomStringConvertible, Equatable {
+        case unknownKind(String)
+        case noGeometry
+        case missingText(ObjectKind)
+        case badColor(String)
+        case badTTL(String)
+        case notRenderable(ObjectKind)
+
+        public var description: String {
+            switch self {
+            case .unknownKind(let k):
+                return "unknown kind '\(k)' — expected one of "
+                     + ObjectKind.allCases.map(\.rawValue).joined(separator: ", ")
+            case .noGeometry:
+                return "no geometry: give one of rel, rect, at or points"
+            case .missingText(let k):  return "kind '\(k.rawValue)' requires text"
+            case .badColor(let c):     return "colour '\(c)' is not #RRGGBB or #RRGGBBAA"
+            case .badTTL(let t):
+                return "unknown ttl '\(t)' — expected one of ephemeral, session, "
+                     + "space, window, persistent"
+            case .notRenderable(let k):
+                return "not enough points for kind '\(k.rawValue)'"
+            }
+        }
+    }
+
+    /// Turn the request into a real object positioned on `surface`.
+    public func resolve(in surface: CGRect,
+                        now: Double = Date().timeIntervalSince1970) throws -> OverlayObject {
+        let kind: ObjectKind
+        if let raw = self.kind {
+            guard let k = ObjectKind(rawValue: raw) else { throw PostError.unknownKind(raw) }
+            kind = k
+        } else {
+            kind = .box
+        }
+
+        let lifetime: Lifetime
+        if let raw = ttl {
+            guard let l = Lifetime(rawValue: raw) else { throw PostError.badTTL(raw) }
+            lifetime = l
+        } else {
+            // Agent marks default to .session, not .persistent: an agent that forgets
+            // to clean up should not leave ink on the desktop forever.
+            lifetime = .session
+        }
+
+        if let color = color, Hex.parse(color) == nil { throw PostError.badColor(color) }
+        if kind.needsText, (text ?? "").isEmpty { throw PostError.missingText(kind) }
+
+        var resolved: [CGPoint] = []
+        if let points = points, !points.isEmpty {
+            resolved = points.compactMap { p in
+                p.count >= 2 ? CGPoint(x: p[0], y: p[1]) : nil
+            }
+        } else if let rel = rel {
+            let r = Geometry.denormalize(rel, in: surface)
+            resolved = corners(of: r, kind: kind)
+        } else if let rect = rect, rect.count >= 4 {
+            let r = CGRect(x: rect[0], y: rect[1], width: rect[2], height: rect[3])
+            resolved = corners(of: r, kind: kind)
+        } else if let at = at, at.count >= 2 {
+            resolved = [CGPoint(x: at[0], y: at[1])]
+        } else {
+            throw PostError.noGeometry
+        }
+
+        let object = OverlayObject(
+            kind: kind,
+            points: resolved,
+            colorHex: color ?? Hex.palette[3],       // agent default: blue, not human red
+            width: width ?? 3,
+            actor: actor ?? "agent:unknown",
+            lifetime: lifetime,
+            created: now,
+            anchor: OverlayAnchor(type: .screen, display: display),
+            text: text)
+
+        guard object.isRenderable else { throw PostError.notRenderable(kind) }
+        return object
+    }
+
+    /// A rect given for a single-point kind collapses to its centre, so `label` and
+    /// `sticker` can be posted with the same `rel` an agent used for a `box`.
+    private func corners(of r: CGRect, kind: ObjectKind) -> [CGPoint] {
+        if kind == .label || kind == .sticker {
+            return [CGPoint(x: r.midX, y: r.midY)]
+        }
+        if kind == .callout {
+            // Target the rect's centre; float the chip above its top edge.
+            return [CGPoint(x: r.midX, y: r.midY),
+                    CGPoint(x: r.midX, y: r.maxY + 40)]
+        }
+        if kind == .ink || kind == .line || kind == .arrow {
+            return [CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.maxX, y: r.maxY)]
+        }
+        return [CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.maxX, y: r.maxY)]
+    }
+
+    /// Decode one inbox file. Accepts either a single object or an array of them, so
+    /// an agent can drop a whole annotation set atomically.
+    public static func decodeBatch(_ data: Data) throws -> [PostRequest] {
+        let decoder = JSONDecoder()
+        if let one = try? decoder.decode(PostRequest.self, from: data) { return [one] }
+        return try decoder.decode([PostRequest].self, from: data)
     }
 }
 

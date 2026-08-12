@@ -55,7 +55,7 @@ let PAD_ID = vocabMap["[PAD]"] ?? 0
 let CLS_ID = vocabMap["[CLS]"] ?? 101
 let SEP_ID = vocabMap["[SEP]"] ?? 102
 let UNK_ID = vocabMap["[UNK]"] ?? 100
-let MAX_LEN = 128
+let MAX_LEN = 256
 
 // ─── WordPiece tokenizer (stdlib only) ───────────────────────────
 // Standard BERT-style: lowercase, split on whitespace + punctuation, then
@@ -148,12 +148,24 @@ func embed(_ text: String) -> [Double]? {
             "attention_mask": MLFeatureValue(multiArray: inMask),
         ])
         let out = try model.prediction(from: prov)
-        guard let arr = out.featureValue(for: "embedding")?.multiArrayValue else { return nil }
-        var vec: [Double] = []
-        let n = arr.count
-        for i in 0..<n {
-            vec.append(arr[i].doubleValue)
+        // Model outputs token-level "hidden_states" [1, MAX_LEN, H]; masked mean-pool → sentence vector, then L2-normalize.
+        guard let arr = out.featureValue(for: "hidden_states")?.multiArrayValue else { return nil }
+        let shape = arr.shape.map { $0.intValue }
+        let seq = shape.count >= 3 ? shape[1] : MAX_LEN
+        let hid = shape.count >= 3 ? shape[2] : (arr.count / max(seq, 1))
+        var vec = [Double](repeating: 0.0, count: hid)
+        var cnt = 0.0
+        for t in 0..<seq {
+            if t < mask.count && mask[t] == 0 { continue }   // only real tokens
+            let base = t * hid
+            for h in 0..<hid { vec[h] += arr[base + h].doubleValue }
+            cnt += 1
         }
+        if cnt == 0 { cnt = 1 }
+        var norm = 0.0
+        for h in 0..<hid { vec[h] /= cnt; norm += vec[h] * vec[h] }
+        norm = norm.squareRoot(); if norm == 0 { norm = 1 }
+        for h in 0..<hid { vec[h] /= norm }
         return vec
     } catch {
         FileHandle.standardError.write("apple-embed-pro: predict error: \(error)\n".data(using:.utf8)!)

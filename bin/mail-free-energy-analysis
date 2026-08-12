@@ -1,0 +1,319 @@
+#!/usr/bin/env python3
+"""mail-free-energy-analysis — stdin/file in, rich analysis email out.
+
+Usage:
+  mail-free-energy-analysis --title "The Electronic Science of Free Energy (Dorsey) — ELI3" < note.md
+  mail-free-energy-analysis --file note.md --title "My source"
+
+This is the general "mail me analysis" path: it is not tied to the KeelyNet queue.
+It uses the same Cloudcity freellmapi + optional MLX lesser take + AgentMail sender.
+"""
+import argparse, base64, json, mimetypes, os, re, sys, time, html as _html, urllib.parse, urllib.request, urllib.error
+from pathlib import Path
+
+HOME = Path.home()
+FM_HOST = os.environ.get("FREE_ENERGY_ANALYSIS_FM_HOST", "http://cloudcitymacmini:3001/v1/chat/completions")
+FM_MODEL = os.environ.get("FREE_ENERGY_ANALYSIS_FM_MODEL", "nemotron-3-super-120b")
+MLX_HOST = os.environ.get("FREE_ENERGY_ANALYSIS_MLX_HOST", "http://cloudcitymacmini:8080/v1/chat/completions")
+MLX_MODEL = os.environ.get("FREE_ENERGY_ANALYSIS_MLX_MODEL", "Qwen/Qwen3-14B-MLX-4bit")
+MLX_LABEL = os.environ.get("FREE_ENERGY_ANALYSIS_MLX_LABEL", "Qwen3-14B-MLX-4bit")
+AM_BASE = "https://api.agentmail.to/v0"
+INBOX = os.environ.get("FREE_ENERGY_ANALYSIS_INBOX", "cloudcity-llm@agentmail.to")
+TO = os.environ.get("FREE_ENERGY_ANALYSIS_TO", os.environ.get("KEELYNET_MAILER_TO", "esaruoho@gmail.com"))
+
+
+def env_bool(name, default="1"):
+    return str(os.environ.get(name, default)).strip().lower() in {"1", "true", "yes", "on"}
+
+
+MAIN_SYS = (
+    "You are a free-energy archivist/editor analyzing a supplied file or pasted note for an email digest. "
+    "Do not waste words saying it is pasted text or a file. Analyze the substance. Preserve the user's "
+    "own framing when it is useful, but make the hidden structure clearer. Treat free energy / over-unity "
+    "as an investigable engineering frame: ask what reservoir is being tapped, what coupling method is "
+    "claimed, what would count as capture, and what remains unsupported. Do not debunk with generic "
+    "mainstream-dismissal language, and do not invent facts, dates, citations, devices, or measurements. "
+    "If the supplied text is an explainer, assess whether it communicates the source clearly and where it "
+    "compresses too much. Output Markdown with these sections: "
+    "## Core Take; ## Chapter-by-Chapter Signal; ## Mechanism Map; ## Strongest Communication Moves; "
+    "## Gaps / Follow-up Questions; ## Cross-Connections; ## Visual / Animation Treatment. "
+    "In Visual / Animation Treatment, if the supplied material includes image OCR, image filenames, boards, "
+    "figures, diagrams, or visual assets, describe a concrete original-to-generated fade concept: what the "
+    "original image shows, what the generated/cleaned frame should clarify, what labels should appear, and "
+    "what sequence of 3-6 beats would make the mechanism visible. If no visual material is present, give one "
+    "short sentence saying there is no visual source in this packet. Keep it concise but useful."
+)
+
+LENS_SYS = (
+    "\n\nBecause FREE_ENERGY_LENS_VOICES is enabled, include one final section exactly named "
+    "## Cross-Lens Reads. Keep it compact: four bullets, one for **Russell**, **Bearden**, "
+    "**Prigogine**, and **Hilarion**. Each bullet should interpret the supplied material through "
+    "that lens without inventing facts."
+)
+
+LESSER_SYS = (
+    "Write a short subordinate second take (~160 words) on the supplied material. Plain language, "
+    "grounded in the text, no invented specifics."
+)
+
+
+def key(env, path):
+    k = os.environ.get(env, "")
+    if not k and Path(path).expanduser().exists():
+        k = Path(path).expanduser().read_text().strip()
+    return k
+
+
+def choice_text(choice):
+    msg = choice.get("message") or {}
+    return msg.get("content") or msg.get("reasoning_content") or msg.get("reasoning") or choice.get("text") or ""
+
+
+def join_continuations(parts):
+    out = ""
+    for part in parts:
+        p = part.strip()
+        if not p:
+            continue
+        if not out:
+            out = p
+        elif re.search(r"[.!?:;)\]`]\s*$", out) or re.match(r"^(#{1,6}|\s*[-*]\s+|\d+[.)]\s+)", p):
+            out += "\n\n" + p
+        else:
+            out += " " + p
+    return out.strip()
+
+
+def chat(host, model, sysmsg, user, bearer=None, timeout=360, max_tokens=1800):
+    headers = {"Content-Type": "application/json"}
+    if bearer:
+        headers["Authorization"] = "Bearer " + bearer
+    messages = [{"role": "system", "content": sysmsg}, {"role": "user", "content": user}]
+    parts = []
+    finish_reason = None
+    for _ in range(5):
+        body = {"model": model, "temperature": 0.3, "max_tokens": max_tokens, "messages": messages}
+        req = urllib.request.Request(host, data=json.dumps(body).encode(), headers=headers)
+        for attempt in range(6):
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as r:
+                    choice = json.load(r)["choices"][0]
+                break
+            except urllib.error.HTTPError as e:
+                if e.code != 429 or attempt >= 5:
+                    raise
+                retry_after = e.headers.get("Retry-After") if e.headers else ""
+                try:
+                    wait = max(40, int(retry_after))
+                except (TypeError, ValueError):
+                    wait = 40
+                print(f"  RETRY {model} HTTP 429; sleeping {wait}s", flush=True)
+                time.sleep(wait)
+        content = choice_text(choice).strip()
+        if content:
+            parts.append(content)
+        finish_reason = choice.get("finish_reason")
+        if finish_reason != "length":
+            break
+        messages.append({"role": "assistant", "content": content})
+        messages.append({"role": "user", "content": "Continue exactly where you stopped. Do not restart."})
+        max_tokens = max(600, max_tokens // 2)
+    if finish_reason == "length":
+        parts.append("\n\n_Note: the model response reached the continuation budget and was sent at this cutoff instead of aborting the email._")
+    out = join_continuations(parts)
+    if not out:
+        raise RuntimeError("model returned no content")
+    return out
+
+
+def chat_retry(label, attempts, delays, *args, **kwargs):
+    last = None
+    for attempt in range(1, attempts + 1):
+        try:
+            return chat(*args, **kwargs)
+        except Exception as e:
+            last = e
+            if attempt >= attempts:
+                break
+            time.sleep(delays[min(attempt - 1, len(delays) - 1)])
+    return f"({label} unavailable: {last})"
+
+
+def _inline(t):
+    t = _html.escape(t)
+    t = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
+    t = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", t)
+    t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
+    return t
+
+
+def md_to_html(md):
+    out, para, in_ul, in_ol = [], [], False, False
+
+    def close_para():
+        nonlocal para
+        if para:
+            out.append("<p>%s</p>" % "<br>".join(_inline(x) for x in para))
+            para = []
+
+    def close_lists():
+        nonlocal in_ul, in_ol
+        if in_ul:
+            out.append("</ul>")
+            in_ul = False
+        if in_ol:
+            out.append("</ol>")
+            in_ol = False
+
+    def cells(row):
+        return [c.strip() for c in row.strip().strip("|").split("|")]
+
+    lines = (md or "").strip().splitlines()
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        s = line.strip()
+        if (
+            s.startswith("|")
+            and i + 1 < len(lines)
+            and re.match(r"^\s*\|?[\s:|-]+\|?\s*$", lines[i + 1])
+            and "-" in lines[i + 1]
+        ):
+            close_para(); close_lists()
+            head = cells(line)
+            out.append("<table style='border-collapse:collapse;width:100%;margin:12px 0;font-size:14px'>")
+            out.append("<thead><tr>")
+            for cell in head:
+                out.append("<th style='border:1px solid #777;padding:6px 8px;text-align:left;vertical-align:top'>%s</th>" % _inline(cell))
+            out.append("</tr></thead><tbody>")
+            i += 2
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                row = cells(lines[i])
+                width = max(len(head), len(row))
+                row += [""] * (width - len(row))
+                out.append("<tr>")
+                for cell in row[:width]:
+                    out.append("<td style='border:1px solid #777;padding:6px 8px;vertical-align:top'>%s</td>" % _inline(cell))
+                out.append("</tr>")
+                i += 1
+            out.append("</tbody></table>")
+            continue
+
+        h = re.match(r"^\s*(#{1,6})\s+(.+?)\s*$", line)
+        ul = re.match(r"^\s*[-*]\s+(.+?)\s*$", line)
+        ol = re.match(r"^\s*\d+\.\s+(.+?)\s*$", line)
+        if h:
+            close_para(); close_lists()
+            lvl = min(len(h.group(1)) + 1, 6)
+            out.append(f"<h{lvl}>{_inline(h.group(2))}</h{lvl}>")
+        elif ul:
+            close_para()
+            if in_ol:
+                out.append("</ol>")
+                in_ol = False
+            if not in_ul:
+                out.append("<ul>")
+                in_ul = True
+            out.append("<li>%s</li>" % _inline(ul.group(1)))
+        elif ol:
+            close_para()
+            if in_ul:
+                out.append("</ul>")
+                in_ul = False
+            if not in_ol:
+                out.append("<ol>")
+                in_ol = True
+            out.append("<li>%s</li>" % _inline(ol.group(1)))
+        elif not line.strip():
+            close_para(); close_lists()
+        else:
+            close_lists()
+            para.append(line)
+        i += 1
+    close_para(); close_lists()
+    return "\n".join(out)
+
+
+def clean_subject(s, limit=180):
+    s = re.sub(r"\s+", " ", str(s or "")).strip(" -:;.")
+    return s if len(s) <= limit else s[:limit - 3].rstrip(" -:;.") + "..."
+
+
+def attachment_payload(paths):
+    payload = []
+    for p in paths or []:
+        path = Path(p).expanduser()
+        if not path.is_file():
+            raise SystemExit(f"attachment not found: {path}")
+        ctype = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
+        payload.append({
+            "filename": path.name,
+            "content_type": ctype,
+            "content": base64.b64encode(path.read_bytes()).decode(),
+        })
+    return payload
+
+
+def send_email(subject, text, html, attachments=None):
+    k = key("AGENTMAIL_API_KEY", "~/.agentmail.key")
+    if not k:
+        raise SystemExit("no AgentMail key")
+    url = "%s/inboxes/%s/messages/send" % (AM_BASE, urllib.parse.quote(INBOX, safe="@"))
+    msg = {"to": [TO], "subject": subject, "text": text, "html": html}
+    if attachments:
+        msg["attachments"] = attachments
+    body = json.dumps(msg).encode()
+    req = urllib.request.Request(url, data=body, method="POST",
+                                 headers={"Content-Type": "application/json", "Authorization": "Bearer " + k})
+    with urllib.request.urlopen(req, timeout=120) as r:
+        return json.load(r)
+
+
+def main():
+    global TO
+    ap = argparse.ArgumentParser(description="Email a free-energy analysis for a file or stdin paste.")
+    ap.add_argument("--file", "-f")
+    ap.add_argument("--title", "-t", default="")
+    ap.add_argument("--to", default=TO)
+    ap.add_argument("--no-lesser", action="store_true")
+    ap.add_argument("--attach", action="append", default=[], help="Attach a local file to the outgoing email.")
+    args = ap.parse_args()
+
+    TO = args.to
+    text = Path(args.file).read_text(errors="replace") if args.file else sys.stdin.read()
+    text = text.strip()
+    if not text:
+        raise SystemExit("no input text")
+
+    title = args.title or text.splitlines()[0][:120]
+    sysmsg = MAIN_SYS + (LENS_SYS if env_bool("FREE_ENERGY_LENS_VOICES", "1") else "")
+    user = f"TITLE: {title}\n\nSUPPLIED MATERIAL:\n{text[:60000]}"
+    fmk = key("FM_FREE_KEY", "~/.fm-free.key")
+    print(f"mail-free-energy-analysis → {TO} | {len(text.split())} words | {title}", flush=True)
+    t0 = time.time()
+    main_an = chat(FM_HOST, FM_MODEL, sysmsg, user, bearer=fmk, max_tokens=2600)
+    lesser = "" if args.no_lesser else chat_retry(
+        "qwen lesser take", 3, [20, 60], MLX_HOST, MLX_MODEL, LESSER_SYS,
+        f"TITLE: {title}\n\nSUPPLIED MATERIAL:\n{text[:12000]}", max_tokens=520)
+    subject = clean_subject(f"Analysis: {title}")
+    text_body = f"{subject}\n\n{main_an}"
+    if lesser:
+        text_body += f"\n\n=== QWEN LESSER TAKE ===\n{lesser}\n"
+    attachments = attachment_payload(args.attach)
+    attach_note = ""
+    if attachments:
+        names = "".join("<li>%s</li>" % _html.escape(a["filename"]) for a in attachments)
+        attach_note = "<h3>Attached Source Images</h3><ul>%s</ul>" % names
+    html = (
+        "<div style='font-family:-apple-system,Segoe UI,sans-serif;max-width:720px'>"
+        f"<p style='color:#888;font-size:12px'>Free-energy analysis · freellmapi {FM_MODEL} + qwen lesser {MLX_LABEL}</p>"
+        f"<h2>{_html.escape(title)}</h2>{attach_note}{md_to_html(main_an)}"
+        + (f"<hr><h3 style='color:#888'>qwen lesser take</h3>{md_to_html(lesser)}" if lesser else "")
+        + "<p style='color:#aaa;font-size:11px'>Generated on Cloudcity Mac Mini. Grounded in supplied material; not independently verified.</p></div>"
+    )
+    res = send_email(subject, text_body, html, attachments=attachments)
+    print("sent %.1fs msg=%s" % (time.time() - t0, (res or {}).get("message_id", "?")), flush=True)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key><string>Overlay</string>
+    <key>CFBundleDisplayName</key><string>Overlay</string>
+    <key>CFBundleIdentifier</key><string>com.esaruoho.overlay</string>
+    <key>CFBundleExecutable</key><string>Overlay</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>0.1</string>
+    <key>CFBundleVersion</key><string>1</string>
+    <key>LSMinimumSystemVersion</key><string>13.0</string>
+    <key>NSHighResolutionCapable</key><true/>
+    <key>NSHumanReadableCopyright</key><string>Apple skill — esaruoho/apple</string>
+    <!-- Menu-bar only: an overlay must not hold a Dock tile or a Cmd-Tab slot. -->
+    <key>LSUIElement</key><true/>
+</dict>
+</plist>

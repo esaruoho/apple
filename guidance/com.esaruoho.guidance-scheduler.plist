@@ -6,9 +6,11 @@
   <key>Label</key>
   <string>com.esaruoho.guidance-scheduler</string>
 
-  <!-- Fire any due scheduled pings. run-due is lock-guarded and idempotent:
-       it sends each ping exactly once, so running this every 30s alongside the
-       Guidance.app tick and a one-shot backup script can never double-send. -->
+  <!-- Disabled after the 2026-07-08 iTerm2 incident. Scheduled pings are kept
+       as visible state, but terminal writes must not run from launchd. -->
+  <key>Disabled</key>
+  <true/>
+
   <key>ProgramArguments</key>
   <array>
     <string>/usr/bin/env</string>

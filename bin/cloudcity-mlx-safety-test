@@ -1,0 +1,402 @@
+#!/usr/bin/env python3
+"""
+cloudcity-mlx-safety-test
+
+Run a large MLX model on Cloudcity as a bounded experiment, never as a boot
+default. The test server uses a separate port, starts a remote watchdog, checks
+SSH/PakettiBot responsiveness, and kills the test process on unsafe signals.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import shlex
+import subprocess
+import sys
+import time
+from dataclasses import dataclass
+from pathlib import Path
+
+
+MODELS = {
+    "4b": "mlx-community/Qwen3-4B-Instruct-2507-8bit",
+    "8b": "mlx-community/Qwen3-8B-4bit",
+    "14b": "Qwen/Qwen3-14B-MLX-4bit",
+    "15b": "Qwen/Qwen3-14B-MLX-4bit",
+    "27b": "Qwen/Qwen3.6-27B",
+    "35b": "Qwen/Qwen3.6-35B-A3B",
+}
+
+
+@dataclass
+class SSHResult:
+    code: int
+    stdout: str
+    stderr: str
+
+
+def run_ssh(host: str, command: str, timeout: int = 20, check: bool = False) -> SSHResult:
+    try:
+        proc = subprocess.run(
+            ["ssh", host, command],
+            text=True,
+            capture_output=True,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as exc:
+        result = SSHResult(124, exc.stdout or "", exc.stderr or "ssh timeout")
+        if check:
+            raise RuntimeError(f"ssh {host!r} timed out after {timeout}s") from exc
+        return result
+    result = SSHResult(proc.returncode, proc.stdout, proc.stderr)
+    if check and result.code != 0:
+        raise RuntimeError(
+            f"ssh {host!r} failed rc={result.code}\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
+        )
+    return result
+
+
+def select_host(requested: str) -> str:
+    if requested != "auto":
+        return requested
+    candidates = []
+    env_host = os.environ.get("CLOUDCITY_MLX_SSH_HOST") or os.environ.get("CLOUDCITY_SSH_HOST")
+    if env_host:
+        candidates.append(env_host)
+    candidates.extend(["cloudcity", "100.117.30.102"])
+    seen = set()
+    for host in candidates:
+        if host in seen:
+            continue
+        seen.add(host)
+        result = run_ssh(host, "true", timeout=8)
+        if result.code == 0:
+            return host
+        detail = (result.stderr or result.stdout).strip().splitlines()
+        if detail:
+            print(f"host candidate {host!r} failed: {detail[-1]}", file=sys.stderr)
+        else:
+            print(f"host candidate {host!r} failed: rc={result.code}", file=sys.stderr)
+    raise RuntimeError("no Cloudcity SSH host worked; try --host <tailscale-ip>")
+
+
+def remote_python(host: str, code: str, timeout: int = 20) -> dict:
+    quoted = shlex.quote(code)
+    result = run_ssh(host, f"python3 -c {quoted}", timeout=timeout, check=True)
+    return json.loads(result.stdout)
+
+
+def collect_health(host: str, port: int, timeout: int = 20) -> dict:
+    code = r'''
+import json, os, re, subprocess, time
+
+def out(cmd, timeout=8):
+    p = subprocess.run(cmd, shell=True, text=True, capture_output=True, timeout=timeout)
+    return p.stdout.strip()
+
+def stat_mtime(path):
+    try:
+        return int(os.stat(path).st_mtime)
+    except FileNotFoundError:
+        return None
+
+vm = out("vm_stat")
+page_size = 16384
+m = re.search(r"page size of (\d+) bytes", vm)
+if m:
+    page_size = int(m.group(1))
+pages = {}
+for line in vm.splitlines():
+    if ":" not in line:
+        continue
+    k, v = line.split(":", 1)
+    n = re.sub(r"[^0-9]", "", v)
+    if n:
+        pages[k.strip()] = int(n)
+
+mem_bytes = int(out("sysctl -n hw.memsize") or 0)
+free_pages = (
+    pages.get("Pages free", 0)
+    + pages.get("Pages inactive", 0)
+    + pages.get("Pages speculative", 0)
+)
+free_mb = int((free_pages * page_size) / 1048576)
+mem_mb = int(mem_bytes / 1048576) if mem_bytes else 0
+used_mb = max(0, mem_mb - free_mb) if mem_mb else 0
+
+swap = out("sysctl vm.swapusage")
+swap_used_mb = None
+m = re.search(r"used = ([0-9.]+)M", swap)
+if m:
+    swap_used_mb = float(m.group(1))
+
+procs = out(
+    "ps -axo pid,rss,command | egrep 'mlx_lm.server|Qwen3.6|Qwen3-4B|ollama pull|ollama runner|ollama_llama_server|ollama serve' | grep -v egrep",
+    timeout=8,
+)
+hb_path = "/Users/esaruoho/work/comms/queue/pakettibot-heartbeat.json"
+hb_mtime = stat_mtime(hb_path)
+now = int(time.time())
+
+payload = {
+    "ts": now,
+    "hostname": out("hostname"),
+    "uptime": out("uptime"),
+    "mem_mb": mem_mb,
+    "free_mb": free_mb,
+    "used_mb": used_mb,
+    "swap_used_mb": swap_used_mb,
+    "pakettibot_heartbeat_age_s": None if hb_mtime is None else now - hb_mtime,
+    "processes": procs.splitlines() if procs else [],
+    "port_listen": bool(out("lsof -nP -iTCP:%d -sTCP:LISTEN 2>/dev/null" % PORT)),
+}
+print(json.dumps(payload))
+'''.replace("PORT", str(port))
+    return remote_python(host, code, timeout=timeout)
+
+
+def print_health(h: dict) -> None:
+    print(
+        "health: "
+        f"free={h.get('free_mb')}MB "
+        f"used={h.get('used_mb')}MB "
+        f"swap={h.get('swap_used_mb')}MB "
+        f"pakettibot_hb_age={h.get('pakettibot_heartbeat_age_s')}s "
+        f"port_listen={h.get('port_listen')}"
+    )
+    for line in h.get("processes") or []:
+        print(f"  proc: {line}")
+
+
+def unsafe_reason(h: dict, args: argparse.Namespace) -> str | None:
+    swap = h.get("swap_used_mb")
+    hb_age = h.get("pakettibot_heartbeat_age_s")
+    free = h.get("free_mb")
+    if swap is not None and swap > args.max_swap_mb:
+        return f"swap {swap:.0f}MB > limit {args.max_swap_mb}MB"
+    if hb_age is None:
+        return "PakettiBot heartbeat missing"
+    if hb_age > args.max_heartbeat_age:
+        return f"PakettiBot heartbeat age {hb_age}s > limit {args.max_heartbeat_age}s"
+    if free is not None and free < args.min_free_mb:
+        return f"free memory {free}MB < limit {args.min_free_mb}MB"
+    return None
+
+
+def model_name(value: str) -> str:
+    return MODELS.get(value, value)
+
+
+def start_server(host: str, model: str, port: int, args: argparse.Namespace) -> tuple[int, str]:
+    log = f"/tmp/cloudcity-mlx-safety-{int(time.time())}.log"
+    cmd = f"""
+set -e
+cd /Users/esaruoho/work/convey
+HF_HOME=/Users/esaruoho/.cache/huggingface-internal \\
+nohup /Users/esaruoho/.venv-mlx/bin/mlx_lm.server \\
+  --model {shlex.quote(model)} \\
+  --host 127.0.0.1 \\
+  --port {port} \\
+  --prompt-concurrency 1 \\
+  --decode-concurrency 1 \\
+  > {shlex.quote(log)} 2>&1 &
+echo $!
+"""
+    result = run_ssh(host, cmd, timeout=20, check=True)
+    pid = int(result.stdout.strip().splitlines()[-1])
+    start_watchdog(host, pid, log, args)
+    return pid, log
+
+
+def start_watchdog(host: str, pid: int, log: str, args: argparse.Namespace) -> None:
+    watchdog_log = f"{log}.watchdog"
+    cmd = f"""
+nohup bash -lc 'pid={pid}; started=$(date +%s); log={shlex.quote(watchdog_log)}; while kill -0 "$pid" 2>/dev/null; do now=$(date +%s); runtime=$((now-started)); swap=$(sysctl vm.swapusage | sed -n "s/.*used = \\([0-9.]*\\)M.*/\\1/p" | cut -d. -f1); hb=/Users/esaruoho/work/comms/queue/pakettibot-heartbeat.json; hb_age=999999; [ -f "$hb" ] && hb_age=$((now-$(stat -f %m "$hb"))); reason=""; [ "$runtime" -gt {args.max_runtime_s} ] && reason="runtime $runtime > {args.max_runtime_s}"; [ -n "$swap" ] && [ "$swap" -gt {args.max_swap_mb} ] && reason="swap $swap > {args.max_swap_mb}"; [ "$hb_age" -gt {args.max_heartbeat_age} ] && reason="heartbeat $hb_age > {args.max_heartbeat_age}"; if [ -n "$reason" ]; then echo "[$(date)] KILL pid=$pid: $reason" >> "$log"; pkill -TERM -P "$pid" 2>/dev/null || true; kill -TERM "$pid" 2>/dev/null || true; sleep 5; pkill -KILL -P "$pid" 2>/dev/null || true; kill -KILL "$pid" 2>/dev/null || true; exit 0; fi; sleep {args.watchdog_interval}; done; echo "[$(date)] pid $pid exited" >> "$log"' >/dev/null 2>&1 &
+"""
+    run_ssh(host, cmd, timeout=20, check=True)
+
+
+def stop_server(host: str, pid: int | None) -> None:
+    if not pid:
+        return
+    cmd = (
+        f"pkill -TERM -P {pid} 2>/dev/null || true; "
+        f"kill -TERM {pid} 2>/dev/null || true; "
+        f"sleep 3; "
+        f"pkill -KILL -P {pid} 2>/dev/null || true; "
+        f"kill -KILL {pid} 2>/dev/null || true"
+    )
+    try:
+        run_ssh(host, cmd, timeout=15)
+    except Exception as exc:
+        print(f"warning: cleanup over SSH failed: {exc}", file=sys.stderr)
+
+
+def completion_probe(host: str, model: str, port: int, max_tokens: int, timeout: int) -> tuple[bool, str]:
+    code = r'''
+import json, sys, urllib.error, urllib.request
+
+payload = {
+    "model": MODEL,
+    "messages": [{"role": "user", "content": "/no_think Reply with exactly: OK"}],
+    "max_tokens": MAXTOK,
+    "temperature": 0,
+}
+req = urllib.request.Request(
+    "http://127.0.0.1:PORT/v1/chat/completions",
+    data=json.dumps(payload).encode("utf-8"),
+    headers={"Content-Type": "application/json"},
+)
+try:
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
+        body = r.read().decode("utf-8", "replace")
+    data = json.loads(body)
+    choice = data.get("choices", [{}])[0]
+    message = choice.get("message") or {}
+    text = (
+        message.get("content")
+        or message.get("reasoning_content")
+        or message.get("reasoning")
+        or choice.get("text")
+        or data.get("content")
+        or ""
+    )
+    if not text:
+        raise KeyError("no text content in response: " + body[:1000])
+    print(json.dumps({"ok": True, "text": text}))
+except Exception as e:
+    print(json.dumps({"ok": False, "error": str(e)}))
+'''.replace("MODEL", json.dumps(model)).replace("PORT", str(port)).replace("MAXTOK", str(max_tokens)).replace("TIMEOUT", str(timeout))
+    try:
+        data = remote_python(host, code, timeout=timeout + 8)
+    except Exception as exc:
+        return False, str(exc)
+    if data.get("ok"):
+        return True, data.get("text", "")
+    return False, data.get("error", "unknown error")
+
+
+def remote_pid_alive(host: str, pid: int, timeout: int = 10) -> bool:
+    result = run_ssh(host, f"kill -0 {pid} 2>/dev/null", timeout=timeout)
+    return result.code == 0
+
+
+def remote_tail(host: str, path: str, lines: int = 40, timeout: int = 15) -> str:
+    quoted = shlex.quote(path)
+    result = run_ssh(host, f"tail -{int(lines)} {quoted} 2>/dev/null || true", timeout=timeout)
+    return result.stdout.strip()
+
+
+def wait_for_safe_window(host: str, port: int, args: argparse.Namespace) -> bool:
+    h = collect_health(host, port)
+    print_health(h)
+    reason = unsafe_reason(h, args)
+    if reason:
+        print(f"preflight failed: {reason}", file=sys.stderr)
+        return False
+    return True
+
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Safely test a larger MLX model on Cloudcity without changing boot defaults."
+    )
+    parser.add_argument("model", help="model alias or Hugging Face model id")
+    parser.add_argument("--host", default="auto", help="SSH host, default: auto (cloudcity, then Tailscale IP)")
+    parser.add_argument("--port", type=int, default=18080, help="test server port, default: 18080")
+    parser.add_argument("--run", action="store_true", help="actually start the MLX test server")
+    parser.add_argument("--load-timeout", type=int, default=900, help="seconds to wait for first tiny reply")
+    parser.add_argument("--idle-seconds", type=int, default=180, help="idle watch after first reply")
+    parser.add_argument("--max-runtime-s", type=int, default=1500, help="remote watchdog hard runtime limit")
+    parser.add_argument("--max-swap-mb", type=int, default=8192, help="kill if swap exceeds this")
+    parser.add_argument("--min-free-mb", type=int, default=1024, help="abort/kill if free memory falls below this")
+    parser.add_argument("--max-heartbeat-age", type=int, default=180, help="kill if PakettiBot heartbeat exceeds this age")
+    parser.add_argument("--watchdog-interval", type=int, default=5, help="remote watchdog polling interval")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str]) -> int:
+    args = parse_args(argv)
+    args.host = select_host(args.host)
+    model = model_name(args.model)
+
+    print(f"Cloudcity MLX safety test")
+    print(f"  host:  {args.host}")
+    print(f"  model: {model}")
+    print(f"  port:  {args.port}")
+    print("  boot config is not changed by this tool")
+    print()
+
+    if not wait_for_safe_window(args.host, args.port, args):
+        return 2
+
+    if not args.run:
+        print()
+        print("Dry run only. Add --run to start the bounded test server.")
+        print("Recommended order:")
+        print("  cloudcity-mlx-safety-test 8b --run")
+        print("  cloudcity-mlx-safety-test 14b --run")
+        print("  cloudcity-mlx-safety-test 27b --run")
+        print("  cloudcity-mlx-safety-test 35b --run")
+        return 0
+
+    pid: int | None = None
+    try:
+        print()
+        print("starting test MLX server...")
+        pid, log = start_server(args.host, model, args.port, args)
+        print(f"  pid: {pid}")
+        print(f"  log: {log}")
+
+        deadline = time.time() + args.load_timeout
+        while time.time() < deadline:
+            h = collect_health(args.host, args.port)
+            print_health(h)
+            reason = unsafe_reason(h, args)
+            if reason:
+                print(f"unsafe: {reason}", file=sys.stderr)
+                return 3
+            if not remote_pid_alive(args.host, pid):
+                print("test server exited before becoming ready", file=sys.stderr)
+                tail = remote_tail(args.host, log)
+                if tail:
+                    print("--- remote MLX log tail ---", file=sys.stderr)
+                    print(tail, file=sys.stderr)
+                return 7
+            ok, text = completion_probe(args.host, model, args.port, max_tokens=64, timeout=20)
+            if ok:
+                print(f"tiny completion OK: {text!r}")
+                break
+            print(f"not ready yet: {text}")
+            time.sleep(15)
+        else:
+            print(f"load timeout after {args.load_timeout}s", file=sys.stderr)
+            return 4
+
+        print(f"idle watch for {args.idle_seconds}s...")
+        idle_deadline = time.time() + args.idle_seconds
+        while time.time() < idle_deadline:
+            h = collect_health(args.host, args.port)
+            print_health(h)
+            reason = unsafe_reason(h, args)
+            if reason:
+                print(f"unsafe during idle: {reason}", file=sys.stderr)
+                return 5
+            time.sleep(15)
+
+        ok, text = completion_probe(args.host, model, args.port, max_tokens=64, timeout=60)
+        if not ok:
+            print(f"normal completion failed: {text}", file=sys.stderr)
+            return 6
+        print(f"normal completion OK: {text[:200]!r}")
+        print("PASS: model stayed responsive within configured limits")
+        return 0
+    finally:
+        print("cleanup: stopping test MLX server")
+        stop_server(args.host, pid)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))
