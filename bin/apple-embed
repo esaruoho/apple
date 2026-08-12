@@ -96,5 +96,8 @@ while let raw = readLine() {
     if let data = try? JSONSerialization.data(withJSONObject: obj, options: []),
        let s = String(data: data, encoding: .utf8) {
         print(s)
+        fflush(stdout)   // flush per line so a PERSISTENT reader (oracle live's PipeEmbedder)
+                         // gets each vector immediately instead of blocking on pipe block-buffering.
+                         // Harmless for batch/one-shot callers (sgrep, clipfmt index).
     }
 }
