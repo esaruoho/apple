@@ -126,16 +126,33 @@ def ask_model(question, seen, looks):
         f"--- looks like ---\n{', '.join(looks) or '(no confident labels)'}\n"
         "--- end ---\n\n"
         f"Question: {question}\n\n"
-        "Answer in ONE short sentence. Be concrete. Do not invent detail that is "
-        "not supported by the two readings; if they are too thin to answer, say so."
+        "Reply with ONE plain sentence saying what this region contains, naming "
+        "the actual words or things in it. Do not hedge, do not describe your "
+        "reasoning, do not mention tools or readings, do not say the text is "
+        "vague. If there is genuinely nothing readable, reply exactly: "
+        "Nothing readable here."
     )
+    def clean(text):
+        """Strip the model's scaffolding.
+
+        FoundationModels prefixes answers with things like
+        "[No tool call needed. The query can be answered ...]" and wraps them in
+        quotes. That is the model talking about its own plumbing; putting it on
+        Esa's screen is noise where the answer should be."""
+        import re
+        text = re.sub(r"^\s*\[[^\]]{0,200}\]\s*", "", text)      # bracketed preamble
+        text = re.sub(r"^\s*(sure|certainly|here'?s?[^:]{0,40}):\s*", "", text,
+                      flags=re.I)
+        text = text.strip().strip('"').strip()
+        return " ".join(text.split())
+
     for tool in ("fm-submit", "fm"):
         path = os.path.join(BIN, tool)
         if not os.path.exists(path):
             continue
         ok, out = run([path, prompt], TIMEOUT_MODEL)
         if ok and out:
-            return out
+            return clean(out)
         print(f"overlay-ask: {tool} unavailable: {out}", file=sys.stderr)
     return ""
 

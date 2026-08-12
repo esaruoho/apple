@@ -71,6 +71,16 @@ final class InkView: NSView {
     /// clicking it. Rebuilt on every draw so it always matches what is painted.
     var dismissTargets: [(rect: CGRect, id: String)] = []
 
+    /// Where each object's chip was actually painted this frame. A callout's
+    /// `points` are its target and its anchor — NOT the box the text ended up in —
+    /// so placing the ✕ from the raw points dropped it right on top of the words.
+    var paintedRects: [String: CGRect] = [:]
+
+    /// Pointer position, for hover. Without it the ✕ gave no feedback at all: the
+    /// crosshair stayed a crosshair and nothing lit up, so there was no way to tell
+    /// it was a control.
+    var hoverPoint: CGPoint?
+
     /// Strokes currently being rendered by Image Playground. They pulse in place —
     /// "I am working on THIS" — which is what a sketch turning into a picture should
     /// look like. It replaced a text bubble saying "rendering your drawing…", which
@@ -138,6 +148,8 @@ final class InkView: NSView {
 
     override func draw(_ dirtyRect: NSRect) {
         NSGraphicsContext.current?.cgContext.setShouldAntialias(true)
+        // Filled as objects paint themselves; read afterwards to place the ✕ badges.
+        paintedRects.removeAll(keepingCapacity: true)
 
         // Spotlights dim everything outside themselves, so they are painted first and
         // always in full — a spotlight clipped to a dirty rect would leave a bright
@@ -212,32 +224,54 @@ final class InkView: NSView {
     /// A ✕ in the corner of an object. Only in draw mode — in passthrough the
     /// overlay must not offer anything to click.
     private func drawDismissBadge(for o: OverlayObject) {
-        let box = o.kind.isRectangular ? o.rect : o.bounds
-        guard box.width > 0 || box.height > 0 else { return }
-        let size: CGFloat = 22
-        let badge = CGRect(x: min(box.maxX - size / 2, bounds.maxX - size - 2),
-                           y: min(box.maxY - size / 2, bounds.maxY - size - 2),
-                           width: size, height: size)
+        // Use where the object was actually PAINTED. A callout's points are its
+        // target and its anchor, not the box the text landed in, so deriving the
+        // badge from them put the ✕ straight on top of the words.
+        let box = paintedRects[o.id] ?? (o.kind.isRectangular ? o.rect : o.bounds)
+        guard box.width > 1, box.height > 1 else { return }
 
-        NSColor(srgbRed: 0.15, green: 0.15, blue: 0.17, alpha: 0.95).setFill()
-        NSBezierPath(ovalIn: badge).fill()
-        NSColor.white.withAlphaComponent(0.8).setStroke()
-        let ring = NSBezierPath(ovalIn: badge)
+        let size: CGFloat = 20
+        // Sits just OUTSIDE the corner, overlapping only its own rounding — it
+        // never covers content.
+        var badge = CGRect(x: box.maxX - size * 0.35, y: box.maxY - size * 0.35,
+                           width: size, height: size)
+        badge.origin.x = min(max(2, badge.origin.x), bounds.maxX - size - 2)
+        badge.origin.y = min(max(2, badge.origin.y), bounds.maxY - size - 2)
+
+        let hot = hoverPoint.map { badge.insetBy(dx: -4, dy: -4).contains($0) } ?? false
+
+        // A shadow separates it from whatever is underneath, which is the whole
+        // reason it reads as a control rather than a drawn dot.
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.5)
+        shadow.shadowBlurRadius = hot ? 7 : 4
+        shadow.shadowOffset = NSSize(width: 0, height: -1)
+        shadow.set()
+        (hot ? NSColor(srgbRed: 0.95, green: 0.26, blue: 0.21, alpha: 1)
+             : NSColor(srgbRed: 0.17, green: 0.17, blue: 0.19, alpha: 0.96)).setFill()
+        NSBezierPath(ovalIn: hot ? badge.insetBy(dx: -2, dy: -2) : badge).fill()
+        NSGraphicsContext.restoreGraphicsState()
+
+        let ring = NSBezierPath(ovalIn: hot ? badge.insetBy(dx: -2, dy: -2) : badge)
         ring.lineWidth = 1
+        NSColor.white.withAlphaComponent(hot ? 0.9 : 0.45).setStroke()
         ring.stroke()
 
+        let target = hot ? badge.insetBy(dx: -2, dy: -2) : badge
         let cross = NSBezierPath()
-        let inset: CGFloat = 7
-        cross.move(to: CGPoint(x: badge.minX + inset, y: badge.minY + inset))
-        cross.line(to: CGPoint(x: badge.maxX - inset, y: badge.maxY - inset))
-        cross.move(to: CGPoint(x: badge.minX + inset, y: badge.maxY - inset))
-        cross.line(to: CGPoint(x: badge.maxX - inset, y: badge.minY + inset))
+        let inset: CGFloat = hot ? 7.5 : 6.5
+        cross.move(to: CGPoint(x: target.minX + inset, y: target.minY + inset))
+        cross.line(to: CGPoint(x: target.maxX - inset, y: target.maxY - inset))
+        cross.move(to: CGPoint(x: target.minX + inset, y: target.maxY - inset))
+        cross.line(to: CGPoint(x: target.maxX - inset, y: target.minY + inset))
         cross.lineWidth = 2
         cross.lineCapStyle = .round
         NSColor.white.setStroke()
         cross.stroke()
 
-        dismissTargets.append((badge, o.id))
+        // Generous hit area: a 20pt circle is a small target for a crosshair.
+        dismissTargets.append((badge.insetBy(dx: -6, dy: -6), o.id))
     }
 
     private func drawRegionActions(for region: CGRect) {
@@ -263,11 +297,22 @@ final class InkView: NSView {
                      NSColor(srgbRed: 0.68, green: 0.32, blue: 0.87, alpha: 0.97)]
         for (index, title) in titles.enumerated() {
             let button = CGRect(x: x, y: y, width: widths[index], height: height)
-            fills[index].setFill()
-            NSBezierPath(roundedRect: button, xRadius: 8, yRadius: 8).fill()
-            let edge = NSBezierPath(roundedRect: button, xRadius: 8, yRadius: 8)
+            let hot = hoverPoint.map { button.contains($0) } ?? false
+
+            NSGraphicsContext.saveGraphicsState()
+            let shadow = NSShadow()
+            shadow.shadowColor = NSColor.black.withAlphaComponent(hot ? 0.55 : 0.35)
+            shadow.shadowBlurRadius = hot ? 10 : 5
+            shadow.shadowOffset = NSSize(width: 0, height: -2)
+            shadow.set()
+            (hot ? fills[index].blended(withFraction: 0.18, of: .white) ?? fills[index]
+                 : fills[index]).setFill()
+            NSBezierPath(roundedRect: button, xRadius: 9, yRadius: 9).fill()
+            NSGraphicsContext.restoreGraphicsState()
+
+            let edge = NSBezierPath(roundedRect: button, xRadius: 9, yRadius: 9)
             edge.lineWidth = 1
-            NSColor.white.withAlphaComponent(0.35).setStroke()
+            NSColor.white.withAlphaComponent(hot ? 0.75 : 0.3).setStroke()
             edge.stroke()
             (title as NSString).draw(at: CGPoint(x: button.minX + 13, y: button.minY + 7),
                                      withAttributes: attrs)
@@ -327,7 +372,8 @@ final class InkView: NSView {
 
         case .label:
             guard let p = o.points.first else { return }
-            drawChip(o.text ?? "", at: p, hex: o.colorHex, actor: o.actor, centred: true)
+            paintedRects[o.id] = drawChip(o.text ?? "", at: p, hex: o.colorHex,
+                                          actor: o.actor, centred: true)
 
         case .callout:
             guard o.points.count >= 2 else { return }
@@ -343,7 +389,8 @@ final class InkView: NSView {
             let r = max(3, CGFloat(o.width))
             NSBezierPath(ovalIn: CGRect(x: target.x - r, y: target.y - r,
                                         width: r * 2, height: r * 2)).fill()
-            drawChip(o.text ?? "", at: chip, hex: o.colorHex, actor: o.actor, centred: true)
+            paintedRects[o.id] = drawChip(o.text ?? "", at: chip, hex: o.colorHex,
+                                          actor: o.actor, centred: true)
 
         case .image:
             // The generated picture, drawn INTO the box that asked for it.
@@ -368,6 +415,7 @@ final class InkView: NSView {
             NSBezierPath(roundedRect: frame.insetBy(dx: -3, dy: -3),
                          xRadius: 8, yRadius: 8).fill()
             img.draw(in: frame)
+            paintedRects[o.id] = frame
             let edge = NSBezierPath(roundedRect: frame, xRadius: 5, yRadius: 5)
             edge.lineWidth = 2
             color(o.colorHex).setStroke()
@@ -423,9 +471,10 @@ final class InkView: NSView {
     ///
     /// Agent provenance rides along as a small tag rather than a colour convention,
     /// so several agents can annotate at once without a colour war.
+    @discardableResult
     private func drawChip(_ text: String, at p: CGPoint, hex: String,
-                          actor: String, centred: Bool) {
-        guard !text.isEmpty else { return }
+                          actor: String, centred: Bool) -> CGRect {
+        guard !text.isEmpty else { return .null }
 
         let maxWidth: CGFloat = min(420, max(180, bounds.width - 80))
         let paragraph = NSMutableParagraphStyle()
@@ -468,6 +517,7 @@ final class InkView: NSView {
         body.draw(with: CGRect(x: chip.minX + 11, y: textY,
                                width: maxWidth, height: bodyBox.height),
                   options: [.usesLineFragmentOrigin, .usesFontLeading])
+        return chip
     }
 
     private func stroke(points: [CGPoint], hex: String, width: Double,
@@ -565,12 +615,34 @@ final class InkView: NSView {
                                        owner: self, userInfo: nil))
     }
 
-    override func mouseEntered(with event: NSEvent) { applyCursor() }
-    override func mouseMoved(with event: NSEvent) { applyCursor() }
-    override func mouseExited(with event: NSEvent) { NSCursor.arrow.set() }
+    override func mouseEntered(with event: NSEvent) { track(event) }
+    override func mouseMoved(with event: NSEvent) { track(event) }
+    override func mouseExited(with event: NSEvent) {
+        hoverPoint = nil
+        NSCursor.arrow.set()
+        needsDisplay = true
+    }
 
-    private func applyCursor() {
-        if mode == .draw { NSCursor.crosshair.set() }
+    private func track(_ event: NSEvent) {
+        guard mode == .draw else { hoverPoint = nil; return }
+        let p = convert(event.locationInWindow, from: nil)
+        let wasOver = overControl(hoverPoint)
+        hoverPoint = p
+        let isOver = overControl(p)
+        // A crosshair over a close button told Esa nothing. Controls get the
+        // pointing hand, and the control under the pointer lights up.
+        (isOver ? NSCursor.pointingHand : NSCursor.crosshair).set()
+        if wasOver != isOver || isOver { needsDisplay = true }
+    }
+
+    /// Is `p` over something clickable? Shared by the cursor and the hover paint so
+    /// they can never disagree about where the controls are.
+    private func overControl(_ p: CGPoint?) -> Bool {
+        guard let p = p else { return false }
+        if dismissTargets.contains(where: { $0.rect.contains(p) }) { return true }
+        if let r = askButtonRect, r.contains(p) { return true }
+        if let r = makeButtonRect, r.contains(p) { return true }
+        return false
     }
 
     // ── pointer ──
