@@ -67,6 +67,7 @@ final class InkView: NSView {
     var askableRegion: CGRect?
     var askButtonRect: CGRect?
     var makeButtonRect: CGRect?
+    var chatButtonRect: CGRect?
     /// A ✕ hit target per object, so anything on screen can be thrown away by
     /// clicking it. Rebuilt on every draw so it always matches what is painted.
     var dismissTargets: [(rect: CGRect, id: String)] = []
@@ -130,6 +131,7 @@ final class InkView: NSView {
             askableRegion = nil
             askButtonRect = nil
             makeButtonRect = nil
+            chatButtonRect = nil
             needsDisplay = true
             if mode == .draw { NSCursor.crosshair.set() } else { NSCursor.arrow.set() }
         }
@@ -176,7 +178,7 @@ final class InkView: NSView {
         }
 
         // The action buttons live above everything, including the mode chrome.
-        askButtonRect = nil; makeButtonRect = nil
+        askButtonRect = nil; makeButtonRect = nil; chatButtonRect = nil
         dismissTargets = []
         if mode == .draw {
             // Everything that is not raw ink gets a ✕. Esa had a screen full of
@@ -277,7 +279,8 @@ final class InkView: NSView {
     private func drawRegionActions(for region: CGRect) {
         // Plain verbs. "Ask about this" told Esa nothing about what it would do —
         // he asked outright what he could turn into text. Now the button says so.
-        let titles = ["Read text here  ⌘⏎",
+        let titles = ["Ask…  ⌘T",
+                      "Read text here  ⌘⏎",
                       tool == .ink ? "Render drawing  ⌥⏎" : "Make image here  ⌥⏎"]
         let font = NSFont.systemFont(ofSize: 13, weight: .semibold)
         let attrs: [NSAttributedString.Key: Any] = [.font: font,
@@ -293,7 +296,8 @@ final class InkView: NSView {
         if y < 8 { y = min(bounds.maxY - height - 8, region.maxY + 8) }
         var x = min(max(8, region.midX - total / 2), bounds.maxX - total - 8)
 
-        let fills = [NSColor(srgbRed: 0.04, green: 0.52, blue: 1.0, alpha: 0.97),
+        let fills = [NSColor(srgbRed: 0.13, green: 0.68, blue: 0.35, alpha: 0.97),
+                     NSColor(srgbRed: 0.04, green: 0.52, blue: 1.0, alpha: 0.97),
                      NSColor(srgbRed: 0.68, green: 0.32, blue: 0.87, alpha: 0.97)]
         for (index, title) in titles.enumerated() {
             let button = CGRect(x: x, y: y, width: widths[index], height: height)
@@ -316,7 +320,11 @@ final class InkView: NSView {
             edge.stroke()
             (title as NSString).draw(at: CGPoint(x: button.minX + 13, y: button.minY + 7),
                                      withAttributes: attrs)
-            if index == 0 { askButtonRect = button } else { makeButtonRect = button }
+            switch index {
+            case 0: chatButtonRect = button
+            case 1: askButtonRect = button
+            default: makeButtonRect = button
+            }
             x += widths[index] + gap
         }
     }
@@ -573,8 +581,8 @@ final class InkView: NSView {
         border.stroke()
 
         let text = tool == .region
-            ? "REGION  ·  drag a box over anything  →  Read text here  ·  f = pen  ·  ✕ removes  ·  esc = clear + exit"
-            : "PEN  ·  sketch, then Render drawing  ·  r = box a screen area  ·  ✕ removes  ·  esc = clear + exit"
+            ? "REGION  ·  drag a box over anything  →  Read text here  ·  f = pen  ·  Ask… types a question  ·  ✕ removes  ·  esc = clear + exit"
+            : "PEN  ·  sketch, then Render drawing  ·  r = box a screen area  ·  Ask… types a question  ·  ✕ removes  ·  esc = clear + exit"
         let attrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .semibold),
             .foregroundColor: NSColor.white,
@@ -642,6 +650,7 @@ final class InkView: NSView {
         if dismissTargets.contains(where: { $0.rect.contains(p) }) { return true }
         if let r = askButtonRect, r.contains(p) { return true }
         if let r = makeButtonRect, r.contains(p) { return true }
+        if let r = chatButtonRect, r.contains(p) { return true }
         return false
     }
 
@@ -660,6 +669,11 @@ final class InkView: NSView {
             askableRegion = nil
             needsDisplay = true
             manager?.persist()
+            return
+        }
+        if let button = chatButtonRect, button.contains(p) {
+            manager?.openChat(for: askableRegion)
+            needsDisplay = true
             return
         }
         if let button = askButtonRect, button.contains(p) {
@@ -1299,6 +1313,44 @@ final class OverlayManager {
         }
     }
 
+    /// Open the typing field for a region, then run the ask with what was typed.
+    /// The question is kept on screen above the answer so the pair reads as an
+    /// exchange rather than a bare pronouncement.
+    func openChat(for region: CGRect?) {
+        // Canvases are created lazily on first use, so asking to chat before ever
+        // entering draw mode found nothing and returned in silence.
+        ensureCanvasesHere()
+        guard let canvas = here.first else {
+            NSLog("Overlay: chat — no canvas on this Space")
+            return
+        }
+        let anchorView = region
+            ?? canvas.view.store.objects.last.map { $0.kind.isRectangular ? $0.rect : $0.bounds }
+            ?? CGRect(x: canvas.view.bounds.midX - 150,
+                      y: canvas.view.bounds.midY - 80, width: 300, height: 160)
+        // Panel coordinates are global; the canvas covers its screen exactly.
+        let origin = canvas.panel.frame.origin
+        let anchorGlobal = anchorView.offsetBy(dx: origin.x, dy: origin.y)
+
+        chat?.close()
+        let panel = ChatPanel(anchor: anchorGlobal, context: "Overlay — ask about this region",
+                              onSubmit: { [weak self] text in
+            guard let self = self else { return }
+            // Show the question immediately, anchored to the same region.
+            canvas.view.store.add(OverlayObject(
+                kind: .label,
+                points: [CGPoint(x: anchorView.midX, y: anchorView.maxY + 34)],
+                colorHex: "#5E5CE6", width: 3, actor: "human:esa",
+                lifetime: .session, anchor: OverlayAnchor(type: .screen),
+                text: "you: " + text))
+            canvas.view.needsDisplay = true
+            self.persist()
+            self.askLastRegion(question: text)
+        }, onCancel: { [weak self] in self?.chat = nil })
+        chat = panel
+        panel.present()
+    }
+
     func askLastRegion(question: String? = nil) {
         captureLastRegion(waiting: "thinking…", waitColor: "#0A84FF") {
             png, region, canvas, placeholder in
@@ -1450,6 +1502,7 @@ final class OverlayManager {
     /// Ephemeral marks need a clock, but an overlay that ticks forever is a battery
     /// leak. The collector only exists while something ephemeral is on screen, and
     /// stops itself the moment the last one is gone.
+    private var chat: ChatPanel?
     private var ttlCollector: Timer?
 
     /// Exposed so the self-test can assert that nothing is ticking at idle.
@@ -1691,6 +1744,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     + "preflight=\(CGPreflightScreenCaptureAccess())")
             }
         }
+        center.addObserver(forName: OverlayControl.chat, object: nil, queue: .main) {
+            [weak self] _ in self?.manager.openChat(for: nil)
+        }
         center.addObserver(forName: OverlayControl.imagine, object: nil, queue: .main) {
             [weak self] note in
             let prompt = (note.object as? String).flatMap { $0.isEmpty ? nil : $0 }
@@ -1777,6 +1833,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 (kVK_Delete,     UInt32(cmdKey),              22),   // clear canvas
                 (kVK_ANSI_LeftBracket,  0,             23),   // thinner
                 (kVK_ANSI_RightBracket, 0,             24),   // thicker
+                (kVK_ANSI_T,     UInt32(cmdKey),              32),   // TYPE a question
                 (kVK_Return,     UInt32(cmdKey),              30),   // ASK about the region
                 (kVK_Return,     UInt32(optionKey),           31),   // MAKE AN IMAGE of it
                 (kVK_ANSI_F,     0,                           26),   // freehand pen
@@ -1816,6 +1873,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case 22: manager.clearHere()
         case 23: manager.nudgeWidth(-1)
         case 24: manager.nudgeWidth(+1)
+        case 32: manager.openChat(for: nil)
         case 30: manager.askLastRegion()
         case 31: manager.imagineLastRegion()
         case 26: manager.setTool(.ink)
@@ -1842,5 +1900,130 @@ enum OverlayMain {
         app.setActivationPolicy(.accessory)
         app.delegate = delegate
         app.run()
+    }
+}
+
+// ─────────────────────────────── chat ───────────────────────────────
+
+/// A text field anchored to a region: the missing half of "spatial chat".
+///
+/// Everything before this could annotate a region and answer a fixed question about
+/// it. There was no way to TYPE — every question came from the command line or a
+/// hardcoded default, which is not a conversation.
+///
+/// This is a separate small panel rather than a field inside the canvas because the
+/// canvas is a borderless overlay that macOS will not hand the keyboard to on a
+/// menu-bar app. A titled panel that the user CLICKS becomes key normally, because
+/// the click itself is the activation the window server wants.
+final class ChatPanel: NSPanel, NSTextFieldDelegate {
+
+    private let field = NSTextField()
+    private let onSubmit: (String) -> Void
+    private let onCancel: () -> Void
+
+    override var canBecomeKey: Bool { true }
+
+    init(anchor: CGRect, question: String = "", context: String,
+         onSubmit: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
+        self.onSubmit = onSubmit
+        self.onCancel = onCancel
+
+        let width: CGFloat = 460, height: CGFloat = 92
+        super.init(contentRect: NSRect(x: 0, y: 0, width: width, height: height),
+                   styleMask: [.titled, .closable, .utilityWindow],
+                   backing: .buffered, defer: false)
+
+        title = context
+        isFloatingPanel = true
+        level = .floating
+        hidesOnDeactivate = false
+        isReleasedWhenClosed = false
+        collectionBehavior = [.fullScreenAuxiliary]
+
+        let label = NSTextField(labelWithString: "Ask about this region  ·  ⏎ send  ·  esc cancel")
+        label.font = .systemFont(ofSize: 11)
+        label.textColor = .secondaryLabelColor
+
+        field.placeholderString = "What is this? What's wrong here? Explain it…"
+        field.stringValue = question
+        field.font = .systemFont(ofSize: 14)
+        field.bezelStyle = .roundedBezel
+        field.delegate = self
+        field.target = self
+        field.action = #selector(submit)
+
+        let stack = NSStackView(views: [label, field])
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 8
+        stack.edgeInsets = NSEdgeInsets(top: 12, left: 14, bottom: 12, right: 14)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        contentView = NSView()
+        contentView!.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.leadingAnchor.constraint(equalTo: contentView!.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: contentView!.trailingAnchor),
+            stack.topAnchor.constraint(equalTo: contentView!.topAnchor),
+            field.widthAnchor.constraint(equalToConstant: width - 28),
+        ])
+
+        // Sit just under the region being asked about, clamped on screen.
+        let screen = NSScreen.screens.first { $0.frame.intersects(anchor) } ?? NSScreen.main!
+        var origin = CGPoint(x: anchor.midX - width / 2, y: anchor.minY - height - 12)
+        if origin.y < screen.visibleFrame.minY + 8 { origin.y = anchor.maxY + 12 }
+        origin.x = min(max(screen.visibleFrame.minX + 8, origin.x),
+                       screen.visibleFrame.maxX - width - 8)
+        setFrameOrigin(origin)
+    }
+
+    func present() {
+        // Becoming a REGULAR app is what actually lets a menu-bar app take the
+        // keyboard. .accessory apps are refused activation by macOS cooperative
+        // activation — measured earlier in this app: appActive=false, key=false,
+        // every time — which is why the canvas uses global Carbon hotkeys instead.
+        // Typing needs a real key window, so the policy is flipped for exactly as
+        // long as the field is open and restored the moment it closes.
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        makeKeyAndOrderFront(nil)
+        makeFirstResponder(field)
+
+        // Activation can land a runloop turn late; check after it has settled.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            guard let self = self else { return }
+            if !self.isKeyWindow {
+                NSApp.activate(ignoringOtherApps: true)
+                self.makeKeyAndOrderFront(nil)
+                self.makeFirstResponder(self.field)
+            }
+            NSLog("Overlay: chat key=\(self.isKeyWindow) policy=regular")
+        }
+    }
+
+    /// Always hand the Dock slot back, whichever way the panel was dismissed.
+    private func restorePolicy() {
+        NSApp.setActivationPolicy(.accessory)
+    }
+
+    override func close() {
+        restorePolicy()
+        super.close()
+    }
+
+    @objc private func submit() {
+        let text = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { onCancel(); close(); return }
+        onSubmit(text)
+        close()
+    }
+
+    /// Esc cancels. Without this the field swallows it and the panel is a trap —
+    /// the same mistake as draw mode's first version.
+    func control(_ control: NSControl, textView: NSTextView,
+                 doCommandBy selector: Selector) -> Bool {
+        if selector == #selector(NSResponder.cancelOperation(_:)) {
+            onCancel(); close(); return true
+        }
+        return false
     }
 }

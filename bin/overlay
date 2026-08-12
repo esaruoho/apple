@@ -323,6 +323,16 @@ def cmd_ask(argv):
     return rc
 
 
+def cmd_chat():
+    """Open the typing field, anchored to the last region."""
+    if not running():
+        print("Overlay is not running.", file=sys.stderr)
+        return 1
+    rc = control("com.esaruoho.overlay.chat")
+    print("chat open \u2014 type a question, \u23ce sends, esc cancels.")
+    return rc
+
+
 def cmd_imagine(argv):
     """Generate a picture from the last selected region and drop it INTO that box."""
     if not running():
@@ -368,6 +378,8 @@ def main(argv):
         return cmd_ask(argv)
     if verb == "imagine":
         return cmd_imagine(argv)
+    if verb == "chat":
+        return cmd_chat()
     print(f"unknown verb: {verb}\n", file=sys.stderr)
     print(__doc__, file=sys.stderr)
     return 2
