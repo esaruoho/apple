@@ -323,6 +323,47 @@ def cmd_ask(argv):
     return rc
 
 
+SESSIONS = os.path.join(HOME, "work", "converse", "sessions")
+
+
+def cmd_session(argv):
+    """Show — or open — the Converse session this overlay is writing to.
+
+    Overlay activity is appended to a Converse-shaped session directory
+    (envoy-livefile-v1): livefile.jsonl is the document, transcript.md is a
+    derived view. That is what makes a spatial exchange survive Esc, a relaunch,
+    and being copied to another machine."""
+    try:
+        dirs = sorted((d for d in os.listdir(SESSIONS) if d.endswith("-overlay")),
+                      reverse=True)
+    except FileNotFoundError:
+        dirs = []
+    if not dirs:
+        print("no overlay session yet — ask a question or make an image first")
+        return 0
+    latest = os.path.join(SESSIONS, dirs[0])
+    if "--open" in argv:
+        subprocess.run(["/usr/bin/open", latest])
+        return 0
+    if "--transcript" in argv:
+        path = os.path.join(latest, "transcript.md")
+        with open(path) as fh:
+            print(fh.read())
+        return 0
+    log = os.path.join(latest, "livefile.jsonl")
+    events = 0
+    try:
+        with open(log) as fh:
+            events = sum(1 for _ in fh)
+    except OSError:
+        pass
+    print(f"session   {latest}")
+    print(f"events    {events}  (livefile.jsonl — the document)")
+    print(f"view      {os.path.join(latest, 'transcript.md')}")
+    print(f"sessions  {len(dirs)} overlay session(s)")
+    return 0
+
+
 def cmd_chat():
     """Open the typing field, anchored to the last region."""
     if not running():
@@ -380,6 +421,8 @@ def main(argv):
         return cmd_imagine(argv)
     if verb == "chat":
         return cmd_chat()
+    if verb == "session":
+        return cmd_session(argv)
     print(f"unknown verb: {verb}\n", file=sys.stderr)
     print(__doc__, file=sys.stderr)
     return 2

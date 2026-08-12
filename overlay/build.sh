@@ -13,7 +13,7 @@ NAME="Overlay"
 
 echo "==> Running headless core tests..."
 TESTBIN="$(mktemp -d)/overlay-tests"
-xcrun swiftc -O OverlayCore.swift overlay-tests.swift -o "$TESTBIN"
+xcrun swiftc -O OverlayCore.swift OverlayLivefile.swift overlay-tests.swift -o "$TESTBIN"
 if ! "$TESTBIN"; then
     echo ""
     echo "!! Core tests failed — refusing to build Overlay.app."
@@ -27,7 +27,7 @@ rm -rf "$APP"
 echo "==> Compiling Swift..."
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 xcrun swiftc -O -parse-as-library \
-    OverlayCore.swift Overlay.swift OverlayInbox.swift OverlaySelfTest.swift ../shared/SupportHelp.swift \
+    OverlayCore.swift OverlayLivefile.swift Overlay.swift OverlayInbox.swift OverlaySelfTest.swift ../shared/SupportHelp.swift \
     -o "$APP/Contents/MacOS/$NAME" \
     -framework Cocoa \
     -framework SwiftUI \

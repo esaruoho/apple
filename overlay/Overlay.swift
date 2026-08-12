@@ -1335,6 +1335,11 @@ final class OverlayManager {
                                || canvasFrame!.intersects(o.kind == .box ? o.rect : o.bounds)) {
                         canvas.view.store.remove(id: o.id)
                     }
+                    self.livefile.append(LivefileEvent(
+                        type: "overlay.image.generated", actor: "agent:imagine",
+                        body: "from drawing",
+                        extra: ["file": path, "prompt": prompt ?? "(the drawing itself)",
+                                "sketch": png.path, "source": "agent"]))
                     let box = OverlayManager.placement(for: frame, in: canvas.view.bounds)
                     canvas.view.store.add(OverlayObject(
                         kind: .image,
@@ -1510,6 +1515,9 @@ final class OverlayManager {
             canvas.view.store.remove(id: waiting.id)
             let path = output.split(separator: "\n").last.map(String.init) ?? ""
             if FileManager.default.fileExists(atPath: path) {
+                self.livefile.append(LivefileEvent(
+                    type: "overlay.image.generated", actor: "agent:imagine", body: prompt,
+                    extra: ["file": path, "prompt": prompt, "source": "agent"]))
                 let box = OverlayManager.placement(for: region, in: canvas.view.bounds)
                 canvas.view.store.add(OverlayObject(
                     kind: .image,
@@ -1535,9 +1543,25 @@ final class OverlayManager {
     func askLastRegion(question: String? = nil, region: CGRect? = nil) {
         captureLastRegion(waiting: "thinking…", waitColor: "#0A84FF", explicit: region) {
             png, region, canvas, placeholder in
+            let asked = question ?? "What is this, and is anything wrong with it?"
+            let requestID = UUID().uuidString
+            let began = Date()
+            self.livefile.append(LivefileEvent(
+                type: "agent.requested", body: asked,
+                extra: ["instruction": asked, "agent": "overlay-ask",
+                        "agent_cmd": "/Users/esaruoho/work/apple/bin/overlay-ask",
+                        "request_id": requestID, "source": "overlay",
+                        "crop": png.path]))
+
             self.runTool("/Users/esaruoho/work/apple/bin/overlay-ask",
                          args: [png.path] + (question.map { ["--question", $0] } ?? [])) {
                 output in
+                self.livefile.append(LivefileEvent(
+                    type: "agent.responded", actor: "agent:ask", body: output,
+                    extra: ["agent": "overlay-ask", "request_id": requestID,
+                            "latency_ms": Int(Date().timeIntervalSince(began) * 1000),
+                            "output_chars": output.count, "status": "ok",
+                            "source": "agent"]))
                 self.waitTicker?.invalidate(); self.waitTicker = nil
                 canvas.view.store.remove(id: placeholder)
                 canvas.view.store.add(OverlayObject(
@@ -1629,6 +1653,15 @@ final class OverlayManager {
                 return
             }
 
+            self.livefile.append(LivefileEvent(
+                type: "overlay.region.captured",
+                body: png.lastPathComponent,
+                extra: ["rect": "\(Int(crop.minX)),\(Int(crop.minY)) "
+                              + "\(Int(crop.width))x\(Int(crop.height))",
+                        "display": canvas.displayName,
+                        "crop": png.path,
+                        "source": "overlay"]))
+
             let placeholder = OverlayObject(
                 kind: .callout,
                 points: [CGPoint(x: crop.midX, y: crop.midY),
@@ -1713,6 +1746,19 @@ final class OverlayManager {
     /// Ephemeral marks need a clock, but an overlay that ticks forever is a battery
     /// leak. The collector only exists while something ephemeral is on screen, and
     /// stops itself the moment the last one is gone.
+    /// The durable half. Created lazily by the first thing worth remembering, so
+    /// doodling does not litter ~/work/converse/sessions with empty folders.
+    private var livefileStore: LivefileWriter?
+    var livefile: LivefileWriter {
+        if let existing = livefileStore { return existing }
+        let created = LivefileWriter()
+        livefileStore = created
+        NSLog("Overlay: livefile session \(created.directory.path)")
+        return created
+    }
+    /// The path of the session, only once one exists.
+    var livefilePath: String? { livefileStore?.directory.path }
+
     private var chat: ChatPanel?
     /// The region of the last question, so a follow-up continues the same
     /// thread instead of starting somewhere else.

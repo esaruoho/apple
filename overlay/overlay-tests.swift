@@ -433,6 +433,68 @@ enum OverlayCoreTests {
             check(threw, "a malformed inbox file throws")
         }
 
+        // ═══════════════ the Converse bridge ═══════════════
+
+        do {
+            check(Livefile.eventID(1) == "evt_000001", "event ids are 6-digit padded")
+            check(Livefile.eventID(12181) == "evt_012181", "…and keep working past 10k")
+
+            // Must match Converse byte-for-byte or the two writers sort differently.
+            let when = Date(timeIntervalSince1970: 1_753_001_537.813)
+            let t = Livefile.stamp(when)
+            check(t.hasSuffix("Z") && t.contains("T"), "timestamps are RFC3339 Z")
+            check(t.count == 24, "…with milliseconds, exactly like Converse (\(t))")
+
+            let stampFmt = Livefile.sessionStamp(when)
+            check(stampFmt.count == 17 && stampFmt.filter { $0 == "-" }.count == 3,
+                  "session stamp is YYYY-MM-DD-HHMMSS (\(stampFmt))")
+
+            let line = Livefile.encode(
+                LivefileEvent(type: "agent.requested", body: "what is this",
+                              extra: ["instruction": "what is this", "agent": "fm",
+                                      "source": "overlay"]),
+                id: "evt_000007", at: when)
+            check(line != nil, "an event encodes")
+            let parsed = try! JSONSerialization.jsonObject(
+                with: line!.data(using: .utf8)!) as! [String: Any]
+            check(parsed["id"] as? String == "evt_000007", "id survives")
+            check(parsed["type"] as? String == "agent.requested",
+                  "type is one Converse already knows")
+            check(parsed["actor"] as? String == "local-user", "actor defaults as Converse does")
+            check(parsed["instruction"] as? String == "what is this", "extra fields survive")
+            check(!line!.contains("\n"), "one event is exactly one line")
+
+            // Untrusted content must not be able to break the log format.
+            let nasty = Livefile.encode(
+                LivefileEvent(type: "vision.ocr", body: "line one\nline two \"quoted\""),
+                id: "evt_000008", at: when)
+            check(nasty != nil && !nasty!.contains("\n"),
+                  "a body with newlines and quotes stays on one line")
+
+            let rendered = Livefile.transcript(from: [
+                ["type": "session.created", "t": "2026-08-12T10:00:00.000Z", "body": "s"],
+                ["type": "overlay.region.captured", "t": "x", "rect": "10,20 300x100"],
+                ["type": "vision.ocr", "t": "x", "body": "some text on screen"],
+                ["type": "agent.requested", "t": "x", "instruction": "what is this"],
+                ["type": "agent.responded", "t": "x", "body": "It is a table.",
+                 "agent": "fm", "latency_ms": 4200],
+                ["type": "overlay.image.generated", "t": "x", "prompt": "a red truck",
+                 "file": "gen-1.png"],
+            ], sessionID: "test")
+            check(rendered.contains("Do not treat this file alone as the source of truth"),
+                  "the transcript declares it is derived")
+            check(rendered.contains("**you:** what is this"), "the question renders")
+            check(rendered.contains("**fm:** It is a table."), "the answer renders")
+            check(rendered.contains("4200 ms"), "latency is kept")
+            check(rendered.contains("![generated](gen-1.png)"), "a generated image is linked")
+            check(rendered.contains("`10,20 300x100`"), "the region is recorded")
+
+            check(LivefileWriter.sessionsRoot.path.hasSuffix("work/converse/sessions"),
+                  "sessions land beside Converse's own")
+            check(LivefileWriter(now: when).sessionID.hasSuffix("-overlay"),
+                  "an overlay session is named as one")
+        }
+
         print("\n\(passed) passed, \(failed) failed")
         exit(failed == 0 ? 0 : 1)
     }
