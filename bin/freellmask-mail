@@ -30,6 +30,19 @@ STATE     = Path(os.environ.get("FREELLMASK_MAIL_STATE", Path.home()/"work"/"com
 POLL_SEC  = int(os.environ.get("FREELLMASK_MAIL_POLL", "45"))
 FM_HOST   = os.environ.get("FM_FREE_HOST", "http://cloudcitymacmini:3001/v1")
 FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "nemotron-3-super-120b")
+# ONE hardcoded model makes the whole belt hostage to one provider's uptime. 2026-08-12: every send
+# failed all day on nemotron-3-super-120b (429, then 502) while gemini-3-flash-preview answered off
+# the SAME gateway with the SAME key in 0.9s. Ten of twelve nemotron variants were returning 503 —
+# a provider outage, not a config error, and no amount of respelling the id fixes that.
+# So the model is a CHAIN. 429/502/503 falls through in seconds instead of retrying a dead endpoint
+# for an hour. Probed working 2026-08-12: gemini-3-flash-preview (0.9s, clean), free-router (1.5s),
+# auto (6.8s), nvidia/nemotron-3-ultra-550b-a55b:free (3.1s — but LEAKS REASONING, so it stays last
+# and only behind the leak splitter).
+FM_MODEL_CHAIN = [x.strip() for x in os.environ.get(
+    "FREELLMASK_MAIL_MODEL_CHAIN",
+    f"{FM_MODEL},gemini-3-flash-preview,free-router,auto").split(",") if x.strip()]
+# These mean "this endpoint is unavailable right now" — try the next model rather than waiting.
+FM_DEAD_CODES = (429, 500, 502, 503, 504)
 # Big-context escalation: nemotron holds ~256k tokens. When the assembled context (attachments +
 # wiki + thread + question) is large, escalate that call to Gemini's 1M window AND stop truncating,
 # so a whole book/paper emailed in is read IN FULL instead of clipped. nemotron stays the default.
@@ -155,7 +168,34 @@ def _has_leak(text):
         "okay, so","alright, the user","so the user"))
 
 def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
-    """One FreeLLMAPI /chat/completions call, with 429 backoff. Returns (text, model_used)."""
+    """One FreeLLMAPI /chat/completions call. Walks FM_MODEL_CHAIN: a model answering 429/502/503 is an
+    UNAVAILABLE ENDPOINT, so move to the next one in seconds rather than waiting out a window on a
+    provider that is simply down. Only the LAST model in the chain gets the patient backoff treatment.
+    Returns (text, model_used)."""
+    chain = [model] if model else list(FM_MODEL_CHAIN)
+    last = None
+    for i, cand in enumerate(chain):
+        is_last = (i == len(chain) - 1)
+        try:
+            return _fm_call_one(messages, max_tokens, temperature, cand, patient=is_last)
+        except urllib.error.HTTPError as e:
+            last = e
+            if e.code in FM_DEAD_CODES and not is_last:
+                print(f"        ⇢ {cand} unavailable (HTTP {e.code}) — next model", flush=True)
+                continue
+            raise
+        except Exception as e:
+            last = e
+            if not is_last:
+                print(f"        ⇢ {cand} {type(e).__name__} — next model", flush=True)
+                continue
+            raise
+    raise last if last else RuntimeError("no model in the chain")
+
+
+def _fm_call_one(messages, max_tokens=3000, temperature=0.3, model=None, patient=True):
+    """One call to ONE model. `patient` keeps the original wait-out-the-window behaviour for the last
+    resort; earlier models in the chain fail fast so the chain is worth having."""
     body={"model":model or FM_MODEL,"messages":messages,"max_tokens":max_tokens,"temperature":temperature}
     req=urllib.request.Request(FM_HOST.rstrip('/')+"/chat/completions", data=json.dumps(body).encode(),
         headers={"Authorization":f"Bearer {fm_key()}","Content-Type":"application/json"})
@@ -176,7 +216,7 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
             # 429 = free-tier per-minute cap (Gemini) or provider throttle. DON'T fail — WAIT for the
             # window to clear (≈40s, or the server's Retry-After if longer), then retry. This is the
             # "delayed" automatic pacing: the call is deferred, never pushed past the free tier.
-            if e.code==429 and attempt<5:
+            if e.code==429 and attempt<5 and patient:
                 ra=e.headers.get("Retry-After") if e.headers else None
                 try: wait=max(RL_WAIT, int(ra)) if ra else RL_WAIT
                 except (ValueError, TypeError): wait=RL_WAIT
@@ -191,7 +231,7 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
             # so a transient 502 killed the attempt outright — and since every rejection path was
             # silent, twelve attempts of pure gateway noise were reported as "the model would not
             # produce the required shape". The model never got the chance to produce anything.
-            if e.code in (500, 502, 503, 504) and attempt < 5:
+            if e.code in (500, 502, 503, 504) and attempt < 5 and patient:
                 w = min(60, 5 * (2 ** attempt))
                 print(f"        ⏸ gateway {e.code}, retry {attempt+1}/6 in {w}s", flush=True)
                 time.sleep(w); continue
@@ -2634,6 +2674,13 @@ def main():
                         help="run `convey soft` on this file and append both machine legs (fm-mlx + "
                              "freellmapi) as an appendix")
         ap.add_argument("--attach", default="", help="attach this file to the email")
+        # --legs-from DEFAULTS to --file, so omitting it does not disable the legs. That surprised me
+        # into thinking a send was legs-free when it was still blocked on them (2026-08-12): the
+        # analysis was finished and the email sat ten minutes waiting on an APPENDIX. An opt-out has
+        # to exist, because the appendix is the least important part of the message.
+        ap.add_argument("--no-legs", dest="no_legs", action="store_true",
+                        help="skip the machine-legs appendix entirely (it runs `convey soft`, which "
+                             "waits on the local brain and can outlast the analysis it decorates)")
         ap.add_argument("--tries", type=int, default=4,
                         help="attempts at the required shape before giving up (default 4; the poll "
                              "loop uses 12, which is too slow for a belt email)")
@@ -2643,7 +2690,8 @@ def main():
             body = Path(a.file).expanduser().read_text(errors="replace")
         ok, info = compose_and_send(a.to, a.subject, body[:a.max_chars], source=a.source,
                                     label=a.label, tries=a.tries,
-                                    legs_from=(a.legs_from or (a.file if a.file else "")),
+                                    legs_from=("" if a.no_legs else
+                                               (a.legs_from or (a.file if a.file else ""))),
                                     attach=(a.attach or (a.file if a.file else "")),
                                     chapters=a.chapters, chapter_chars=a.chapter_chars,
                                     space_hint=a.space)
