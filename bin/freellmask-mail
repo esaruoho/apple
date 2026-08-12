@@ -85,7 +85,25 @@ def http(url, key, method="GET", body=None):
         try:
             with urllib.request.urlopen(req, timeout=120) as r: return json.load(r)
         except urllib.error.HTTPError as e:
-            if e.code==429 and attempt<2: time.sleep(5*(attempt+1)); continue
+            # SURFACE THE GATEWAY'S OWN MESSAGE (2026-08-12). freellmapi answers an exhausted
+            # pool with a precise diagnosis — "All models exhausted: 4 routes checked (1
+            # rate-limited or on cooldown, 3 no usable key configured). Add more API keys or
+            # wait for rate limits to reset." — and upstream wrote summarizeExhaustion()
+            # specifically so callers could read it. We threw the body away, so five days of
+            # failures looked like an unexplained hang. Never discard the body again.
+            detail = ""
+            try: detail = (e.read() or b"").decode("utf-8", "replace").strip()[:400]
+            except Exception: pass
+            # A 429 whose body says the pool has NO USABLE KEY is PERMANENT, not transient.
+            # Retrying it (5s, then 10s) — inside fm_research's tries=4..12, inside compose's
+            # heading gate — is what turned a 10ms refusal into a 27-minute silence.
+            permanent = ("no usable key" in detail) or ("All models exhausted" in detail)
+            if e.code == 429 and attempt < 2 and not permanent:
+                time.sleep(5*(attempt+1)); continue
+            if detail:
+                sys.stderr.write(f"freellmask-mail: HTTP {e.code} from {url} — {detail}\n")
+                raise urllib.error.HTTPError(e.url, e.code, f"{e.reason}: {detail}",
+                                             e.headers, None) from None
             raise
         except urllib.error.URLError:
             if attempt<2: time.sleep(3); continue
@@ -2313,8 +2331,32 @@ def split_chapters(text, target_chars=9000, max_parts=14):
                 continue
             parts.append((" ".join(m.group(0).split())[:80], body))
     if not parts:                                          # no structure — cut on paragraphs
+        # A TRANSCRIPT often has no blank lines at all, so splitting on \n\n returns ONE paragraph.
+        # The cold-fusion transcript came through as a single 49,640-char "part" and read_chapters
+        # then truncated it at 24,000 — half the transcript analysed as if it were the whole thing,
+        # silently. Oversized blocks are therefore hard-split on line, then sentence, then character
+        # boundaries, so no part can exceed what the reader will actually read (2026-08-12).
+        def _chop(block, limit):
+            if len(block) <= limit:
+                return [block]
+            out, cur = [], ""
+            for line in block.split("\n"):
+                while len(line) > limit:                    # a single unbroken mega-line
+                    cut = line.rfind(". ", 0, limit)
+                    cut = cut + 2 if cut > limit // 2 else limit
+                    if cur: out.append(cur); cur = ""
+                    out.append(line[:cut]); line = line[cut:]
+                if len(cur) + len(line) + 1 > limit:
+                    out.append(cur); cur = line
+                else:
+                    cur = (cur + "\n" + line) if cur else line
+            if cur: out.append(cur)
+            return [x for x in out if x.strip()]
         buf, size, n = [], 0, 0
+        blocks = []
         for para in re.split(r"\n\s*\n", text):
+            blocks.extend(_chop(para, target_chars))
+        for para in blocks:
             buf.append(para); size += len(para)
             if size >= target_chars:
                 n += 1; parts.append((f"Part {n}", "\n\n".join(buf))); buf, size = [], 0
@@ -2334,10 +2376,20 @@ def split_chapters(text, target_chars=9000, max_parts=14):
     return merged
 
 
+CHAPTER_CHARS = 24000          # what one chapter read actually ingests; the splitter must respect it
+
+
 def read_chapters(parts, timeout=240, verbose=True):
     """One focused read per part. Returns (digest_markdown, n_ok)."""
     out, ok = [], 0
     for i, (title, body) in enumerate(parts, 1):
+        # SAY IT when a part is bigger than the read. This truncation was silent, so a 49,640-char
+        # transcript was analysed as its first 24,000 with nothing in the log and nothing in the
+        # email admitting it. The splitter should now prevent this; if it ever happens again it will
+        # be visible instead of flattering.
+        if len(body) > CHAPTER_CHARS and verbose:
+            print(f"      ⚠️ part {i} is {len(body):,} chars — reading only the first "
+                  f"{CHAPTER_CHARS:,}; {len(body)-CHAPTER_CHARS:,} chars NOT read", flush=True)
         if verbose:
             print(f"  📖 {i}/{len(parts)} {title[:60]} ({len(body):,} chars)", flush=True)
         # A part is a PAGE RANGE of the user's document — losing one silently means the analysis is of a
@@ -2348,7 +2400,7 @@ def read_chapters(parts, timeout=240, verbose=True):
             try:
                 ans, _used = _fm_call([{"role": "system", "content": CHAPTER_SYSTEM},
                                        {"role": "user", "content": f"PART {i} OF {len(parts)} — "
-                                                                   f"{title}\n\n{body[:24000]}"}],
+                                                                   f"{title}\n\n{body[:CHAPTER_CHARS]}"}],
                                       max_tokens=1200, temperature=0.2)
             except Exception as e:
                 ans = ""
