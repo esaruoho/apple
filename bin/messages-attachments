@@ -247,6 +247,8 @@ def main():
     ap = argparse.ArgumentParser(add_help=False)
     ap.add_argument("--top", type=int, default=40)
     ap.add_argument("--min-mb", type=float, default=100.0)
+    ap.add_argument("--by-chat", action="store_true")
+    ap.add_argument("--open-chat", metavar="HANDLE")
     ap.add_argument("--orphans", action="store_true")
     ap.add_argument("--dupes", action="store_true")
     ap.add_argument("--summary", action="store_true")
@@ -310,6 +312,27 @@ def main():
                 tag = "linked" if e.get("rowid") else "ORPHAN"
                 print(f"      [{tag}] {e['path']}")
             print()
+        return 0
+
+    if args.open_chat:
+        # imessage:// is the only deep link Messages honours. It opens the
+        # conversation; there is no per-message anchor, so pair it with the
+        # date printed by --by-chat and scroll the Command-I grid.
+        subprocess.run(["open", f"imessage://{args.open_chat}"], check=False)
+        return 0
+
+    if args.by_chat:
+        groups = defaultdict(list)
+        for e in linked:
+            groups[e.get("chat") or e.get("handle") or "(unknown)"].append(e)
+        ordered = sorted(groups.items(), key=lambda kv: -sum(x["size"] for x in kv[1]))
+        print(f"Attachments >= {args.min_mb:g} MB grouped by conversation — clear each in one Command-I visit.\n")
+        for chat, items in ordered:
+            tot = sum(x["size"] for x in items)
+            print(f"{human(tot):>11}  in {len(items):>2} file(s)   {chat}")
+            for e in sorted(items, key=lambda x: -x["size"]):
+                print(f"             {human(e['size']):>11}  {when(e.get('created'))}  {e['name'][:56]}")
+            print(f"             open with:  messages-attachments --open-chat '{chat}'\n")
         return 0
 
     entries = orphans if args.orphans else linked
