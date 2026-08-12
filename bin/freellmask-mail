@@ -1948,8 +1948,113 @@ def poll_once(verbose=True):
     st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
     return new
 
+
+# ── CHAPTER-BY-CHAPTER ───────────────────────────────────────────────────────────────────────
+# An 88-page PDF answered in one pass is a summary of a summary. Esa, 2026-08-12, asked for "deep
+# chapter-by-chapter analysis of each of the 3 SEC Stiffler PDFs, one email each" — so long material
+# is split, each part is read on its own, and the eleven-section answer is then written over the
+# assembled parts. One email, but nothing skimmed.
+CHAPTER_SYSTEM = (
+    "You are reading ONE part of a longer document, in order. Report what THIS part actually says — "
+    "no preamble, no meta-talk, no restating the task.\n"
+    "Give, in this shape:\n"
+    "**What this part covers** — one or two sentences.\n"
+    "**Claims and measurements** — bullets. Every number, unit, frequency, voltage, part number and "
+    "named device that appears here. If a claim has a stated basis, say it; if it is asserted without "
+    "one, say that plainly.\n"
+    "**Verbatim** — one or two short quotes, in quotation marks, ONLY if the wording matters.\n"
+    "Never invent a number, a name or a quotation. If this part is front matter, a table of contents "
+    "or boilerplate, say so in one line and stop."
+)
+
+
+def split_chapters(text, target_chars=9000, max_parts=14):
+    """Split on real structure when it is there (headings / CHAPTER / SECTION / form-feeds), else on
+    paragraph boundaries near the target size. Returns [(title, body)]."""
+    text = (text or "").replace("\r\n", "\n")
+    # PDFs carry real page breaks (pdftotext emits \f), and page ranges are honest, even-sized parts.
+    # Heading-matching on a scanned/laid-out PDF matched numbered LIST ITEMS instead of chapters and
+    # produced 4k-to-45k-char lumps (2026-08-12) — so pages win whenever they are present.
+    if text.count("\f") >= 6:
+        pages = [p for p in text.split("\f")]
+        parts, buf, first = [], [], 1
+        for i, pg in enumerate(pages, 1):
+            buf.append(pg)
+            if sum(len(x) for x in buf) >= target_chars or i == len(pages):
+                parts.append((f"Pages {first}–{i}", "\n".join(buf).strip()))
+                buf, first = [], i + 1
+        parts = [(t, b) for t, b in parts if b.strip()]
+        if len(parts) > max_parts:
+            head, tail = parts[:max_parts - 1], parts[max_parts - 1:]
+            parts = head + [(f"{tail[0][0].split('–')[0]}–{tail[-1][0].split('–')[-1]}",
+                             "\n".join(b for _t, b in tail))]
+        return parts
+    marks = list(re.finditer(r"(?m)^\s*(?:#{1,3}\s+.+|(?:CHAPTER|SECTION|PART|APPENDIX)\b.{0,80})\s*$",
+                             text))
+    parts = []
+    if len(marks) >= 3:
+        for i, m in enumerate(marks):
+            start = m.start()
+            end = marks[i + 1].start() if i + 1 < len(marks) else len(text)
+            body = text[start:end].strip()
+            if len(body) < 400 and parts:                 # fold tiny stubs into the previous part
+                parts[-1] = (parts[-1][0], parts[-1][1] + "\n\n" + body)
+                continue
+            parts.append((" ".join(m.group(0).split())[:80], body))
+    if not parts:                                          # no structure — cut on paragraphs
+        buf, size, n = [], 0, 0
+        for para in re.split(r"\n\s*\n", text):
+            buf.append(para); size += len(para)
+            if size >= target_chars:
+                n += 1; parts.append((f"Part {n}", "\n\n".join(buf))); buf, size = [], 0
+        if buf:
+            n += 1; parts.append((f"Part {n}", "\n\n".join(buf)))
+    # merge forward until every part is a reasonable read, then cap the count
+    merged = []
+    for title, body in parts:
+        if merged and len(merged[-1][1]) < target_chars // 2:
+            merged[-1] = (merged[-1][0], merged[-1][1] + "\n\n" + body)
+        else:
+            merged.append((title, body))
+    if len(merged) > max_parts:                            # keep it bounded; note the fold
+        head, tail = merged[:max_parts - 1], merged[max_parts - 1:]
+        merged = head + [(tail[0][0] + f" … (+{len(tail)-1} more folded in)",
+                          "\n\n".join(b for _t, b in tail))]
+    return merged
+
+
+def read_chapters(parts, timeout=240, verbose=True):
+    """One focused read per part. Returns (digest_markdown, n_ok)."""
+    out, ok = [], 0
+    for i, (title, body) in enumerate(parts, 1):
+        if verbose:
+            print(f"  📖 {i}/{len(parts)} {title[:60]} ({len(body):,} chars)", flush=True)
+        try:
+            ans, _used = _fm_call([{"role": "system", "content": CHAPTER_SYSTEM},
+                                   {"role": "user", "content": f"PART {i} OF {len(parts)} — "
+                                                               f"{title}\n\n{body[:24000]}"}],
+                                  max_tokens=1200, temperature=0.2)
+        except Exception as e:
+            ans = ""
+            if verbose: print(f"      ✗ {e}")
+        ans = (ans or "").strip()
+        if ans and not _fm_looks_garbage_local(ans):
+            ok += 1
+            out.append(f"### {i}. {title}\n\n{ans}")
+        else:
+            out.append(f"### {i}. {title}\n\n_(this part produced no usable read — not faked)_")
+    return "\n\n".join(out), ok
+
+
+def _fm_looks_garbage_local(t):
+    low = (t or "").lower()
+    return (len(low.split()) < 12
+            or low.count("wait") >= 3
+            or low.startswith(("got it", "sure,", "i will", "let me")))
+
+
 def compose_and_send(to, subject, body_text, source="", label="", verbose=True, tries=4,
-                     legs_from="", attach=""):
+                     legs_from="", attach="", chapters=False, chapter_chars=9000):
     """THE ONE ANSWER FORMAT, callable from outside the poll loop.
 
     Esa, 2026-08-10, holding three different-looking emails from the same system: "i have
@@ -1976,6 +2081,21 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
     # before retrieval (my first cut) meant the wiki-match branch could never fire, so a bifilar-coil
     # transcript routed to "plain" — no viewpoint, no Russell/Bearden/Prigogine/Hilarion voices, which
     # is precisely the format Esa asked for.
+    # CHAPTER-BY-CHAPTER: read each part on its own first, then write the eleven sections over the
+    # assembled digest — so a long document is answered from a real read, not a skim of a skim.
+    chapter_md = ""
+    if chapters and len(body_text) > 12000:
+        parts = split_chapters(body_text, target_chars=chapter_chars)
+        if verbose:
+            print(f"  📚 chapter-by-chapter: {len(parts)} part(s)")
+        chapter_md, n_ok = read_chapters(parts, verbose=verbose)
+        if verbose:
+            print(f"  📚 {n_ok}/{len(parts)} part(s) read")
+        if n_ok:
+            # the answer is now written over the DIGEST (which is dense and complete) rather than a
+            # truncated head of the raw text
+            body_text = ("A CHAPTER-BY-CHAPTER READ OF THE WHOLE DOCUMENT FOLLOWS. Base the answer "
+                         "on ALL of it.\n\n" + chapter_md)
     route_text = "\n".join(x for x in (subject, body_text) if x)
     wctx, wslugs = "", []
     try:
@@ -2038,6 +2158,9 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
         except Exception as e:
             if verbose: print(f"  machine-legs error: {e}")
     note = ""
+    if chapter_md:
+        note += ("\n\n---\n## Chapter by chapter\n\n_Each part of the document read on its own, "
+                 "in order — the answer above is written over these._\n\n" + chapter_md)
     if legs_md:
         note += ("\n\n---\n## Appendix · machine legs\n\n_The two cheap machine reads, kept beside "
                  "the source as well. They are the record, not the payoff._" + legs_md)
@@ -2081,6 +2204,9 @@ def main():
         ap.add_argument("--source", default="", help="the URL or origin, printed under the answer")
         ap.add_argument("--label", default="", help="a line noting the artifact (e.g. the transcript path)")
         ap.add_argument("--max-chars", type=int, default=120000)
+        ap.add_argument("--chapters", action="store_true",
+                        help="read the document part by part first, then answer over the whole read")
+        ap.add_argument("--chapter-chars", dest="chapter_chars", type=int, default=9000)
         ap.add_argument("--legs-from", dest="legs_from", default="",
                         help="run `convey soft` on this file and append both machine legs (fm-mlx + "
                              "freellmapi) as an appendix")
@@ -2095,7 +2221,8 @@ def main():
         ok, info = compose_and_send(a.to, a.subject, body[:a.max_chars], source=a.source,
                                     label=a.label, tries=a.tries,
                                     legs_from=(a.legs_from or (a.file if a.file else "")),
-                                    attach=(a.attach or (a.file if a.file else "")))
+                                    attach=(a.attach or (a.file if a.file else "")),
+                                    chapters=a.chapters, chapter_chars=a.chapter_chars)
         print(("✅ sent (" + str(info) + ")") if ok else ("✗ " + str(info)))
         return 0 if ok else 1
     if cmd=="status":
