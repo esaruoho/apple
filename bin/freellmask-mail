@@ -185,6 +185,27 @@ def _has_leak(text):
         "the user wants","let me answer","i need to answer","let's answer","the question is",
         "okay, so","alright, the user","so the user"))
 
+_DUMP_MARKS = ("we need to output", "we must not add", "must follow exactly", "let's locate",
+               "the user gave", "we need to extract", "let me check the text", "we should output",
+               "the instructions say", "as per the instructions", "now let's write", "let's produce")
+
+
+def _is_reasoning_dump(text):
+    """A leak is not always the FIRST line. The across-pass leaked mid-body — planning prose about the
+    task ("we need to output for Part 4", "must follow exactly") rather than an answer. Two or more
+    such marks anywhere is the model narrating its own instructions back (2026-08-12)."""
+    low = (text or "").lower()
+    return sum(1 for mk in _DUMP_MARKS if mk in low) >= 2
+
+
+def _has_across_shape(text):
+    """The across-pass promises four bold headings; a reply carrying none of them is not that pass,
+    whatever else it is. Shape is the cheapest proof that the right question was answered."""
+    low = (text or "").lower()
+    return any(h in low for h in ("the arc", "what later parts add", "tensions and contradictions",
+                                  "what is never resolved"))
+
+
 def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
     """One FreeLLMAPI /chat/completions call. Walks FM_MODEL_CHAIN: a model answering 429/502/503 is an
     UNAVAILABLE ENDPOINT, so move to the next one in seconds rather than waiting out a window on a
@@ -2445,7 +2466,17 @@ def read_chapters(parts, timeout=240, verbose=True):
             across, _u = _fm_call([{"role": "system", "content": ACROSS_SYSTEM},
                                    {"role": "user", "content": digest[:CHAPTER_CHARS]}],
                                   max_tokens=1100, temperature=0.25)
-            if (across or "").strip() and not _fm_looks_garbage_local(across):
+            # The across-pass SHIPPED A REASONING DUMP into a delivered email (2026-08-12): "We need
+            # to output for Part 4 ... We must not add preamble. Must follow exactly." — the model's
+            # monologue about a CHAPTER task, pasted under "Across the parts". _fm_looks_garbage_local
+            # only counts words and "wait", so it waved it through. A section that is visibly the
+            # model talking to itself is worse than an absent section: it looks like analysis.
+            bad = (not (across or "").strip() or _fm_looks_garbage_local(across)
+                   or _has_leak(across) or _is_reasoning_dump(across))
+            if not bad and not _has_across_shape(across):
+                bad = True
+                if verbose: print("      ✗ across-pass: not in the asked-for shape", flush=True)
+            if not bad:
                 digest += "\n\n### Across the parts\n\n" + across.strip()
             elif verbose:
                 print("      ✗ across-pass produced nothing usable — omitted, not faked", flush=True)
