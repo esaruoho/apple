@@ -161,9 +161,17 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
         headers={"Authorization":f"Bearer {fm_key()}","Content-Type":"application/json"})
     d=None
     RL_WAIT=int(os.environ.get("FREELLMASK_MAIL_RL_WAIT","40"))  # seconds to wait out a rate-limit window
+    # 240s was far too patient. When the gateway falters it closes the socket without answering
+    # (observed as CLOSE_WAIT), so waiting four minutes for a reply that will never come — six times
+    # over, silently — let one call burn 25 minutes while the log said nothing at all. A whole
+    # compose could hang for hours looking exactly like normal slowness.
+    CALL_TIMEOUT=int(os.environ.get("FREELLMASK_MAIL_CALL_TIMEOUT","120"))
+    DEADLINE=time.time()+int(os.environ.get("FREELLMASK_MAIL_CALL_DEADLINE","480"))
     for attempt in range(6):
+        if attempt and time.time() > DEADLINE:
+            raise RuntimeError(f"gateway deadline exceeded after {attempt} attempt(s)")
         try:
-            with urllib.request.urlopen(req, timeout=240) as r: d=json.load(r); break
+            with urllib.request.urlopen(req, timeout=CALL_TIMEOUT) as r: d=json.load(r); break
         except urllib.error.HTTPError as e:
             # 429 = free-tier per-minute cap (Gemini) or provider throttle. DON'T fail — WAIT for the
             # window to clear (≈40s, or the server's Retry-After if longer), then retry. This is the
@@ -172,6 +180,7 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
                 ra=e.headers.get("Retry-After") if e.headers else None
                 try: wait=max(RL_WAIT, int(ra)) if ra else RL_WAIT
                 except (ValueError, TypeError): wait=RL_WAIT
+                print(f"        ⏸ rate-limited, waiting {wait}s", flush=True)
                 time.sleep(wait); continue
             # 5xx = the gateway itself faltering (502 Bad Gateway is routine on the free leg,
             # especially on big payloads), NOT a bad request. Until 2026-08-12 only 429 was retried,
@@ -179,12 +188,16 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
             # silent, twelve attempts of pure gateway noise were reported as "the model would not
             # produce the required shape". The model never got the chance to produce anything.
             if e.code in (500, 502, 503, 504) and attempt < 5:
-                time.sleep(min(60, 5 * (2 ** attempt))); continue
+                w = min(60, 5 * (2 ** attempt))
+                print(f"        ⏸ gateway {e.code}, retry {attempt+1}/6 in {w}s", flush=True)
+                time.sleep(w); continue
             raise
         except (urllib.error.URLError, TimeoutError) as e:
             # A dropped connection or a read timeout is the same class of event: the gateway, not us.
             if attempt < 5:
-                time.sleep(min(60, 5 * (2 ** attempt))); continue
+                w = min(60, 5 * (2 ** attempt))
+                print(f"        ⏸ {type(e).__name__}, retry {attempt+1}/6 in {w}s", flush=True)
+                time.sleep(w); continue
             raise
     return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
 
