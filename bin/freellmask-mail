@@ -2376,6 +2376,26 @@ def split_chapters(text, target_chars=9000, max_parts=14):
     return merged
 
 
+# THE ANALYSIS OF THE ANALYSES (Esa, 2026-08-12): "we can get the work done half way and then half
+# way and then re-analyze both of the analyses and then print half-way + half-way + combo analysis".
+# The mosaic kept partial SECTIONS; this keeps partial READINGS. Each part is read in full, then a
+# pass reads the READS — not the source — and reports what only becomes visible once the parts are
+# side by side. That is a different question from "what does this document say", and no single-pass
+# analysis over a truncated blob can answer it. It also retires truncation as a concern: nothing has
+# to fit, because nothing is dropped.
+ACROSS_SYSTEM = (
+    "Below are ordered analyses of consecutive parts of ONE document or talk. You are NOT summarising "
+    "them again — the reader already has them. Report only what becomes visible when the parts are "
+    "placed side by side, in this shape:\n"
+    "**The arc** — 2-4 sentences: where it starts, where it ends up, what changes on the way.\n"
+    "**What later parts add to earlier ones** — bullets: a claim first asserted and later given a "
+    "basis (or measured, or quietly dropped); a number that changes; a device that reappears.\n"
+    "**Tensions and contradictions** — bullets: places where the parts disagree, or where a later "
+    "part undercuts an earlier claim. If there are none, say 'none found' — do not invent friction.\n"
+    "**What is never resolved** — bullets: questions the document raises and leaves open.\n"
+    "Cite parts by their number. Never introduce a claim that is in none of the parts."
+)
+
 CHAPTER_CHARS = 24000          # what one chapter read actually ingests; the splitter must respect it
 
 
@@ -2415,7 +2435,23 @@ def read_chapters(parts, timeout=240, verbose=True):
             out.append(f"### {i}. {title}\n\n{ans}")
         else:
             out.append(f"### {i}. {title}\n\n_(this part produced no usable read — not faked)_")
-    return "\n\n".join(out), ok
+    digest = "\n\n".join(out)
+    # With two or more parts read, ask the ACROSS pass — the analysis of the analyses. It is skipped
+    # for a single part because there is nothing to place side by side.
+    if ok >= 2:
+        if verbose:
+            print(f"  🔗 across the parts: analysing the {ok} analyses", flush=True)
+        try:
+            across, _u = _fm_call([{"role": "system", "content": ACROSS_SYSTEM},
+                                   {"role": "user", "content": digest[:CHAPTER_CHARS]}],
+                                  max_tokens=1100, temperature=0.25)
+            if (across or "").strip() and not _fm_looks_garbage_local(across):
+                digest += "\n\n### Across the parts\n\n" + across.strip()
+            elif verbose:
+                print("      ✗ across-pass produced nothing usable — omitted, not faked", flush=True)
+        except Exception as e:
+            if verbose: print(f"      ✗ across-pass: {e}", flush=True)
+    return digest, ok
 
 
 def _fm_looks_garbage_local(t):
