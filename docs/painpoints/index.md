@@ -21,13 +21,14 @@ the verbs missing, or none at all. One of them is different — SYSTEM-SETTINGS-
 
 ## Featured
 
-### [The Hidden 7.4 Gigabytes →](./system-settings-002.html)
+### [The Copy You Never Sent →](./system-settings-002.html)
 
-**SYSTEM-SETTINGS-002** — System Settings ▸ General ▸ Storage ▸ Messages decides *what
-to list* using a database field that is wrong by up to **8279×**, then *displays and
-sorts* using the real size on disk. Of 53 attachments ≥100 MB (12.3 GB) on one machine,
-it surfaces 27 (4.8 GB) and conceals 26 (7.4 GB) — including the single largest file in
-the entire store.
+**SYSTEM-SETTINGS-002** — Send a file too big for iMessage and Messages compresses a
+copy, sends that, and quietly keeps your original. It is counted at the size that was
+*sent*, so it appears in no storage panel. It was never in the conversation, so it has no
+bubble. And it is usually the only full-quality copy you own — **8.57 GB across 43
+conversations** on one machine, which Apple's own one-click storage remedy would destroy
+without a word.
 
 Full evidence, measured: [read the filing →](./system-settings-002.html)
 
@@ -37,7 +38,7 @@ Full evidence, measured: [read the filing →](./system-settings-002.html)
 
 | ID | Title | App |
 |---|---|---|
-| **SYSTEM-SETTINGS-002** | [The Storage Panel Filters on a Field That Lies](./system-settings-002.html) | System Settings ▸ Storage ▸ Messages |
+| **SYSTEM-SETTINGS-002** | [Messages Hides Your Originals, Then Offers to Delete Them](./system-settings-002.html) | Messages.app + System Settings ▸ Storage |
 | PLATFORM-001 | [macOS Automation Is Splintered Across Five Incompatible Layers](https://github.com/esaruoho/apple/blob/main/painpoints/PLATFORM-001-automation-fragmentation.md) | macOS (platform-wide) |
 | SYSTEM-SETTINGS-001 | [The Most Important Config App on macOS Has Almost No Automation](https://github.com/esaruoho/apple/blob/main/painpoints/SYSTEM-SETTINGS-001-most-important-app-least-scriptable.md) | System Settings.app |
 | MESSAGES-001 | [Messages Is Write-Only by Design](https://github.com/esaruoho/apple/blob/main/painpoints/MESSAGES-001-write-only-automation.md) | Messages.app |
@@ -72,11 +73,13 @@ Automation privacy framework: the user grants permission per app, explicitly, in
 System Settings. Blocking a person from scripting their own data is not privacy. It is
 paternalism with a privacy-shaped explanation.
 
-**Where a tool does exist, it must be correct.** SYSTEM-SETTINGS-002 is the newest
-filing and the odd one out: Apple identified a real problem, built the panel, shipped
-it — and pointed its filter at the wrong field. A missing feature sends you looking for
-another way. A tool that silently omits the answer sends you away believing there is
-nothing more to find. That is the worse failure.
+**Where a tool does exist, it must be correct — and it must say what it did.**
+SYSTEM-SETTINGS-002 is the newest filing and the odd one out: Apple identified a real
+problem, built the panel, shipped it, and pointed its filter at the *transmitted* size
+while the disk holds the original. A missing feature sends you looking for another way.
+A tool that silently omits the answer sends you away believing there is nothing more to
+find. And when the omitted thing is the only full-quality copy of a video of your child,
+the failure stops being about disk space.
 
 ---
 

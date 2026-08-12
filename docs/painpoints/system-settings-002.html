@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Hidden 7.4 Gigabytes — Apple Automation Atlas</title>
-<meta name="description" content="A macOS painpoint filing: System Settings' Messages storage panel filters on a database field wrong by up to 8279x, concealing 7.4 GB of the 12.3 GB it exists to surface.">
+<title>The Copy You Never Sent — Apple Automation Atlas</title>
+<meta name="description" content="Messages compresses oversized sends and silently keeps your full-quality original — invisible to the Storage panel, absent from the conversation, and destroyed without warning by Apple's own storage remedy.">
 <link rel="canonical" href="https://esaruoho.github.io/apple/painpoints/system-settings-002.html">
-<meta property="og:title" content="The Hidden 7.4 Gigabytes">
-<meta property="og:description" content="macOS ships one tool for reclaiming space from Messages. It decides what to show you using a number wrong by up to 8279x.">
+<meta property="og:title" content="The Copy You Never Sent">
+<meta property="og:description" content="Messages compresses oversized sends and silently keeps your full-quality original — invisible to the Storage panel, absent from the conversation, and destroyed without warning by Apple's own storage remedy.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://esaruoho.github.io/apple/painpoints/system-settings-002.html">
 <meta name="twitter:card" content="summary_large_image">
@@ -219,7 +219,7 @@
     white-space: nowrap;
   }
   .cov-shown  { background: var(--steel);   color: var(--surface); flex: 4.8; }
-  .cov-hidden { background: var(--crimson); color: #fff;           flex: 7.4; }
+  .cov-hidden { background: var(--crimson); color: #fff;           flex: 5.9; }
   :root[data-theme="dark"] .cov-shown, :root[data-theme="dark"] .cov-hidden { color: #0C1116; }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) .cov-shown,
@@ -492,73 +492,137 @@
       <span class="sep">/</span>
       <span>Painpoint SYSTEM-SETTINGS-002</span>
     </p>
-    <h1>The Hidden 7.4 Gigabytes</h1>
+    <h1>The Copy You Never Sent</h1>
     <p class="standfirst">
-      macOS ships one purpose-built tool for reclaiming space from Messages. It decides
-      what to show you using a number that is wrong by up to eight thousand times — so
-      the largest file in a 135&nbsp;GB store simply is not in the list.
+      Send a file too big for iMessage and Messages compresses a copy, sends that, and
+      quietly keeps your original. It is counted at the size that was sent, so it appears
+      in no storage panel. It was never in the conversation, so it has no bubble. And it
+      is usually the only full-quality copy you own.
     </p>
     <div class="filing">
-      <div><span class="k">App</span><span class="v">System Settings ▸ General ▸ Storage ▸ Messages</span></div>
-      <div><span class="k">Severity</span><span class="v">Correctness bug — hides 60% of the bytes it exists to surface</span></div>
+      <div><span class="k">App</span><span class="v">Messages.app + System Settings ▸ General ▸ Storage ▸ Messages</span></div>
+      <div><span class="k">Severity</span><span class="v">Data-loss hazard — your only full-quality originals are invisible, and the OS offers to delete them</span></div>
       <div><span class="k">Filed</span><span class="v">12 August 2026</span></div>
-      <div><span class="k">Status</span><span class="v">Open · figures re-verified after a clearing pass, 12 Aug 2026</span></div>
+      <div><span class="k">Status</span><span class="v">Open · revised 12 Aug 2026 — the first version blamed a wrong number; the number is right</span></div>
     </div>
   </header>
 
   <div class="verdict">
     <div class="stats">
       <div class="stat bad">
-        <span class="n">7.4 GB</span>
-        <span class="l">Concealed</span>
-        <span class="s">26 files ≥100 MB the panel does not list at all</span>
-      </div>
-      <div class="stat ok">
-        <span class="n">4.8 GB</span>
-        <span class="l">Surfaced</span>
-        <span class="s">27 files the panel does list, correctly sized</span>
+        <span class="n">8.57 GB</span>
+        <span class="l">Originals at risk</span>
+        <span class="s">Full-quality photos and video across 43 conversations, existing nowhere else</span>
       </div>
       <div class="stat bad">
-        <span class="n">8279×</span>
-        <span class="l">Worst understatement</span>
-        <span class="s">A 695.8 MiB video recorded in the database as 0.08 MiB</span>
+        <span class="n">5.9 GB</span>
+        <span class="l">Concealed from the panel</span>
+        <span class="s">24 of the 51 files ≥100 MB — it hides more than it shows</span>
+      </div>
+      <div class="stat ok">
+        <span class="n">0</span>
+        <span class="l">Warnings given</span>
+        <span class="s">“Keep messages ▸ 1 Year” destroys every original without a word</span>
       </div>
     </div>
-    <p class="coverage-label">All attachments ≥100 MB on disk — 53 files, 12.3 GB</p>
-    <div class="coverage" role="img" aria-label="Of 12.3 gigabytes, 4.8 shown by the panel and 7.4 hidden from it">
+    <p class="coverage-label">All attachments ≥100 MB on disk — 51 files, 10.7 GB</p>
+    <div class="coverage" role="img" aria-label="Of 10.7 gigabytes, 4.8 shown by the panel and 5.9 hidden from it">
       <span class="cov-shown">4.8 GB shown</span>
-      <span class="cov-hidden">7.4 GB hidden</span>
+      <span class="cov-hidden">5.9 GB hidden</span>
     </div>
   </div>
 
   <section class="col">
     <h2>The friction</h2>
     <p class="lede">
-      There is exactly one supported way to reclaim disk space from Messages without
-      navigating by hand to a years-old conversation: the attachment list in
-      System&nbsp;Settings ▸ General ▸ Storage ▸ Messages. It has a Size column, a sort
-      arrow, and a Delete button.
+      There is one supported way to reclaim disk space from Messages without navigating
+      by hand to a years-old conversation: the attachment list in System&nbsp;Settings ▸
+      General ▸ Storage ▸ Messages. It has a Size column, a sort arrow, and a Delete
+      button.
+    </p>
+    <p>It does not show you your largest files.</p>
+    <p>
+      On the machine that prompted this filing, the biggest single attachment in the
+      store — an <strong>814 MB PNG</strong> — was absent from the panel entirely. Not
+      buried, not mis-sorted. Absent.
     </p>
     <p>
-      It does not show you your largest files.
+      Nor was it in the conversation. The user scrolled a 15,000-message thread back two
+      and a half years to the exact date, found the discussion of the image, and found
+      <strong>no image bubble for it</strong>. Two independent surfaces, both blind to
+      the same 814 megabytes.
     </p>
+
+    <h2>The correction</h2>
     <p>
-      On the machine that prompted this filing, the biggest single attachment in a
-      135&nbsp;GB store — a <strong>776.8 MiB PNG</strong> — is absent from the panel
-      entirely. Not buried at the bottom, not mis-sorted. Absent. The user went looking
-      for it, sorted by size, and it was not there.
+      The first version of this filing said the recorded size was simply wrong — off by
+      up to 8279× — and that Apple had wired the panel's filter to a lying field. That
+      was a misreading, and it cost the user most of a day hunting a bubble that could
+      not exist.
     </p>
-    <p>The cause is a mismatch between two sources of truth inside Apple's own app:</p>
     <p class="pull">
-      The panel decides <em>what to list</em> using the database's recorded size, then
-      <em>displays and sorts</em> using the real size on disk.
+      <code>total_bytes</code> is not wrong. It records what Messages actually
+      <em>transmitted</em>.
     </p>
     <p>
-      <code>attachment.total_bytes</code> records the size negotiated at transfer time,
-      not what landed on disk. It is routinely wrong by two to four orders of magnitude.
-      So the inclusion test runs on a field that lies, and every file whose recorded size
-      is understated falls through the floor — no matter how many hundreds of megabytes
-      it actually occupies.
+      Send a file larger than iMessage will carry and Messages does not refuse. It
+      compresses a copy, sends that, and keeps your original on disk, attached to the
+      same message. One message, two attachments:
+    </p>
+    <div class="chart" style="margin-bottom:18px">
+      <div class="rows">
+        <div class="row">
+          <div class="row-head">
+            <span class="fname">the PNG — your original</span>
+            <span class="verdict-chip chip-hidden">never sent</span>
+          </div>
+          <div class="bar"><span class="lbl">Sent</span><span class="track"><span class="fill claimed" style="width:47.1%"></span></span><span class="val">5,664,632 B</span></div>
+          <div class="bar"><span class="lbl">On disk</span><span class="track"><span class="fill actual" style="width:99.8%"></span></span><span class="val">814,483,067 B</span></div>
+        </div>
+        <div class="row">
+          <div class="row-head">
+            <span class="fname">the JPEG — what was actually sent</span>
+            <span class="verdict-chip chip-shown">transmitted</span>
+          </div>
+          <div class="bar"><span class="lbl">Sent</span><span class="track"><span class="fill claimed" style="width:47.1%"></span></span><span class="val">5,664,632 B</span></div>
+          <div class="bar"><span class="lbl">On disk</span><span class="track"><span class="fill actual" style="width:47.1%"></span></span><span class="val">5,664,632 B</span></div>
+        </div>
+      </div>
+      <p class="scale-note">
+        The original's recorded size equals the transmitted file's size <strong>exactly</strong>.
+        5,664,632 = 5,664,632. The field was answering a different question than anyone
+        reading it assumed.
+      </p>
+    </div>
+    <p>
+      That one fact explains both blindnesses. The panel filters on transmitted size, so
+      a 5.6 MB record never clears the threshold however large the file is. And the
+      transcript renders the transmitted attachment, so the original — never sent, never
+      part of the conversation — has no bubble to find. It is not hard to locate. It is
+      <strong>not locatable</strong>.
+    </p>
+
+    <h2>The real damage is not disk space</h2>
+    <p class="pull">
+      The staged original is frequently the only full-quality copy in existence. The
+      recipient has the compressed version. You have the original — filed where no
+      interface will show it to you.
+    </p>
+    <p>
+      On this machine: <strong>8.57 GB across 43 conversations</strong>, overwhelmingly
+      family video. A 278.6 MB clip transmitted as 216 KB. A 174.3 MB clip transmitted
+      as 19.3 MB.
+    </p>
+    <p>
+      Now consider what macOS offers a user whose disk is full. <strong>Messages ▸
+      Settings ▸ General ▸ Keep messages ▸ 1 Year</strong> — the one-click remedy, which
+      on this machine would have freed 109.7 GB. It would also have destroyed every one
+      of those 8.57 GB of originals: silently, with no warning, no listing, and no way
+      to have known they were there.
+    </p>
+    <p>
+      Apple's storage advice and Apple's hidden originals are on a collision course, and
+      the user is never told.
     </p>
   </section>
 
@@ -566,18 +630,19 @@
     <div class="col">
       <h2>The evidence</h2>
       <p>
-        Eight attachments from one machine, measured 12 August 2026. For each, what the
-        database claims against what <code>stat</code> reports. The two files whose
-        records happen to be accurate are the two that appear in the panel.
+        Eight attachments from one machine, measured 12 August 2026. For each, the
+        recorded transmitted size against what <code>stat</code> reports on disk. The two
+        files that were small enough to send uncompressed are the only two the panel
+        displays — every file it omits was compressed on the way out.
       </p>
     </div>
 
     <div class="chart">
       <div class="chart-head">
-        <span class="chart-title">Recorded size vs. actual size</span>
+        <span class="chart-title">Transmitted size vs. size on disk</span>
         <span class="key">
-          <i class="c">Recorded in chat.db</i>
-          <i>Actual on disk</i>
+          <i class="c">Transmitted (recorded in chat.db)</i>
+          <i>Your original, on disk</i>
         </span>
       </div>
 
@@ -588,8 +653,8 @@
             <span class="fname">IMG_6510.MOV</span>
             <span class="verdict-chip chip-hidden">Hidden · 8279× off</span>
           </div>
-          <div class="bar"><span class="lbl">Recorded</span><span class="track"><span class="fill claimed" style="width:2.5%"></span></span><span class="val">0.08 MiB</span></div>
-          <div class="bar"><span class="lbl">Actual</span><span class="track"><span class="fill actual" style="width:98.6%"></span></span><span class="val">695.8 MiB</span></div>
+          <div class="bar"><span class="lbl">Sent</span><span class="track"><span class="fill claimed" style="width:2.5%"></span></span><span class="val">0.08 MiB</span></div>
+          <div class="bar"><span class="lbl">Kept</span><span class="track"><span class="fill actual" style="width:98.6%"></span></span><span class="val">695.8 MiB</span></div>
         </div>
 
         <div class="row">
@@ -597,8 +662,8 @@
             <span class="fname">…upscayl_16x_realesrgan-x4plus-anime.png <em>(copy A)</em></span>
             <span class="verdict-chip chip-hidden">Hidden · 2017× off</span>
           </div>
-          <div class="bar"><span class="lbl">Recorded</span><span class="track"><span class="fill claimed" style="width:19.3%"></span></span><span class="val">0.39 MiB</span></div>
-          <div class="bar"><span class="lbl">Actual</span><span class="track"><span class="fill actual" style="width:99.8%"></span></span><span class="val">776.8 MiB</span></div>
+          <div class="bar"><span class="lbl">Sent</span><span class="track"><span class="fill claimed" style="width:19.3%"></span></span><span class="val">0.39 MiB</span></div>
+          <div class="bar"><span class="lbl">Kept</span><span class="track"><span class="fill actual" style="width:99.8%"></span></span><span class="val">776.8 MiB</span></div>
         </div>
 
         <div class="row">
@@ -606,8 +671,8 @@
             <span class="fname">IMG_9056.MOV</span>
             <span class="verdict-chip chip-hidden">Hidden · 424× off</span>
           </div>
-          <div class="bar"><span class="lbl">Recorded</span><span class="track"><span class="fill claimed" style="width:29.6%"></span></span><span class="val">1.03 MiB</span></div>
-          <div class="bar"><span class="lbl">Actual</span><span class="track"><span class="fill actual" style="width:93.6%"></span></span><span class="val">435.2 MiB</span></div>
+          <div class="bar"><span class="lbl">Sent</span><span class="track"><span class="fill claimed" style="width:29.6%"></span></span><span class="val">1.03 MiB</span></div>
+          <div class="bar"><span class="lbl">Kept</span><span class="track"><span class="fill actual" style="width:93.6%"></span></span><span class="val">435.2 MiB</span></div>
         </div>
 
         <div class="row">
@@ -615,8 +680,8 @@
             <span class="fname">IMG_2051.MOV</span>
             <span class="verdict-chip chip-hidden">Hidden · 281× off</span>
           </div>
-          <div class="bar"><span class="lbl">Recorded</span><span class="track"><span class="fill claimed" style="width:33.2%"></span></span><span class="val">1.45 MiB</span></div>
-          <div class="bar"><span class="lbl">Actual</span><span class="track"><span class="fill actual" style="width:92.9%"></span></span><span class="val">406.4 MiB</span></div>
+          <div class="bar"><span class="lbl">Sent</span><span class="track"><span class="fill claimed" style="width:33.2%"></span></span><span class="val">1.45 MiB</span></div>
+          <div class="bar"><span class="lbl">Kept</span><span class="track"><span class="fill actual" style="width:92.9%"></span></span><span class="val">406.4 MiB</span></div>
         </div>
 
         <div class="row">
@@ -624,8 +689,8 @@
             <span class="fname">…upscayl_16x_realesrgan-x4plus-anime.png <em>(copy B)</em></span>
             <span class="verdict-chip chip-hidden">Hidden · 144× off</span>
           </div>
-          <div class="bar"><span class="lbl">Recorded</span><span class="track"><span class="fill claimed" style="width:47.1%"></span></span><span class="val">5.40 MiB</span></div>
-          <div class="bar"><span class="lbl">Actual</span><span class="track"><span class="fill actual" style="width:99.8%"></span></span><span class="val">776.8 MiB</span></div>
+          <div class="bar"><span class="lbl">Sent</span><span class="track"><span class="fill claimed" style="width:47.1%"></span></span><span class="val">5.40 MiB</span></div>
+          <div class="bar"><span class="lbl">Kept</span><span class="track"><span class="fill actual" style="width:99.8%"></span></span><span class="val">776.8 MiB</span></div>
         </div>
 
         <div class="row">
@@ -633,8 +698,8 @@
             <span class="fname">Tomas Potkulautailee Kruunurannan liikuntapuistossa.mp4</span>
             <span class="verdict-chip chip-hidden">Hidden · 14× off</span>
           </div>
-          <div class="bar"><span class="lbl">Recorded</span><span class="track"><span class="fill claimed" style="width:67.8%"></span></span><span class="val">38.1 MiB</span></div>
-          <div class="bar"><span class="lbl">Actual</span><span class="track"><span class="fill actual" style="width:95.6%"></span></span><span class="val">526.2 MiB</span></div>
+          <div class="bar"><span class="lbl">Sent</span><span class="track"><span class="fill claimed" style="width:67.8%"></span></span><span class="val">38.1 MiB</span></div>
+          <div class="bar"><span class="lbl">Kept</span><span class="track"><span class="fill actual" style="width:95.6%"></span></span><span class="val">526.2 MiB</span></div>
         </div>
 
         <div class="row">
@@ -642,8 +707,8 @@
             <span class="fname">HLER tikkurila 2023.mp4</span>
             <span class="verdict-chip chip-shown">Shown · accurate</span>
           </div>
-          <div class="bar"><span class="lbl">Recorded</span><span class="track"><span class="fill claimed" style="width:87.0%"></span></span><span class="val">233.5 MiB</span></div>
-          <div class="bar"><span class="lbl">Actual</span><span class="track"><span class="fill actual" style="width:87.1%"></span></span><span class="val">234.2 MiB</span></div>
+          <div class="bar"><span class="lbl">Sent</span><span class="track"><span class="fill claimed" style="width:87.0%"></span></span><span class="val">233.5 MiB</span></div>
+          <div class="bar"><span class="lbl">Kept</span><span class="track"><span class="fill actual" style="width:87.1%"></span></span><span class="val">234.2 MiB</span></div>
         </div>
 
         <div class="row">
@@ -651,8 +716,8 @@
             <span class="fname">0231DB16-D21F-44F0-A454-8A750769257D.mov</span>
             <span class="verdict-chip chip-shown">Shown · accurate</span>
           </div>
-          <div class="bar"><span class="lbl">Recorded</span><span class="track"><span class="fill claimed" style="width:99.5%"></span></span><span class="val">757.7 MiB</span></div>
-          <div class="bar"><span class="lbl">Actual</span><span class="track"><span class="fill actual" style="width:99.5%"></span></span><span class="val">757.7 MiB</span></div>
+          <div class="bar"><span class="lbl">Sent</span><span class="track"><span class="fill claimed" style="width:99.5%"></span></span><span class="val">757.7 MiB</span></div>
+          <div class="bar"><span class="lbl">Kept</span><span class="track"><span class="fill actual" style="width:99.5%"></span></span><span class="val">757.7 MiB</span></div>
         </div>
 
       </div>
@@ -671,11 +736,10 @@
         decimal MB, so 757.7 MiB appears there as “794,5 MB”.
       </p>
       <p class="scale-note">
-        <strong>Re-verified after a clearing pass.</strong> The user has since deleted
-        6 GB from the store, taking it from 141 to 135 GB. All eight files above are
-        still present at the same sizes, and the counted damage — 53 files, 27 shown,
-        26 hidden, 8279× worst — is unchanged, because the panel showed no route to any
-        of the hidden ones. That is the point of the filing, restated by accident.
+        <strong>Counted.</strong> Of 51 attachments ≥100 MB on disk (10.7 GB), the panel
+        surfaces 27 files / 4.8 GB and conceals 24 files / 5.9 GB. The two 776.8 MiB PNGs
+        above were deleted during the investigation, which is why these totals are lower
+        than this filing's first revision.
       </p>
     </div>
   </section>
@@ -685,7 +749,7 @@
     <ol class="obs">
       <li>
         <div>
-          <h3>Every visible row has a large recorded size</h3>
+          <h3>Every visible row went out uncompressed</h3>
           <p>
             Reading the panel's top ten against the database, <code>total_bytes</code> for
             those rows ranged from 233 to 758 MiB. Not one small value among them.
@@ -694,11 +758,11 @@
       </li>
       <li>
         <div>
-          <h3>Every huge missing file has a tiny one</h3>
+          <h3>Every huge missing file was compressed on the way out</h3>
           <p>
-            The six omitted files above occupy 3.6 GB between them and are recorded as
-            46.5 MB in total. The worst, <code>IMG_6510.MOV</code>, is logged at
-            0.08&nbsp;MiB against 695.8 MiB on disk.
+            The six omitted files above occupy 3.6 GB between them and were transmitted
+            as 46.5 MB in total. The worst, <code>IMG_6510.MOV</code>, went out as
+            0.08&nbsp;MiB and kept 695.8 MiB on disk.
           </p>
         </div>
       </li>
@@ -733,35 +797,54 @@
       above the top of it, invisible — with 49 GB free on a 1.8 TB disk.
     </p>
     <p>
-      <strong>Principle #5 — use what the user already has.</strong> The user already has
-      the real sizes. They are on the filesystem — the same filesystem the panel reads for
-      its Size column, one function call from the code that builds the list. Nothing
-      needed to be invented. The panel simply had to ask the disk twice instead of once.
+      <strong>Principle #5 — use what the user already has.</strong> The real sizes are
+      on the filesystem, which the panel already reads to render its Size column. Nothing
+      needed inventing. It had to ask the disk twice instead of once.
+    </p>
+    <p>
+      And a principle this filing had to learn the hard way: <strong>if you keep
+      something on a person's behalf, tell them you kept it.</strong> Messages made a
+      decision — compress this, send the small one, keep the big one — and recorded it
+      nowhere the person could see. Every downstream failure follows from that silence.
     </p>
   </section>
 
   <section class="col">
     <h2>What it should be</h2>
-    <p>The fix is a one-line change in intent: filter on the same value you display.</p>
+    <p><strong>1. Filter on the size you display.</strong></p>
     <div class="code">
 <pre>for each attachment row in chat.db:
     path = resolve(row.filename)     <span class="cm">// already done — the panel shows this file</span>
     size = stat(path).st_size        <span class="cm">// already done — this is the Size column</span>
 
-    <span class="old">if row.total_bytes &gt;= threshold:</span>   <span class="cm">// current behaviour</span>
-    <span class="hit">if size &gt;= threshold:</span>              <span class="cm">// what it should be</span>
+    <span class="old">if row.total_bytes &gt;= threshold:</span>   <span class="cm">// current: the size that was SENT</span>
+    <span class="hit">if size &gt;= threshold:</span>              <span class="cm">// what it should be: the size on DISK</span>
         show(path, size)</pre>
     </div>
     <p>
-      There is no new API, no new permission, no schema migration, and no performance
-      argument — the panel already stats every file it lists in order to render the column
-      correctly. It stats the survivors. It needs to stat the candidates.
+      No new API, no new permission, no schema change, no performance argument — the
+      panel already stats every file it lists to render the column. It stats the
+      survivors. It needs to stat the candidates.
     </p>
     <p>
-      While there: the panel should also surface <strong>duplicates</strong>. Sending one
-      video to three people stores it three times, and this machine carries 3.2 GB of
-      byte-identical redundancy among files ≥100 MB alone. The panel has every path it
-      needs to spot them.
+      <strong>2. Name the thing.</strong> An attachment whose on-disk size exceeds its
+      transmitted size is a <em>staged original</em>. Label it as one, in the panel and
+      in the ⌘I grid: “Original — 278 MB. Sent as 216 KB.” One line of text ends the
+      entire confusion.
+    </p>
+    <p>
+      <strong>3. Warn before destroying originals.</strong> “Keep messages ▸ 1 Year”
+      should say: <em>this will also delete 1,340 original photos and videos that exist
+      only here</em> — with a button to export them first.
+    </p>
+    <p>
+      <strong>4. Offer the choice at send time.</strong> The user was never asked whether
+      to keep an 814 MB original. Ask, once, and remember the answer.
+    </p>
+    <p>
+      <strong>5. Surface duplicates.</strong> Sending one video to three people stores it
+      three times — 2.5 GB of byte-identical redundancy among files ≥100 MB on this
+      machine alone.
     </p>
   </section>
 
@@ -771,20 +854,20 @@
       <div class="path">
         <span class="who">Apple · ideal</span>
         <div>
-          <p>Filter on the on-disk size, as above. Additionally, repair the recorded size on read — if the row disagrees with the file, the file is right.</p>
+          <p>All five above. (2) and (3) matter more than (1) — disk space is recoverable, a lost original is not.</p>
         </div>
       </div>
       <div class="path">
         <span class="who">Apple · adjacent</span>
         <div>
-          <p>The conversation-level ⌘I attachment grid has the same provenance problem and no size display at all. Give it a sort-by-size.</p>
+          <p>The ⌘I attachment grid has the same provenance blindness and no size display at all. Give it sizes and a sort — and a bubble, or some marker, for originals that were never sent.</p>
         </div>
       </div>
       <div class="path">
         <span class="who">Workaround</span>
         <div>
-          <p><code>bin/messages-attachments</code> inventories the store by real on-disk size, joins each file back to its conversation and date, groups by conversation so one ⌘I visit clears several, and reports which files the panel is hiding.</p>
-          <p>Read-only; it never writes to <code>chat.db</code>.</p>
+          <p><code>bin/messages-staged-originals</code> identifies staged originals in four tiers by direction and corroboration, copies them out foldered by conversation, and offers deletion only of the tier it can prove — to the Trash, never <code>rm</code>.</p>
+          <p><code>bin/messages-attachments</code> inventories by real on-disk size, joined to conversation and date. Both read-only; neither writes to <code>chat.db</code>.</p>
         </div>
       </div>
       <div class="path dont">
@@ -805,14 +888,15 @@
       attachment at all</strong>. The UI is the only supported surface.
     </p>
     <p>
-      Which means the broken panel is not one option among several. For 26 files and
-      7.4 GB on this machine, the only remaining route is to remember which conversation a
-      file was sent to, open it, press ⌘I, and scroll a grid with no size column back to
-      2017.
+      Which means the broken panel is not one option among several. For the files it
+      conceals, the only remaining route is to remember which conversation something was
+      sent to, open it, and scroll a grid with no size column back through years — and
+      for staged originals even that fails, because there is no bubble to click.
     </p>
     <p>
-      A user cannot reach their own largest files, and cannot write a script to do it for
-      them either.
+      A user cannot see their own largest files, cannot reach them by hand, cannot script
+      around it, and is offered a remedy that would delete the irreplaceable ones without
+      saying so.
     </p>
   </section>
 
