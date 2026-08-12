@@ -205,6 +205,15 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
             raise
     return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
 
+def _mlx_call(messages, max_tokens=2200, temperature=0.3, timeout=300):
+    """One call to the LOCAL MLX brain. Same shape as _fm_call, no rate limiting to wait out."""
+    body={"model":MLX_MODEL,"messages":messages,"max_tokens":max_tokens,"temperature":temperature}
+    req=urllib.request.Request(MLX_HOST.rstrip('/')+"/chat/completions", data=json.dumps(body).encode(),
+        headers={"Content-Type":"application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        d=json.load(r)
+    return d["choices"][0]["message"]["content"].strip(), d.get("model", MLX_MODEL)
+
 def _is_wiki_refusal(t):
     """Detect the failure where the model refuses because the WIKI pages don't cover the topic —
     which must NEVER happen (the wiki augments; the model should answer from its own knowledge)."""
@@ -221,6 +230,19 @@ def _is_wiki_refusal(t):
 # the required '## Thought about it' heading within this pass. The poll loop treats it as "not
 # sendable yet": it does NOT send and does NOT mark the email seen, so the next poll retries it fresh.
 TRY_FLOOR = 12                 # attempts the viewpoint template gets; compose lowers it (see fm_research)
+
+# The LOCAL brain on the Mini. Not rate-limited, which is precisely why `convey soft`'s fm-mlx leg
+# always completed while everything through the free gateway was being throttled into silence. It is
+# smaller than nemotron-120b, so it is a FALLBACK, never the default: the gateway is asked first and
+# the local brain finishes what the gateway would not — a smaller voice on a few sections beats an
+# email that never arrives, and beats one with holes in it.
+MLX_HOST  = os.environ.get("FREELLMASK_MAIL_MLX_HOST", "http://cloudcitymacmini:8080/v1")
+# Copied from the PROVEN path rather than guessed: bin/fm-mlx uses Qwen3-14B-MLX-4bit against
+# :8080 with a 180s curl timeout, and that is the leg which keeps arriving in Esa's inbox. I briefly
+# switched this to a 4B because the mailer prints "fm-mlx (Qwen3-4B)" — but that string is a
+# hardcoded DISPLAY LABEL, not the model in use. Reading the label instead of the caller was the
+# same mistake as trusting /v1/models latency for generation latency (2026-08-12).
+MLX_MODEL = os.environ.get("FREELLMASK_MAIL_MLX_MODEL", "Qwen/Qwen3-14B-MLX-4bit")
 
 # The four sections that used to be a SEPARATE email from `convey email-transcript --analyze`. They
 # only make sense when there is material (a transcript, a document) — a bare question has nothing to
@@ -481,10 +503,42 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     if saw_failure:                        # kept bailing despite content → re-queue + debug-log, don't send
         return (REQUEUE_FAILED, used)
     if viewpoint and voices_on:
-        # Exhausted — but a mosaic that is MOSTLY built is worth more than silence. If the thinking
-        # and the answer are present and two-thirds of the sections held, send what stands and say
-        # plainly which sections could not be produced, rather than mailing nothing.
+        # THE LOCAL LEG. The gateway would not finish the mosaic, so ask the brain that is not rate
+        # limited to write only what is still missing. This is why `convey soft`'s fm-mlx leg always
+        # arrived while the gateway sections vanished — the resource was there the whole time.
         miss = [h for h in required if h not in have]
+        from_local = []
+        if miss:
+            for lattempt in (1, 2):
+                try:
+                    print(f"      🖥️ local brain fills {len(miss)} section(s), try {lattempt}/2",
+                          flush=True)
+                    lnudge = ("\n\nWRITE ONLY THESE SECTIONS, nothing else:\n"
+                              + "\n".join(f"## {x}" for x in miss)
+                              + "\n\nEmit each heading verbatim, in that order. No other heading, "
+                                "no apology, no explanation.")
+                    lans, _lu = _mlx_call([{"role":"system","content":sysm+lnudge},
+                                           {"role":"user","content":cur[1]["content"]}])
+                except Exception as e:
+                    print(f"      ✗ local brain: {e}", flush=True); break
+                if not lans or _has_leak(lans):
+                    continue
+                for h, bodytxt in _sections(lans).items():
+                    if h not in have and _substantive(h, bodytxt):
+                        have[h] = bodytxt; from_local.append(h)
+                miss = [h for h in required if h not in have]
+                if not miss:
+                    break
+            if from_local:
+                print(f"      🖥️ local brain supplied: {', '.join(from_local)}", flush=True)
+        if not miss:
+            # Say WHICH sections the smaller brain wrote. A reader must be able to tell the 120b
+            # analysis from the 14b one; silently mixing them would misrepresent both.
+            body = _assemble(have)
+            if from_local:
+                body += ("\n\n---\n\n_Written by the local brain (" + MLX_MODEL + ") after the "
+                         "gateway rate-limited: " + ", ".join(from_local) + "._")
+            return body, used
         if have.get("Thought about it") and have.get("Answer") and len(have) >= (2 * len(required)) // 3:
             print(f"      🧩 sending partial mosaic: {len(have)}/{len(required)} sections", flush=True)
             body = _assemble(have)
@@ -2297,7 +2351,11 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
                                capture_output=True, text=True, timeout=900)
             elif verbose:
                 print("  🦿 machine legs already on disk — reusing (no extra model calls)")
-            for stem, icon, who in ((".fm-mlx.analysis.md", "🖥️", "fm-mlx (Qwen3-4B)"),
+            # The label used to read "Qwen3-4B" while bin/fm-mlx has been running Qwen3-14B-MLX-4bit —
+            # so every appendix Esa received misnamed the brain that wrote it, and reading that label
+            # is how I picked the wrong fallback model. Named from fm-mlx's own MODEL_LABEL default.
+            for stem, icon, who in ((".fm-mlx.analysis.md", "🖥️",
+                                     os.environ.get("FM_MLX_MODEL_LABEL", "MLX/Qwen3-14B-4bit")),
                                     (".freellmapi.analysis.md", "🌐", "freellmapi (nemotron-120b)")):
                 leg = src.with_name(src.stem + stem)
                 if leg.exists():
