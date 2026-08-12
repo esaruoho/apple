@@ -78,7 +78,16 @@ it, because those anchors do not exist.
 
 ✅ Type a question into a field anchored at the region, ⏎ sends, the answer lands as a
 callout on the same anchor, your question stays above it as `you: …`.
-🟡 One exchange at a time. No stored thread, no memory of the previous answer.
+✅ Every exchange is now durable — appended to a Converse session, see below.
+🟡 The UI still shows one exchange at a time; the model gets no memory of the last answer.
+
+## Durability — added after this scorecard was first written
+
+✅ Overlay writes into a Converse session directory in `envoy-livefile-v1` shape:
+`livefile.jsonl` is the document, `transcript.md` a regenerated view, the folder is
+portable. Reuses Converse's `agent.requested` / `agent.responded` / `vision.ocr` types.
+See `wiki/concepts/overlay-vs-converse.md`. **This closes the "marks are a view with no
+document" gap.**
 
 ## Lifecycle, provenance, multiple agents
 
@@ -121,11 +130,15 @@ this is AppKit, Vision, FoundationModels and Image Playground, no dependencies.
 
 ## Honest summary
 
-**Roughly 60% of the vision.** The blackboard, the primitives, the lifecycle, the agent
+**Roughly 70% of the vision** (60% before the Converse bridge and chat landed). The blackboard, the primitives, the lifecycle, the agent
 channel, the deictic human→agent loop and the chat all work. The **anchoring model —
 window, AX element, vision region — is the missing 40%**, and it is the part the source
 thread called the most important. Until it exists, every mark is pinned to screen
 coordinates and nothing follows the thing it is about.
 
 Next, in order of value: **window anchoring (CGWindowList first, then `AXObserver`)** ·
-persistence across relaunch · a stored thread per anchor · agent legibility.
+restore on relaunch (now possible — the livefile is durable) · a threaded UI over the
+stored exchanges · agent legibility.
+
+A handoff written for a fresh reader lives at
+`~/Downloads/overlay-handoff-2026-08-12.md`.
