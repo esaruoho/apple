@@ -29,7 +29,14 @@ INBOX     = os.environ.get("AGENTMAIL_INBOX", "cloudcity-llm@agentmail.to")
 STATE     = Path(os.environ.get("FREELLMASK_MAIL_STATE", Path.home()/"work"/"comms"/"queue"/"freellmask-mail-state.json"))
 POLL_SEC  = int(os.environ.get("FREELLMASK_MAIL_POLL", "45"))
 FM_HOST   = os.environ.get("FM_FREE_HOST", "http://cloudcitymacmini:3001/v1")
-FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "nemotron-3-super-120b")
+# gemini-3.6-flash, added to freellmapi 2026-08-12 via its declarative-config path (a custom
+# provider pointing at Google AI Studio with Esa's key — config in ~/.freeapi-config.json on the
+# Mini, mode 600, deliberately outside every git repo). It replaced nemotron-3-super-120b as the
+# default because nemotron spent the day flapping between 429 and 502 while ten of its twelve
+# sibling variants returned 503, AND it returns its chain-of-thought as content.
+# NOTE it is a THINKING model: ~600 tokens per call go to hidden reasoning that still counts against
+# max_tokens, which is why the section budget scales rather than sitting at 3000.
+FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "gemini-3.6-flash")
 # ONE hardcoded model makes the whole belt hostage to one provider's uptime. 2026-08-12: every send
 # failed all day on nemotron-3-super-120b (429, then 502) while gemini-3-flash-preview answered off
 # the SAME gateway with the SAME key in 0.9s. Ten of twelve nemotron variants were returning 503 —
@@ -40,7 +47,7 @@ FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "nemotron-3-super-120b")
 # and only behind the leak splitter).
 FM_MODEL_CHAIN = [x.strip() for x in os.environ.get(
     "FREELLMASK_MAIL_MODEL_CHAIN",
-    f"{FM_MODEL},gemini-3-flash-preview,free-router,auto").split(",") if x.strip()]
+    f"{FM_MODEL},gemini-3.1-flash-lite,free-router,auto").split(",") if x.strip()]
 # These mean "this endpoint is unavailable right now" — try the next model rather than waiting.
 FM_DEAD_CODES = (429, 500, 502, 503, 504)
 # Big-context escalation: nemotron holds ~256k tokens. When the assembled context (attachments +
@@ -1213,6 +1220,12 @@ _WIKI_JUNK = {"http","https","www","com","org","net","html","htm","php","aspx","
     "status","watch","share","index","page","view","click","here","more","link","html","utm","amp",
     "this","that","with","from","have","your","yours","about","which","their","would","could","there",
     "were","they","them","what","when","where","will","into","been","also","such","than","then","some"}
+# All-caps SHORT tokens that are not archive acronyms: mail/URL structure, shouty English, and
+# units/timezones. Everything else in \b[A-Z]{2,6}\b is treated as a retrievable acronym.
+_WIKI_CAPS_JUNK = {"re","fw","fwd","cc","bcc","to","the","and","for","you","are","not","all","new","now",
+    "yes","no","ok","okay","pdf","url","html","http","https","www","id","os","pc","tv","am","pm","utc",
+    "eet","eest","gmt","est","pst","usa","uk","eu","ceo","cto","fyi","asap","btw","lol","imo","tbd","na",
+    "faq","api","cli","gui","app","ios","mac","usb","hdmi","wifi","ram","cpu","gpu","ssd","jpg","png","mp","mb","gb","kb"}
 def _best_window(text, qw, size=2600):
     """Return the ~size-char window of `text` densest in the query words — so a long paper
     surfaces its RELEVANT section, not just its intro."""
@@ -1249,19 +1262,27 @@ def wiki_context(question, k_pages=8):
     # scored >=6 on eclipse-gravity pages via 'post'/'com'/'www' and confabulated an over-unity answer.)
     qtext=re.sub(r'https?://\S+',' ', question)
     qw=set(re.findall(r'[a-z]{4,}', qtext.lower())) - _WIKI_JUNK
-    if not qw: return "", []
+    # ACRONYMS: the archive's densest handles are 2-3 letters (MRA, ZPE, MEG, NDR, EVO, SEC, VTA,
+    # TPU, EMF, LENR). `[a-z]{4,}` dropped every one of them, so "MRA" retrieved 0 pages while the
+    # spelled-out title retrieved 8. Take them from the ORIGINAL case — an all-caps short token is
+    # an acronym, not a word — and score them with word boundaries so "meg" can't match "megawatt".
+    qa=set(w.lower() for w in re.findall(r'\b[A-Z]{2,6}\b', qtext)) - _WIKI_JUNK - _WIKI_CAPS_JUNK - qw
+    if not (qw or qa): return "", []
+    apat={w: re.compile(r'\b'+re.escape(w)+r'\b') for w in qa}
     scored=[]
     for corpus in WIKI_CORPORA:
         ents=WIKI_GRAPHS/corpus/"entities"
         if not ents.exists(): continue
         for p in ents.glob("*.md"):
             t=p.read_text(errors="ignore").lower()
-            s=sum(t.count(w) for w in qw) + (25 if any(w in p.stem for w in qw) else 0)
+            s=sum(t.count(w) for w in qw) + sum(len(apat[w].findall(t)) for w in qa)
+            if any(w in p.stem for w in qw) or any(apat[w].search(p.stem.replace('-',' ')) for w in qa):
+                s+=25
             if s: scored.append((s,p,corpus))
     scored.sort(key=lambda x:x[0], reverse=True)
     if not scored or scored[0][0] < 6: return "", []      # off-corpus → no augmentation (still researched)
     top=scored[:k_pages]
-    ctx="\n\n".join(f"=== [[{p.stem}]] ({c}) ===\n{_best_window(p.read_text(errors='ignore'), qw)}" for s,p,c in top)
+    ctx="\n\n".join(f"=== [[{p.stem}]] ({c}) ===\n{_best_window(p.read_text(errors='ignore'), qw|qa)}" for s,p,c in top)
     return ctx, [p.stem for s,p,c in top]
 
 # ── TOPIC-SPACE ROUTING (SpaceCards) ─────────────────────────────────────────────────────────
