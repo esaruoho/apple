@@ -2709,7 +2709,11 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
 # Boot pane drains it, and a ledger on disk makes it crash-only — a killed pane resumes at the next
 # unsent file instead of re-mailing 300 emails. Pacing is the POINT, not a throttle bolted on: one
 # proper analysis per interval is what keeps the inbox readable and the gateway un-angry.
-BELT_LEDGER = Path.home() / "work" / "convey" / "kb" / "mail-belt"
+# The ledger lives in the SYNCTHING queue, not in convey/kb — kb is tracked, so a belt running on
+# the Mini would dirty the repo on every send and fight the puller. In the queue it is also mirrored
+# to the laptop, so belt progress is readable without SSH (2026-08-12).
+BELT_LEDGER = Path(os.environ.get("FREELLMASK_BELT_LEDGER",
+                                  Path.home() / "work" / "comms" / "queue" / "mail-belt"))
 
 
 def _belt_ledger(name):
