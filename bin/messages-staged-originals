@@ -1,0 +1,289 @@
+#!/usr/bin/env python3
+"""Find the full-quality originals Messages kept when it downscaled what you sent.
+
+Send a photo or video that exceeds what iMessage will transmit and Messages does
+not refuse — it compresses a copy, sends that, and keeps YOUR original on disk,
+attached to the same message. The conversation shows the compressed version. The
+original is never rendered anywhere, never listed by the Storage panel, and
+counted at the *transmitted* size in `attachment.total_bytes`, so every
+size-based tool under-reports it.
+
+That has two consequences, and the second is the one that matters:
+
+  1. Space. These originals are invisible bulk in ~/Library/Messages/Attachments.
+  2. **They are often the only full-quality copy you own.** The recipient got the
+     compressed version. You have the original — filed where you cannot see it,
+     and destroyed silently by "Keep messages > 1 Year" or by deleting the thread.
+
+So this tool defaults to REPORTING, offers RESCUE (copy originals out), and only
+then offers deletion — of the proven tier alone.
+
+Detection. For each attachment whose real on-disk size materially exceeds its
+recorded `total_bytes`, look at the other attachments on the same message:
+
+  A  outgoing, and a companion's real size == this row's total_bytes exactly
+     -> proven: that companion IS what got sent, this is the staged original
+  B  outgoing, and a smaller companion exists on the same message
+     -> very likely the same pattern, without the exact-byte proof
+  C  outgoing, no companion at all
+     -> total_bytes disagrees for some other reason; cause unproven
+  D  incoming
+     -> not staged by you. A different phenomenon. Never auto-delete these.
+
+Usage:
+  messages-staged-originals                     tiered summary
+  messages-staged-originals --tier B            list one tier
+  messages-staged-originals --min-mb N          size floor (default 1)
+  messages-staged-originals --rescue DIR        copy originals out, keep conversations
+  messages-staged-originals --rescue DIR --tier B
+  messages-staged-originals --delete-proven     Trash tier A only (never rm)
+  messages-staged-originals --json              machine-readable
+"""
+import argparse
+import json
+import os
+import shutil
+import sqlite3
+import stat
+import subprocess
+import sys
+import unicodedata
+from collections import defaultdict
+
+HOME = os.path.expanduser("~")
+ATTACH = os.path.join(HOME, "Library/Messages/Attachments")
+CHAT_DB = os.path.join(HOME, "Library/Messages/chat.db")
+
+TIERS = {
+    "A": "outgoing, a companion's real size == this row's total_bytes (proven staged original)",
+    "B": "outgoing, a smaller companion on the same message (very likely staged)",
+    "C": "outgoing, no companion (total_bytes disagrees; cause unproven)",
+    "D": "incoming (not staged by you — different cause, never auto-delete)",
+}
+
+
+def key(path):
+    """Attachment identity is its GUID directory — see wiki/concepts/messages-attachment-store.md.
+
+    Filenames cannot be joined on: case differs between DB and disk, APFS hands
+    back NFD where the DB holds NFC, and the DB often keeps the sender's transfer
+    name while the file landed under its own UUID in the same directory.
+    """
+    return unicodedata.normalize("NFC", os.path.dirname(path)).casefold()
+
+
+def disk_sizes():
+    out = {}
+    for root, _dirs, names in os.walk(ATTACH):
+        total = 0
+        for name in names:
+            try:
+                st = os.lstat(os.path.join(root, name))
+            except OSError:
+                continue
+            if stat.S_ISREG(st.st_mode):
+                total += st.st_size
+        if total:
+            out[unicodedata.normalize("NFC", root).casefold()] = total
+    return out
+
+
+def human(b):
+    for u in ("B", "KB", "MB", "GB"):
+        if abs(b) < 1024 or u == "GB":
+            return f"{b:,.1f} {u}"
+        b /= 1024.0
+
+
+def scan(min_bytes):
+    if not os.path.exists(CHAT_DB):
+        sys.exit("error: chat.db not found")
+    sizes = disk_sizes()
+    con = sqlite3.connect(f"file:{CHAT_DB}?mode=ro", uri=True)
+    con.text_factory = lambda b: b.decode("utf-8", "replace")
+    sql = """
+        SELECT a.ROWID, a.filename, a.total_bytes, a.is_outgoing, a.mime_type,
+               maj.message_id, m.is_from_me,
+               datetime(m.date/1000000000 + 978307200,'unixepoch','localtime'),
+               COALESCE(NULLIF(c.display_name,''), c.chat_identifier)
+        FROM attachment a
+        JOIN message_attachment_join maj ON maj.attachment_id = a.ROWID
+        JOIN message m ON m.ROWID = maj.message_id
+        LEFT JOIN chat_message_join cmj ON cmj.message_id = m.ROWID
+        LEFT JOIN chat c ON c.ROWID = cmj.chat_id
+    """
+    by_msg = defaultdict(list)
+    for aid, fn, tb, out, mime, mid, from_me, when, chat in con.execute(sql):
+        if not fn:
+            continue
+        p = os.path.join(HOME, fn[2:]) if fn.startswith("~/") else fn
+        by_msg[mid].append({
+            "id": aid, "path": p, "total_bytes": tb or 0, "outgoing": bool(out or from_me),
+            "mime": mime or "", "disk": sizes.get(key(p), 0), "when": when or "",
+            "chat": chat or "", "name": os.path.basename(p),
+        })
+    con.close()
+
+    found = []
+    for _mid, atts in by_msg.items():
+        for a in atts:
+            # Material disagreement only: 1.5x and above the size floor.
+            if a["disk"] <= max(a["total_bytes"], 1) * 1.5 or a["disk"] < min_bytes:
+                continue
+            others = [b for b in atts if b["id"] != a["id"]]
+            exact = [b for b in others if a["total_bytes"] > 0 and b["disk"] == a["total_bytes"]]
+            smaller = [b for b in others if b["disk"] < a["disk"]]
+            if not a["outgoing"]:
+                tier = "D"
+                sent_as = None
+            elif exact:
+                tier, sent_as = "A", exact[0]
+            elif smaller:
+                # Which sibling was actually transmitted? total_bytes is the
+                # transmitted size, so the companion closest to it is the best
+                # guess. Picking the largest sibling instead surfaces thumbnails
+                # and unrelated co-attachments and reports them as "what they
+                # received", which is wrong. This is a guess either way — only
+                # tier A carries proof.
+                tier = "B"
+                sent_as = min(smaller, key=lambda b: abs(b["disk"] - a["total_bytes"])) \
+                    if a["total_bytes"] else max(smaller, key=lambda b: b["disk"])
+            else:
+                tier, sent_as = "C", None
+            a["tier"] = tier
+            a["sent_as"] = {"name": sent_as["name"], "disk": sent_as["disk"],
+                            "mime": sent_as["mime"]} if sent_as else None
+            a["ratio"] = a["disk"] / a["total_bytes"] if a["total_bytes"] else None
+            found.append(a)
+    found.sort(key=lambda e: -e["disk"])
+    return found
+
+
+def show(entries, tier=None, limit=40):
+    groups = defaultdict(list)
+    for e in entries:
+        groups[e["tier"]].append(e)
+
+    if tier is None:
+        print("Full-quality originals Messages kept after downscaling what you sent.\n")
+        for t in "ABCD":
+            g = groups.get(t, [])
+            gb = sum(e["disk"] for e in g) / 1073741824
+            print(f"  {t}  {len(g):>5,} files  {gb:>6.2f} GB   {TIERS[t]}")
+        rescue = sum(e["disk"] for e in groups.get("A", []) + groups.get("B", [])) / 1073741824
+        print(f"\n  Tiers A+B are your originals: {rescue:.2f} GB that exists in full quality")
+        print("  ONLY here. The other party has the compressed copy. Deleting the thread,")
+        print("  or setting Keep messages to 1 Year, destroys these without warning.")
+        print("\n  Rescue them first:  messages-staged-originals --rescue ~/Desktop/originals")
+        print("  Then inspect a tier: messages-staged-originals --tier B")
+        return
+
+    g = groups.get(tier, [])
+    print(f"Tier {tier} — {TIERS[tier]}")
+    print(f"{len(g):,} files, {sum(e['disk'] for e in g)/1073741824:.2f} GB\n")
+    for e in g[:limit]:
+        print(f"  {human(e['disk']):>11} on disk   {e['name'][:52]}")
+        bits = [f"recorded as {human(e['total_bytes'])}"]
+        if e["sent_as"]:
+            bits.append(f"they received {human(e['sent_as']['disk'])} {e['sent_as']['mime']}")
+        if e["ratio"]:
+            bits.append(f"{e['ratio']:.0f}x")
+        print(f"       {'  ·  '.join(bits)}")
+        print(f"       {e['when']}  →  {e['chat']}")
+    if len(g) > limit:
+        print(f"\n  ... and {len(g)-limit:,} more (--json for all)")
+
+
+def rescue(entries, dest, tiers):
+    """Copy originals out, foldered by conversation, without touching Messages."""
+    picked = [e for e in entries if e["tier"] in tiers]
+    total = sum(e["disk"] for e in picked)
+    free = shutil.disk_usage(os.path.dirname(os.path.abspath(dest)) or "/").free
+    print(f"Rescuing {len(picked):,} originals, {human(total)} → {dest}")
+    if total > free * 0.9:
+        sys.exit(f"error: need {human(total)} but only {human(free)} free. "
+                 "Pick a bigger volume or a narrower --tier.")
+    done = copied = 0
+    for e in picked:
+        sub = "".join(ch if ch.isalnum() or ch in "-_.@+ " else "_" for ch in (e["chat"] or "unknown"))
+        out = os.path.join(dest, sub.strip() or "unknown")
+        os.makedirs(out, exist_ok=True)
+        target = os.path.join(out, e["name"])
+        stem, ext = os.path.splitext(target)
+        i = 2
+        while os.path.exists(target):
+            if os.path.getsize(target) == e["disk"]:
+                break                       # already rescued; don't duplicate
+            target = f"{stem}-{i}{ext}"
+            i += 1
+        if os.path.exists(target) and os.path.getsize(target) == e["disk"]:
+            done += 1
+            continue
+        try:
+            shutil.copy2(e["path"], target)  # copy2 keeps the original timestamps
+            copied += 1
+            done += 1
+        except OSError as exc:
+            print(f"  failed: {e['name']}: {exc}")
+        if done % 25 == 0:
+            print(f"  {done:,}/{len(picked):,}…")
+    print(f"\n  {copied:,} copied, {done - copied:,} already present. Nothing in Messages was touched.")
+    print(f"  Verify the folder, THEN consider deleting from Messages.")
+
+
+def delete_proven(entries):
+    """Trash tier A only. Never rm — these are irreplaceable until proven otherwise."""
+    picked = [e for e in entries if e["tier"] == "A"]
+    if not picked:
+        print("No tier-A files found.")
+        return
+    total = sum(e["disk"] for e in picked)
+    print(f"Moving {len(picked):,} proven staged originals ({human(total)}) to the Trash.")
+    print("The compressed version each conversation actually shows is untouched.\n")
+    freed = 0
+    for e in picked:
+        if not os.path.exists(e["path"]):
+            continue
+        r = subprocess.run(["osascript", "-e",
+                            f'tell application "Finder" to delete POSIX file "{e["path"]}"'],
+                           capture_output=True)
+        if not os.path.exists(e["path"]):
+            freed += e["disk"]
+            print(f"  trashed  {human(e['disk']):>11}  {e['name'][:50]}")
+        else:
+            print(f"  FAILED   {e['name'][:50]}  {r.stderr.decode()[:60]}")
+    print(f"\n  {human(freed)} moved to Trash. Empty the Trash to reclaim it.")
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("--tier", choices=list("ABCD"))
+    ap.add_argument("--min-mb", type=float, default=1.0)
+    ap.add_argument("--limit", type=int, default=40)
+    ap.add_argument("--rescue", metavar="DIR")
+    ap.add_argument("--delete-proven", action="store_true")
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("-h", "--help", action="store_true")
+    args = ap.parse_args()
+
+    if args.help:
+        print(__doc__)
+        return 0
+
+    entries = scan(int(args.min_mb * 1024 * 1024))
+
+    if args.json:
+        print(json.dumps([e for e in entries if not args.tier or e["tier"] == args.tier], indent=2))
+        return 0
+    if args.rescue:
+        rescue(entries, os.path.expanduser(args.rescue), {args.tier} if args.tier else {"A", "B"})
+        return 0
+    if args.delete_proven:
+        delete_proven(entries)
+        return 0
+    show(entries, args.tier, args.limit)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

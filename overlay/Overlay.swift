@@ -76,6 +76,8 @@ final class InkView: NSView {
     /// `points` are its target and its anchor — NOT the box the text ended up in —
     /// so placing the ✕ from the raw points dropped it right on top of the words.
     var paintedRects: [String: CGRect] = [:]
+    /// Chip positions resolved by layoutChips() before anything is painted.
+    var chipLayout: [String: CGRect] = [:]
 
     /// Pointer position, for hover. Without it the ✕ gave no feedback at all: the
     /// crosshair stayed a crosshair and nothing lit up, so there was no way to tell
@@ -152,6 +154,7 @@ final class InkView: NSView {
         NSGraphicsContext.current?.cgContext.setShouldAntialias(true)
         // Filled as objects paint themselves; read afterwards to place the ✕ badges.
         paintedRects.removeAll(keepingCapacity: true)
+        layoutChips()
 
         // Spotlights dim everything outside themselves, so they are painted first and
         // always in full — a spotlight clipped to a dirty rect would leave a bright
@@ -235,7 +238,7 @@ final class InkView: NSView {
         let size: CGFloat = 20
         // Sits just OUTSIDE the corner, overlapping only its own rounding — it
         // never covers content.
-        var badge = CGRect(x: box.maxX - size * 0.35, y: box.maxY - size * 0.35,
+        var badge = CGRect(x: box.maxX - size / 2, y: box.maxY - size / 2,
                            width: size, height: size)
         badge.origin.x = min(max(2, badge.origin.x), bounds.maxX - size - 2)
         badge.origin.y = min(max(2, badge.origin.y), bounds.maxY - size - 2)
@@ -379,13 +382,14 @@ final class InkView: NSView {
             ring.stroke()
 
         case .label:
-            guard let p = o.points.first else { return }
-            paintedRects[o.id] = drawChip(o.text ?? "", at: p, hex: o.colorHex,
-                                          actor: o.actor, centred: true)
+            guard let rect = chipLayout[o.id] else { return }
+            drawChip(o.text ?? "", in: rect, hex: o.colorHex, actor: o.actor)
+            paintedRects[o.id] = rect
 
         case .callout:
             guard o.points.count >= 2 else { return }
-            let target = o.points[0], chip = o.points[1]
+            let target = o.points[0]
+            let chip = chipLayout[o.id].map { CGPoint(x: $0.midX, y: $0.minY) } ?? o.points[1]
             let leader = NSBezierPath()
             leader.move(to: chip)
             leader.line(to: target)
@@ -397,8 +401,10 @@ final class InkView: NSView {
             let r = max(3, CGFloat(o.width))
             NSBezierPath(ovalIn: CGRect(x: target.x - r, y: target.y - r,
                                         width: r * 2, height: r * 2)).fill()
-            paintedRects[o.id] = drawChip(o.text ?? "", at: chip, hex: o.colorHex,
-                                          actor: o.actor, centred: true)
+            if let rect = chipLayout[o.id] {
+                drawChip(o.text ?? "", in: rect, hex: o.colorHex, actor: o.actor)
+                paintedRects[o.id] = rect
+            }
 
         case .image:
             // The generated picture, drawn INTO the box that asked for it.
@@ -409,8 +415,12 @@ final class InkView: NSView {
                 missing.lineWidth = 2
                 missing.setLineDash([5, 4], count: 2, phase: 0)
                 missing.stroke()
-                drawChip("image missing", at: CGPoint(x: o.rect.midX, y: o.rect.midY),
-                         hex: o.colorHex, actor: o.actor, centred: true)
+                let size = chipParts("image missing", actor: o.actor).size
+                drawChip("image missing",
+                         in: CGRect(x: o.rect.midX - size.width / 2,
+                                    y: o.rect.midY - size.height / 2,
+                                    width: size.width, height: size.height),
+                         hex: o.colorHex, actor: o.actor)
                 return
             }
             // Aspect-fit inside the rect so a square generation is not stretched.
@@ -479,53 +489,100 @@ final class InkView: NSView {
     ///
     /// Agent provenance rides along as a small tag rather than a colour convention,
     /// so several agents can annotate at once without a colour war.
-    @discardableResult
-    private func drawChip(_ text: String, at p: CGPoint, hex: String,
-                          actor: String, centred: Bool) -> CGRect {
-        guard !text.isEmpty else { return .null }
-
+    /// Everything needed to lay a chip out, without drawing it.
+    private func chipParts(_ text: String, actor: String)
+        -> (body: NSAttributedString, bodyBox: CGRect, tag: NSAttributedString?,
+            tagSize: NSSize, size: NSSize, maxWidth: CGFloat) {
         let maxWidth: CGFloat = min(420, max(180, bounds.width - 80))
         let paragraph = NSMutableParagraphStyle()
         paragraph.lineBreakMode = .byWordWrapping
-        let font = NSFont.systemFont(ofSize: 13, weight: .medium)
-        let attrs: [NSAttributedString.Key: Any] = [.font: font,
-                                                    .foregroundColor: NSColor.white,
-                                                    .paragraphStyle: paragraph]
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 13, weight: .medium),
+            .foregroundColor: NSColor.white,
+            .paragraphStyle: paragraph]
         let body = NSAttributedString(string: text, attributes: attrs)
         let bodyBox = body.boundingRect(
             with: NSSize(width: maxWidth, height: .greatestFiniteMagnitude),
             options: [.usesLineFragmentOrigin, .usesFontLeading])
 
-        let showActor = !actor.hasPrefix("human:")
-        let tagFont = NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
-        let tagAttrs: [NSAttributedString.Key: Any] = [
-            .font: tagFont, .foregroundColor: NSColor.white.withAlphaComponent(0.65)]
-        let tagSize = showActor
-            ? (actor as NSString).size(withAttributes: tagAttrs) : NSSize.zero
+        var tag: NSAttributedString?
+        var tagSize = NSSize.zero
+        if !actor.hasPrefix("human:") {
+            let tagAttrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.monospacedSystemFont(ofSize: 9, weight: .regular),
+                .foregroundColor: NSColor.white.withAlphaComponent(0.65)]
+            tag = NSAttributedString(string: actor, attributes: tagAttrs)
+            tagSize = tag!.size()
+        }
+        let size = NSSize(width: max(bodyBox.width, tagSize.width) + 22,
+                          height: bodyBox.height + (tag != nil ? tagSize.height + 3 : 0) + 14)
+        return (body, bodyBox, tag, tagSize, size, maxWidth)
+    }
 
-        let width = max(bodyBox.width, tagSize.width) + 22
-        let height = bodyBox.height + (showActor ? tagSize.height + 3 : 0) + 14
+    /// Place every chip so that NONE of them overlap.
+    ///
+    /// Chips were drawn wherever their anchor fell, so a question and the answer to
+    /// it — anchored to the same region by design — landed on top of each other and
+    /// the reply obscured the question. They are now stacked: each chip keeps its
+    /// anchor if it can, and slides clear if it cannot.
+    private func layoutChips() {
+        chipLayout.removeAll(keepingCapacity: true)
+        var placed: [CGRect] = []
 
-        var x = centred ? p.x - width / 2 : p.x
-        var y = p.y - height / 2
-        // Clamp into the canvas so nothing is ever painted off the edge.
-        x = min(max(6, x), max(6, bounds.maxX - width - 6))
-        y = min(max(6, y), max(6, bounds.maxY - height - 6))
-        let chip = CGRect(x: x, y: y, width: width, height: height)
+        for o in store.objects where o.kind == .label || o.kind == .callout {
+            guard let text = o.text, !text.isEmpty else { continue }
+            let anchor = (o.kind == .callout && o.points.count >= 2)
+                ? o.points[1] : (o.points.first ?? .zero)
+            let size = chipParts(text, actor: o.actor).size
 
-        color(hex).withAlphaComponent(0.94).setFill()
-        NSBezierPath(roundedRect: chip, xRadius: 7, yRadius: 7).fill()
+            func clamped(_ r: CGRect) -> CGRect {
+                CGRect(x: min(max(6, r.minX), max(6, bounds.maxX - size.width - 6)),
+                       y: min(max(6, r.minY), max(6, bounds.maxY - size.height - 6)),
+                       width: size.width, height: size.height)
+            }
+            let wanted = clamped(CGRect(x: anchor.x - size.width / 2,
+                                        y: anchor.y - size.height / 2,
+                                        width: size.width, height: size.height))
+            var rect = wanted
+            let step = size.height + 8
+
+            // Try downwards first (a reply reads as below its question), then up.
+            var attempts = 0
+            while placed.contains(where: { $0.intersects(rect.insetBy(dx: -5, dy: -5)) }),
+                  attempts < 24 {
+                attempts += 1
+                let down = wanted.offsetBy(dx: 0, dy: -step * CGFloat(attempts))
+                let up = wanted.offsetBy(dx: 0, dy: step * CGFloat(attempts))
+                rect = down.minY >= 6 ? clamped(down) : clamped(up)
+            }
+            placed.append(rect)
+            chipLayout[o.id] = rect
+        }
+    }
+
+    /// Draw a chip at an already-decided rect.
+    private func drawChip(_ text: String, in chip: CGRect, hex: String, actor: String) {
+        guard !text.isEmpty else { return }
+        let parts = chipParts(text, actor: actor)
+
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.4)
+        shadow.shadowBlurRadius = 8
+        shadow.shadowOffset = NSSize(width: 0, height: -2)
+        shadow.set()
+        color(hex).withAlphaComponent(0.96).setFill()
+        NSBezierPath(roundedRect: chip, xRadius: 9, yRadius: 9).fill()
+        NSGraphicsContext.restoreGraphicsState()
 
         var textY = chip.minY + 7
-        if showActor {
-            (actor as NSString).draw(at: CGPoint(x: chip.minX + 11, y: textY),
-                                     withAttributes: tagAttrs)
-            textY += tagSize.height + 3
+        if let tag = parts.tag {
+            tag.draw(at: CGPoint(x: chip.minX + 11, y: textY))
+            textY += parts.tagSize.height + 3
         }
-        body.draw(with: CGRect(x: chip.minX + 11, y: textY,
-                               width: maxWidth, height: bodyBox.height),
-                  options: [.usesLineFragmentOrigin, .usesFontLeading])
-        return chip
+        parts.body.draw(with: CGRect(x: chip.minX + 11, y: textY,
+                                     width: parts.maxWidth, height: parts.bodyBox.height),
+                        options: [.usesLineFragmentOrigin, .usesFontLeading])
     }
 
     private func stroke(points: [CGPoint], hex: String, width: Double,
