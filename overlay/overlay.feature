@@ -135,6 +135,31 @@ Feature: A spatial canvas that floats over everything and is invisible until ask
     Then CPU is 0.0% and RSS is 12 MB
     # Nothing polls in P0 — no timer, no run loop work, no window scanning.
 
+  @verified
+  Scenario: A drawn region is captured, read, and answered at the region
+    Given Overlay has the Screen Recording grant
+    When a box is drawn over part of the screen and ⌘Return (or `overlay ask`) fires
+    Then the crop contains the real window content, not the desktop wallpaper
+    And Vision OCR reads it
+    And FoundationModels on the Mini answers
+    And the answer appears as a green callout pointing at that region
+    # Verified 2026-08-12 by inspecting the captured PNG directly, not by trusting
+    # the answer: the crop was a Renoise forum post that was genuinely on screen.
+
+  @verified
+  Scenario: Without the Screen Recording grant it refuses instead of guessing
+    Given the grant is missing
+    Then no capture is taken, an orange callout says why, and Settings opens
+    # macOS returns the wallpaper rather than failing, so a capture-and-hope path
+    # produces a confident answer about the DESKTOP PICTURE. Esa's wallpaper is a
+    # Tesla document scan; that is what the overlay "read" for an entire morning.
+
+  @verified
+  Scenario: The grant survives a rebuild
+    # build.sh signs with the machine's Apple Development identity. Ad-hoc signing
+    # changes the code hash every build, which silently voids the grant while System
+    # Settings still shows the app enabled.
+
   @needs-human
   Scenario: The global hotkey actually fires
     When Ctrl-Opt-Cmd-D is pressed anywhere

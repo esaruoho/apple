@@ -37,7 +37,7 @@ TIMEOUT_OCR = 45
 # transport is blocked (classically: this laptop under Syncthing's minDiskFree
 # guard) a long timeout turns "no answer" into a two-minute hang with a "thinking…"
 # bubble stuck on screen. Fail fast, say why, show the OCR.
-TIMEOUT_MODEL = 30
+TIMEOUT_MODEL = 60
 HEALTH = os.path.expanduser("~/work/comms/queue/fm-health.json")
 HEARTBEAT = os.path.expanduser("~/work/comms/queue/fm-worker-heartbeat.json")
 STALE_AFTER = 120       # seconds; the worker beats every few seconds when alive
