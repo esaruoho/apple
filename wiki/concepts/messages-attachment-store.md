@@ -37,8 +37,30 @@ landed on disk. Verified counter-examples:
 | `…upscayl_16x…png` (copy B) | 5.4 MB | 776.8 MB | 144x |
 
 **Any inventory that sorts by `total_bytes` hides the worst offenders.** Always
-`stat` the filesystem and use the DB purely as a lookup table. This is also why the
-System Settings storage panel can rank things oddly — cross-check it.
+`stat` the filesystem and use the DB purely as a lookup table.
+
+### Apple's own Storage panel is one of the victims
+
+System Settings ▸ General ▸ Storage ▸ Messages **decides what to list using
+`total_bytes`, then displays and sorts by the real on-disk size.** Evidence from
+this Mac, 2026-08-12:
+
+- Every row visible in the panel had `total_bytes` between 233 and 758 MiB.
+- Every genuinely-huge file missing from it had a tiny `total_bytes` — the 776.8 MiB
+  PNG (recorded 5.4 MiB and 0.39 MiB for its two copies), `IMG_6510.MOV` (0.08 MiB),
+  `Tomas Potkulautailee….mp4` (38.1 MiB), `IMG_2051.MOV` (1.45 MiB).
+- The displayed sizes decreased monotonically and matched `stat` output in decimal
+  MB (757.7 MiB shown as 794.5 MB), so display and sort use the filesystem — only
+  the inclusion test uses the DB.
+
+Threshold is bounded by observation to **>38.1 MiB and ≤233.5 MiB** of `total_bytes`;
+100 MB is the natural guess but is not confirmed.
+
+Consequence: **of 53 files ≥100 MB on disk (12.3 GB), the panel showed 27 (4.8 GB)
+and hid 26 (7.4 GB)** — it conceals more than it reveals, and the single largest file
+in the entire store is unreachable through it. Anything hidden this way must be
+deleted from the conversation's ⌘I grid instead. Use `bin/messages-attachments` to
+find out what the panel is not telling you.
 
 ## Trap 2: three independent reasons a filename join fails
 
