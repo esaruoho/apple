@@ -2721,6 +2721,30 @@ BELT_LEDGER = Path(os.environ.get("FREELLMASK_BELT_LEDGER",
                                   Path.home() / "work" / "comms" / "queue" / "mail-belt"))
 
 
+# BOILERPLATE IS NEVER WORTH AN ANALYSIS. Esa, 2026-08-12, after six LICENSE / LICENSE-MIT emails
+# landed: "no license file should ever be analysed". They cost real money (a paid Gemini key was in
+# the chain), they cost a rate-limit slot each, and there is nothing to learn: the analysis of an MIT
+# licence is the MIT licence. Match on NAME, not content — a licence file is identifiable before a
+# single token is spent.
+SKIP_NAMES = {
+    "license", "license-mit", "license.txt", "license.md", "licence", "copying", "copying.lesser",
+    "notice", "unlicense", "code_of_conduct", "code_of_conduct.md", "contributing",
+    "contributing.md", "authors", "patents", "changelog", "changelog.md", "readme",
+    ".gitignore", ".gitattributes", ".stignore", "package-lock.json", "yarn.lock",
+    "requirements.txt", "makefile", "dockerfile", "codeowners", "security.md",
+}
+SKIP_PREFIXES = ("license", "licence", "copying", "code_of_conduct", "code-of-conduct")
+
+
+def is_boilerplate(p) -> bool:
+    """True for files whose analysis would say nothing anyone needs."""
+    name = Path(p).name.lower()
+    stem = Path(p).stem.lower()
+    if name in SKIP_NAMES or stem in SKIP_NAMES:
+        return True
+    return any(stem.startswith(x) or name.startswith(x) for x in SKIP_PREFIXES)
+
+
 def _belt_ledger(name):
     p = BELT_LEDGER / f"{name}.jsonl"
     p.parent.mkdir(parents=True, exist_ok=True)
@@ -2783,8 +2807,15 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
     atexit.register(lambda: shutil.rmtree(lock, ignore_errors=True))
     while True:
         done = belt_done_keys(tag)
-        todo = [p for p in sorted(folder.rglob(pattern))
-                if p.is_file() and str(p.resolve()) not in done]
+        all_found = [p for p in sorted(folder.rglob(pattern))
+                     if p.is_file() and str(p.resolve()) not in done]
+        todo = [p for p in all_found if not is_boilerplate(p)]
+        skipped = [p for p in all_found if is_boilerplate(p)]
+        if skipped and verbose:
+            # Say what was skipped — a silent skip is how a belt starts quietly dropping real work.
+            print(f"🎢 skipping {len(skipped)} boilerplate file(s): "
+                  f"{', '.join(x.name for x in skipped[:6])}"
+                  f"{' …' if len(skipped) > 6 else ''}", flush=True)
         if verbose:
             print(f"🎢 belt[{tag}] {folder} — {len(todo)} waiting, {len(done)} already sent",
                   flush=True)
@@ -2897,6 +2928,10 @@ def main():
         a = ap.parse_args(sys.argv[2:])
         body = a.text or ""
         if a.file:
+            if is_boilerplate(a.file):
+                print(f"✗ refusing to analyse boilerplate: {Path(a.file).name} "
+                      f"(licence/lockfile/etc — nothing to learn, and it costs a real call)")
+                return 1
             body = Path(a.file).expanduser().read_text(errors="replace")
         ok, info = compose_and_send(a.to, a.subject, body[:a.max_chars], source=a.source,
                                     label=a.label, tries=a.tries,
