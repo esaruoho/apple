@@ -28,16 +28,22 @@ Exit 0 with the answer on stdout. Anything on stderr is diagnostics.
 import os
 import subprocess
 import sys
+import shlex
+import time
 
 BIN = os.path.dirname(os.path.realpath(__file__))
 DEFAULT_QUESTION = "What is this, and is anything wrong with it?"
-OCR_LIMIT = 4000        # keep the prompt sane; a screen region is never a novel
+# 4000 characters of OCR made the Mini chew for a minute and then return
+# nothing. A highlighted passage is the thing being asked about, not a corpus.
+OCR_LIMIT = 1200
 TIMEOUT_OCR = 45
 # Short on purpose. The model lives on the Mini across Syncthing, and when that
 # transport is blocked (classically: this laptop under Syncthing's minDiskFree
 # guard) a long timeout turns "no answer" into a two-minute hang with a "thinking…"
 # bubble stuck on screen. Fail fast, say why, show the OCR.
 TIMEOUT_MODEL = 60
+# The direct path is fast or it is broken; there is no slow-but-fine case.
+TIMEOUT_SSH = 30
 HEALTH = os.path.expanduser("~/work/comms/queue/fm-health.json")
 HEARTBEAT = os.path.expanduser("~/work/comms/queue/fm-worker-heartbeat.json")
 STALE_AFTER = 120       # seconds; the worker beats every few seconds when alive
@@ -101,7 +107,6 @@ def model_reachable():
     heartbeat is a Syncthing-mirrored file, so a stale one means either the worker
     stopped or the transport is blocked. Either way, submitting would just hang.
     Returns (ok, reason)."""
-    import time
     try:
         age = time.time() - os.path.getmtime(HEARTBEAT)
     except OSError:
@@ -161,11 +166,41 @@ def ask_model(question, seen, looks):
     system = ("You are a plain-text assistant. Reply with one short English "
               "sentence. Never output JSON, tool calls, function names or braces.")
 
+    # Transport order matters more than anything else here.
+    #
+    # fm-submit goes through the Syncthing queue, which is excellent for deploys and
+    # unbounded for a question: measured at 50s+ and frequently no answer at all,
+    # because the reply file waits behind whatever else is syncing. A direct SSH call
+    # to the same model on the same Mini answers in ~5s. Interactive work gets the
+    # direct path; the queue stays as the fallback for when SSH is unreachable.
+    #
+    # Bounded, BatchMode, absolute path, never backgrounded — the conditions the
+    # cloudcity rule sets for using SSH at all.
+    began = time.time()
+    ok, out = run(["/usr/bin/ssh", "-o", "ConnectTimeout=6", "-o", "BatchMode=yes",
+                   "cloudcity", f"/Users/esaruoho/work/apple/bin/fm --system {shlex.quote(system)} "
+                                f"{shlex.quote(prompt)}"], TIMEOUT_SSH)
+    print(f"overlay-ask: ssh fm took {time.time() - began:.1f}s ok={ok}", file=sys.stderr)
+    if ok and out:
+        answer = clean(out)
+        if not is_machinery(answer):
+            return answer
+
+    # Only fall back to the queue if it is actually alive; otherwise this is a
+    # guaranteed 60-second wait for nothing.
+    fresh, why = model_reachable()
+    if not fresh:
+        print(f"overlay-ask: skipping the queue — {why}", file=sys.stderr)
+        return ""
+
     for tool in ("fm-submit", "fm"):
         path = os.path.join(BIN, tool)
         if not os.path.exists(path):
             continue
+        began = time.time()
         ok, out = run([path, "--system", system, prompt], TIMEOUT_MODEL)
+        print(f"overlay-ask: {tool} took {time.time() - began:.1f}s ok={ok} "
+              f"chars_in={len(prompt)}", file=sys.stderr)
         if ok and out:
             answer = clean(out)
             if not is_machinery(answer):
@@ -204,8 +239,11 @@ def main(argv):
         print("Nothing readable and nothing recognisable in that region.")
         return 0
 
-    reachable, why = model_reachable()
-    answer = ask_model(question, seen, looks) if reachable else ""
+    # The heartbeat describes the SYNCTHING queue, and SSH does not use it. Gating
+    # on it meant a lagging file share disabled the fast direct path too — the
+    # model was up and answering in 4s, and we never called it.
+    answer = ask_model(question, seen, looks)
+    _, why = model_reachable()
     if answer:
         print(answer)
     else:
@@ -214,7 +252,7 @@ def main(argv):
         # what was actually read. The reason is a short tag at the end instead, and
         # the full explanation goes to stderr for whoever is debugging.
         print(f"overlay-ask: {why}", file=sys.stderr)
-        tag = "no model" if why else "model silent"
+        tag = "no model reachable" if why else "model gave no answer"
         if seen:
             print(" ".join(seen.split())[:120] + f"  ⟨{tag}⟩")
         else:

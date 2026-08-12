@@ -1386,6 +1386,7 @@ final class OverlayManager {
         }
         // Same rule as the capture path: never anchor to something the app drew.
         let anchorView = region
+            ?? lastAskedRegion
             ?? canvas.view.store.objects.last(where: {
                    $0.kind != .image && $0.kind != .callout && $0.kind != .label
                }).map { $0.kind.isRectangular ? $0.rect : $0.bounds }
@@ -1396,6 +1397,7 @@ final class OverlayManager {
         let anchorGlobal = anchorView.offsetBy(dx: origin.x, dy: origin.y)
 
         chat?.close()
+        lastAskedRegion = anchorView
         let panel = ChatPanel(anchor: anchorGlobal, context: "Overlay — ask about this region",
                               onSubmit: { [weak self] text in
             guard let self = self else { return }
@@ -1409,6 +1411,11 @@ final class OverlayManager {
             canvas.view.needsDisplay = true
             self.persist()
             self.askLastRegion(question: text, region: anchorView)
+            // Hand the computer back the instant the question is sent. Draw mode
+            // eats every click, so staying in it meant Esa could not use his Mac
+            // until he pressed esc — while waiting on an answer he could not see
+            // the progress of. The marks stay visible; only input goes back.
+            self.setMode(.passthrough)
         }, onCancel: { [weak self] in self?.chat = nil })
         panel.onDismiss = { [weak self] in
             self?.chat = nil
@@ -1427,6 +1434,7 @@ final class OverlayManager {
             self.runTool("/Users/esaruoho/work/apple/bin/overlay-ask",
                          args: [png.path] + (question.map { ["--question", $0] } ?? [])) {
                 output in
+                self.waitTicker?.invalidate(); self.waitTicker = nil
                 canvas.view.store.remove(id: placeholder)
                 canvas.view.store.add(OverlayObject(
                     kind: .callout,
@@ -1526,6 +1534,22 @@ final class OverlayManager {
             canvas.view.store.add(placeholder)
             canvas.view.needsDisplay = true
 
+            // A static "thinking…" for a minute is indistinguishable from a hang.
+            // Count out loud so there is proof it is still working.
+            let began = Date()
+            self.waitTicker?.invalidate()
+            self.waitTicker = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) {
+                [weak self, weak canvas] timer in
+                guard let self = self, let canvas = canvas,
+                      let index = canvas.view.store.objects.firstIndex(where: {
+                          $0.id == placeholder.id }) else {
+                    timer.invalidate(); self?.waitTicker = nil; return
+                }
+                let elapsed = Int(Date().timeIntervalSince(began))
+                self.retext(canvas: canvas, index: index,
+                            to: "\(waiting)  \(elapsed)s")
+            }
+
             body(png, crop, canvas, placeholder.id)
         }
     }
@@ -1586,6 +1610,26 @@ final class OverlayManager {
     /// leak. The collector only exists while something ephemeral is on screen, and
     /// stops itself the moment the last one is gone.
     private var chat: ChatPanel?
+    /// The region of the last question, so a follow-up continues the same
+    /// thread instead of starting somewhere else.
+    private(set) var lastAskedRegion: CGRect?
+    /// Ticks the elapsed-seconds counter on a waiting chip.
+    private var waitTicker: Timer?
+
+    /// Replace one object's text in place. The store holds values, so an edit means
+    /// swapping the element rather than mutating it through a reference.
+    private func retext(canvas: Canvas, index: Int, to text: String) {
+        var objects = canvas.view.store.objects
+        guard objects.indices.contains(index) else { return }
+        var updated = objects[index]
+        updated.text = text
+        let id = updated.id
+        canvas.view.store.remove(id: id)
+        canvas.view.store.add(updated)
+        canvas.view.needsDisplay = true
+        _ = objects
+    }
+
     private var ttlCollector: Timer?
 
     /// Exposed so the self-test can assert that nothing is ticking at idle.
@@ -1641,6 +1685,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var hotKeyRef: EventHotKeyRef?
     private var drawKeyRefs: [EventHotKeyRef] = []
     private var clearHotKeyRef: EventHotKeyRef?
+    private var chatHotKeyRef: EventHotKeyRef?
     private var helpWindow: NSWindow?
     private var inbox: InboxWatcher?
     private var chatIsOpen = false
@@ -1876,6 +1921,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 switch id.id {
                 case 1:  me.toggleDraw()
                 case 3:  me.manager.clearAll()   // ⌃⌥⌘C — always available
+                case 4:  me.manager.openChat(for: nil)  // ⌃⌥⌘T — continue
                 default: me.handleDrawKey(id.id)   // Esc / undo / colours / width
                 }
             }
@@ -1896,6 +1942,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // exists in draw mode and Esc is only armed in draw mode, so from
         // passthrough there was no way out at all. There is now always one key that
         // clears the screen, whatever state the overlay is in.
+        // ⌃⌥⌘T — continue the conversation, armed ALWAYS. After sending a question
+        // the app hands input back, so a follow-up must not require re-entering draw
+        // mode just to reach ⌘T.
+        let chatID = EventHotKeyID(signature: OSType(0x4F564C54), id: 4)   // 'OVLT'
+        let chatStatus = RegisterEventHotKey(UInt32(kVK_ANSI_T), mods, chatID,
+                                             GetApplicationEventTarget(), 0, &chatHotKeyRef)
+        if chatStatus != noErr {
+            NSLog("Overlay: ⌃⌥⌘T registration failed with OSStatus \(chatStatus)")
+        }
+
         let clearID = EventHotKeyID(signature: OSType(0x4F564C43), id: 3)   // 'OVLC'
         let clearStatus = RegisterEventHotKey(UInt32(kVK_ANSI_C), mods, clearID,
                                               GetApplicationEventTarget(), 0, &clearHotKeyRef)
