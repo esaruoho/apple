@@ -1324,8 +1324,11 @@ final class OverlayManager {
             NSLog("Overlay: chat — no canvas on this Space")
             return
         }
+        // Same rule as the capture path: never anchor to something the app drew.
         let anchorView = region
-            ?? canvas.view.store.objects.last.map { $0.kind.isRectangular ? $0.rect : $0.bounds }
+            ?? canvas.view.store.objects.last(where: {
+                   $0.kind != .image && $0.kind != .callout && $0.kind != .label
+               }).map { $0.kind.isRectangular ? $0.rect : $0.bounds }
             ?? CGRect(x: canvas.view.bounds.midX - 150,
                       y: canvas.view.bounds.midY - 80, width: 300, height: 160)
         // Panel coordinates are global; the canvas covers its screen exactly.
@@ -1345,14 +1348,14 @@ final class OverlayManager {
                 text: "you: " + text))
             canvas.view.needsDisplay = true
             self.persist()
-            self.askLastRegion(question: text)
+            self.askLastRegion(question: text, region: anchorView)
         }, onCancel: { [weak self] in self?.chat = nil })
         chat = panel
         panel.present()
     }
 
-    func askLastRegion(question: String? = nil) {
-        captureLastRegion(waiting: "thinking…", waitColor: "#0A84FF") {
+    func askLastRegion(question: String? = nil, region: CGRect? = nil) {
+        captureLastRegion(waiting: "thinking…", waitColor: "#0A84FF", explicit: region) {
             png, region, canvas, placeholder in
             self.runTool("/Users/esaruoho/work/apple/bin/overlay-ask",
                          args: [png.path] + (question.map { ["--question", $0] } ?? [])) {
@@ -1377,17 +1380,30 @@ final class OverlayManager {
     /// The completion runs on the main queue with the crop, the region in view
     /// coordinates, its canvas, and the placeholder's id to replace.
     private func captureLastRegion(waiting: String, waitColor: String,
+                                   explicit: CGRect? = nil,
                                    then body: @escaping (URL, CGRect, Canvas, String) -> Void) {
         guard let canvas = here.first(where: { !$0.view.store.objects.isEmpty })
-                        ?? here.first,
-              let last = canvas.view.store.objects.last(where: { $0.kind != .image
-                                                              && $0.kind != .callout })
-                      ?? canvas.view.store.objects.last else {
+                        ?? here.first else {
             NSLog("Overlay: nothing selected to act on")
             return
         }
 
-        let crop = last.cropRect(in: canvas.view.bounds, pad: 8)
+        let crop: CGRect
+        if let explicit = explicit {
+            // Chat passes the region it was OPENED for. Guessing "the last object"
+            // broke the moment the question label itself became the last object:
+            // the crop was of the label, so every answer was "nothing readable".
+            crop = Geometry.padded(explicit, by: 8, clampedTo: canvas.view.bounds)
+        } else {
+            // Anything the app produced is not a thing to ask about.
+            guard let last = canvas.view.store.objects.last(where: {
+                      $0.kind != .image && $0.kind != .callout && $0.kind != .label
+                  }) ?? canvas.view.store.objects.last else {
+                NSLog("Overlay: nothing selected to act on")
+                return
+            }
+            crop = last.cropRect(in: canvas.view.bounds, pad: 8)
+        }
         guard crop.width > 8, crop.height > 8 else {
             NSLog("Overlay: the region is too small to be worth capturing")
             return
