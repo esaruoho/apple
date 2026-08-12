@@ -36,7 +36,12 @@ FM_HOST   = os.environ.get("FM_FREE_HOST", "http://cloudcitymacmini:3001/v1")
 # sibling variants returned 503, AND it returns its chain-of-thought as content.
 # NOTE it is a THINKING model: ~600 tokens per call go to hidden reasoning that still counts against
 # max_tokens, which is why the section budget scales rather than sitting at 3000.
-FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "gemini-3.6-flash")
+# DEFAULT IS OFF ESA'S OWN KEY (2026-08-12). gemini-3.6-/3.5-flash reach Google AI Studio through
+# HIS key; every other model here uses freellmapi's own provider keys. He flagged cost worry, and
+# spending someone's money is not a default I get to pick — so the default chain is back on the
+# gateway's keys, and 3.6 is one env var away when he wants it:
+#     FREELLMASK_MAIL_MODEL=gemini-3.6-flash
+FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "gemini-3.1-flash-lite")
 # ONE hardcoded model makes the whole belt hostage to one provider's uptime. 2026-08-12: every send
 # failed all day on nemotron-3-super-120b (429, then 502) while gemini-3-flash-preview answered off
 # the SAME gateway with the SAME key in 0.9s. Ten of twelve nemotron variants were returning 503 —
@@ -47,7 +52,7 @@ FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "gemini-3.6-flash")
 # and only behind the leak splitter).
 FM_MODEL_CHAIN = [x.strip() for x in os.environ.get(
     "FREELLMASK_MAIL_MODEL_CHAIN",
-    f"{FM_MODEL},gemini-3.1-flash-lite,free-router,auto").split(",") if x.strip()]
+    f"{FM_MODEL},free-router,auto").split(",") if x.strip()]
 # These mean "this endpoint is unavailable right now" — try the next model rather than waiting.
 FM_DEAD_CODES = (429, 500, 502, 503, 504)
 # Big-context escalation: nemotron holds ~256k tokens. When the assembled context (attachments +
