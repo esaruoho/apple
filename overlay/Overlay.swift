@@ -1384,12 +1384,21 @@ final class OverlayManager {
             NSLog("Overlay: chat — no canvas on this Space")
             return
         }
-        // Same rule as the capture path: never anchor to something the app drew.
-        let anchorView = region
-            ?? lastAskedRegion
-            ?? canvas.view.store.objects.last(where: {
-                   $0.kind != .image && $0.kind != .callout && $0.kind != .label
-               }).map { $0.kind.isRectangular ? $0.rect : $0.bounds }
+        // Precedence, and the order is the whole point:
+        //   1. a region handed in (you clicked Ask… on a specific selection)
+        //   2. the NEWEST thing you drew — if you drew a second rectangle, that is
+        //      the one you mean
+        //   3. only then the previous question's region, for continuing a thread
+        //      when nothing new has been drawn
+        //
+        // lastAskedRegion used to sit at position 2, so once you had asked once,
+        // every later question silently re-asked the first rectangle no matter what
+        // you drew afterwards.
+        let newestDrawn = canvas.view.store.objects.last(where: {
+            $0.kind != .image && $0.kind != .callout && $0.kind != .label
+        }).map { $0.kind.isRectangular ? $0.rect : $0.bounds }
+
+        let anchorView = region ?? newestDrawn ?? lastAskedRegion
             ?? CGRect(x: canvas.view.bounds.midX - 150,
                       y: canvas.view.bounds.midY - 80, width: 300, height: 160)
         // Panel coordinates are global; the canvas covers its screen exactly.
