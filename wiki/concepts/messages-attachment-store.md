@@ -25,10 +25,42 @@ attachments that arrived as part of a multi-part transfer.
 
 The GUID directory — not the filename — is the attachment's durable identity.
 
-## Trap 1: `attachment.total_bytes` lies, sometimes by 8000x
+## Trap 1: `total_bytes` is the TRANSMITTED size, not the file on disk
 
-`chat.db`'s `total_bytes` records the size negotiated at transfer time, not what
-landed on disk. Verified counter-examples:
+**Corrected 2026-08-12.** This page previously said `total_bytes` "lies". It does not.
+It faithfully records **what Messages actually sent**, which is frequently not the file
+sitting on disk.
+
+The proof came from one message. Esa sent an 814,483,067-byte PNG. iMessage would not
+transmit it, so Messages compressed a JPEG, sent that, and kept his original attached to
+the same message:
+
+| Attachment | `is_outgoing` | `total_bytes` | on disk |
+|---|---|---|---|
+| the PNG | 1 | **5,664,632** | 814,483,067 |
+| the JPEG | 0 | 5,664,632 | **5,664,632** |
+
+`total_bytes` on the PNG equals the JPEG's byte count *exactly*. The number was never
+wrong — it was answering a different question.
+
+Consequences, in order of importance:
+
+1. **The original is invisible.** Nothing renders it. The conversation shows the JPEG.
+   Scrolling the transcript to the right date shows no bubble for it, because it was
+   never part of the conversation. Hunting one by eye is impossible — a full day was
+   lost to this before the mechanism was understood.
+2. **It is often your only full-quality copy.** The recipient has the compressed
+   version. You have the original, filed where no UI shows it. `Keep messages ▸ 1 Year`
+   and whole-conversation deletes destroy these silently. On this Mac that is 8.57 GB
+   across 43 conversations, mostly family video.
+3. **Every size-based tool under-reports it**, including Apple's own Storage panel.
+
+Tool: [`bin/messages-staged-originals`](../../bin/messages-staged-originals) — finds
+them in four tiers, rescues before deleting, and only offers deletion of the tier it
+can prove.
+
+Other observed disagreements (cause not always the downscale path — incoming files
+show it too, and those are a separate phenomenon):
 
 | File | DB says | On disk | Error |
 |---|---|---|---|
