@@ -338,7 +338,9 @@ MATERIAL_SECTIONS = (
     "## What holds up\n(3-6 bullets: the parts that are plausible ON THE MATERIAL'S OWN TERMS — "
     "sound method, a measurement actually taken, a mechanism consistent with known physics or with "
     "an open-system reading. Say WHY each holds up, concretely.)\n"
-    "## What is worth checking\n(a MARKDOWN TABLE, exactly these columns: | Claim | Why it needs "
+    "## What is worth checking\n(THIS SECTION MUST BE A MARKDOWN TABLE — a prose answer here is "
+    "rejected and re-asked. Use a real pipe table with a header separator row (|---|---|---|), "
+    "exactly these columns: | Claim | Why it needs "
     "verification | How to verify it |. 3-6 rows. Each 'how' must be a real, specific measurement or "
     "document anyone could actually perform — calorimetry over an hour, both ports metered; a named "
     "paper to pull; a scope measurement with the probe placement stated. No vague 'more research "
@@ -523,11 +525,24 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             found[h] = (t[e:end] or "").strip()
         return found
 
+    # Esa asked for that section as a TABLE — "whats worth checking, needs verification (this was a
+    # table!)". The delivered email came back with it as prose, which loses the whole point: a table
+    # forces one performable verification PER claim instead of a paragraph that can hand-wave. So a
+    # section with a shape requirement is not "held" until it has that shape (2026-08-12).
+    _SHAPE = {"What is worth checking": lambda s: ("|---" in s.replace(" ", "")
+                                                  or s.count("|") >= 6)}
+
     def _substantive(h, body):
         """A heading with nothing under it is not a section — keeping it would let an empty shell
         satisfy the gate forever and ship a hollow email."""
         w = len((body or "").split())
-        return w >= (18 if h in TONE_HEADINGS else 8)
+        if w < (18 if h in TONE_HEADINGS else 8):
+            return False
+        shape = _SHAPE.get(h)
+        if shape and not shape(body or ""):
+            print(f"      ⌗ {h}: wrong shape (needs a markdown table) — re-asking", flush=True)
+            return False
+        return True
 
     def _assemble(have):
         return "\n\n".join(f"## {h}\n\n{have[h]}" for h in required if h in have)
