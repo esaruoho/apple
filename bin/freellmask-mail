@@ -252,9 +252,13 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "plausible-looking ones.")
     voices_on = lens_voices_enabled()
     if viewpoint and voices_on:   # in-corpus (free-energy) → think out loud + speak in four voices, ONE call, no extra roundtrip
-        struct=("\n\nYour reply MUST contain ALL SEVEN of the following markdown headings, in this EXACT order and "
+        # The promised count must MATCH what the template actually asks for: material mode injects four
+        # more sections, so a hardcoded "SEVEN" was telling the model seven while showing it eleven.
+        # A contract that miscounts its own clauses is the reason headings kept going missing.
+        n_head = 2 + len(TONE_HEADINGS) + (len(MATERIAL_HEADINGS) if material else 0)
+        struct=(f"\n\nYour reply MUST contain ALL {n_head} of the following markdown headings, in this EXACT order and "
           "spelling. The FIRST line of your reply MUST be the heading '## Thought about it' — never open with the "
-          "answer, never omit the thinking section, never rename it. A reply missing any of these seven headings is "
+          f"answer, never omit the thinking section, never rename it. A reply missing any of these {n_head} headings is "
           "rejected and regenerated.\n"
           "## Thought about it\n(4-7 sentences of GENUINE reasoning — how you're approaching it, what connects "
           "across the sources, where the tension is. Think out loud, here only.)\n"
@@ -2029,14 +2033,23 @@ def read_chapters(parts, timeout=240, verbose=True):
     for i, (title, body) in enumerate(parts, 1):
         if verbose:
             print(f"  📖 {i}/{len(parts)} {title[:60]} ({len(body):,} chars)", flush=True)
-        try:
-            ans, _used = _fm_call([{"role": "system", "content": CHAPTER_SYSTEM},
-                                   {"role": "user", "content": f"PART {i} OF {len(parts)} — "
-                                                               f"{title}\n\n{body[:24000]}"}],
-                                  max_tokens=1200, temperature=0.2)
-        except Exception as e:
-            ans = ""
-            if verbose: print(f"      ✗ {e}")
+        # A part is a PAGE RANGE of the user's document — losing one silently means the analysis is of a
+        # book with pages torn out. The free gateway 502s intermittently, so retry with a short backoff
+        # before ever admitting a gap (2026-08-12: a 502 dropped pages 10–13 of the Stiffler UEE paper).
+        ans = ""
+        for attempt in range(1, 4):
+            try:
+                ans, _used = _fm_call([{"role": "system", "content": CHAPTER_SYSTEM},
+                                       {"role": "user", "content": f"PART {i} OF {len(parts)} — "
+                                                                   f"{title}\n\n{body[:24000]}"}],
+                                      max_tokens=1200, temperature=0.2)
+            except Exception as e:
+                ans = ""
+                if verbose: print(f"      ✗ {e}{' — retrying' if attempt < 3 else ''}")
+            if (ans or "").strip():
+                break
+            if attempt < 3:
+                time.sleep(6 * attempt)
         ans = (ans or "").strip()
         if ans and not _fm_looks_garbage_local(ans):
             ok += 1
@@ -2202,8 +2215,133 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
         return False, f"send failed: {e}"
 
 
+# ── the belt ────────────────────────────────────────────────────────────────────────────────────
+# Esa, 2026-08-12: "a '300 txt files, one per half an hour to email via proper analysis' belt".
+# Same motion as every other conveyor here: a folder is the interface (drop files in), a visible
+# Boot pane drains it, and a ledger on disk makes it crash-only — a killed pane resumes at the next
+# unsent file instead of re-mailing 300 emails. Pacing is the POINT, not a throttle bolted on: one
+# proper analysis per interval is what keeps the inbox readable and the gateway un-angry.
+BELT_LEDGER = Path.home() / "work" / "convey" / "kb" / "mail-belt"
+
+
+def _belt_ledger(name):
+    p = BELT_LEDGER / f"{name}.jsonl"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    return p
+
+
+def belt_done_keys(tag="default"):
+    keys = set()
+    p = _belt_ledger(f"{tag}-sent")
+    if p.is_file():
+        for line in p.read_text(errors="replace").splitlines():
+            try:
+                keys.add(json.loads(line)["key"])
+            except Exception:
+                pass
+    return keys
+
+
+def belt_record(tag, key, path, ok, info):
+    rec = {"key": key, "path": str(path), "ok": bool(ok), "info": str(info)[:400],
+           "at": time.strftime("%Y-%m-%d %H:%M:%S")}
+    with _belt_ledger(f"{tag}-{'sent' if ok else 'failed'}").open("a") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+
+
+def belt_subject(p: Path) -> str:
+    """The file names itself: a leading '# Title' wins, else the humanised stem."""
+    try:
+        for line in p.read_text(errors="replace").splitlines()[:8]:
+            m = re.match(r"^#\s+(.{4,120})$", line.strip())
+            if m:
+                return m.group(1).strip()
+    except Exception:
+        pass
+    return re.sub(r"[_-]+", " ", p.stem).strip()[:120] or p.name
+
+
+def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", chapters=False,
+             tries=4, limit=0, once=False, verbose=True):
+    """Drain a folder one proper analysis at a time. Returns (n_sent, n_failed)."""
+    folder = Path(folder).expanduser()
+    sent = failed = 0
+    while True:
+        done = belt_done_keys(tag)
+        todo = [p for p in sorted(folder.rglob(pattern))
+                if p.is_file() and str(p.resolve()) not in done]
+        if verbose:
+            print(f"🎢 belt[{tag}] {folder} — {len(todo)} waiting, {len(done)} already sent",
+                  flush=True)
+        if not todo:
+            if once:
+                break
+            time.sleep(every)
+            continue
+        for p in todo:
+            if limit and sent >= limit:
+                if verbose: print(f"🎢 limit {limit} reached", flush=True)
+                return sent, failed
+            key = str(p.resolve())
+            subj = belt_subject(p)
+            if verbose:
+                print(f"\n🎢 [{time.strftime('%H:%M:%S')}] {p.name} → {to}\n   “{subj}”", flush=True)
+            try:
+                body = p.read_text(errors="replace")[:120000]
+                ok, info = compose_and_send(to, subj, body, source=str(p), tries=tries,
+                                            legs_from=str(p), attach=str(p), chapters=chapters,
+                                            space_hint=space, verbose=verbose)
+            except Exception as e:                      # one bad file must never stop the belt
+                ok, info = False, f"belt error: {e}"
+            # A failure is ledgered too, but in the FAILED ledger — so the next pass retries it
+            # instead of the belt silently deciding that file was never worth mailing.
+            belt_record(tag, key, p, ok, info)
+            if ok:
+                sent += 1
+                print(f"   ✅ {info}", flush=True)
+            else:
+                failed += 1
+                print(f"   ✗ {info}", flush=True)
+            if once and limit and sent >= limit:
+                return sent, failed
+            if verbose:
+                print(f"   ⏳ next in {every}s", flush=True)
+            time.sleep(every)
+        if once:
+            break
+    return sent, failed
+
+
 def main():
     cmd = sys.argv[1] if len(sys.argv)>1 else "poll"
+    if cmd == "belt":
+        import argparse
+        ap = argparse.ArgumentParser(prog="freellmask-mail belt",
+                                     description="Email a folder of files, one proper analysis per "
+                                                 "interval, ledger-deduped and resumable.")
+        ap.add_argument("--dir", required=True, help="folder of files to convey")
+        ap.add_argument("--to", required=True)
+        ap.add_argument("--every", type=int, default=1800, help="seconds between emails (default 1800)")
+        ap.add_argument("--tag", default="default", help="ledger name, so belts don't share state")
+        ap.add_argument("--glob", dest="pattern", default="*.txt")
+        ap.add_argument("--space", default="", help="force a space for every item (e.g. free-energy)")
+        ap.add_argument("--chapters", action="store_true", help="chapter-by-chapter read per file")
+        ap.add_argument("--tries", type=int, default=4)
+        ap.add_argument("--limit", type=int, default=0, help="stop after N emails (0 = no limit)")
+        ap.add_argument("--once", action="store_true", help="one pass over the folder, then exit")
+        ap.add_argument("--status", action="store_true", help="print ledger counts and exit")
+        a = ap.parse_args(sys.argv[2:])
+        if a.status:
+            done = belt_done_keys(a.tag)
+            waiting = [p for p in sorted(Path(a.dir).expanduser().rglob(a.pattern))
+                       if p.is_file() and str(p.resolve()) not in done]
+            print(f"belt[{a.tag}] {a.dir}\n  sent    {len(done)}\n  waiting {len(waiting)}\n"
+                  f"  ledger  {_belt_ledger(a.tag + '-sent')}")
+            return 0
+        s, f = belt_run(a.dir, a.to, every=a.every, tag=a.tag, pattern=a.pattern, space=a.space,
+                        chapters=a.chapters, tries=a.tries, limit=a.limit, once=a.once)
+        print(f"\n🎢 belt done: {s} sent, {f} failed")
+        return 0
     if cmd == "compose":
         import argparse
         ap = argparse.ArgumentParser(prog="freellmask-mail compose",
