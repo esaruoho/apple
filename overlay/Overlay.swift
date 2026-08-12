@@ -374,38 +374,60 @@ final class InkView: NSView {
 
     /// A text chip. Agent provenance rides along as a small tag rather than a colour
     /// convention, so several agents can annotate at once without a colour war.
+    /// A text chip that WRAPS and stays on screen.
+    ///
+    /// The first version measured the text on one line and made the chip that wide,
+    /// so a model answer ran straight off the edge of the display and was clipped
+    /// mid-word. Text is now laid out to a maximum width, the height follows the
+    /// wrapped text, and the whole chip is clamped inside the canvas.
+    ///
+    /// Agent provenance rides along as a small tag rather than a colour convention,
+    /// so several agents can annotate at once without a colour war.
     private func drawChip(_ text: String, at p: CGPoint, hex: String,
                           actor: String, centred: Bool) {
         guard !text.isEmpty else { return }
+
+        let maxWidth: CGFloat = min(420, max(180, bounds.width - 80))
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineBreakMode = .byWordWrapping
         let font = NSFont.systemFont(ofSize: 13, weight: .medium)
         let attrs: [NSAttributedString.Key: Any] = [.font: font,
-                                                    .foregroundColor: NSColor.white]
-        let size = (text as NSString).size(withAttributes: attrs)
+                                                    .foregroundColor: NSColor.white,
+                                                    .paragraphStyle: paragraph]
+        let body = NSAttributedString(string: text, attributes: attrs)
+        let bodyBox = body.boundingRect(
+            with: NSSize(width: maxWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading])
 
         let showActor = !actor.hasPrefix("human:")
-        let tag = showActor ? actor : ""
         let tagFont = NSFont.monospacedSystemFont(ofSize: 9, weight: .regular)
         let tagAttrs: [NSAttributedString.Key: Any] = [
             .font: tagFont, .foregroundColor: NSColor.white.withAlphaComponent(0.65)]
-        let tagSize = showActor ? (tag as NSString).size(withAttributes: tagAttrs) : .zero
+        let tagSize = showActor
+            ? (actor as NSString).size(withAttributes: tagAttrs) : NSSize.zero
 
-        let width = max(size.width, tagSize.width) + 20
-        let height = size.height + (showActor ? tagSize.height + 2 : 0) + 12
-        let chip = CGRect(x: centred ? p.x - width / 2 : p.x,
-                          y: p.y - height / 2,
-                          width: width, height: height)
+        let width = max(bodyBox.width, tagSize.width) + 22
+        let height = bodyBox.height + (showActor ? tagSize.height + 3 : 0) + 14
 
-        color(hex).withAlphaComponent(0.92).setFill()
-        NSBezierPath(roundedRect: chip, xRadius: 6, yRadius: 6).fill()
+        var x = centred ? p.x - width / 2 : p.x
+        var y = p.y - height / 2
+        // Clamp into the canvas so nothing is ever painted off the edge.
+        x = min(max(6, x), max(6, bounds.maxX - width - 6))
+        y = min(max(6, y), max(6, bounds.maxY - height - 6))
+        let chip = CGRect(x: x, y: y, width: width, height: height)
 
-        var textY = chip.minY + 6
+        color(hex).withAlphaComponent(0.94).setFill()
+        NSBezierPath(roundedRect: chip, xRadius: 7, yRadius: 7).fill()
+
+        var textY = chip.minY + 7
         if showActor {
-            (tag as NSString).draw(at: CGPoint(x: chip.minX + 10, y: textY),
-                                   withAttributes: tagAttrs)
-            textY += tagSize.height + 2
+            (actor as NSString).draw(at: CGPoint(x: chip.minX + 11, y: textY),
+                                     withAttributes: tagAttrs)
+            textY += tagSize.height + 3
         }
-        (text as NSString).draw(at: CGPoint(x: chip.minX + 10, y: textY),
-                                withAttributes: attrs)
+        body.draw(with: CGRect(x: chip.minX + 11, y: textY,
+                               width: maxWidth, height: bodyBox.height),
+                  options: [.usesLineFragmentOrigin, .usesFontLeading])
     }
 
     private func stroke(points: [CGPoint], hex: String, width: Double) {
@@ -460,8 +482,8 @@ final class InkView: NSView {
         border.stroke()
 
         let text = tool == .region
-            ? "REGION  ·  drag a box over anything  →  Read text here  ·  f = pen  ·  ✕ removes  ·  esc"
-            : "PEN  ·  sketch, then Render drawing  ·  r = box a screen area  ·  ✕ removes  ·  ⌘⌫ clears  ·  esc"
+            ? "REGION  ·  drag a box over anything  →  Read text here  ·  f = pen  ·  ✕ removes  ·  esc = clear + exit"
+            : "PEN  ·  sketch, then Render drawing  ·  r = box a screen area  ·  ✕ removes  ·  esc = clear + exit"
         let attrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .semibold),
             .foregroundColor: NSColor.white,
@@ -621,6 +643,11 @@ final class InkView: NSView {
 
         switch Int(event.keyCode) {
         case kVK_Escape:
+            // Esc wipes the canvas as well as leaving draw mode. Esa pressed it
+            // repeatedly expecting a clean screen and kept getting a screen still
+            // full of marks. Nothing is lost — everything is mirrored to
+            // ~/.overlay/store/session.json.
+            manager?.clearHere()
             manager?.setMode(.passthrough)
             return
         case kVK_ANSI_Z where cmd:
@@ -1279,7 +1306,7 @@ final class OverlayManager {
     /// A model answer is a paragraph; a callout chip is one line. Take the first
     /// sentence-ish chunk so the thing on screen stays readable — the full text is in
     /// the store for anyone who wants it.
-    static func wrap(_ text: String, limit: Int = 110) -> String {
+    static func wrap(_ text: String, limit: Int = 300) -> String {
         let flat = text.replacingOccurrences(of: "\n", with: " ")
             .trimmingCharacters(in: .whitespaces)
         guard flat.count > limit else { return flat }
@@ -1633,7 +1660,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     fileprivate func handleDrawKey(_ id: UInt32) {
         guard manager.mode == .draw else { return }
         switch id {
-        case 2:  manager.setMode(.passthrough)
+        case 2:  manager.clearHere(); manager.setMode(.passthrough)
         case 20: manager.undoHere()
         case 21: manager.redoHere()
         case 22: manager.clearHere()
