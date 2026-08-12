@@ -205,6 +205,24 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
             raise
     return d["choices"][0]["message"]["content"].strip(), d.get("model","?")
 
+def _mlx_alive(timeout=25):
+    """Cheap PREFLIGHT: does the served model actually GENERATE? /v1/models answers in 0.1s even when
+    generation has been dead for hours (measured: HTTP 000 after 600s), so reachability proves
+    nothing. Ask for two tokens and find out in 25s instead of hanging a 300s fill on a dead brain —
+    on a 300-item belt that difference is the whole run (2026-08-12)."""
+    try:
+        body={"model":MLX_MODEL,"messages":[{"role":"user","content":"OK"}],"max_tokens":2}
+        req=urllib.request.Request(MLX_HOST.rstrip('/')+"/chat/completions",
+                                   data=json.dumps(body).encode(),
+                                   headers={"Content-Type":"application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            json.load(r)
+        return True
+    except Exception as e:
+        print(f"      ✗ local brain not generating ({type(e).__name__}) — skipping the local leg",
+              flush=True)
+        return False
+
 def _mlx_call(messages, max_tokens=2200, temperature=0.3, timeout=300):
     """One call to the LOCAL MLX brain. Same shape as _fm_call, no rate limiting to wait out."""
     body={"model":MLX_MODEL,"messages":messages,"max_tokens":max_tokens,"temperature":temperature}
@@ -518,7 +536,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
         # arrived while the gateway sections vanished — the resource was there the whole time.
         miss = [h for h in required if h not in have]
         from_local = []
-        if miss:
+        if miss and _mlx_alive():
             for lattempt in (1, 2):
                 try:
                     print(f"      🖥️ local brain fills {len(miss)} section(s), try {lattempt}/2",
