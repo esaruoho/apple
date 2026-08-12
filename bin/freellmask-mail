@@ -18,7 +18,7 @@ Secrets / config (never in git):
   FM_FREE_HOST       (default cloudcity Mini :3001)
 """
 # FEATURE-CARD >> features/freellmask-mail-anti-loop-and-video-gate.feature
-import base64, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.parse, urllib.request, urllib.error, uuid
+import atexit, base64, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.parse, urllib.request, urllib.error, uuid
 from pathlib import Path
 
 def enc(s):  # message_ids look like <...@email.amazonses.com> — must be URL-encoded in the path
@@ -2266,6 +2266,24 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
     """Drain a folder one proper analysis at a time. Returns (n_sent, n_failed)."""
     folder = Path(folder).expanduser()
     sent = failed = 0
+    # SINGLE INSTANCE, per tag. keelynet-energy-mailer's runner earned this the hard way with an
+    # atomic mkdir lock: two belts on one folder both read "unsent" before either writes its ledger,
+    # so every item gets mailed twice. An atomic mkdir is the check and the claim in one syscall.
+    lock = BELT_LEDGER / f".lock-{tag}"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        lock.mkdir()
+    except FileExistsError:
+        # A pane can be SIGKILLed (they routinely are), and a lock that outlives its owner would
+        # wedge the belt forever — the failure mode is worse than the one it guards against.
+        age = time.time() - lock.stat().st_mtime
+        if age < 6 * 3600:
+            print(f"🎢 belt[{tag}] already running ({lock}, {int(age/60)}m old) — not starting a "
+                  f"second", flush=True)
+            return 0, 0
+        print(f"🎢 belt[{tag}] stale lock ({int(age/3600)}h) — taking it over", flush=True)
+        lock.touch()
+    atexit.register(lambda: shutil.rmtree(lock, ignore_errors=True))
     while True:
         done = belt_done_keys(tag)
         todo = [p for p in sorted(folder.rglob(pattern))
