@@ -1272,18 +1272,45 @@ def wiki_context(question, k_pages=8):
     qa=set(w.lower() for w in re.findall(r'\b[A-Z]{2,6}\b', qtext)) - _WIKI_JUNK - _WIKI_CAPS_JUNK - qw
     if not (qw or qa): return "", []
     apat={w: re.compile(r'\b'+re.escape(w)+r'\b') for w in qa}
-    scored=[]
+    # TF-IDF over the entity corpora, in ONE pass. Plain term-frequency treated "energy" and "mra"
+    # as equally informative, so a mail body (~235 query words) retrieved whatever page was longest
+    # or whatever stub happened to be titled "…-energy". Two observed failures, same root cause:
+    # the Wootan MRA mail returned eight VR/eclipse papers (bulk wins), then six zero-point-energy
+    # transcript stubs (generic word wins). IDF is the fix — a word in most pages carries ~no weight,
+    # a word in few pages carries most of it. df is collected in the same read we already do.
+    docs=[]; df={}; ntotal=0
     for corpus in WIKI_CORPORA:
         ents=WIKI_GRAPHS/corpus/"entities"
         if not ents.exists(): continue
         for p in ents.glob("*.md"):
+            ntotal+=1                      # df is over the WHOLE corpus, not just the matches
             t=p.read_text(errors="ignore").lower()
-            # acronyms weigh 3x: "MRA" is far more discriminating than a generic word like "final",
-            # which otherwise drowns the acronym in any subject line ("MRA Final Word").
-            s=sum(t.count(w) for w in qw) + 3*sum(len(apat[w].findall(t)) for w in qa)
-            if any(w in p.stem for w in qw) or any(apat[w].search(p.stem.replace('-',' ')) for w in qa):
-                s+=25
-            if s: scored.append((s,p,corpus))
+            # acronyms count on word boundaries so "meg" can't match "megawatt"
+            cnt={w:t.count(w) for w in qw if w in t}
+            cnt.update({w:len(apat[w].findall(t)) for w in qa if apat[w].search(t)})
+            cnt={w:c for w,c in cnt.items() if c}
+            if not cnt: continue
+            for w in cnt: df[w]=df.get(w,0)+1
+            docs.append((p,corpus,len(t),cnt))
+    if not docs: return "", []
+    import math
+    # N over the whole corpus, and log(1 + N/(1+df)) so idf stays strictly positive: with the
+    # matches-only denominator a single-term query had df==N, idf collapsed to 0, and every score
+    # went to zero — a bare "MRA" retrieved nothing at all.
+    idf={w: math.log(1.0 + ntotal/(1.0+d)) for w,d in df.items()}
+    scored=[]
+    for p,corpus,tlen,cnt in docs:
+        # acronyms weigh 3x on top of their IDF: "MRA" is the subject handle, not a passing word.
+        s=sum(c*idf[w]*(3.0 if w in qa else 1.0) for w,c in cnt.items())
+        # DENSITY, not bulk: divide by size in ~4KB pages, with a 4KB floor so a one-line stub
+        # can't be inflated by a single lucky hit.
+        s=s/max(1.0,tlen/4000.0)
+        # the slug naming the subject is a far stronger signal than any body frequency — but only
+        # when the naming word is itself distinctive ("mra", not "energy").
+        stem=p.stem.replace('-',' ')
+        if any(idf.get(w,0)>1.0 and (w in p.stem or apat.get(w) and apat[w].search(stem)) for w in cnt):
+            s+=25
+        if s>0: scored.append((s,p,corpus))
     scored.sort(key=lambda x:x[0], reverse=True)
     if not scored or scored[0][0] < 6: return "", []      # off-corpus → no augmentation (still researched)
     top=scored[:k_pages]
