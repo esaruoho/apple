@@ -85,30 +85,17 @@ def model_fresh():
 
 
 def distil(seen, labels):
-    """Turn what is in the region into a short image prompt.
+    """The prompt is what is actually in the region — nothing invented.
 
-    Uses the on-device LLM when it is reachable, because raw OCR of a UI is full
-    of noise that makes a poor generation prompt. Falls back to the raw text,
-    which is imperfect but never blocks the generation."""
+    This used to ask FoundationModels to "write ONE short vivid image-generation
+    prompt" from the OCR. Esa boxed the words "not against my own plan" and got a
+    picture of a TRUCK, because the model had to invent a subject and did. An
+    image generated from words you did not write and cannot see is worthless.
+
+    Now: the region's own text is the prompt, verbatim. If there is no text, the
+    classifier labels are, and if there is neither there is nothing to make a
+    picture of and we say so instead of guessing."""
     raw = seen or ", ".join(labels)
-    if not raw:
-        return ""
-    if not model_fresh():
-        print("overlay-imagine: FM bridge stale — using the raw region text as the "
-              "prompt", file=sys.stderr)
-        return " ".join(raw.split())[:PROMPT_LIMIT]
-
-    ask = ("Below is text and labels read from a region of a screen that someone "
-           "selected because they want a picture of it.\n\n"
-           f"--- text ---\n{seen[:1500] or '(none)'}\n"
-           f"--- looks like ---\n{', '.join(labels) or '(none)'}\n--- end ---\n\n"
-           "Write ONE short vivid image-generation prompt (under 20 words) for what "
-           "this describes. Output only the prompt, no preamble, no quotes.")
-    ok, out = run([os.path.join(BIN, "fm-submit"), ask], TIMEOUT_MODEL)
-    if ok and out:
-        return " ".join(out.split())[:PROMPT_LIMIT]
-    print(f"overlay-imagine: FM gave no prompt ({out}) — using raw text",
-          file=sys.stderr)
     return " ".join(raw.split())[:PROMPT_LIMIT]
 
 

@@ -708,6 +708,9 @@ final class InkView: NSView {
         if let r = askButtonRect, r.contains(p) { return true }
         if let r = makeButtonRect, r.contains(p) { return true }
         if let r = chatButtonRect, r.contains(p) { return true }
+        if store.objects.contains(where: { $0.kind == .image && $0.rect.contains(p) }) {
+            return true
+        }
         return false
     }
 
@@ -726,6 +729,14 @@ final class InkView: NSView {
             askableRegion = nil
             needsDisplay = true
             manager?.persist()
+            return
+        }
+        // Click the picture to open it properly. A 340pt thumbnail on the desktop
+        // is a preview, not the artefact — the file is what you keep.
+        if let hit = store.objects.last(where: {
+            $0.kind == .image && $0.rect.contains(p) && $0.imagePath != nil }),
+           let path = hit.imagePath {
+            NSWorkspace.shared.open(URL(fileURLWithPath: path))
             return
         }
         if let button = chatButtonRect, button.contains(p) {
@@ -831,7 +842,10 @@ final class InkView: NSView {
             // repeatedly expecting a clean screen and kept getting a screen still
             // full of marks. Nothing is lost — everything is mirrored to
             // ~/.overlay/store/session.json.
-            manager?.clearScratchHere()
+            // Esc means "clean up and give me my screen back", including finished
+            // pictures. Renders survive being made one after another — only esc
+            // removes them — so both of Esa's complaints hold at once.
+            manager?.clearHere()
             manager?.setMode(.passthrough)
             return
         case kVK_ANSI_Z where cmd:
@@ -1321,9 +1335,10 @@ final class OverlayManager {
                                || canvasFrame!.intersects(o.kind == .box ? o.rect : o.bounds)) {
                         canvas.view.store.remove(id: o.id)
                     }
+                    let box = OverlayManager.placement(for: frame, in: canvas.view.bounds)
                     canvas.view.store.add(OverlayObject(
                         kind: .image,
-                        points: [frame.origin, CGPoint(x: frame.maxX, y: frame.maxY)],
+                        points: [box.origin, CGPoint(x: box.maxX, y: box.maxY)],
                         colorHex: "#AF52DE", width: 2, actor: "agent:imagine",
                         lifetime: .session,
                         anchor: OverlayAnchor(type: .screen), imagePath: path))
@@ -1350,10 +1365,13 @@ final class OverlayManager {
                 canvas.view.store.remove(id: placeholder)
                 let path = output.split(separator: "\n").last.map(String.init) ?? ""
                 if FileManager.default.fileExists(atPath: path) {
+                    // Same minimum-size rule as every other generation path — this
+                    // was the one that was missed, so a small selection still
+                    // produced a postage stamp.
+                    let box = OverlayManager.placement(for: region, in: canvas.view.bounds)
                     canvas.view.store.add(OverlayObject(
                         kind: .image,
-                        points: [region.origin,
-                                 CGPoint(x: region.maxX, y: region.maxY)],
+                        points: [box.origin, CGPoint(x: box.maxX, y: box.maxY)],
                         colorHex: "#AF52DE", width: 2, actor: "agent:imagine",
                         lifetime: .session,
                         anchor: OverlayAnchor(type: .screen), imagePath: path))
@@ -1376,7 +1394,7 @@ final class OverlayManager {
     /// Open the typing field for a region, then run the ask with what was typed.
     /// The question is kept on screen above the answer so the pair reads as an
     /// exchange rather than a bare pronouncement.
-    func openChat(for region: CGRect?) {
+    func openChat(for region: CGRect?, purpose: ChatPanel.Purpose = .ask) {
         // Canvases are created lazily on first use, so asking to chat before ever
         // entering draw mode found nothing and returned in silence.
         ensureCanvasesHere()
@@ -1407,10 +1425,9 @@ final class OverlayManager {
 
         chat?.close()
         lastAskedRegion = anchorView
-        let panel = ChatPanel(anchor: anchorGlobal, context: "Overlay — ask about this region",
+        let panel = ChatPanel(anchor: anchorGlobal, purpose: purpose,
                               onSubmit: { [weak self] text in
             guard let self = self else { return }
-            // Show the question immediately, anchored to the same region.
             canvas.view.store.add(OverlayObject(
                 kind: .label,
                 points: [CGPoint(x: anchorView.midX, y: anchorView.maxY + 34)],
@@ -1419,7 +1436,14 @@ final class OverlayManager {
                 text: "you: " + text))
             canvas.view.needsDisplay = true
             self.persist()
-            self.askLastRegion(question: text, region: anchorView)
+            switch purpose {
+            case .ask:
+                self.askLastRegion(question: text, region: anchorView)
+            case .imagine:
+                // Type words, get a picture. No screenshot, no OCR, no invention —
+                // the words ARE the prompt and the picture lands in the region.
+                self.imagineFromText(text, region: anchorView, canvas: canvas)
+            }
             // Hand the computer back the instant the question is sent. Draw mode
             // eats every click, so staying in it meant Esa could not use his Mac
             // until he pressed esc — while waiting on an answer he could not see
@@ -1435,6 +1459,77 @@ final class OverlayManager {
         // keystroke is still eaten.
         onChatVisible?(true)
         panel.present()
+    }
+
+    /// Where a generated picture should go.
+    ///
+    /// Placing it in the drawn region exactly meant a small selection produced a
+    /// postage stamp you could not see. A picture has a minimum useful size; it
+    /// grows from the centre of the region and is clamped to the canvas.
+    static func placement(for region: CGRect, in bounds: CGRect,
+                          minimum: CGFloat = 340) -> CGRect {
+        let side = max(minimum, max(region.width, region.height))
+        let capped = min(side, min(bounds.width, bounds.height) - 40)
+        var rect = CGRect(x: region.midX - capped / 2, y: region.midY - capped / 2,
+                          width: capped, height: capped)
+        rect.origin.x = min(max(bounds.minX + 10, rect.minX), bounds.maxX - capped - 10)
+        rect.origin.y = min(max(bounds.minY + 10, rect.minY), bounds.maxY - capped - 10)
+        return rect
+    }
+
+    /// Generate a picture from typed words and place it in `region`.
+    func imagineFromText(_ prompt: String, region: CGRect, canvas: Canvas) {
+        let waiting = OverlayObject(
+            kind: .callout,
+            points: [CGPoint(x: region.midX, y: region.midY),
+                     CGPoint(x: region.midX, y: region.maxY + 46)],
+            colorHex: "#AF52DE", width: 3, actor: "agent:imagine",
+            lifetime: .session, anchor: OverlayAnchor(type: .screen),
+            text: "drawing \"\(prompt.prefix(40))\"…")
+        canvas.view.store.add(waiting)
+        canvas.view.needsDisplay = true
+
+        // A blank crop file is enough: --from-drawing is off and --prompt wins, so
+        // the tool never reads the image. Passing the region keeps one code path.
+        let placeholderPNG = OverlayPaths.asks.appendingPathComponent("text-prompt.png")
+        try? FileManager.default.createDirectory(at: OverlayPaths.asks,
+                                                 withIntermediateDirectories: true)
+        if !FileManager.default.fileExists(atPath: placeholderPNG.path) {
+            let blank = NSImage(size: NSSize(width: 8, height: 8))
+            blank.lockFocus(); NSColor.white.setFill()
+            NSBezierPath(rect: NSRect(x: 0, y: 0, width: 8, height: 8)).fill()
+            blank.unlockFocus()
+            if let tiff = blank.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
+               let png = rep.representation(using: .png, properties: [:]) {
+                try? png.write(to: placeholderPNG)
+            }
+        }
+
+        runTool("/Users/esaruoho/work/apple/bin/overlay-imagine",
+                args: [placeholderPNG.path, "--prompt", prompt]) { output in
+            canvas.view.store.remove(id: waiting.id)
+            let path = output.split(separator: "\n").last.map(String.init) ?? ""
+            if FileManager.default.fileExists(atPath: path) {
+                let box = OverlayManager.placement(for: region, in: canvas.view.bounds)
+                canvas.view.store.add(OverlayObject(
+                    kind: .image,
+                    points: [box.origin, CGPoint(x: box.maxX, y: box.maxY)],
+                    colorHex: "#AF52DE", width: 2, actor: "agent:imagine",
+                    lifetime: .session, anchor: OverlayAnchor(type: .screen),
+                    imagePath: path))
+            } else {
+                canvas.view.store.add(OverlayObject(
+                    kind: .callout,
+                    points: [CGPoint(x: region.midX, y: region.midY),
+                             CGPoint(x: region.midX, y: region.maxY + 46)],
+                    colorHex: "#FF9F0A", width: 3, actor: "agent:imagine",
+                    lifetime: .session, anchor: OverlayAnchor(type: .screen),
+                    text: OverlayManager.wrap(output)))
+            }
+            canvas.view.needsDisplay = true
+            self.persist()
+        }
+        setMode(.passthrough)
     }
 
     func askLastRegion(question: String? = nil, region: CGRect? = nil) {
@@ -1695,6 +1790,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var drawKeyRefs: [EventHotKeyRef] = []
     private var clearHotKeyRef: EventHotKeyRef?
     private var chatHotKeyRef: EventHotKeyRef?
+    private var imagineHotKeyRef: EventHotKeyRef?
     private var helpWindow: NSWindow?
     private var inbox: InboxWatcher?
     private var chatIsOpen = false
@@ -1931,6 +2027,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 case 1:  me.toggleDraw()
                 case 3:  me.manager.clearAll()   // ⌃⌥⌘C — always available
                 case 4:  me.manager.openChat(for: nil)  // ⌃⌥⌘T — continue
+                case 5:  me.manager.openChat(for: nil, purpose: .imagine)  // ⌃⌥⌘I
                 default: me.handleDrawKey(id.id)   // Esc / undo / colours / width
                 }
             }
@@ -1959,6 +2056,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                              GetApplicationEventTarget(), 0, &chatHotKeyRef)
         if chatStatus != noErr {
             NSLog("Overlay: ⌃⌥⌘T registration failed with OSStatus \(chatStatus)")
+        }
+
+        // ⌃⌥⌘I — type a description, get a picture. Armed always.
+        let imgID = EventHotKeyID(signature: OSType(0x4F564C49), id: 5)   // 'OVLI'
+        let imgStatus = RegisterEventHotKey(UInt32(kVK_ANSI_I), mods, imgID,
+                                            GetApplicationEventTarget(), 0, &imagineHotKeyRef)
+        if imgStatus != noErr {
+            NSLog("Overlay: ⌃⌥⌘I registration failed with OSStatus \(imgStatus)")
         }
 
         let clearID = EventHotKeyID(signature: OSType(0x4F564C43), id: 3)   // 'OVLC'
@@ -2029,7 +2134,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     fileprivate func handleDrawKey(_ id: UInt32) {
         guard manager.mode == .draw else { return }
         switch id {
-        case 2:  manager.clearScratchHere(); manager.setMode(.passthrough)
+        case 2:  manager.clearHere(); manager.setMode(.passthrough)
         case 20: manager.undoHere()
         case 21: manager.redoHere()
         case 22: manager.clearHere()
@@ -2089,7 +2194,21 @@ final class ChatPanel: NSPanel, NSTextFieldDelegate {
 
     override var canBecomeKey: Bool { true }
 
-    init(anchor: CGRect, question: String = "", context: String,
+    enum Purpose {
+        case ask, imagine
+        var title: String { self == .ask ? "Overlay — ask about this region"
+                                         : "Overlay — describe an image" }
+        var hint: String {
+            self == .ask ? "Ask about this region  ·  ⏎ send  ·  esc cancel"
+                         : "Describe a picture to make  ·  ⏎ generate  ·  esc cancel"
+        }
+        var placeholder: String {
+            self == .ask ? "What is this? What's wrong here? Explain it…"
+                         : "a red truck in the rain, watercolour…"
+        }
+    }
+
+    init(anchor: CGRect, question: String = "", purpose: Purpose = .ask,
          onSubmit: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
         self.onSubmit = onSubmit
         self.onCancel = onCancel
@@ -2099,18 +2218,18 @@ final class ChatPanel: NSPanel, NSTextFieldDelegate {
                    styleMask: [.titled, .closable, .utilityWindow],
                    backing: .buffered, defer: false)
 
-        title = context
+        title = purpose.title
         isFloatingPanel = true
         level = .floating
         hidesOnDeactivate = false
         isReleasedWhenClosed = false
         collectionBehavior = [.fullScreenAuxiliary]
 
-        let label = NSTextField(labelWithString: "Ask about this region  ·  ⏎ send  ·  esc cancel")
+        let label = NSTextField(labelWithString: purpose.hint)
         label.font = .systemFont(ofSize: 11)
         label.textColor = .secondaryLabelColor
 
-        field.placeholderString = "What is this? What's wrong here? Explain it…"
+        field.placeholderString = purpose.placeholder
         field.stringValue = question
         field.font = .systemFont(ofSize: 14)
         field.bezelStyle = .roundedBezel
