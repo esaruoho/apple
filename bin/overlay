@@ -20,6 +20,8 @@ P1 verbs — the agent side:
     overlay kinds                               what can be posted
     overlay clear [--actor A]                   remove all marks, or one actor's
     overlay draw                                toggle draw mode
+    overlay imagine [--prompt "..."]            generate a picture from the last
+                                                region and draw it INTO the box
     overlay ask [--question "..."]              crop the LAST shape you drew,
                                                 OCR it, ask a model, and post
                                                 the answer at that region
@@ -321,6 +323,17 @@ def cmd_ask(argv):
     return rc
 
 
+def cmd_imagine(argv):
+    """Generate a picture from the last selected region and drop it INTO that box."""
+    if not running():
+        print("Overlay is not running.", file=sys.stderr)
+        return 1
+    prompt = _flag(argv, "--prompt", "") or ""
+    rc = control("com.esaruoho.overlay.imagine", prompt)
+    print("imagining\u2026 Image Playground takes a while; the picture lands in the box.")
+    return rc
+
+
 def cmd_draw():
     if not running():
         print("Overlay is not running.", file=sys.stderr)
@@ -353,6 +366,8 @@ def main(argv):
         return cmd_draw()
     if verb == "ask":
         return cmd_ask(argv)
+    if verb == "imagine":
+        return cmd_imagine(argv)
     print(f"unknown verb: {verb}\n", file=sys.stderr)
     print(__doc__, file=sys.stderr)
     return 2

@@ -53,6 +53,19 @@ final class InkView: NSView {
     /// an in-progress drag can never be undone, saved, or shipped to an agent.
     private var live: [CGPoint] = []
 
+    /// What a drag does. `.region` — the default — selects a rectangle, because the
+    /// primary gesture of this app is "this bit", not "draw me a picture". `f`
+    /// switches to freehand ink.
+    enum Tool { case region, ink }
+    var tool: Tool = .region
+
+    /// The last selected rectangle, and the on-screen buttons acting on it. Buttons
+    /// are painted by draw() and hit-tested by mouseDown, so they are always where
+    /// they look like they are.
+    var askableRegion: CGRect?
+    var askButtonRect: CGRect?
+    var makeButtonRect: CGRect?
+
     var colorHex = Hex.palette[0]
     var strokeWidth: Double = 3
     var displayName = ""
@@ -99,10 +112,82 @@ final class InkView: NSView {
         }
 
         if !live.isEmpty {
-            stroke(points: live, hex: colorHex, width: strokeWidth)
+            if tool == .region, live.count >= 2 {
+                drawMarquee(Geometry.bounds([live[0], live[live.count - 1]]))
+            } else {
+                stroke(points: live, hex: colorHex, width: strokeWidth)
+            }
         }
 
+        // The action buttons live above everything, including the mode chrome.
+        askButtonRect = nil; makeButtonRect = nil
+        if mode == .draw, let region = askableRegion { drawRegionActions(for: region) }
+
         if mode == .draw { drawModeChrome() }
+    }
+
+    /// The live selection rectangle: dashed, so it reads as "I am choosing a region"
+    /// rather than "I am drawing a rectangle you will have to erase".
+    private func drawMarquee(_ rect: CGRect) {
+        color(colorHex).withAlphaComponent(0.12).setFill()
+        NSBezierPath(rect: rect).fill()
+        let path = NSBezierPath(rect: rect)
+        path.lineWidth = 2
+        path.setLineDash([6, 4], count: 2, phase: 0)
+        color(colorHex).setStroke()
+        path.stroke()
+
+        let size = "\(Int(rect.width)) × \(Int(rect.height))"
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .medium),
+            .foregroundColor: NSColor.white]
+        let measured = (size as NSString).size(withAttributes: attrs)
+        let tag = CGRect(x: rect.minX, y: rect.maxY + 4,
+                         width: measured.width + 12, height: measured.height + 6)
+        NSColor.black.withAlphaComponent(0.75).setFill()
+        NSBezierPath(roundedRect: tag, xRadius: 4, yRadius: 4).fill()
+        (size as NSString).draw(at: CGPoint(x: tag.minX + 6, y: tag.minY + 3),
+                                withAttributes: attrs)
+    }
+
+    /// The two things you can do with a selected region, as real clickable buttons.
+    ///
+    /// Both were keystrokes before, with nothing on screen to suggest they existed —
+    /// Esa selected a region and reasonably concluded nothing could happen next.
+    ///
+    ///   Ask about this   crop → Vision OCR → FoundationModels → answer at the region
+    ///   Make an image    crop → prompt → Image Playground → picture INTO the region
+    private func drawRegionActions(for region: CGRect) {
+        let titles = ["Ask about this  ⌘⏎", "Make an image  ⌥⏎"]
+        let font = NSFont.systemFont(ofSize: 13, weight: .semibold)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font,
+                                                    .foregroundColor: NSColor.white]
+        let sizes = titles.map { ($0 as NSString).size(withAttributes: attrs) }
+        let widths = sizes.map { $0.width + 26 }
+        let height = sizes[0].height + 14
+        let gap: CGFloat = 8
+        let total = widths.reduce(0, +) + gap
+
+        // Prefer just below the region; flip above if that would fall off screen.
+        var y = region.minY - height - 8
+        if y < 8 { y = min(bounds.maxY - height - 8, region.maxY + 8) }
+        var x = min(max(8, region.midX - total / 2), bounds.maxX - total - 8)
+
+        let fills = [NSColor(srgbRed: 0.04, green: 0.52, blue: 1.0, alpha: 0.97),
+                     NSColor(srgbRed: 0.68, green: 0.32, blue: 0.87, alpha: 0.97)]
+        for (index, title) in titles.enumerated() {
+            let button = CGRect(x: x, y: y, width: widths[index], height: height)
+            fills[index].setFill()
+            NSBezierPath(roundedRect: button, xRadius: 8, yRadius: 8).fill()
+            let edge = NSBezierPath(roundedRect: button, xRadius: 8, yRadius: 8)
+            edge.lineWidth = 1
+            NSColor.white.withAlphaComponent(0.35).setStroke()
+            edge.stroke()
+            (title as NSString).draw(at: CGPoint(x: button.minX + 13, y: button.minY + 7),
+                                     withAttributes: attrs)
+            if index == 0 { askButtonRect = button } else { makeButtonRect = button }
+            x += widths[index] + gap
+        }
     }
 
     /// How much of the canvas an object actually covers, including its stroke width
@@ -172,6 +257,34 @@ final class InkView: NSView {
             NSBezierPath(ovalIn: CGRect(x: target.x - r, y: target.y - r,
                                         width: r * 2, height: r * 2)).fill()
             drawChip(o.text ?? "", at: chip, hex: o.colorHex, actor: o.actor, centred: true)
+
+        case .image:
+            // The generated picture, drawn INTO the box that asked for it.
+            guard let path = o.imagePath, let img = NSImage(contentsOfFile: path) else {
+                // Never leave a silent empty frame: say the file is missing.
+                color(o.colorHex).setStroke()
+                let missing = NSBezierPath(roundedRect: o.rect, xRadius: 6, yRadius: 6)
+                missing.lineWidth = 2
+                missing.setLineDash([5, 4], count: 2, phase: 0)
+                missing.stroke()
+                drawChip("image missing", at: CGPoint(x: o.rect.midX, y: o.rect.midY),
+                         hex: o.colorHex, actor: o.actor, centred: true)
+                return
+            }
+            // Aspect-fit inside the rect so a square generation is not stretched.
+            let scale = min(o.rect.width / img.size.width, o.rect.height / img.size.height)
+            let size = NSSize(width: img.size.width * scale, height: img.size.height * scale)
+            let frame = CGRect(x: o.rect.midX - size.width / 2,
+                               y: o.rect.midY - size.height / 2,
+                               width: size.width, height: size.height)
+            NSColor.black.withAlphaComponent(0.35).setFill()
+            NSBezierPath(roundedRect: frame.insetBy(dx: -3, dy: -3),
+                         xRadius: 8, yRadius: 8).fill()
+            img.draw(in: frame)
+            let edge = NSBezierPath(roundedRect: frame, xRadius: 5, yRadius: 5)
+            edge.lineWidth = 2
+            color(o.colorHex).setStroke()
+            edge.stroke()
 
         case .sticker:
             guard let p = o.points.first, let text = o.text else { return }
@@ -299,7 +412,9 @@ final class InkView: NSView {
         color(colorHex).withAlphaComponent(0.9).setStroke()
         border.stroke()
 
-        let text = "DRAW MODE  ·  esc to exit  ·  ⌘Z undo  ·  1-6 colour  ·  [ ] size  ·  ⌘⌫ clear"
+        let text = tool == .region
+            ? "SELECT A REGION  ·  drag a box, then click a button  ·  f freehand  ·  esc exit"
+            : "FREEHAND  ·  a drawn square becomes a region  ·  r select  ·  1-6 colour  ·  esc exit"
         let attrs: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .semibold),
             .foregroundColor: NSColor.white,
@@ -351,13 +466,41 @@ final class InkView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         guard mode == .draw else { return }
-        live = [convert(event.locationInWindow, from: nil)]
+        let p = convert(event.locationInWindow, from: nil)
+
+        // The Ask button is part of the canvas, so a click on it must be caught here
+        // before it is mistaken for the start of a new drag.
+        if let button = askButtonRect, button.contains(p) {
+            manager?.askLastRegion()
+            askableRegion = nil
+            needsDisplay = true
+            return
+        }
+        if let button = makeButtonRect, button.contains(p) {
+            manager?.imagineLastRegion()
+            askableRegion = nil
+            needsDisplay = true
+            return
+        }
+
+        live = [p]
         needsDisplay = true
     }
 
     override func mouseDragged(with event: NSEvent) {
         guard mode == .draw, !live.isEmpty else { return }
         let p = convert(event.locationInWindow, from: nil)
+
+        if tool == .region {
+            // A marquee is defined by two corners, so the live shape is start→now and
+            // the whole previous rectangle has to be repainted, not just a segment.
+            let old = Geometry.bounds([live[0], live[live.count - 1]])
+            live = [live[0], p]
+            let new = Geometry.bounds([live[0], p])
+            setNeedsDisplay(old.union(new).insetBy(dx: -8, dy: -8))
+            return
+        }
+
         let previous = live[live.count - 1]
         live.append(p)
         // Invalidate just the segment that appeared, padded for line width and caps.
@@ -367,14 +510,50 @@ final class InkView: NSView {
 
     override func mouseUp(with event: NSEvent) {
         guard mode == .draw, !live.isEmpty else { return }
-        let points = Geometry.decimate(live, minDistance: 1.5)
+        let drawn = live
         live = []
-        store.add(OverlayObject(points: points,
-                                colorHex: colorHex,
-                                width: strokeWidth,
-                                actor: "human:esa",
-                                lifetime: .persistent,
-                                anchor: OverlayAnchor(type: .screen, display: displayName)))
+
+        let object: OverlayObject
+        if tool == .region {
+            let rect = Geometry.bounds([drawn[0], drawn[drawn.count - 1]])
+            // A click, not a drag. Don't leave a degenerate 0x0 box behind.
+            guard rect.width > 12, rect.height > 12 else {
+                needsDisplay = true
+                return
+            }
+            object = OverlayObject(kind: .box,
+                                   points: [rect.origin,
+                                            CGPoint(x: rect.maxX, y: rect.maxY)],
+                                   colorHex: colorHex, width: strokeWidth,
+                                   actor: "human:esa", lifetime: .persistent,
+                                   anchor: OverlayAnchor(type: .screen, display: displayName))
+        } else {
+            // Freehand, but not blindly: a stroke that was MEANT to be a rectangle
+            // becomes one, so "draw a square around it" works with the pen too. This
+            // is what ShapeDetect was built for and was, embarrassingly, never wired
+            // to the pen until Esa drew a square and got a squiggle.
+            let points = Geometry.decimate(drawn, minDistance: 1.5)
+            let guess = ShapeDetect.classify(points)
+            if guess.shape == .rectangle, guess.confidence > 0.7,
+               guess.rect.width > 12, guess.rect.height > 12 {
+                object = OverlayObject(kind: .box,
+                                       points: [guess.rect.origin,
+                                                CGPoint(x: guess.rect.maxX, y: guess.rect.maxY)],
+                                       colorHex: colorHex, width: strokeWidth,
+                                       actor: "human:esa", lifetime: .persistent,
+                                       anchor: OverlayAnchor(type: .screen, display: displayName))
+            } else {
+                object = OverlayObject(points: points,
+                                       colorHex: colorHex, width: strokeWidth,
+                                       actor: "human:esa", lifetime: .persistent,
+                                       anchor: OverlayAnchor(type: .screen, display: displayName))
+            }
+        }
+
+        store.add(object)
+        // Anything with a real area is askable, so the button appears the moment you
+        // let go — rather than an invisible keystroke the user has to be told about.
+        askableRegion = object.kind == .box ? object.rect : nil
         needsDisplay = true
         manager?.persist()
     }
@@ -632,6 +811,15 @@ final class OverlayManager {
         }
     }
 
+    /// The drag tool is global, not per-canvas, so moving between displays doesn't
+    /// silently put you back in a different mode than the one you chose.
+    func setTool(_ tool: InkView.Tool) {
+        for canvas in canvases {
+            canvas.view.tool = tool
+            canvas.view.needsDisplay = true
+        }
+    }
+
     func nudgeWidth(_ delta: Double) {
         for canvas in canvases {
             canvas.view.strokeWidth = min(48, max(1, canvas.view.strokeWidth + delta))
@@ -748,22 +936,85 @@ final class OverlayManager {
             + "desktop-only. Re-add Overlay.app after every rebuild (ad-hoc signed).")
     }
 
+    /// Generate a picture from the selected region and drop it INTO that region.
+    /// Same capture path as ask; different tool on the other end.
+    func imagineLastRegion(prompt: String? = nil) {
+        captureLastRegion(waiting: "imagining…", waitColor: "#AF52DE") {
+            png, region, canvas, placeholder in
+            self.runTool("/Users/esaruoho/work/apple/bin/overlay-imagine",
+                         args: [png.path] + (prompt.map { ["--prompt", $0] } ?? [])) {
+                output in
+                canvas.view.store.remove(id: placeholder)
+                let path = output.split(separator: "\n").last.map(String.init) ?? ""
+                if FileManager.default.fileExists(atPath: path) {
+                    canvas.view.store.add(OverlayObject(
+                        kind: .image,
+                        points: [region.origin,
+                                 CGPoint(x: region.maxX, y: region.maxY)],
+                        colorHex: "#AF52DE", width: 2, actor: "agent:imagine",
+                        lifetime: .session,
+                        anchor: OverlayAnchor(type: .screen), imagePath: path))
+                } else {
+                    canvas.view.store.add(OverlayObject(
+                        kind: .callout,
+                        points: [CGPoint(x: region.midX, y: region.midY),
+                                 CGPoint(x: region.midX, y: region.maxY + 46)],
+                        colorHex: "#FF9F0A", width: 3, actor: "agent:imagine",
+                        lifetime: .session, anchor: OverlayAnchor(type: .screen),
+                        text: OverlayManager.wrap(output.isEmpty
+                                                  ? "image generation failed" : output)))
+                }
+                canvas.view.needsDisplay = true
+                self.persist()
+            }
+        }
+    }
+
     func askLastRegion(question: String? = nil) {
+        captureLastRegion(waiting: "thinking…", waitColor: "#0A84FF") {
+            png, region, canvas, placeholder in
+            self.runTool("/Users/esaruoho/work/apple/bin/overlay-ask",
+                         args: [png.path] + (question.map { ["--question", $0] } ?? [])) {
+                output in
+                canvas.view.store.remove(id: placeholder)
+                canvas.view.store.add(OverlayObject(
+                    kind: .callout,
+                    points: [CGPoint(x: region.midX, y: region.midY),
+                             CGPoint(x: region.midX, y: region.maxY + 46)],
+                    colorHex: "#34C759", width: 3, actor: "agent:ask",
+                    lifetime: .session, anchor: OverlayAnchor(type: .screen),
+                    text: OverlayManager.wrap(output)))
+                canvas.view.needsDisplay = true
+                self.persist()
+            }
+        }
+    }
+
+    /// Shared front half of both actions: find the selected region, screenshot it,
+    /// and put a placeholder up so something visibly happens straight away.
+    ///
+    /// The completion runs on the main queue with the crop, the region in view
+    /// coordinates, its canvas, and the placeholder's id to replace.
+    private func captureLastRegion(waiting: String, waitColor: String,
+                                   then body: @escaping (URL, CGRect, Canvas, String) -> Void) {
         guard let canvas = here.first(where: { !$0.view.store.objects.isEmpty })
                         ?? here.first,
-              let last = canvas.view.store.objects.last else {
-            NSLog("Overlay: ask — nothing drawn to ask about")
+              let last = canvas.view.store.objects.last(where: { $0.kind != .image
+                                                              && $0.kind != .callout })
+                      ?? canvas.view.store.objects.last else {
+            NSLog("Overlay: nothing selected to act on")
             return
         }
 
         let crop = last.cropRect(in: canvas.view.bounds, pad: 8)
         guard crop.width > 8, crop.height > 8 else {
-            NSLog("Overlay: ask — the region is too small to be worth capturing")
+            NSLog("Overlay: the region is too small to be worth capturing")
             return
         }
 
-        // Checked BEFORE capturing: a desktop-only screenshot is worse than none,
-        // because it produces a confident answer about the wrong picture.
+        // Checked BEFORE capturing: without the grant macOS returns the desktop
+        // wallpaper rather than failing, which yields a confident answer about
+        // entirely the wrong picture.
         guard hasScreenRecording() else {
             demandScreenRecording(on: canvas, at: crop)
             return
@@ -777,10 +1028,10 @@ final class OverlayManager {
         // screencapture speaks top-left, measured from the top of the PRIMARY display.
         let primary = NSScreen.screens.first { $0.frame.origin == .zero } ?? NSScreen.screens[0]
         let top = primary.frame.height - global.maxY
-        let region = "\(Int(global.minX)),\(Int(top)),\(Int(global.width)),\(Int(global.height))"
+        let spec = "\(Int(global.minX)),\(Int(top)),\(Int(global.width)),\(Int(global.height))"
 
         let png = OverlayPaths.asks
-            .appendingPathComponent("ask-\(Int(Date().timeIntervalSince1970)).png")
+            .appendingPathComponent("region-\(Int(Date().timeIntervalSince1970)).png")
         try? FileManager.default.createDirectory(at: OverlayPaths.asks,
                                                  withIntermediateDirectories: true)
 
@@ -791,77 +1042,65 @@ final class OverlayManager {
             guard let self = self else { return }
             let capture = Process()
             capture.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-            capture.arguments = ["-x", "-R", region, png.path]
+            capture.arguments = ["-x", "-R", spec, png.path]
             try? capture.run()
             capture.waitUntilExit()
 
             for c in self.canvases { c.panel.alphaValue = 1 }
 
             guard FileManager.default.fileExists(atPath: png.path) else {
-                NSLog("Overlay: ask — screencapture produced nothing for \(region)")
+                NSLog("Overlay: screencapture produced nothing for \(spec)")
                 return
             }
 
-            // Something visible happens immediately; the answer replaces it later.
-            let waiting = OverlayObject(
+            let placeholder = OverlayObject(
                 kind: .callout,
                 points: [CGPoint(x: crop.midX, y: crop.midY),
                          CGPoint(x: crop.midX, y: crop.maxY + 46)],
-                colorHex: "#0A84FF", width: 3, actor: "agent:ask",
-                lifetime: .session, anchor: OverlayAnchor(type: .screen), text: "thinking…")
-            canvas.view.store.add(waiting)
+                colorHex: waitColor, width: 3, actor: "agent:ask",
+                lifetime: .session, anchor: OverlayAnchor(type: .screen), text: waiting)
+            canvas.view.store.add(placeholder)
             canvas.view.needsDisplay = true
 
-            self.runAsk(png: png, region: crop, canvas: canvas,
-                        placeholder: waiting.id, question: question)
+            body(png, crop, canvas, placeholder.id)
         }
     }
 
-    /// Hand the crop to `bin/overlay-ask`, which does OCR + model and prints an
-    /// answer. Off the main thread — the Mini roundtrip is seconds, not milliseconds.
-    private func runAsk(png: URL, region: CGRect, canvas: Canvas,
-                        placeholder: String, question: String?) {
+    /// Run one of the helper tools off the main thread and hand its stdout back on
+    /// the main thread. Image generation in particular takes minutes, so this must
+    /// never touch the run loop.
+    private func runTool(_ path: String, args: [String],
+                         then body: @escaping (String) -> Void) {
         DispatchQueue.global(qos: .userInitiated).async {
-            let tool = URL(fileURLWithPath: "/Users/esaruoho/work/apple/bin/overlay-ask")
             let process = Process()
-            process.executableURL = tool
-            process.arguments = [png.path] + (question.map { ["--question", $0] } ?? [])
-            // A GUI app's child gets a minimal PATH, and vision-ocr shells out to
-            // xcrun/swiftc internally — so OCR silently returned nothing here while
-            // the identical command worked from a terminal. Measured, twice, on the
-            // same PNG. (feedback_carbon_hotkey_gotchas #4.)
+            process.executableURL = URL(fileURLWithPath: path)
+            process.arguments = args
+            // A GUI app's child gets a minimal PATH, and these tools shell out
+            // internally — without this, OCR silently returns nothing.
             var env = ProcessInfo.processInfo.environment
             env["PATH"] = "/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin"
             env["HOME"] = NSHomeDirectory()
             process.environment = env
+
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = Pipe()
 
-            var answer = "overlay-ask failed to run"
+            var output = ""
             do {
                 try process.run()
                 let data = pipe.fileHandleForReading.readDataToEndOfFile()
                 process.waitUntilExit()
-                answer = String(data: data, encoding: .utf8)?
+                output = String(data: data, encoding: .utf8)?
                     .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                if answer.isEmpty { answer = "no answer (exit \(process.terminationStatus))" }
+                if output.isEmpty {
+                    output = "\(URL(fileURLWithPath: path).lastPathComponent) gave no "
+                           + "output (exit \(process.terminationStatus))"
+                }
             } catch {
-                answer = "could not run overlay-ask: \(error.localizedDescription)"
+                output = "could not run \(path): \(error.localizedDescription)"
             }
-
-            DispatchQueue.main.async {
-                canvas.view.store.remove(id: placeholder)
-                canvas.view.store.add(OverlayObject(
-                    kind: .callout,
-                    points: [CGPoint(x: region.midX, y: region.midY),
-                             CGPoint(x: region.midX, y: region.maxY + 46)],
-                    colorHex: "#34C759", width: 3, actor: "agent:ask",
-                    lifetime: .session, anchor: OverlayAnchor(type: .screen),
-                    text: OverlayManager.wrap(answer)))
-                canvas.view.needsDisplay = true
-                self.persist()
-            }
+            DispatchQueue.main.async { body(output) }
         }
     }
 
@@ -1117,6 +1356,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     + "preflight=\(CGPreflightScreenCaptureAccess())")
             }
         }
+        center.addObserver(forName: OverlayControl.imagine, object: nil, queue: .main) {
+            [weak self] note in
+            let prompt = (note.object as? String).flatMap { $0.isEmpty ? nil : $0 }
+            self?.manager.imagineLastRegion(prompt: prompt)
+        }
         center.addObserver(forName: OverlayControl.ask, object: nil, queue: .main) {
             [weak self] note in
             let question = (note.object as? String).flatMap { $0.isEmpty ? nil : $0 }
@@ -1184,7 +1428,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 (kVK_Delete,     UInt32(cmdKey),              22),   // clear canvas
                 (kVK_ANSI_LeftBracket,  0,             23),   // thinner
                 (kVK_ANSI_RightBracket, 0,             24),   // thicker
-                (kVK_Return,     UInt32(cmdKey),              30),   // ASK about the last shape
+                (kVK_Return,     UInt32(cmdKey),              30),   // ASK about the region
+                (kVK_Return,     UInt32(optionKey),           31),   // MAKE AN IMAGE of it
+                (kVK_ANSI_F,     0,                           26),   // freehand pen
+                (kVK_ANSI_R,     0,                           27),   // region select
             ]
             let numbers = [kVK_ANSI_1, kVK_ANSI_2, kVK_ANSI_3,
                            kVK_ANSI_4, kVK_ANSI_5, kVK_ANSI_6]
@@ -1221,6 +1468,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case 23: manager.nudgeWidth(-1)
         case 24: manager.nudgeWidth(+1)
         case 30: manager.askLastRegion()
+        case 31: manager.imagineLastRegion()
+        case 26: manager.setTool(.ink)
+        case 27: manager.setTool(.region)
         case 10...15: manager.setColor(index: Int(id) - 10)
         default: break
         }

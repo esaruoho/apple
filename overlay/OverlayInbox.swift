@@ -153,5 +153,6 @@ enum OverlayControl {
     static let draw   = Notification.Name("com.esaruoho.overlay.draw")
     static let ask    = Notification.Name("com.esaruoho.overlay.ask")
     static let probe  = Notification.Name("com.esaruoho.overlay.probe")
+    static let imagine = Notification.Name("com.esaruoho.overlay.imagine")
     static let all: [Notification.Name] = [clear, draw, ask]
 }

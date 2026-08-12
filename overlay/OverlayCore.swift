@@ -182,12 +182,15 @@ public enum Hex {
 ///   label      [position]         — a text chip
 ///   callout    [target, chip]     — a text chip with a leader line to the target
 ///   sticker    [position]         — `text` drawn large (emoji works)
+///   image      [cornerA, cornerB] — a PNG drawn INTO the rect (`imagePath`).
+///                                   This is the generated half of the loop: draw a
+///                                   box, get a picture back in the box.
 public enum ObjectKind: String, Codable, Sendable, CaseIterable {
-    case ink, line, arrow, box, highlight, spotlight, label, callout, sticker
+    case ink, line, arrow, box, highlight, spotlight, label, callout, sticker, image
 
     /// Kinds whose rectangle is defined by two opposite corners.
     public var isRectangular: Bool {
-        self == .box || self == .highlight || self == .spotlight
+        self == .box || self == .highlight || self == .spotlight || self == .image
     }
 
     /// Kinds that carry text and are meaningless without it.
@@ -201,7 +204,7 @@ public enum ObjectKind: String, Codable, Sendable, CaseIterable {
         case .ink:                                  return 1
         case .label, .sticker:                      return 1
         case .line, .arrow, .callout:               return 2
-        case .box, .highlight, .spotlight:          return 2
+        case .box, .highlight, .spotlight, .image:  return 2
         }
     }
 }
@@ -222,6 +225,8 @@ public struct OverlayObject: Codable, Equatable, Sendable {
     public var anchor: OverlayAnchor
     /// Label / callout / sticker content. Optional so P0's files still decode.
     public var text: String?
+    /// For `.image`: an absolute path to the PNG rendered inside the rect.
+    public var imagePath: String?
 
     public init(id: String = UUID().uuidString,
                 kind: ObjectKind = .ink,
@@ -232,11 +237,12 @@ public struct OverlayObject: Codable, Equatable, Sendable {
                 lifetime: Lifetime = .persistent,
                 created: Double = Date().timeIntervalSince1970,
                 anchor: OverlayAnchor = .screen,
-                text: String? = nil) {
+                text: String? = nil,
+                imagePath: String? = nil) {
         self.id = id; self.kind = kind; self.points = points
         self.colorHex = colorHex; self.width = width; self.actor = actor
         self.lifetime = lifetime; self.created = created; self.anchor = anchor
-        self.text = text
+        self.text = text; self.imagePath = imagePath
     }
 
     public var bounds: CGRect { Geometry.bounds(points) }
@@ -255,6 +261,8 @@ public struct OverlayObject: Codable, Equatable, Sendable {
     public var isRenderable: Bool {
         guard points.count >= kind.minimumPoints else { return false }
         if kind.needsText, (text ?? "").isEmpty { return false }
+        // An image object with no file is an empty frame — worse than nothing.
+        if kind == .image, (imagePath ?? "").isEmpty { return false }
         return true
     }
 
@@ -381,6 +389,7 @@ public struct PostRequest: Decodable, Sendable {
     /// Absolute polyline, for ink and for arrows that want an exact tail and head.
     public var points: [[Double]]?
     public var text: String?
+    public var imagePath: String?
     public var color: String?
     public var width: Double?
     public var actor: String?
@@ -393,6 +402,7 @@ public struct PostRequest: Decodable, Sendable {
         case missingText(ObjectKind)
         case badColor(String)
         case badTTL(String)
+        case missingImage
         case notRenderable(ObjectKind)
 
         public var description: String {
@@ -404,6 +414,8 @@ public struct PostRequest: Decodable, Sendable {
                 return "no geometry: give one of rel, rect, at or points"
             case .missingText(let k):  return "kind '\(k.rawValue)' requires text"
             case .badColor(let c):     return "colour '\(c)' is not #RRGGBB or #RRGGBBAA"
+            case .missingImage:
+                return "kind 'image' requires imagePath (an absolute path to a PNG)"
             case .badTTL(let t):
                 return "unknown ttl '\(t)' — expected one of ephemeral, session, "
                      + "space, window, persistent"
@@ -436,6 +448,7 @@ public struct PostRequest: Decodable, Sendable {
 
         if let color = color, Hex.parse(color) == nil { throw PostError.badColor(color) }
         if kind.needsText, (text ?? "").isEmpty { throw PostError.missingText(kind) }
+        if kind == .image, (imagePath ?? "").isEmpty { throw PostError.missingImage }
 
         var resolved: [CGPoint] = []
         if let points = points, !points.isEmpty {
@@ -463,7 +476,8 @@ public struct PostRequest: Decodable, Sendable {
             lifetime: lifetime,
             created: now,
             anchor: OverlayAnchor(type: .screen, display: display),
-            text: text)
+            text: text,
+            imagePath: imagePath)
 
         guard object.isRenderable else { throw PostError.notRenderable(kind) }
         return object
