@@ -9,16 +9,32 @@
 # and then VERIFIES that frame count / duration / audio sample count still match the source.
 #
 # Usage:
+#   recburn-redact VIDEO --find                        # no times needed: it finds them
 #   recburn-redact VIDEO --scan 19:55-20:05            # find WHICH frames (10fps contact sheet)
 #   recburn-redact VIDEO --probe 19:58.2               # find WHERE (full frame + coord grid)
 #   recburn-redact VIDEO --at 19:57.7-19:58.9 --box urlbar --box stripe-destination
 #
 # Modes:
+#   --find         sweep the whole recording with on-device Apple Vision OCR and report every
+#                  window that looks like an exposure — account ids, secret keys, masked bank
+#                  numbers, IBANs, cards, tokens, emails. You supply no times at all. Roughly
+#                  15 min for a 34-minute capture at the default --every 2. It reports; it
+#                  never redacts on its own, because only you can tell a real exposure from
+#                  your own public account name.
 #   --scan A-B     build a 10fps contact sheet across the window and open it, so you can read
 #                  off the exact first/last second that needs covering. Prints time->row map.
 #   --probe T      extract that one frame at full resolution with a labelled coordinate grid
 #                  and open it, so you can read off box coordinates.
 #   --at A-B       do the edit.
+#
+# --find options:
+#   --every SEC    sample interval (default 2.0). Anything on screen for less than this can
+#                  fall between samples — use --every 1 or 0.5 for a final pass.
+#   --from T --to T   limit the range
+#   --jobs N       parallel workers (default 6; Vision saturates around there)
+#   --gap SEC      merge hits closer than this into one window (default 3)
+#   --ignore RX    suppress matches containing RX (e.g. your own email), repeatable
+#   --fast-ocr     ~4x faster, but WILL miss masked digits like "•••• 1234" — triage only
 #
 # Boxes (repeatable; at least one required with --at):
 #   --box urlbar                 preset, fraction-based so it survives other capture sizes
@@ -54,6 +70,8 @@ import tempfile
 # 'urlbar' and 'stripe-destination' were measured on a 3024x1964 recburn capture with a
 # full-screen Safari window (2026-08-13) and verified frame-by-frame. Always confirm with
 # --probe before trusting a preset on a differently-shaped recording.
+OCR_BIN = "/Users/esaruoho/work/apple/bin/vision-ocr"  # Apple Vision, on-device, no network
+
 PRESETS = {
     "urlbar":             (0.3770, 0.0484, 0.3439, 0.0484),
     "stripe-destination": (0.2894, 0.3029, 0.1257, 0.5754),
@@ -61,6 +79,28 @@ PRESETS = {
 }
 
 BLOCK_PX = 24  # one mosaic block per ~24 source px — destroys 30px UI text
+
+# --find patterns. Each is (name, regex, redact_in_report) — the last flag truncates the
+# matched text when printing, so a live key does not get copied out of the video and into
+# your terminal scrollback (and from there into a transcript).
+PATTERNS = [
+    ("stripe-account",     r"acct_[A-Za-z0-9]{12,}",                            False),
+    ("stripe-secret-key",  r"\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}",       True),
+    ("stripe-pub-key",     r"\bpk_(?:live|test)_[A-Za-z0-9]{16,}",              True),
+    # Vision reads a •••• mask as U+2022 with some bullets misrecognised as '.' — real
+    # output included '••.• 1234' and '•..• 1234'. Requiring 3+ literal bullets misses it.
+    ("masked-account",     r"[•·*][•·*.\s]{1,6}\d{4}\b",                        False),
+    ("iban",               r"\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){3,7}\b",         True),
+    ("card-number",        r"\b(?:\d{4}[ -]){3}\d{4}\b",                        True),
+    ("anthropic-key",      r"sk-ant-[A-Za-z0-9_-]{20,}",                        True),
+    ("openai-key",         r"\bsk-[A-Za-z0-9]{32,}",                            True),
+    ("aws-key",            r"\bAKIA[0-9A-Z]{16}\b",                             True),
+    ("github-token",       r"\bgh[pousr]_[A-Za-z0-9]{20,}",                     True),
+    ("jwt",                r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.",    True),
+    ("private-key",        r"BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY",      False),
+    ("password-label",     r"(?i)\bpasswords?\b\s*[:=]\s*\S",                   True),
+    ("email",             r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b", False),
+]
 
 
 def die(msg, code=1):
@@ -256,6 +296,127 @@ def mode_scan(path, info, rng, out_dir):
     subprocess.run(["open", png], check=False)
 
 
+def ocr_at(path, t, out_dir, idx, fast=False):
+    """Extract the frame at t and OCR it on-device. Returns (t, text)."""
+    jpg = os.path.join(out_dir, f"find-{idx:06d}.jpg")
+    try:
+        subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{t:.3f}", "-i", path,
+                        "-frames:v", "1", "-q:v", "3", "-update", "1", "-y", jpg],
+                       capture_output=True, text=True)
+        if not os.path.exists(jpg):
+            return t, ""
+        # Always FULL resolution: at half resolution Vision stops resolving the 30px
+        # URL-bar account id, which is the main thing we are hunting.
+        # Recognition level defaults to ACCURATE, not --fast, because --fast returned
+        # "a bank name" while dropping the "•••• 1234" after it entirely — it finds the
+        # account id but loses the bank last-4, the piece with actual leverage.
+        # Measured full-res: accurate 0.77s/frame at 6-way parallel, fast 0.09s/frame.
+        cmd = [OCR_BIN, jpg] + (["--fast"] if fast else [])
+        r = subprocess.run(cmd, capture_output=True, text=True)
+        return t, (r.stdout or "")
+    finally:
+        if os.path.exists(jpg):
+            os.remove(jpg)
+
+
+def mode_find(path, info, args, out_dir):
+    if not os.path.exists(OCR_BIN):
+        die(f"{OCR_BIN} not found — --find needs it for on-device OCR")
+
+    t0 = parse_time(args.frm) if args.frm else 0.0
+    t1 = parse_time(args.to) if args.to else info["duration"]
+    step = max(0.1, args.every)
+    times = []
+    t = t0
+    while t < t1:
+        times.append(round(t, 3))
+        t += step
+    if not times:
+        die("nothing to sample in that range")
+
+    ignore = [re.compile(p) for p in args.ignore]
+    per = (0.23 if args.fast_ocr else 0.91) * 6 / max(1, args.jobs)
+    print(f"sweeping      : {path}")
+    print(f"range         : {t0:.1f}s - {t1:.1f}s, one frame every {step:g}s "
+          f"= {len(times)} frames, {args.jobs} at a time")
+    print(f"ocr           : full resolution, "
+          f"{'FAST — will miss masked digits like •••• 1234' if args.fast_ocr else 'accurate'}")
+    print(f"rough eta     : {len(times) * per / 60:.1f} min "
+          f"(on-device Apple Vision, nothing leaves the Mac)")
+    print(f"caveat        : a thing on screen for less than {step:g}s can fall between "
+          f"samples — use --every 1 (or 0.5) for a final pass\n")
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    hits = []      # (t, pattern_name, shown_text)
+    done = 0
+    with ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        futs = {pool.submit(ocr_at, path, tt, out_dir, i, args.fast_ocr): tt
+                for i, tt in enumerate(times)}
+        for fut in as_completed(futs):
+            tt, text = fut.result()
+            done += 1
+            if done % 25 == 0 or done == len(times):
+                pct = 100.0 * done / len(times)
+                print(f"\r  scanned {done}/{len(times)} frames ({pct:.0f}%) — "
+                      f"{len(hits)} hits so far", end="", flush=True)
+            if not text:
+                continue
+            for name, rx, redact in PATTERNS:
+                for m in re.finditer(rx, text):
+                    s = m.group(0).strip()
+                    if any(ig.search(s) for ig in ignore):
+                        continue
+                    shown = (s[:8] + "…" + f"[{len(s)} chars]") if redact else s
+                    hits.append((tt, name, shown))
+    print()
+
+    if not hits:
+        print(f"\nnothing matched in {len(times)} sampled frames.")
+        print("That is NOT a clean bill of health: it means no sampled frame matched these")
+        print("patterns. Anything shorter than the sample step, or exposed as a picture")
+        print("rather than as text, would not be seen. Patterns checked:")
+        print("  " + ", ".join(n for n, _, _ in PATTERNS))
+        return 0
+
+    # Group hits into windows, merging anything within --gap of the previous hit.
+    hits.sort(key=lambda h: h[0])
+    windows = []
+    for tt, name, shown in hits:
+        if windows and tt - windows[-1]["end"] <= args.gap:
+            w = windows[-1]
+            w["end"] = tt
+            w["what"].setdefault(name, []).append(shown)
+        else:
+            windows.append({"start": tt, "end": tt, "what": {name: [shown]}})
+
+    print(f"\nFOUND {len(windows)} window(s) with a possible exposure:\n")
+    for w in windows:
+        # The true edges can lie up to one sample step outside what we saw.
+        a, b = max(0.0, w["start"] - step), min(info["duration"], w["end"] + step)
+        print(f"  {fmt_time(a)} - {fmt_time(b)}   "
+              f"(saw it {fmt_time(w['start'])}-{fmt_time(w['end'])}, padded by one sample)")
+        for name, vals in sorted(w["what"].items()):
+            uniq = sorted(set(vals))
+            extra = f"  (x{len(vals)})" if len(vals) > 1 else ""
+            print(f"      {name:18s} {', '.join(uniq[:3])}{extra}")
+        mid = (w["start"] + w["end"]) / 2
+        print(f"      next: recburnredact '{path}' --probe {fmt_time(mid)}")
+        print(f"            recburnredact '{path}' --at {fmt_time(a)}-{fmt_time(b)} --box <box>\n")
+
+    print("Read the windows, --probe one frame in each to get the box, then --at to redact.")
+    print("I do not auto-redact from a regex: only you can tell whether a match is a real")
+    print("exposure or your own public account name, and how much around it to cover.")
+    return 0
+
+
+def fmt_time(s):
+    m, sec = divmod(float(s), 60)
+    h, m = divmod(int(m), 60)
+    if h:
+        return f"{h:d}:{m:02d}:{sec:04.1f}"
+    return f"{m:d}:{sec:04.1f}"
+
+
 def mode_probe(path, info, t, out_dir):
     ts = parse_time(t)
     png = os.path.join(out_dir, "recburn-redact-probe.png")
@@ -446,6 +607,21 @@ def main():
     g.add_argument("--at", metavar="A-B", help="time window to redact, e.g. 19:57.7-19:58.9")
     g.add_argument("--scan", metavar="A-B", help="contact-sheet a window to find the frames")
     g.add_argument("--probe", metavar="T", help="extract one frame + coord grid to find a box")
+    g.add_argument("--find", action="store_true",
+                   help="sweep the whole recording with on-device OCR and report every "
+                        "window that looks like an exposure — you supply no times at all")
+    p.add_argument("--every", type=float, default=2.0, metavar="SEC",
+                   help="--find sample interval (default 2.0; use 1 or 0.5 for a final pass)")
+    p.add_argument("--from", dest="frm", metavar="T", help="--find: start of range")
+    p.add_argument("--to", metavar="T", help="--find: end of range")
+    p.add_argument("--jobs", type=int, default=6, metavar="N", help="--find parallelism")
+    p.add_argument("--gap", type=float, default=3.0, metavar="SEC",
+                   help="--find: merge hits closer together than this into one window")
+    p.add_argument("--ignore", action="append", default=[], metavar="REGEX",
+                   help="--find: suppress matches containing this (e.g. your own email)")
+    p.add_argument("--fast-ocr", dest="fast_ocr", action="store_true",
+                   help="--find: ~4x faster OCR that WILL miss masked digits (•••• 1234); "
+                        "use for a first triage pass only, never as the final check")
     p.add_argument("--box", action="append", default=[], metavar="SPEC",
                    help="preset name | x,y,w,h | x,y,w,h%% (repeatable)")
     p.add_argument("--out", metavar="PATH")
@@ -467,8 +643,8 @@ def main():
             die(f"{tool} not found on PATH")
     if not args.video:
         die("need a VIDEO (see --help)")
-    if not (args.at or args.scan or args.probe):
-        die("need one of --at, --scan or --probe (see --help)")
+    if not (args.at or args.scan or args.probe or args.find):
+        die("need one of --find, --at, --scan or --probe (see --help)")
     if not os.path.isfile(args.video):
         die(f"no such file: {args.video}")
 
@@ -487,6 +663,8 @@ def main():
 
     tmpdir = tempfile.mkdtemp(prefix="recburn-redact-")
     try:
+        if args.find:
+            return mode_find(args.video, info, args, tmpdir) or 0
         if args.scan:
             return mode_scan(args.video, info, args.scan, tmpdir) or 0
         if args.probe:

@@ -1,4 +1,4 @@
-# CLI Tools Index — 331 tools in bin/
+# CLI Tools Index — 332 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -237,6 +237,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `recburn-url` — the guaranteed-portable control seam for RecBurn.app. — `bin/recburn-url`
 `recburn-youtube` — (no description) — `bin/recburn-youtube`
 `recburnclick` — `recburn`, plus a live click counter burned into the video. — `bin/recburnclick`
+`recburnredact` — the recburn family spelling of `recburn-redact`. — `bin/recburnredact`
 `release-submit` — (no description) — `bin/release-submit`
 `release-worker` — (no description) — `bin/release-worker`
 `render-tag-icon.swift` — render a colored SF-Symbol tag icon as a .icns file. — `bin/render-tag-icon.swift`

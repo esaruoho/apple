@@ -447,7 +447,7 @@ Trigger recburn from anywhere through one seam, and hand off a typed result  —
   triad: .session✓  transcript✗  RESULT✓
   honesty: 13/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Redact a region of a finished recburn video without re-rendering it  —  18 scenarios   (features/recburn-redact.feature)
+Redact a region of a finished recburn video without re-rendering it  —  24 scenarios   (features/recburn-redact.feature)
   - [@hw-verified] only the keyframe span that contains the frames is re-encoded  (
   - [@hw-verified] the audio track is remuxed, never cut and never re-encoded  (rea
   - [@hw-verified] a cut point is MEASURED, never computed from timestamps  (bug fo
@@ -458,6 +458,11 @@ Redact a region of a finished recburn video without re-rendering it  —  18 sce
   - [@hw-verified] segments are joined as MPEG-TS, not MOV  (real file, 2026-08-13)
   - [@hw-verified] a frame shift is caught even though the counts add up  (verified
   - [@hw-verified] the coverage is a mosaic THEN a blur, not a soft smudge  (real f
+  - [@hw-verified] --find needs no times at all  (run live 2026-08-13)
+  - [@hw-verified] --find samples at FULL resolution and ACCURATE, both for a measu
+  - [@hw-verified] the •••• mask is not four bullets  (bug found + fixed 2026-08-13
+  - [@hw-verified] --find prints the sampling gap instead of implying completeness 
+  - [@hw-verified] a matched secret is truncated in the report  (2026-08-13)
   - [@hw-verified] --scan finds WHICH frames, --probe finds WHERE  (both run live 2
   - [@hw-verified] the source file is never touched  (enforced 2026-08-13)
   - [@hw-verified] verification is fast enough to always run  (measured 2026-08-13)
@@ -465,9 +470,10 @@ Redact a region of a finished recburn video without re-rendering it  —  18 sce
   - [@built] a window that reaches the first or last frame of the file
   - [@built] a source with no audio track
   - [(no grade)] the presets are measured, not universal
+  - [(no grade)] --find is triage, not a guarantee
   - [(no grade)] this redacts the copy, not the past
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 16/18 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 21/24 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Burn a live click counter into a screen recording  —  13 scenarios   (features/recburnclick.feature)
   - [@hw-verified] counting clicks needs NO event tap and NO Accessibility prompt  

@@ -170,6 +170,61 @@ Feature: Redact a region of a finished recburn video without re-rendering it
       readable — the point of that video was streaming-income transparency.
 
   @hw-verified
+  Scenario: --find needs no times at all  (run live 2026-08-13)
+    Given Esa asked "do i need to tell it times or something" — having to hunt a timestamp
+      by hand is the actual cost of using this tool
+    When I run: recburnredact <file> --find
+    Then it samples the recording, OCRs each frame on-device with Apple Vision, matches
+      against 14 exposure patterns, groups the hits into windows, and prints for each
+      window the padded time range plus the exact --probe and --at commands to run next
+    And on the real capture, scanning 19:50-20:05 at --every 1, it found the one real
+      window and reported "19:57.0 - 19:59.0", which brackets the true 19:57.8-19:58.7
+    And it matched both the stripe-account id and the masked-account rows (x11)
+    But it never redacts on its own: a regex cannot tell a real exposure from Esa's own
+      public account name, nor how much around it to cover.
+
+  @hw-verified
+  Scenario: --find samples at FULL resolution and ACCURATE, both for a measured reason  (2026-08-13)
+    Given OCR cost is the whole budget of a sweep, so both knobs were measured rather than assumed
+    When the frame is halved in size
+    Then Vision stops resolving the 30px URL-bar account id — the main thing being hunted —
+      so frames are never downscaled for OCR (measured: half-res --fast lost acct_…, and
+      half-res accurate cost 5.18s/frame for no gain)
+    And when --fast is used at full resolution
+    Then it returns "a bank name" and silently DROPS the "•••• 1234" after it, so it finds
+      the account id but loses the bank last-4 — the piece with real leverage
+    So accurate is the default (0.77s/frame at 6-way parallel vs 0.09s for fast), and
+      --fast-ocr exists but says in its own help that it will miss masked digits.
+
+  @hw-verified
+  Scenario: the •••• mask is not four bullets  (bug found + fixed 2026-08-13)
+    Given the obvious pattern for a masked account is [•·*]{3,} followed by four digits
+    When that was run against Vision's real output
+    Then it matched NOTHING, because Vision reads the mask as U+2022 bullets with some
+      misrecognised as '.' — the actual lines were "•• .• 1234" and "• .. • 1234"
+    And the first version of --find therefore reported only the account id and silently
+      missed all fourteen bank rows on screen
+    So the pattern is now [•·*][•·*.\s]{1,6}\d{4}\b, which matched 11 times on that frame.
+
+  @hw-verified
+  Scenario: --find prints the sampling gap instead of implying completeness  (2026-08-13)
+    Given the exposure this tool was built for lasted 0.9s, and the default sample step is 2s
+    Then --find states up front that anything shorter than the step can fall between samples
+      and to use --every 1 or 0.5 for a final pass
+    And each reported window is padded by one sample step either side, because the true
+      edges can lie that far outside what was actually seen
+    And when nothing matches it says so explicitly: "That is NOT a clean bill of health",
+      listing the patterns it checked, rather than reporting a clean sweep.
+
+  @hw-verified
+  Scenario: a matched secret is truncated in the report  (2026-08-13)
+    Given printing a live key to the terminal copies it into scrollback, and from there into
+      whatever transcript or session log is running
+    Then every key-shaped pattern is flagged redact_in_report and prints as its first 8
+      characters plus a length, while an account id or masked last-4 prints in full
+      because Esa already knows those and needs to recognise them.
+
+  @hw-verified
   Scenario: --scan finds WHICH frames, --probe finds WHERE  (both run live 2026-08-13)
     Given "it's at about 19:58" is how a human knows where the problem is, and
       pixel coordinates are how ffmpeg needs it
@@ -236,6 +291,15 @@ Feature: Redact a region of a finished recburn video without re-rendering it
       will move them
     So --probe is the answer for any new layout, and --list-presets prints the
       fractions so they can be adjusted rather than guessed.
+
+  @note
+  Scenario: --find is triage, not a guarantee
+    Given it samples frames, matches known patterns, and reads text
+    Then it cannot see an exposure that is shorter than the sample step, one rendered as a
+      picture rather than as text, one in a pattern nobody wrote down, or one that is only
+      an exposure in context — a customer's name on a receipt matches no regex at all
+    And "0 windows" therefore means "no sampled frame matched these 14 patterns", which the
+      tool says in those words rather than claiming the recording is clean.
 
   @note
   Scenario: this redacts the copy, not the past

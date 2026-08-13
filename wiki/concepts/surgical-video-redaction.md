@@ -29,9 +29,10 @@ rest.
 ## Minimum viable shape
 
 ```bash
-recburn-redact video.mov --scan 19:55-20:02          # WHICH frames (10fps contact sheet)
-recburn-redact video.mov --probe 19:58.2            # WHERE (full frame + 10x10 grid)
-recburn-redact video.mov --at 19:57.8-19:58.7 --box urlbar
+recburnredact video.mov --find                      # no times needed — it finds them
+recburnredact video.mov --scan 19:55-20:02          # WHICH frames (10fps contact sheet)
+recburnredact video.mov --probe 19:58.2             # WHERE (full frame + 10x10 grid)
+recburnredact video.mov --at 19:57.8-19:58.7 --box urlbar
 ```
 
 Three video segments, joined as MPEG-TS, with the original audio muxed back in one pass:
@@ -78,6 +79,36 @@ Also: **MOV/MP4 carries one `avcC` per track**, so joining a copied segment to a
 encoded one can produce a track whose parameter set does not describe every frame. Write each
 segment as MPEG-TS with `-bsf:v h264_mp4toannexb` (in-band SPS/PPS) and join with the concat
 **demuxer** (it offsets each file's timestamps), not the concat protocol.
+
+## Finding the window without being told it (`--find`)
+
+Having to hunt the timestamp by hand is the real cost of a redaction tool. `--find` samples
+the recording, OCRs each frame with **Apple Vision on-device** (`bin/vision-ocr` — Neural
+Engine, no network), matches 14 exposure patterns, and reports padded windows plus the exact
+next commands. Measured: extraction 0.14s + accurate OCR 0.77s per frame at 6-way
+parallelism, so a 34-minute capture at `--every 2` sweeps in ~15 min.
+
+Three settings that are **not** free choices, each measured on 2026-08-13:
+
+- **Full resolution, always.** At half size Vision stops resolving the 30px URL-bar
+  `acct_…` id — precisely the thing being hunted.
+- **Accurate, not `--fast`.** `--fast` is ~8x cheaper and returns `a bank name` while
+  silently **dropping the `•••• 1234` after it**. It finds the account id and loses the bank
+  last-4, which is the piece with actual leverage. `--fast-ocr` exists for triage and says so.
+- **The `••••` mask is not four bullets.** Vision reads it as U+2022 with some bullets
+  misrecognised as `.` — real output was `•• .• 1234` and `• .. • 1234`. The obvious
+  `[•·*]{3,}\d{4}` matches **nothing**; use `[•·*][•·*.\s]{1,6}\d{4}\b`.
+
+Report honestly or the tool is worse than useless:
+
+- pad each window by one sample step — the true edges can lie that far outside what was seen;
+- truncate key-shaped matches, or the sweep copies a live secret into terminal scrollback and
+  from there into a session transcript;
+- **never call 0 hits "clean."** It means no sampled frame matched these patterns. It cannot
+  see an exposure shorter than the step, one rendered as a picture, or one that is only an
+  exposure in context — a customer's name on a receipt matches no regex at all.
+- **never auto-redact from a regex.** Only a human can tell a real exposure from their own
+  public account name, and how much around it to cover.
 
 ## Cover it properly
 

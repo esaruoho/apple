@@ -116,6 +116,53 @@ or EOF) are code paths only; and the `urlbar` / `stripe-destination` presets wer
 on exactly one layout — full-screen Safari on a 3024x1964 capture. `--probe` exists
 because those presets will be wrong for any other layout.
 
+## Round two — "do i need to tell it times or something"
+
+Once the tool shipped, Esa asked the question that mattered:
+
+> "okay. now. do we have this as a skill. can i run recburnredact or something and .. do i
+> need to tell it times or something"
+
+Three things fell out of that one sentence.
+
+**The name was wrong.** `recburn` and `recburnclick` carry no hyphen. He typed
+`recburnredact`, which is the family spelling, and it did not exist. Added `bin/recburnredact`
+as a one-line wrapper so muscle memory works either way.
+
+**"Do I need to tell it times" was a complaint, not a question.** The answer had been yes,
+and that is the whole cost of using the tool — you have to go hunt a timestamp by hand
+first. So `--find` now sweeps the entire recording with on-device Apple Vision OCR
+(`bin/vision-ocr`, Neural Engine, nothing leaves the Mac), matches 14 exposure patterns, and
+prints padded windows plus the exact `--probe` / `--at` commands to run next. No times
+required at all.
+
+**Every setting in it had to be measured, and two of my first guesses were wrong.**
+
+- I started with half-resolution `--fast` OCR because it was 8x cheaper. It read
+  `a bank name` fourteen times and **never saw the `acct_…` id** — the primary target. So:
+  full resolution, always.
+- Full-res `--fast` did catch the account id, so I nearly shipped it. Then I checked the
+  bank rows properly and found `--fast` returns `a bank name` while **silently dropping the
+  `•••• 1234` after it**. It finds the account id and loses the last-4, which is the piece
+  with actual leverage. Accurate is now the default; `--fast-ocr` exists and says in its own
+  help that it will miss masked digits.
+- My masked-account regex `[•·*]{3,}\s*\d{4}` matched **nothing**. Vision reads the mask as
+  U+2022 with some bullets misrecognised as `.` — the real lines were `•• .• 1234` and
+  `• .. • 1234`. The first `--find` run therefore reported the account id and quietly missed
+  all fourteen bank rows that were right there on screen. This is the same failure shape as
+  the `-map` bug earlier in the session: a check that looks like it passed.
+
+**What I deliberately did not build.** `--find` reports; it never redacts. A regex cannot
+tell a real exposure from Esa's own public account name, nor decide how much around it to
+cover. And it never says "clean" — with no matches it prints "That is NOT a clean bill of
+health" and lists the patterns it checked, because it cannot see an exposure shorter than the
+sample step, one rendered as a picture rather than text, or one that is only an exposure in
+context. A customer's name on a receipt matches no regex at all.
+
+Matched secrets print truncated. Printing a live key to the terminal copies it into
+scrollback and from there into whatever transcript is running — which would be a fresh
+exposure created by the tool built to prevent them.
+
 ## Result
 
 `recburn-redact <file> --at 19:57.8-19:58.7 --box urlbar --box stripe-destination`

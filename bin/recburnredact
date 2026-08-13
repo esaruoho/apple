@@ -1,0 +1,14 @@
+#!/bin/bash
+# recburnredact — the recburn family spelling of `recburn-redact`.
+#
+# `recburn` and `recburnclick` carry no hyphen, so neither should this. Same tool,
+# same flags; this exists so muscle memory works either way.
+#
+#   recburnredact video.mov --scan 19:55-20:02          # WHICH frames
+#   recburnredact video.mov --probe 19:58.2             # WHERE (coordinate grid)
+#   recburnredact video.mov --find                      # let it find them itself
+#   recburnredact video.mov --at 19:58-19:59 --box urlbar
+#
+# FEATURE-CARD >> features/recburn-redact.feature
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+exec "$DIR/recburn-redact" "$@"

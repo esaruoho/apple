@@ -1,5 +1,5 @@
 ---
-description: Blur/redact a region of a finished recburn video for a given time window — re-encodes ONLY the affected keyframe span, stream-copies the rest bit-exact, never touches the audio or the source. Usage `/recburn-redact <video> 19:58-19:59 [what to cover]`.
+description: Blur/redact something out of a finished recburn video — `--find` sweeps the whole recording with on-device OCR so you need no timestamps at all, then it re-encodes ONLY the affected keyframe span, stream-copies the rest bit-exact, and never touches the audio or the source. Usage `/recburn-redact <video> [19:58-19:59] [what to cover]`.
 allowed-tools: Bash, Read
 argument-hint: <video> <mm:ss-mm:ss> [region description]
 ---
@@ -11,10 +11,24 @@ whole video.
 Arguments: `$ARGUMENTS` — a video path, a time window like `19:58-19:59` (or `19:58->19:59`),
 and optionally a description of what to cover.
 
-The tool is `/Users/esaruoho/work/apple/bin/recburn-redact`. Work in this order:
+The tool is `/Users/esaruoho/work/apple/bin/recburn-redact` (also spelled `recburnredact`,
+matching `recburn` / `recburnclick`). Work in this order:
 
-**1. Find WHICH frames.** A 1-second sample grid cannot resolve a 1-second event, so scan
-at 10fps rather than guessing:
+**0. If Esa has not given a time — don't ask him for one.** Sweep the whole recording with
+on-device OCR and let it find the windows itself:
+
+```
+/Users/esaruoho/work/apple/bin/recburnredact <video> --find --ignore "esa@raybrowser|esaruoho"
+```
+
+~15 min for a 34-minute capture (Apple Vision, nothing leaves the Mac). It prints each
+suspect window already padded, plus the exact `--probe` / `--at` commands to run next.
+Add `--every 1` for a final pass — the default 2s step can step over a shorter exposure.
+Report the windows and let Esa decide which are real; never auto-redact from a regex match,
+and never call a sweep with 0 hits "clean" — it means no sampled frame matched 14 patterns.
+
+**1. Find WHICH frames.** If Esa did give a time, don't trust a coarse sample grid — a
+1-second sample cannot resolve a 1-second event, so scan at 10fps:
 
 ```
 /Users/esaruoho/work/apple/bin/recburn-redact <video> --scan 19:55-20:02
