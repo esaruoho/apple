@@ -1,4 +1,4 @@
-# CLI Tools Index — 329 tools in bin/
+# CLI Tools Index — 330 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -197,6 +197,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `ocr-triage` — (no description) — `bin/ocr-triage`
 `olga` — (no description) — `bin/olga`
 `overlay` — (no description) — `bin/overlay`
+`overlay-anchor-probe` — (no description) — `bin/overlay-anchor-probe`
 `overlay-ask` — (no description) — `bin/overlay-ask`
 `overlay-imagine` — (no description) — `bin/overlay-imagine`
 `pair-and-tile` — (no description) — `bin/pair-and-tile`

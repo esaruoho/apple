@@ -561,6 +561,351 @@ enum OverlayCoreTests {
                   "anything not firm is dashed — uncertainty is never drawn as certainty")
         }
 
+        // ═══════════ Observation / Anchor / Resolution ═══════════
+
+        do {
+            let surface = SurfaceRef(kind: .localDisplay, id: "Built-in Retina Display",
+                                     epoch: 3)
+            let obs = Observation(surface: surface, t: 1000,
+                                  rect: NormRect(x: 0.1, y: 0.2, w: 0.3, h: 0.1),
+                                  cropPath: "/tmp/a.png", cropDigest: "sha:abc",
+                                  ocr: "Export Data")
+
+            // Selectors: semantics beat geometry, and the strongest sorts first.
+            let anchor = SpatialAnchor(selectors: [
+                AnchorSelector(kind: .surfaceNormalizedRect,
+                         rect: NormRect(x: 0.1, y: 0.2, w: 0.3, h: 0.1)),
+                AnchorSelector(kind: .accessibility, application: "com.apple.Safari",
+                         windowTitle: "Settings", role: "AXButton", name: "Export Data"),
+                AnchorSelector(kind: .text, exact: "Export Data", context: "Privacy"),
+            ])
+            check(anchor.best?.kind == .accessibility,
+                  "the most semantic selector sorts first")
+            check(anchor.selectors.map(\.kind) ==
+                  [.accessibility, .text, .surfaceNormalizedRect],
+                  "…and the rest follow by weight")
+
+            check(anchor.survivesRestart, "an app+role+name anchor survives a restart")
+            check(!AnchorSelector(kind: .windowNormalizedRect,
+                            rect: NormRect(x: 0, y: 0, w: 1, h: 1)).survivesRestart,
+                  "a window-relative rect does not — it has no window after a restart")
+            check(!AnchorSelector(kind: .windowFingerprint, windowNumber: 42).survivesRestart,
+                  "a bare window NUMBER is not a durable identity")
+            check(AnchorSelector(kind: .windowFingerprint,
+                           application: "com.apple.Safari").survivesRestart,
+                  "…but the application is")
+
+            // The rule that keeps the whole system honest.
+            let none = Resolution.grade(candidates: 0, method: .accessibility,
+                                        rect: nil, surfaceEpoch: 3, t: 1001)
+            check(none.state == .unavailable, "no candidates → unavailable")
+            check(!none.state.actionable, "…and not actionable")
+
+            // Confidence comes from the selector that actually matched, so callers
+            // pass its weight; the kind alone cannot know how specific it was.
+            let semantic = anchor.best!
+            let one = Resolution.grade(candidates: 1, method: semantic.kind,
+                                       confidence: semantic.weight,
+                                       rect: obs.rect, surfaceEpoch: 3, t: 1001)
+            check(one.state == .resolved && one.state.actionable, "one candidate → resolved")
+            check(one.confidence > 0.9, "…with high confidence for a role+name match")
+            check(AnchorSelector(kind: .accessibility, application: "x", role: "AXButton").weight
+                    < semantic.weight,
+                  "a role with no name is a much weaker address than role+name")
+
+            let many = Resolution.grade(candidates: 4, method: .windowFingerprint,
+                                        rect: obs.rect, surfaceEpoch: 3, t: 1001)
+            check(many.state == .ambiguous, "several candidates → AMBIGUOUS")
+            check(!many.state.actionable,
+                  "…and never actionable — the system must not pick the closest")
+            check(many.candidates == 4, "…recording how many, for the human to see")
+
+            let weak = Resolution.grade(candidates: 1, method: .surfaceNormalizedRect,
+                                        confidence: 0.1,
+                                        rect: obs.rect, surfaceEpoch: 3, t: 1001)
+            check(weak.confidence < 0.2,
+                  "a bare geometry match resolves, but with almost no confidence")
+
+            // Epoch: geometry recorded under a different display arrangement is not
+            // comparable, whatever it said at the time.
+            check(one.staleness(againstEpoch: 3).state == .resolved,
+                  "same epoch → still resolved")
+            check(one.staleness(againstEpoch: 4).state == .stale,
+                  "the display arrangement changed → stale, not silently reused")
+
+            // The doctrine, made mechanical.
+            let ref = SpatialReference(surface: surface, observation: obs, anchor: anchor,
+                                       resolution: one, actor: "human:esa", createdAt: 1000)
+            let later = ref.resolved(Resolution.grade(candidates: 0, method: .accessibility,
+                                                      rect: nil, surfaceEpoch: 3, t: 2000))
+            check(later.observation == ref.observation,
+                  "re-resolving NEVER alters the observation — evidence is immutable")
+            check(later.resolution.state == .unavailable,
+                  "…only the resolution changes")
+
+            check(ref.actionable(underEpoch: 3), "a confident current match is actionable")
+            check(!ref.actionable(underEpoch: 9),
+                  "…and stops being actionable when the surface changed underneath")
+            check(!ref.resolved(many).actionable(underEpoch: 3),
+                  "an ambiguous reference is never actionable")
+            check(!ref.resolved(weak).actionable(underEpoch: 3, minConfidence: 0.5),
+                  "a low-confidence match is refused for action")
+
+            // The epistemic state drives the visual grammar built earlier.
+            check(ResolutionState.resolved.attachment == .firm, "resolved draws firm")
+            check(ResolutionState.stale.attachment == .loosening, "stale visibly loosens")
+            check(ResolutionState.ambiguous.attachment == .ambiguous, "ambiguity is dashed")
+            check(ResolutionState.destroyed.attachment == .lost, "a destroyed target is lost")
+
+            // It has to survive the wire, since agents and missions will hold these.
+            let data = try! JSONEncoder().encode(ref)
+            let back = try! JSONDecoder().decode(SpatialReference.self, from: data)
+            check(back == ref, "a SpatialReference roundtrips through JSON")
+            check(back.anchor.selectors.count == 3, "…with all its selectors")
+        }
+
+        // ═══════════ window matching ═══════════
+
+        do {
+            func w(_ owner: String, _ title: String, _ n: Int,
+                   _ r: CGRect, layer: Int = 0) -> WindowDescriptor {
+                WindowDescriptor(pid: 100 + n, owner: owner, title: title, number: n,
+                                 frame: r, layer: layer)
+            }
+            let safari  = w("Safari", "Settings", 1, CGRect(x: 100, y: 100, width: 800, height: 600))
+            let safari2 = w("Safari", "Apple",    2, CGRect(x: 200, y: 150, width: 700, height: 500))
+            let term    = w("iTerm2", "bash",     3, CGRect(x: 0, y: 0, width: 600, height: 400))
+            let menubar = w("Window Server", "Menubar", 4,
+                            CGRect(x: 0, y: 0, width: 1512, height: 24), layer: 24)
+            let tiny    = w("Dock", "", 5, CGRect(x: 0, y: 0, width: 40, height: 40))
+            let mine    = w("Overlay", "", 6, CGRect(x: 0, y: 0, width: 1512, height: 982))
+            let all = [safari, safari2, term, menubar, tiny, mine]
+
+            let usable = WindowMatcher.addressable(all, excludingOwner: "Overlay")
+            check(usable.count == 3, "menu bar, Dock and our own panel are not targets")
+            check(!usable.contains(where: { $0.owner == "Overlay" }),
+                  "the overlay never anchors to itself")
+
+            // app + title → exactly one
+            let precise = WindowMatcher.anchor(for: safari)
+            let hit = WindowMatcher.candidates(for: precise, among: usable)
+            check(hit.matches.count == 1 && hit.matches[0].number == 1,
+                  "app + title finds exactly the intended window")
+            check(hit.method == .windowFingerprint, "…by fingerprint")
+            check(hit.weight > 0.8, "…and the app+title fingerprint is a specific match")
+            check(AnchorSelector(kind: .windowFingerprint, application: "Safari").weight <
+                  AnchorSelector(kind: .windowFingerprint, application: "Safari",
+                           windowTitle: "Settings").weight,
+                  "app-only ranks BELOW app+title — specificity, not category")
+
+            // app alone across two Safari windows → AMBIGUOUS, never a guess
+            let loose = SpatialAnchor(selectors: [
+                AnchorSelector(kind: .windowFingerprint, application: "Safari")])
+            let both = WindowMatcher.candidates(for: loose, among: usable)
+            check(both.matches.count == 2, "app alone matches both Safari windows")
+            let graded = Resolution.grade(candidates: both.matches.count,
+                                          method: both.method, confidence: both.weight,
+                                          rect: nil, surfaceEpoch: 0, t: 0)
+            check(graded.state == .ambiguous && !graded.state.actionable,
+                  "two candidates is ambiguity, and ambiguity is not actionable")
+
+            // A vanished window must read as GONE, not as "ambiguous among its
+            // siblings" — the anchor carries a broad app-only selector for
+            // reacquisition, and that must not turn absence into ambiguity.
+            let withBroadFallback = SpatialAnchor(selectors: [
+                AnchorSelector(kind: .windowFingerprint, application: "Safari",
+                               windowTitle: "Settings"),
+                AnchorSelector(kind: .windowFingerprint, application: "Safari"),
+            ])
+            let vanished = WindowMatcher.candidates(for: withBroadFallback,
+                                                    among: [safari2, term])
+            check(vanished.matches.isEmpty,
+                  "the exact window is gone → unavailable, not ambiguous among siblings")
+            check(Resolution.grade(candidates: 0, method: vanished.method,
+                                   confidence: vanished.weight, rect: nil,
+                                   surfaceEpoch: 0, t: 0).state == .unavailable,
+                  "…and grades as unavailable")
+
+            // Reacquisition after a restart: the app is back with the SAME title, so
+            // the broad selector is allowed to adopt it even though the window number
+            // is new. That is the case reacquisition exists for.
+            let restarted = w("Safari", "Settings", 999,
+                              CGRect(x: 100, y: 100, width: 800, height: 600))
+            let back = WindowMatcher.candidates(for: withBroadFallback, among: [restarted])
+            check(back.matches.count == 1 && back.matches[0].number == 999,
+                  "after a restart the same app+title reacquires, with a new window id")
+
+            // A single window of the right app but a DIFFERENT title is not adopted.
+            let sibling = WindowMatcher.candidates(for: withBroadFallback, among: [safari2])
+            check(sibling.matches.isEmpty,
+                  "one window of the right app but the wrong title is NOT adopted")
+
+            // closed window → unavailable, and NOT rebound to the other Safari
+            let gone = WindowMatcher.candidates(for: precise, among: [term])
+            check(gone.matches.isEmpty, "a closed window finds nothing")
+            check(Resolution.grade(candidates: 0, method: gone.method, confidence: gone.weight,
+                                   rect: nil, surfaceEpoch: 0, t: 0).state == .unavailable,
+                  "…and resolves unavailable rather than to the nearest window")
+
+            // a retitled window still matches on the app — degrade, don't vanish
+            let renamed = w("Safari", "Something Else Entirely", 1,
+                            CGRect(x: 100, y: 100, width: 800, height: 600))
+            let after = WindowMatcher.candidates(for: precise, among: [renamed])
+            check(after.matches.count == 1,
+                  "the SAME window, retitled, is still found — same window number")
+
+            // …but a different window of the same app, with a different title, is not
+            // adopted just because it is the only one left.
+            let impostor = w("Safari", "Something Else Entirely", 77,
+                             CGRect(x: 100, y: 100, width: 800, height: 600))
+            check(WindowMatcher.candidates(for: precise, among: [impostor]).matches.isEmpty,
+                  "a different window of the same app is NOT adopted in its place")
+
+            // the geometry that makes an annotation follow
+            let mark = CGRect(x: 300, y: 250, width: 200, height: 100)
+            let rel = WindowMatcher.bind(mark, to: safari.frame)
+            check(near(rel.x, 0.25) && near(rel.y, 0.25), "a mark binds window-relative")
+
+            let moved = CGRect(x: 500, y: 400, width: 800, height: 600)
+            let followed = WindowMatcher.place(rel, in: moved)
+            check(near(followed.minX, 700) && near(followed.minY, 550),
+                  "…and follows the window when it moves")
+            check(near(followed.width, 200), "…keeping its size when the window only moves")
+
+            let resized = CGRect(x: 100, y: 100, width: 400, height: 300)
+            let shrunk = WindowMatcher.place(rel, in: resized)
+            check(near(shrunk.width, 100) && near(shrunk.height, 50),
+                  "…and scales proportionally when the window is resized")
+            check(near(shrunk.minX, 200), "…staying at the same relative position")
+
+            check(!WindowMatcher.matches(
+                    AnchorSelector(kind: .surfaceNormalizedRect,
+                             rect: NormRect(x: 0, y: 0, w: 1, h: 1)), safari),
+                  "geometry alone never identifies a window")
+        }
+
+        // ═══════════ authority envelope ═══════════
+
+        do {
+            let now = 1_000_000.0
+            func envelope(_ json: String) throws -> [PostRequest] {
+                let e = try JSONDecoder().decode(Envelope.self, from: Data(json.utf8))
+                return try e.authorised(now: now)
+            }
+            func denied(_ json: String, _ expect: Envelope.Denial, _ msg: String) {
+                do { _ = try envelope(json); check(false, msg + " (allowed!)") }
+                catch let d as Envelope.Denial { check(d == expect, msg) }
+                catch { check(false, msg + " (wrong error: \(error))") }
+            }
+
+            let good = try! envelope("""
+            {"actor":"agent:francois","capability":"spatial.annotation.create",
+             "expiry":1000060,
+             "scope":{"surface":"local-display/*","kinds":["box","label"],
+                      "maxLifetime":"session"},
+             "request":[{"kind":"box","rel":{"x":0,"y":0,"w":0.2,"h":0.2},"ttl":"session"}]}
+            """)
+            check(good.count == 1, "a well-formed envelope is authorised")
+
+            denied("""
+            {"actor":"","capability":"spatial.annotation.create","expiry":1000060,
+             "request":[{"kind":"box","rel":{"x":0,"y":0,"w":1,"h":1}}]}
+            """, .noActor, "an unattributable request is refused")
+
+            denied("""
+            {"actor":"agent:x","capability":"spatial.annotation.create",
+             "request":[{"kind":"box","rel":{"x":0,"y":0,"w":1,"h":1}}]}
+            """, .noExpiry, "an envelope with no expiry is refused — a grant must end")
+
+            denied("""
+            {"actor":"agent:x","capability":"spatial.annotation.create","expiry":999000,
+             "request":[{"kind":"box","rel":{"x":0,"y":0,"w":1,"h":1}}]}
+            """, .expired(999000), "an expired envelope is refused")
+
+            denied("""
+            {"actor":"agent:x","capability":"spatial.annotation.create","expiry":1000060,
+             "scope":{"surface":"local-display/*","kinds":["label"],"maxLifetime":"session"},
+             "request":[{"kind":"spotlight","rel":{"x":0,"y":0,"w":1,"h":1}}]}
+            """, .kindOutOfScope(.spotlight),
+                   "an actor scoped to labels cannot dim the whole screen")
+
+            denied("""
+            {"actor":"agent:x","capability":"spatial.annotation.create","expiry":1000060,
+             "scope":{"surface":"local-display/*","kinds":["box"],"maxLifetime":"ephemeral"},
+             "request":[{"kind":"box","rel":{"x":0,"y":0,"w":1,"h":1},"ttl":"persistent"}]}
+            """, .lifetimeOutOfScope(.persistent, .ephemeral),
+                   "an ephemeral-only actor cannot leave a permanent mark")
+
+            // The boundary that matters most.
+            check(Capability.allCases.allSatisfy { !$0.permitsExecution },
+                  "NO capability here permits execution — annotating never becomes acting")
+        }
+
+        // ═══════════ ActionIntent: approval bound to a resolved target ═══════════
+
+        do {
+            let surface = SurfaceRef(id: "display-1", epoch: 5)
+            let rect = NormRect(x: 0.7, y: 0.8, w: 0.1, h: 0.05)
+            let obs = Observation(surface: surface, t: 100, rect: rect,
+                                  cropDigest: "sha:the-delete-button")
+            let anchor = SpatialAnchor(selectors: [
+                AnchorSelector(kind: .accessibility, application: "com.apple.Safari",
+                               role: "AXButton", name: "Delete repository")])
+            let resolved = Resolution(state: .resolved, method: .accessibility,
+                                      confidence: 1.0, rect: rect, surfaceEpoch: 5, t: 100)
+            let target = SpatialReference(surface: surface, observation: obs,
+                                          anchor: anchor, resolution: resolved,
+                                          actor: "agent:francois", createdAt: 100)
+
+            let intent = ActionIntent(actor: "agent:francois", action: .click,
+                                      target: target,
+                                      reason: "remove the abandoned fork", createdAt: 100)
+            check(intent.state == .proposed, "an intent starts merely proposed")
+            check(!intent.executable(against: resolved, epoch: 5).ok,
+                  "…and a proposal alone can never execute")
+
+            let approved = intent.approved(at: 200)
+            check(approved.state == .approved, "the human approves")
+            check(approved.approvedObservationDigest == "sha:the-delete-button",
+                  "…and what they were SHOWN is pinned to the approval")
+
+            let fine = approved.executable(against: resolved, epoch: 5,
+                                           currentDigest: "sha:the-delete-button")
+            check(fine.ok, "unchanged target → executes: \(fine.reason)")
+
+            // Target drift — the acceptance test the whole design exists for.
+            let moved = Resolution(state: .resolved, method: .accessibility,
+                                   confidence: 1.0,
+                                   rect: NormRect(x: 0.2, y: 0.3, w: 0.1, h: 0.05),
+                                   surfaceEpoch: 5, t: 300)
+            let drifted = approved.executable(against: moved, epoch: 5)
+            check(!drifted.ok, "the target MOVED after approval → refused")
+            check(drifted.reason.contains("moved"), "…and says so: \(drifted.reason)")
+
+            let swapped = approved.executable(against: resolved, epoch: 5,
+                                              currentDigest: "sha:something-else")
+            check(!swapped.ok,
+                  "the pixels changed under the same coordinates → refused: \(swapped.reason)")
+
+            let rearranged = approved.executable(against: resolved, epoch: 6)
+            check(!rearranged.ok, "the display arrangement changed → refused")
+
+            let ambiguousNow = Resolution(state: .ambiguous, surfaceEpoch: 5, t: 300)
+            check(!approved.executable(against: ambiguousNow, epoch: 5).ok,
+                  "the target became ambiguous → refused, never a guess")
+
+            let gone = Resolution(state: .unavailable, surfaceEpoch: 5, t: 300)
+            check(!approved.executable(against: gone, epoch: 5).ok,
+                  "the target vanished → refused")
+
+            check(!intent.rejected().executable(against: resolved, epoch: 5).ok,
+                  "a rejected intent never executes")
+
+            let wire = try! JSONEncoder().encode(approved)
+            let back = try! JSONDecoder().decode(ActionIntent.self, from: wire)
+            check(back == approved, "an intent and its approval survive the wire intact")
+        }
+
         print("\n\(passed) passed, \(failed) failed")
         exit(failed == 0 ? 0 : 1)
     }

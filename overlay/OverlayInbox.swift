@@ -102,11 +102,23 @@ final class InboxWatcher {
 
             var failure: String?
             do {
-                let requests = try PostRequest.decodeBatch(data)
+                // An envelope is accepted if present, and a bare request still works
+                // so nothing that used to post breaks. The difference is that an
+                // enveloped actor is CONSTRAINED — kinds, lifetimes and an expiry —
+                // and a bare one is now explicitly recorded as unattributed.
+                let requests: [PostRequest]
+                if let envelope = try? JSONDecoder().decode(Envelope.self, from: data),
+                   !envelope.actor.isEmpty {
+                    requests = try envelope.authorised(now: Date().timeIntervalSince1970)
+                } else {
+                    requests = try PostRequest.decodeBatch(data)
+                }
                 // The handler touches AppKit, so it must run on the main queue — but
                 // this scan owns the file, so wait for the verdict before deciding
                 // whether to consume or quarantine it.
                 DispatchQueue.main.sync { failure = self.handler(requests) }
+            } catch let e as Envelope.Denial {
+                failure = "refused: \(e.description)"
             } catch let e as PostRequest.PostError {
                 failure = e.description
             } catch {
@@ -155,5 +167,7 @@ enum OverlayControl {
     static let probe  = Notification.Name("com.esaruoho.overlay.probe")
     static let imagine = Notification.Name("com.esaruoho.overlay.imagine")
     static let chat   = Notification.Name("com.esaruoho.overlay.chat")
-    static let all: [Notification.Name] = [clear, draw, ask]
+    static let attach = Notification.Name("com.esaruoho.overlay.attach")
+    static let all: [Notification.Name] = [clear, draw, ask, probe, imagine,
+                                           chat, attach]
 }

@@ -227,6 +227,10 @@ public struct OverlayObject: Codable, Equatable, Sendable {
     public var text: String?
     /// For `.image`: an absolute path to the PNG rendered inside the rect.
     public var imagePath: String?
+    /// Set when the mark is attached to another app's window rather than the screen.
+    /// The binding is durable (selectors + normalized rect); the resolution is not.
+    public var binding: WindowBinding?
+    public var resolution: Resolution?
 
     public init(id: String = UUID().uuidString,
                 kind: ObjectKind = .ink,
@@ -238,11 +242,14 @@ public struct OverlayObject: Codable, Equatable, Sendable {
                 created: Double = Date().timeIntervalSince1970,
                 anchor: OverlayAnchor = .screen,
                 text: String? = nil,
-                imagePath: String? = nil) {
+                imagePath: String? = nil,
+                binding: WindowBinding? = nil,
+                resolution: Resolution? = nil) {
         self.id = id; self.kind = kind; self.points = points
         self.colorHex = colorHex; self.width = width; self.actor = actor
         self.lifetime = lifetime; self.created = created; self.anchor = anchor
         self.text = text; self.imagePath = imagePath
+        self.binding = binding; self.resolution = resolution
     }
 
     public var bounds: CGRect { Geometry.bounds(points) }
@@ -743,4 +750,628 @@ public enum Attachment: String, Codable, Sendable {
     }
 
     public var isDashed: Bool { self != .firm }
+}
+
+// ═══════════════════ Surface · Observation · Anchor · Resolution ═══════════════════
+//
+// The SDD's central argument, and it is right:
+//
+//     Historical observation is immutable. Anchor resolution is revisable.
+//
+// Three different things exist the moment someone circles a button, and conflating
+// them is the failure mode that matters: an old observation silently changing meaning
+// because a current anchor now resolves somewhere new.
+//
+//   Observation  what was actually seen, then. Evidence. Never edited.
+//   Anchor       how we believe the intended thing can be found again. Selectors.
+//   Resolution   what that anchor maps to NOW. Revisable, gradeable, possibly absent.
+//
+// None of this knows about NSScreen, CGWindowID or AXUIElement — those are runtime
+// details of one resolver. What persists is selector semantics.
+
+/// What kind of thing is being addressed. Only `.localDisplay` is implemented; the
+/// rest exist so the persisted ontology is not "the Mac desktop" from day one.
+/// Deliberately NOT eight adapters — one enum case each, no speculative machinery.
+public enum SurfaceKind: String, Codable, Sendable {
+    case localDisplay, window, captured, browser, remote, image, video
+}
+
+/// Identity of a surface, plus an epoch.
+///
+/// The epoch is the part people forget. Display arrangement, resolution and scale all
+/// change; a geometry recorded under one arrangement is not comparable with one
+/// recorded under another. Bumping the epoch makes that mismatch detectable instead
+/// of silently wrong.
+public struct SurfaceRef: Codable, Equatable, Sendable {
+    public var kind: SurfaceKind
+    public var id: String
+    public var epoch: Int
+
+    public init(kind: SurfaceKind = .localDisplay, id: String, epoch: Int = 0) {
+        self.kind = kind; self.id = id; self.epoch = epoch
+    }
+}
+
+/// One way of describing the intended target.
+///
+/// Flat rather than an enum with associated values, because this shape is the JSON
+/// that agents write and read, and it matches the SDD's example verbatim. Several
+/// selectors describe the SAME target — there is no universal UI identifier, so the
+/// design is deliberately redundant.
+public enum AnchorSelectorKind: String, Codable, Sendable {
+    case accessibility          // app + role + name  — most semantic, least available
+    case text                   // an exact quote, with context
+    case windowFingerprint      // app + title (+ pid/number as runtime hints)
+    case windowNormalizedRect   // 0…1 within a window
+    case surfaceNormalizedRect  // 0…1 within the surface — the last resort
+}
+
+public struct AnchorSelector: Codable, Equatable, Sendable {
+    public var kind: AnchorSelectorKind
+    public var application: String?
+    public var windowTitle: String?
+    /// Runtime hints. Recorded for this-session speed, NEVER the durable identity —
+    /// a window number is meaningless after a restart.
+    public var windowNumber: Int?
+    public var pid: Int?
+    public var role: String?
+    public var name: String?
+    public var exact: String?
+    public var context: String?
+    public var rect: NormRect?
+
+    public init(kind: AnchorSelectorKind, application: String? = nil, windowTitle: String? = nil,
+                windowNumber: Int? = nil, pid: Int? = nil, role: String? = nil,
+                name: String? = nil, exact: String? = nil, context: String? = nil,
+                rect: NormRect? = nil) {
+        self.kind = kind; self.application = application; self.windowTitle = windowTitle
+        self.windowNumber = windowNumber; self.pid = pid; self.role = role
+        self.name = name; self.exact = exact; self.context = context; self.rect = rect
+    }
+
+    /// Does this selector still mean anything after the owning process restarts?
+    /// A window number does not. An app + title + role does.
+    public var survivesRestart: Bool {
+        switch kind {
+        case .accessibility:         return application != nil && role != nil
+        case .text:                  return !(exact ?? "").isEmpty
+        case .windowFingerprint:     return application != nil
+        case .windowNormalizedRect:  return false   // meaningless without its window
+        case .surfaceNormalizedRect: return true    // survives, but says nothing semantic
+        }
+    }
+
+    /// How much a match on this selector alone is worth.
+    ///
+    /// Weighted by SPECIFICITY, not by category. An app+title window fingerprint is
+    /// more precise than a title substring, while an app-ONLY fingerprint is much
+    /// less precise than either — all three share a kind, so ranking by kind alone
+    /// sorted the broad one above the narrow one. Caught by the test that expected
+    /// app+title to win.
+    public var weight: Double {
+        switch kind {
+        case .accessibility:
+            // role + name is a real semantic address; role alone is not.
+            return (name?.isEmpty == false) ? 1.0 : 0.55
+        case .windowFingerprint:
+            let titled = (windowTitle?.isEmpty == false)
+            return titled ? 0.85 : 0.5
+        case .text:
+            return 0.8
+        case .windowNormalizedRect:  return 0.3
+        case .surfaceNormalizedRect: return 0.1
+        }
+    }
+}
+
+/// How we believe the intended thing can be found again. Ordered strongest-first.
+public struct SpatialAnchor: Codable, Equatable, Sendable {
+    public var selectors: [AnchorSelector]
+
+    public init(selectors: [AnchorSelector]) {
+        self.selectors = selectors.sorted { $0.weight > $1.weight }
+    }
+
+    public var survivesRestart: Bool { selectors.contains { $0.survivesRestart } }
+    public var best: AnchorSelector? { selectors.first }
+}
+
+/// What was actually seen, at one moment. Immutable evidence.
+public struct Observation: Codable, Equatable, Sendable {
+    public var id: String
+    public var surface: SurfaceRef
+    public var t: Double
+    /// Where it was, in surface-normalized units — never raw pixels.
+    public var rect: NormRect
+    /// Path to the crop, and a digest of it. The digest is what lets a later approval
+    /// prove it is talking about the same picture the human was shown.
+    public var cropPath: String?
+    public var cropDigest: String?
+    public var ocr: String?
+
+    public init(id: String = UUID().uuidString, surface: SurfaceRef, t: Double,
+                rect: NormRect, cropPath: String? = nil, cropDigest: String? = nil,
+                ocr: String? = nil) {
+        self.id = id; self.surface = surface; self.t = t; self.rect = rect
+        self.cropPath = cropPath; self.cropDigest = cropDigest; self.ocr = ocr
+    }
+}
+
+/// The lifecycle of "can we still find it?".
+public enum ResolutionState: String, Codable, Sendable {
+    case unresolved, resolving
+    case resolved, ambiguous, unavailable
+    case stale, occluded, destroyed, reacquiring
+
+    /// Is it safe to act on this? Only a single confident match is.
+    /// Ambiguity fails closed — never act on a guess.
+    public var actionable: Bool { self == .resolved }
+
+    /// How it should look, connecting the epistemic state to the visual grammar.
+    public var attachment: Attachment {
+        switch self {
+        case .resolved:                          return .firm
+        case .stale, .occluded, .reacquiring:    return .loosening
+        case .ambiguous:                         return .ambiguous
+        case .unresolved, .resolving,
+             .unavailable, .destroyed:           return .lost
+        }
+    }
+}
+
+public struct Resolution: Codable, Equatable, Sendable {
+    public var state: ResolutionState
+    /// Which selector actually matched, so a later reader can judge the quality.
+    public var method: AnchorSelectorKind?
+    public var confidence: Double
+    public var rect: NormRect?
+    public var surfaceEpoch: Int
+    public var t: Double
+    /// How many candidates matched. More than one is ambiguity, not a tie to break.
+    public var candidates: Int
+
+    public init(state: ResolutionState, method: AnchorSelectorKind? = nil,
+                confidence: Double = 0, rect: NormRect? = nil,
+                surfaceEpoch: Int = 0, t: Double = 0, candidates: Int = 0) {
+        self.state = state; self.method = method; self.confidence = confidence
+        self.rect = rect; self.surfaceEpoch = surfaceEpoch; self.t = t
+        self.candidates = candidates
+    }
+
+    public static let unresolved = Resolution(state: .unresolved)
+
+    /// Grade a resolver's candidate list. This is the one rule that keeps the system
+    /// honest: zero is unavailable, one is resolved, more than one is AMBIGUOUS —
+    /// never "pick the closest".
+    public static func grade(candidates: Int, method: AnchorSelectorKind,
+                             confidence: Double? = nil,
+                             rect: NormRect?, surfaceEpoch: Int, t: Double) -> Resolution {
+        switch candidates {
+        case 0:
+            return Resolution(state: .unavailable, method: method, confidence: 0,
+                              surfaceEpoch: surfaceEpoch, t: t, candidates: 0)
+        case 1:
+            return Resolution(state: .resolved, method: method,
+                              confidence: confidence ?? method.weightForConfidence, rect: rect,
+                              surfaceEpoch: surfaceEpoch, t: t, candidates: 1)
+        default:
+            return Resolution(state: .ambiguous, method: method, confidence: 0,
+                              rect: rect, surfaceEpoch: surfaceEpoch, t: t,
+                              candidates: candidates)
+        }
+    }
+
+    /// A resolution taken under a different surface arrangement is stale, whatever it
+    /// said at the time — the coordinates are not comparable.
+    public func staleness(againstEpoch current: Int) -> Resolution {
+        guard surfaceEpoch != current, state == .resolved else { return self }
+        var copy = self
+        copy.state = .stale
+        return copy
+    }
+}
+
+private extension AnchorSelectorKind {
+    /// Confidence for a single clean match, by how semantic the selector is.
+    var weightForConfidence: Double {
+        AnchorSelector(kind: self).weight
+    }
+}
+
+/// A reference to something in a visual environment, usable with no annotation drawn.
+///
+/// This is the durable unit. Overlay produces and consumes these; it does not own the
+/// concept — an agent, a mission or a transcript can hold one and resolve it later.
+public struct SpatialReference: Codable, Equatable, Sendable {
+    public var id: String
+    public var surface: SurfaceRef
+    public var observation: Observation
+    public var anchor: SpatialAnchor
+    public var resolution: Resolution
+    public var actor: String
+    public var createdAt: Double
+
+    public init(id: String = UUID().uuidString, surface: SurfaceRef,
+                observation: Observation, anchor: SpatialAnchor,
+                resolution: Resolution = .unresolved,
+                actor: String, createdAt: Double) {
+        self.id = id; self.surface = surface; self.observation = observation
+        self.anchor = anchor; self.resolution = resolution
+        self.actor = actor; self.createdAt = createdAt
+    }
+
+    /// Re-resolving NEVER touches the observation. That is the whole doctrine, made
+    /// mechanical: this returns a copy with a new resolution and identical evidence.
+    public func resolved(_ new: Resolution) -> SpatialReference {
+        var copy = self
+        copy.resolution = new
+        return copy
+    }
+
+    /// Safe to execute an action against? Requires a single confident match under the
+    /// CURRENT surface arrangement.
+    public func actionable(underEpoch epoch: Int, minConfidence: Double = 0.5) -> Bool {
+        let checked = resolution.staleness(againstEpoch: epoch)
+        return checked.state.actionable && checked.confidence >= minConfidence
+    }
+}
+
+// ═══════════════════ window matching (pure) ═══════════════════
+//
+// The matching rules live here, with no CoreGraphics window API in sight, so they can
+// be tested against a hand-built list instead of against whatever happens to be open.
+// The adapter that actually calls CGWindowList is OverlayWindows.swift.
+
+/// One window as the resolver sees it. Deliberately just facts, no handles.
+public struct WindowDescriptor: Codable, Equatable, Sendable {
+    public var pid: Int
+    public var owner: String        // application name, e.g. "Safari"
+    public var title: String
+    public var number: Int          // CGWindowID — a runtime hint, never identity
+    public var frame: CGRect        // TOP-LEFT space, as CGWindowList reports it
+    public var layer: Int
+
+    public init(pid: Int, owner: String, title: String, number: Int,
+                frame: CGRect, layer: Int = 0) {
+        self.pid = pid; self.owner = owner; self.title = title
+        self.number = number; self.frame = frame; self.layer = layer
+    }
+}
+
+/// Where a mark sits inside a window, and how to find that window again.
+public struct WindowBinding: Codable, Equatable, Sendable {
+    public var anchor: SpatialAnchor
+    /// 0…1 within the window's frame. This is what survives a move or a resize.
+    public var rel: NormRect
+
+    public init(anchor: SpatialAnchor, rel: NormRect) {
+        self.anchor = anchor; self.rel = rel
+    }
+}
+
+public enum WindowMatcher {
+
+    /// Windows a human could plausibly have meant: normal layer, real size.
+    /// Filters out the menu bar, the Dock, wallpaper and our own overlay panels,
+    /// which are on screen but are not things anyone points at.
+    public static func addressable(_ windows: [WindowDescriptor],
+                                   excludingOwner: String? = nil) -> [WindowDescriptor] {
+        windows.filter { w in
+            w.layer == 0
+                && w.frame.width >= 80 && w.frame.height >= 60
+                && w.owner != (excludingOwner ?? "\u{0}")
+        }
+    }
+
+    /// Everything matching an anchor, strongest selector first.
+    ///
+    /// Returns ALL matches on purpose. The caller grades the count — one is resolved,
+    /// several is ambiguous — because "pick the closest" is exactly the behaviour that
+    /// makes a stale annotation quietly point at the wrong thing.
+    public static func candidates(for anchor: SpatialAnchor,
+                                  among windows: [WindowDescriptor])
+        -> (matches: [WindowDescriptor], method: AnchorSelectorKind, weight: Double) {
+        // A broader selector is a REACQUISITION aid, not a general fallback. It is
+        // accepted only when it names exactly one window.
+        //
+        // Measured on a real desktop: minimising a window removes it from
+        // CGWindowList (179 windows -> 178). The specific app+title selector then
+        // finds nothing and, with a naive fallback, the app-only selector matched
+        // all ten open Finder windows — reporting "ambiguous among 10" when the
+        // truthful answer is "the window you meant is gone". Both are non-actionable,
+        // but only one of them is useful to read.
+        // The title the anchor was created against, if it had one. A broad selector
+        // may only reacquire a window that still agrees with it — otherwise "the one
+        // remaining Safari window" gets silently adopted as the one you meant, which
+        // is the sibling-rebinding the acceptance criteria forbid outright.
+        let recordedTitle = anchor.selectors
+            .compactMap { $0.windowTitle }
+            .first { !$0.isEmpty }
+
+        for selector in anchor.selectors {
+            let hits = windows.filter { matches(selector, $0) }
+            guard hits.count == 1, let only = hits.first else { continue }
+
+            let isBroad = (selector.windowTitle ?? "").isEmpty
+            if isBroad, let recorded = recordedTitle,
+               only.title.caseInsensitiveCompare(recorded) != .orderedSame {
+                // One window of the right app, wrong title. Two very different things
+                // look like this, and the window number tells them apart:
+                //
+                //   the SAME window, retitled (a browser navigated) — same number,
+                //   so adopt it; the anchor is still pointing at the right thing.
+                //
+                //   a DIFFERENT window of the same app — different number, so refuse.
+                //   Adopting it is the silent sibling-rebinding that makes a stale
+                //   annotation quietly describe the wrong thing.
+                //
+                // The number is corroboration here, never identity: it is only ever
+                // consulted to CONFIRM a match the selectors already found, and it is
+                // meaningless after a restart, when the title check carries the case.
+                let recordedNumber = anchor.selectors.compactMap { $0.windowNumber }.first
+                guard let number = recordedNumber, number == only.number else { continue }
+            }
+            return (hits, selector.kind, selector.weight)
+        }
+
+        let best = anchor.best
+        // Several matches on the MOST SPECIFIC selector is genuine ambiguity; several
+        // only on a broad one, after the specific one found nothing, is absence.
+        if let best = best, windows.filter({ matches(best, $0) }).count > 1 {
+            let hits = windows.filter { matches(best, $0) }
+            return (hits, best.kind, best.weight)
+        }
+        return ([], best?.kind ?? .windowFingerprint, best?.weight ?? 0)
+    }
+
+    /// Case-insensitive, and title is matched only when the selector carries one —
+    /// a browser retitles itself constantly, so app-only is often the honest anchor.
+    public static func matches(_ selector: AnchorSelector, _ w: WindowDescriptor) -> Bool {
+        switch selector.kind {
+        case .windowFingerprint, .accessibility:
+            guard let app = selector.application else { return false }
+            guard w.owner.caseInsensitiveCompare(app) == .orderedSame
+                    || w.owner.lowercased().contains(app.lowercased()) else { return false }
+            if let title = selector.windowTitle, !title.isEmpty {
+                return w.title.caseInsensitiveCompare(title) == .orderedSame
+            }
+            return true
+        case .text:
+            guard let exact = selector.exact, !exact.isEmpty else { return false }
+            return w.title.lowercased().contains(exact.lowercased())
+        case .windowNormalizedRect, .surfaceNormalizedRect:
+            return false        // geometry alone never identifies a window
+        }
+    }
+
+    /// Build an anchor from a window the user just pointed at.
+    ///
+    /// Records app AND title as separate selectors rather than one compound key, so a
+    /// retitled window still matches on the app, degrading instead of vanishing.
+    public static func anchor(for w: WindowDescriptor) -> SpatialAnchor {
+        var selectors = [AnchorSelector(kind: .windowFingerprint, application: w.owner,
+                                  windowTitle: w.title, windowNumber: w.number, pid: w.pid)]
+        if !w.title.isEmpty {
+            selectors.append(AnchorSelector(kind: .text, exact: w.title, context: w.owner))
+        }
+        selectors.append(AnchorSelector(kind: .windowFingerprint, application: w.owner))
+        return SpatialAnchor(selectors: selectors)
+    }
+
+    /// Absolute rect → 0…1 inside a window. The stored form.
+    public static func bind(_ rect: CGRect, to window: CGRect) -> NormRect {
+        Geometry.normalize(rect, in: window)
+    }
+
+    /// 0…1 inside a window → absolute rect. The resolved form.
+    public static func place(_ rel: NormRect, in window: CGRect) -> CGRect {
+        Geometry.denormalize(rel, in: window)
+    }
+}
+
+// ═══════════════════ authority ═══════════════════
+//
+// The inbox accepted any JSON any local process wrote. Fine for a prototype, not an
+// acceptable boundary once an agent can propose actions — so the envelope separates
+// the four things that must never collapse into each other:
+//
+//     annotate  ·  propose an action  ·  approve  ·  execute
+//
+// Overlay captures and displays approval. It does NOT own authority, and it must not
+// become its own shadow governance system: execution lives elsewhere, and this file
+// deliberately contains no way to perform one.
+
+public enum Capability: String, Codable, Sendable, CaseIterable {
+    case observe          = "spatial.observe"
+    case annotate         = "spatial.annotation.create"
+    case dismiss          = "spatial.annotation.dismiss"
+    case referenceCreate  = "spatial.reference.create"
+    case referenceResolve = "spatial.reference.resolve"
+    case actionPropose    = "spatial.action.propose"
+    case approvalRequest  = "spatial.approval.request"
+
+    /// Nothing here can execute anything. Stated as code so the boundary is not just
+    /// a comment: an annotation capability can never widen into an execution one.
+    public var permitsExecution: Bool { false }
+}
+
+public struct Scope: Codable, Equatable, Sendable {
+    public var surface: String            // "local-display/*"
+    public var kinds: [String]            // object kinds this actor may create
+    public var maxLifetime: Lifetime
+
+    public init(surface: String = "local-display/*",
+                kinds: [String] = ObjectKind.allCases.map(\.rawValue),
+                maxLifetime: Lifetime = .session) {
+        self.surface = surface; self.kinds = kinds; self.maxLifetime = maxLifetime
+    }
+
+    public func allows(surface s: String) -> Bool {
+        if surface.hasSuffix("/*") { return s.hasPrefix(String(surface.dropLast(1))) }
+        return surface == s
+    }
+    public func allows(kind: ObjectKind) -> Bool { kinds.contains(kind.rawValue) }
+
+    /// Lifetimes ordered by how long they litter the screen for.
+    private static let rank: [Lifetime: Int] = [
+        .ephemeral: 0, .window: 1, .session: 2, .space: 3, .persistent: 4]
+    public func allows(lifetime: Lifetime) -> Bool {
+        (Self.rank[lifetime] ?? 9) <= (Self.rank[maxLifetime] ?? 0)
+    }
+}
+
+/// What an agent must wrap a request in.
+public struct Envelope: Decodable, Sendable {
+    public var actor: String
+    public var capability: Capability
+    public var scope: Scope?
+    /// Unix seconds. An envelope with no expiry is refused — an unbounded grant is
+    /// not a grant, it is an oversight.
+    public var expiry: Double?
+    public var request: [PostRequest]?
+
+    public enum Denial: Error, CustomStringConvertible, Equatable {
+        case noActor
+        case expired(Double)
+        case noExpiry
+        case capabilityForbids(Capability, ObjectKind)
+        case kindOutOfScope(ObjectKind)
+        case lifetimeOutOfScope(Lifetime, Lifetime)
+        case surfaceOutOfScope(String)
+        case nothingRequested
+
+        public var description: String {
+            switch self {
+            case .noActor:  return "envelope has no actor — every mark must be attributable"
+            case .expired(let t): return "envelope expired at \(Int(t))"
+            case .noExpiry: return "envelope has no expiry — an unbounded grant is refused"
+            case .capabilityForbids(let c, let k):
+                return "capability '\(c.rawValue)' does not permit creating a '\(k.rawValue)'"
+            case .kindOutOfScope(let k): return "kind '\(k.rawValue)' is outside this scope"
+            case .lifetimeOutOfScope(let want, let max):
+                return "lifetime '\(want.rawValue)' exceeds the granted maximum "
+                     + "'\(max.rawValue)'"
+            case .surfaceOutOfScope(let s): return "surface '\(s)' is outside this scope"
+            case .nothingRequested: return "envelope carries no request"
+            }
+        }
+    }
+
+    /// Check the envelope itself, then every object it wants to create.
+    ///
+    /// Returns the requests it is allowed to make. Anything refused is refused by
+    /// name, because an agent that gets a silent no cannot correct itself.
+    public func authorised(now: Double, surface: String = "local-display/main")
+        throws -> [PostRequest] {
+        guard !actor.isEmpty else { throw Denial.noActor }
+        guard let expiry = expiry else { throw Denial.noExpiry }
+        guard expiry > now else { throw Denial.expired(expiry) }
+
+        let scope = self.scope ?? Scope()
+        guard scope.allows(surface: surface) else { throw Denial.surfaceOutOfScope(surface) }
+
+        guard let requests = request, !requests.isEmpty else { throw Denial.nothingRequested }
+        guard capability == .annotate || capability == .actionPropose
+                || capability == .referenceCreate else {
+            throw Denial.capabilityForbids(capability, .ink)
+        }
+
+        for r in requests {
+            let kind = ObjectKind(rawValue: r.kind ?? "box") ?? .box
+            guard scope.allows(kind: kind) else { throw Denial.kindOutOfScope(kind) }
+            let lifetime = Lifetime(rawValue: r.ttl ?? "") ?? .session
+            guard scope.allows(lifetime: lifetime) else {
+                throw Denial.lifetimeOutOfScope(lifetime, scope.maxLifetime)
+            }
+        }
+        return requests
+    }
+}
+
+// ═══════════════════ ActionIntent ═══════════════════
+//
+// The Envoy-specific experiment: approval bound to a RESOLVED TARGET rather than to a
+// sentence. "Allow clicking Delete?" cannot express which Delete — the ambiguity was
+// never in the verb.
+
+public enum ProposedAction: String, Codable, Sendable {
+    case click, type, drag, open, delete, submit, copy
+}
+
+public enum IntentState: String, Codable, Sendable {
+    case proposed, approved, rejected, invalidated, executed, failed
+}
+
+public struct ActionIntent: Codable, Equatable, Sendable {
+    public var id: String
+    public var actor: String
+    public var action: ProposedAction
+    /// The thing itself, not a description of it.
+    public var target: SpatialReference
+    public var reason: String
+    public var state: IntentState
+    public var createdAt: Double
+
+    /// Recorded at the moment of approval, and compared before execution. This is
+    /// the whole mechanism: what the human actually saw and said yes to.
+    public var approvedResolution: Resolution?
+    public var approvedObservationDigest: String?
+    public var approvedAt: Double?
+
+    public init(id: String = UUID().uuidString, actor: String, action: ProposedAction,
+                target: SpatialReference, reason: String,
+                state: IntentState = .proposed, createdAt: Double) {
+        self.id = id; self.actor = actor; self.action = action; self.target = target
+        self.reason = reason; self.state = state; self.createdAt = createdAt
+    }
+
+    /// A human approves the thing they were shown, and what they were shown is pinned.
+    public func approved(at t: Double) -> ActionIntent {
+        var copy = self
+        copy.state = .approved
+        copy.approvedResolution = target.resolution
+        copy.approvedObservationDigest = target.observation.cropDigest
+        copy.approvedAt = t
+        return copy
+    }
+
+    public func rejected() -> ActionIntent {
+        var copy = self; copy.state = .rejected; return copy
+    }
+
+    /// May this execute, given how the target resolves RIGHT NOW?
+    ///
+    /// Fails closed on every count: not approved, not currently resolvable, the
+    /// surface rearranged, the target moved somewhere else, or the picture the human
+    /// approved is no longer the picture. A stale approval is not an approval.
+    public func executable(against current: Resolution, epoch: Int,
+                           currentDigest: String? = nil)
+        -> (ok: Bool, reason: String) {
+        guard state == .approved else { return (false, "not approved (\(state.rawValue))") }
+        guard let approved = approvedResolution else { return (false, "no approved resolution") }
+        guard current.state.actionable else {
+            return (false, "target is \(current.state.rawValue), not resolved")
+        }
+        guard current.surfaceEpoch == epoch else {
+            return (false, "the display arrangement changed since approval")
+        }
+        guard approved.surfaceEpoch == current.surfaceEpoch else {
+            return (false, "approved under a different surface arrangement")
+        }
+        if let a = approved.rect, let c = current.rect, !Self.same(a, c) {
+            return (false, "the target moved since approval — re-approve")
+        }
+        if let approvedDigest = approvedObservationDigest, let now = currentDigest,
+           approvedDigest != now {
+            return (false, "what is there now is not what was approved")
+        }
+        return (true, "approved target still resolves to the same thing")
+    }
+
+    /// Same place, within a tolerance that allows for sub-pixel jitter but not for
+    /// the control having moved.
+    static func same(_ a: NormRect, _ b: NormRect, tolerance: Double = 0.01) -> Bool {
+        abs(a.x - b.x) < tolerance && abs(a.y - b.y) < tolerance
+            && abs(a.w - b.w) < tolerance && abs(a.h - b.h) < tolerance
+    }
 }

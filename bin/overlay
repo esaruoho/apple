@@ -364,6 +364,22 @@ def cmd_session(argv):
     return 0
 
 
+def cmd_attach():
+    """Attach the last mark to the window underneath it.
+
+    The mark stops being at a place on the screen and starts being about a thing:
+    its rect is re-recorded as 0..1 inside that window, and the window is described
+    by selectors that outlive its window number. Move the window and the mark
+    follows; close it and the mark says so rather than pointing at whatever took
+    its place."""
+    if not running():
+        print("Overlay is not running.", file=sys.stderr)
+        return 1
+    rc = control("com.esaruoho.overlay.attach")
+    print("attached \u2014 move the window and the mark follows.")
+    return rc
+
+
 def cmd_chat():
     """Open the typing field, anchored to the last region."""
     if not running():
@@ -421,6 +437,8 @@ def main(argv):
         return cmd_imagine(argv)
     if verb == "chat":
         return cmd_chat()
+    if verb == "attach":
+        return cmd_attach()
     if verb == "session":
         return cmd_session(argv)
     print(f"unknown verb: {verb}\n", file=sys.stderr)

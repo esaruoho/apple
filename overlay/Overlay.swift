@@ -442,6 +442,11 @@ final class InkView: NSView {
     /// grammar is wired so that degradation will be *visible* the moment window and
     /// AX anchors land, instead of failing silently.
     private func attachment(of o: OverlayObject) -> Attachment {
+        // A window-anchored mark shows its real resolution state: firm when the
+        // window is found, dashed and dimmed when the anchor is ambiguous or the
+        // window is gone. This is the grammar built earlier finally being driven by
+        // something real.
+        if let resolution = o.resolution { return resolution.state.attachment }
         if o.kind == .image, let path = o.imagePath,
            !FileManager.default.fileExists(atPath: path) {
             return .lost
@@ -462,8 +467,21 @@ final class InkView: NSView {
         case .box:
             let path = NSBezierPath(roundedRect: o.rect, xRadius: 4, yRadius: 4)
             path.lineWidth = CGFloat(o.width)
+            // Uncertainty is never drawn as certainty.
+            if attachment(of: o).isDashed { path.setLineDash([9, 6], count: 2, phase: 0) }
             color(o.colorHex).setStroke()
             path.stroke()
+            if let state = o.resolution?.state, state != .resolved {
+                let note = state == .ambiguous
+                    ? "ambiguous — \(o.resolution?.candidates ?? 0) windows match"
+                    : "anchor \(state.rawValue)"
+                let size = chipParts(note, actor: o.actor).size
+                drawChip(note,
+                         in: CGRect(x: o.rect.midX - size.width / 2,
+                                    y: o.rect.maxY + 6,
+                                    width: size.width, height: size.height),
+                         hex: "#FF9F0A", actor: o.actor)
+            }
 
         case .highlight:
             // A marker pen, not a paint bucket: translucent enough to read through.
@@ -1881,6 +1899,116 @@ final class OverlayManager {
         _ = objects
     }
 
+    /// Tier-A window anchoring. Polls only while something is anchored.
+    private lazy var windowTracker = WindowTracker { [weak self] in self?.trackWindows() }
+    private let windowResolver = MacWindowAnchorResolver()
+
+    /// Attach the newest human mark to the window underneath it.
+    ///
+    /// This is the moment a mark stops being at a place on the screen and starts
+    /// being about a thing: its rect is re-recorded as 0…1 inside that window, and
+    /// the window is described by selectors that outlive its window number.
+    @discardableResult
+    func attachLastMarkToWindow() -> String? {
+        guard let canvas = here.first,
+              let last = canvas.view.store.objects.last(where: {
+                  $0.kind != .image && $0.kind != .callout && $0.kind != .label })
+        else { return "nothing drawn to attach" }
+
+        let rect = last.kind.isRectangular ? last.rect : last.bounds
+        guard rect.width > 4, rect.height > 4 else { return "the mark has no area" }
+
+        // View coords → AppKit global, then find what is under its centre.
+        let origin = canvas.panel.frame.origin
+        let global = rect.offsetBy(dx: origin.x, dy: origin.y)
+        guard let target = WindowList.window(
+                atAppKitPoint: CGPoint(x: global.midX, y: global.midY)) else {
+            return "no window under that mark"
+        }
+
+        let windowAppKit = WindowList.appKitRect(fromTopLeft: target.frame)
+        let binding = WindowBinding(anchor: WindowMatcher.anchor(for: target),
+                                    rel: WindowMatcher.bind(global, to: windowAppKit))
+
+        var updated = last
+        updated.binding = binding
+        updated.resolution = Resolution(state: .resolving,
+                                        surfaceEpoch: MacWindowAnchorResolver.surfaceEpoch,
+                                        t: Date().timeIntervalSince1970)
+        canvas.view.store.remove(id: last.id)
+        canvas.view.store.add(updated)
+        canvas.view.needsDisplay = true
+
+        livefile.append(LivefileEvent(
+            type: "spatial.reference.created", body: "\(target.owner) — \(target.title)",
+            extra: ["application": target.owner, "windowTitle": target.title,
+                    "selectors": binding.anchor.selectors.map { $0.kind.rawValue },
+                    "rel": [binding.rel.x, binding.rel.y, binding.rel.w, binding.rel.h],
+                    "surfaceEpoch": MacWindowAnchorResolver.surfaceEpoch,
+                    "source": "overlay"]))
+
+        syncWindowTracking()
+        NSLog("Overlay: attached to \(target.owner) — \(target.title)")
+        return nil
+    }
+
+    func syncWindowTracking() {
+        let anchored = canvases.reduce(0) { total, canvas in
+            total + canvas.view.store.objects.filter { $0.binding != nil }.count
+        }
+        windowTracker.sync(anchoredCount: anchored)
+    }
+
+    /// One tick: re-resolve every anchored mark and move it, or mark it lost.
+    private func trackWindows() {
+        let pool = WindowList.addressable()
+        var changed = false
+
+        for canvas in canvases {
+            let origin = canvas.panel.frame.origin
+            for object in canvas.view.store.objects {
+                guard let binding = object.binding else { continue }
+                let (resolution, _, placed) = windowResolver.resolve(binding, among: pool)
+
+                var updated = object
+                updated.resolution = resolution
+
+                if resolution.state == .resolved, let placed = placed {
+                    // AppKit global → this canvas's view coordinates.
+                    let local = placed.offsetBy(dx: -origin.x, dy: -origin.y)
+                    updated.points = [local.origin,
+                                      CGPoint(x: local.maxX, y: local.maxY)]
+                    if updated.kind == .ink || updated.kind == .line {
+                        updated.kind = .box   // ink cannot be re-projected; its box can
+                    }
+                }
+
+                // Only rewrite the store when something actually moved or changed
+                // state — otherwise a 10 Hz poll would repaint the canvas forever.
+                if updated.points != object.points
+                    || updated.resolution?.state != object.resolution?.state {
+                    if updated.resolution?.state != object.resolution?.state {
+                        livefile.append(LivefileEvent(
+                            type: resolution.state == .resolved
+                                ? "spatial.anchor.resolved" : "spatial.anchor.\(resolution.state.rawValue)",
+                            body: binding.anchor.best?.application ?? "",
+                            extra: ["state": resolution.state.rawValue,
+                                    "method": resolution.method?.rawValue ?? "",
+                                    "confidence": resolution.confidence,
+                                    "candidates": resolution.candidates,
+                                    "surfaceEpoch": resolution.surfaceEpoch,
+                                    "source": "overlay"]))
+                    }
+                    canvas.view.store.remove(id: object.id)
+                    canvas.view.store.add(updated)
+                    changed = true
+                }
+            }
+            if changed { canvas.view.needsDisplay = true }
+        }
+        if changed { persist() }
+    }
+
     private var ttlCollector: Timer?
 
     /// Exposed so the self-test can assert that nothing is ticking at idle.
@@ -2136,6 +2264,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     + "preflight=\(CGPreflightScreenCaptureAccess())")
             }
         }
+        center.addObserver(forName: OverlayControl.attach, object: nil, queue: .main) {
+            [weak self] _ in
+            if let problem = self?.manager.attachLastMarkToWindow() {
+                NSLog("Overlay: attach — \(problem)")
+            }
+        }
         center.addObserver(forName: OverlayControl.chat, object: nil, queue: .main) {
             [weak self] _ in self?.manager.openChat(for: nil)
         }
@@ -2250,6 +2384,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 (kVK_Return,     UInt32(optionKey),           31),   // MAKE AN IMAGE of it
                 (kVK_ANSI_F,     0,                           26),   // freehand pen
                 (kVK_ANSI_R,     0,                           27),   // region select
+                (kVK_ANSI_A,     UInt32(cmdKey),              33),   // ATTACH to the window under it
             ]
             let numbers = [kVK_ANSI_1, kVK_ANSI_2, kVK_ANSI_3,
                            kVK_ANSI_4, kVK_ANSI_5, kVK_ANSI_6]
@@ -2287,6 +2422,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case 22: manager.clearHere()
         case 23: manager.nudgeWidth(-1)
         case 24: manager.nudgeWidth(+1)
+        case 33: _ = manager.attachLastMarkToWindow()
         case 32: manager.openChat(for: nil)
         case 30: manager.askLastRegion()
         case 31: manager.imagineLastRegion()
