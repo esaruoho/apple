@@ -1,4 +1,4 @@
-# CLI Tools Index — 330 tools in bin/
+# CLI Tools Index — 331 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -233,6 +233,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `rec-subtitle` — (no description) — `bin/rec-subtitle`
 `recburn` — the full screencast in one word: screen + system audio + microphone + — `bin/recburn`
 `recburn-click-reset` — put the burned-in CLICKS counter back to 0, mid-recording. — `bin/recburn-click-reset`
+`recburn-redact` — surgically redact a region of a recburn video for a time window. — `bin/recburn-redact`
 `recburn-url` — the guaranteed-portable control seam for RecBurn.app. — `bin/recburn-url`
 `recburn-youtube` — (no description) — `bin/recburn-youtube`
 `recburnclick` — `recburn`, plus a live click counter burned into the video. — `bin/recburnclick`

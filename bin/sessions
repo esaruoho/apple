@@ -39,6 +39,7 @@ Apple-native: stdlib only. No Homebrew, no pip.
 import curses
 import json
 import os
+import re
 import shutil
 import sqlite3
 import subprocess
@@ -734,23 +735,19 @@ def all_rows_global():
             con.close()
         except sqlite3.Error:
             pass
-    try:
-        for year in os.listdir(f"{HOME}/.codex/sessions"):
-            for month in os.listdir(f"{HOME}/.codex/sessions/{year}"):
-                for day in os.listdir(f"{HOME}/.codex/sessions/{year}/{month}"):
-                    ddir = f"{HOME}/.codex/sessions/{year}/{month}/{day}"
-                    for n in os.listdir(ddir):
-                        if not n.startswith("rollout-") or not n.endswith(".jsonl"):
-                            continue
-                        full = os.path.join(ddir, n)
-                        try:
-                            st = os.stat(full)
-                        except OSError:
-                            continue
-                        sid = n.rsplit("-", 1)[-1][:-6]
-                        rows.append(Row("codex", sid, "(unknown)", full, st.st_mtime, st.st_size))
-    except FileNotFoundError:
-        pass
+    # Codex: ~/.codex/sessions/<year>/<month>/<day>/rollout-*.jsonl — walk it
+    # rather than nesting listdir(), so stray files (.DS_Store) can't crash us.
+    for ddir, _dirs, files in os.walk(f"{HOME}/.codex/sessions"):
+        for n in files:
+            if not n.startswith("rollout-") or not n.endswith(".jsonl"):
+                continue
+            full = os.path.join(ddir, n)
+            try:
+                st = os.stat(full)
+            except OSError:
+                continue
+            sid = n.rsplit("-", 1)[-1][:-6]
+            rows.append(Row("codex", sid, "(unknown)", full, st.st_mtime, st.st_size))
     # Converse (fm-converse) — global by nature, so the same list everywhere.
     rows.extend(list_converse("."))
     rows.sort(key=lambda r: r.mtime, reverse=True)
@@ -878,20 +875,106 @@ def cmd_cat(args):
     print(render_session(r))
 
 
+GREP_USAGE = """usage: sessions grep [options] <pattern>
+
+  -w, --word        match whole words only  (`vk` won't hit `toolu_01BZCkVk…`)
+  -u, --user        search only what YOU typed, not the assistant's replies
+  -e, --regex       treat <pattern> as a regex (default: literal substring)
+  -c, --case        case-sensitive (default: insensitive)
+  -n N              show up to N matching lines per session (default 3, 0 = none)
+  -a, --and P       require P too — repeatable, ANDed across the whole session
+                    (e.g. `grep -w vk --and facebook --and instagram`)
+  --limit N         only scan the N newest sessions (default: all)
+
+Sessions are ranked by hit count, most hits first — the session that's really
+*about* the pattern floats to the top instead of the one that mentions it once.
+"""
+
+
+def _grep_matcher(pat, word, regex, case):
+    """Compile <pat> into a function returning the number of matches in a string."""
+    if not regex:
+        pat = re.escape(pat)
+    if word:
+        pat = r"\b(?:" + pat + r")\b"
+    rx = re.compile(pat, 0 if case else re.IGNORECASE)
+    return lambda s: len(rx.findall(s))
+
+
 def cmd_grep(args):
-    if not args:
-        print("usage: sessions grep <pattern>", file=sys.stderr); sys.exit(2)
-    pat = args[0].lower()
-    for r in all_rows_global():
+    word = user_only = regex = case = False
+    per = 3
+    limit = None
+    extra = []
+    pat = None
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a in ("-w", "--word"): word = True
+        elif a in ("-u", "--user"): user_only = True
+        elif a in ("-e", "--regex"): regex = True
+        elif a in ("-c", "--case"): case = True
+        elif a in ("-h", "--help"): print(GREP_USAGE); return
+        elif a == "-n": i += 1; per = int(args[i])
+        elif a in ("-a", "--and"): i += 1; extra.append(args[i])
+        elif a == "--limit": i += 1; limit = int(args[i])
+        elif a.startswith("-") and len(a) > 1:
+            print(f"sessions grep: unknown option {a}\n", file=sys.stderr)
+            print(GREP_USAGE, file=sys.stderr); sys.exit(2)
+        elif pat is None: pat = a
+        else: extra.append(a)   # bare extra words are ANDed too
+        i += 1
+    if pat is None:
+        print(GREP_USAGE, file=sys.stderr); sys.exit(2)
+
+    match = _grep_matcher(pat, word, regex, case)
+    also = [(p, _grep_matcher(p, word, regex, case)) for p in extra]
+
+    rows = all_rows_global()
+    if limit:
+        rows = rows[:limit]
+
+    hits = []
+    for r in rows:
         ensure_meta_for(r)
-        text = render_session(r)
-        if pat in text.lower():
-            when = time.strftime("%Y-%m-%d %H:%M", time.localtime(r.mtime))
-            # Show first matching line for context
-            for ln in text.split("\n"):
-                if pat in ln.lower():
-                    print(f"{r.provider:8} {r.uuid[:24]:24} {when}  {ln.strip()[:120]}")
-                    break
+        try:
+            text = render_session(r)
+        except Exception:
+            continue
+        if user_only:
+            # Keep only the USER blocks that render_session emitted.
+            blocks, keep = text.split("\n## "), []
+            for b in blocks[1:]:
+                if b.startswith("USER"):
+                    keep.append(b)
+            text = "\n## ".join(keep)
+        n = match(text)
+        if not n:
+            continue
+        if any(m(text) == 0 for _p, m in also):
+            continue
+        hits.append((n, r, text))
+
+    hits.sort(key=lambda h: -h[0])
+    if not hits:
+        terms = " + ".join([pat] + extra)
+        print(f"sessions grep: no session matches {terms}")
+        return
+
+    for n, r, text in hits:
+        when = time.strftime("%Y-%m-%d %H:%M", time.localtime(r.mtime))
+        where = r.cwd or ""
+        if where.startswith(HOME):
+            where = "~" + where[len(HOME):]
+        print(f"{r.provider:8} {r.uuid[:8]}  {when}  {n:>4} hits  {where}")
+        shown = 0
+        for ln in text.split("\n"):
+            if shown >= per:
+                break
+            if match(ln):
+                print(f"    {ln.strip()[:150]}")
+                shown += 1
+    print(f"\n{len(hits)} session(s). Resume one with:  sessions open <id>")
 
 
 def cmd_open(args):
@@ -1445,7 +1528,9 @@ Usage:
   sessions <folder>                   TUI picker scoped to <folder>
   sessions ls [N]                     Plain-text listing across ALL providers (default 50)
   sessions cat <id>                   Print the full transcript of any session (pipe-friendly)
-  sessions grep <pattern>             Search session contents across all providers
+  sessions grep <pattern>             Literal search of session prose, ranked by hit
+              [-w] [-u] [-e] [-c]     count. -w whole-word, -u only your own turns,
+              [-n N] [--and P]        --and P to require a 2nd term. `grep --help`
   sessions open <id>                  Resume a session in its native tool
   sessions distill <id> [--force]     Produce a ~250-word digest via Claude. Cached
                                       at ~/.sessions/distilled/<provider>/<uuid>.md
