@@ -1,0 +1,243 @@
+# ============================================================================
+# REPORT CARD — recburn-redact: take one second of a screencast back
+# ============================================================================
+#
+# WHAT THIS CARD SPAWNS
+#   Codespace : bin/recburn-redact — three modes (--scan / --probe / --at), the
+#               PRESETS fraction table, parse_time/parse_range/parse_box,
+#               copy_frame_count (the load-bearing measurement), build_filter
+#               (mosaic-then-blur behind overlay+enable), mode_redact's
+#               head/span/tail cut plan, and the five-check verification block.
+#               commands/recburn-redact.md exposes it as /recburn-redact.
+#   Thinkspace: features/recburn-redact.session.md.
+#   Areaspace : OWNS = removing a region of picture from an already-finished
+#               recording, and proving the rest of the file survived intact.
+#               MUST NOT TOUCH = the recording path (bin/rec,
+#               screen-audio-record, the PiP/subtitle burn), the audio track
+#               (remuxed, never re-encoded), and the source file (never
+#               overwritten — output is a new file).
+#
+# WHY THIS CARD EXISTS
+#   Esa published a 34-minute recburn screencast and one ~1-second stretch of it
+#   showed dashboard.stripe.com/acct_<id>/payouts with a a bank last-4
+#   repeated down the Destination column. The account id is a semi-public
+#   identifier and harmless on its own; bank-name + last-4 is the piece with real
+#   social-engineering leverage. Re-rendering 34 minutes to fix 27 frames is
+#   absurd, and re-encoding the whole file costs a generation of quality on a
+#   screen capture full of small text. Esa: "you are gonna blur the frames.. they
+#   are at .. 19:58->19:59 ... we need to be able to run this on a recburned
+#   video, where i specify something like that."
+#
+# REPORT-CARD LEGEND
+#   @hw-verified  run live on this Mac (macOS 15.6 / Darwin 24.6.0, ffmpeg 8.1)
+#                 against the real 3024x1964 30fps 34-minute capture AND a clean
+#                 60s re-encoded excerpt; picture claims confirmed by reading
+#                 10fps contact sheets frame by frame, not by trusting exit codes.
+#   @built        wired and reachable, but that branch was not exercised live.
+#   @note         a documented boundary, not an executable claim.
+#
+# RESULT
+#   Direct-push to main, no PR. Files: bin/recburn-redact (new),
+#   commands/recburn-redact.md (new, symlinked into ~/.claude/commands/),
+#   features/recburn-redact.feature + .session.md (new).
+#   First real use: 2026-08-13, 2026-08-13-09-55-46-flat-subtitled.mov ->
+#   ...-redacted.mov, 57 of 61760 frames re-encoded, all five checks ok.
+# ============================================================================
+
+Feature: Redact a region of a finished recburn video without re-rendering it
+
+  @hw-verified
+  Scenario: only the keyframe span that contains the frames is re-encoded  (real file, 2026-08-13)
+    Given a 3024x1964 30fps recburn capture of 61760 frames / 2058.666667s
+    And the offending picture occupies frames 35931-35964 (1197.7s-1198.8s)
+    When I run: recburn-redact <file> --at 19:57.8-19:58.7 --box urlbar --box stripe-destination
+    Then the tool re-encodes the keyframe-aligned span frames 35929-35985 only
+    And it reports "stream-copied : 61703 of 61760 frames, bit-exact"
+    And the output is 2058.666667s with 61760 frames, identical to the source
+    But the other 34 minutes were never handed to an encoder, so they cannot
+      lose a generation of quality — which matters most on screen captures,
+      where the content is small high-contrast text.
+
+  @hw-verified
+  Scenario: the audio track is remuxed, never cut and never re-encoded  (real file, 2026-08-13)
+    Given cutting audio at segment boundaries would risk a click or A/V drift
+      because an AAC frame is 1024 samples (~21ms) and will not align with a
+      video keyframe
+    When the three video segments are concatenated
+    Then the audio is taken from the ORIGINAL file in the same muxing pass
+      (-i <concat> -i <source> -map 0:v:0 -map 1:a:0 -c copy)
+    And the packet count is identical on both sides (96499 on the real file)
+    And the verification prints "track never re-encoded".
+
+  @hw-verified
+  Scenario: a cut point is MEASURED, never computed from timestamps  (bug found + fixed 2026-08-13)
+    Given ffprobe reported a keyframe at pts_time 29.533 in a test file
+    When the tail was cut with -ss 29.533 -c copy
+    Then it yielded 944 frames where frame arithmetic predicted 928 — the seek
+      landed 16 frames EARLY, because an input -ss on a file carrying an edit
+      list seeks by a timeline that pts_time does not describe
+    And concatenating that tail produced a file 16 frames too long, which
+      duplicates frames and drifts every remaining frame against the audio
+    So copy_frame_count(path, ss) now measures each cut by counting the frames a
+      stream-copy from that point actually yields (a copy-to-null pass, no
+      decoding, ~2s on a 2GB file), and the span is derived from those counts
+    And the same test file then produced exactly 1814 frames, matching source.
+
+  @hw-verified
+  Scenario: the container's own frame count can be a lie  (observed 2026-08-13)
+    Given an excerpt cut with `-ss ... -c copy` reported nb_frames=1802 in its
+      container while really holding 1814 frames
+    When --at is used
+    Then the tool measures the true count and, if they differ, prints
+      "note : container says N frames, really M — using the measured count"
+    And every cut is computed from the measured count
+    But this is exactly why the head is cut by exact frame count rather than by
+      time (see below): metadata is advisory, frames are not.
+
+  @hw-verified
+  Scenario: the head is cut by frame count, not by -to  (bug found + fixed 2026-08-13)
+    Given the first hand-built attempt cut the head with -to <keyframe time>
+    Then it returned 35902 frames where 35900 were wanted — two frames of overlap,
+      duplicating them and putting video 66ms out against the audio for the rest
+      of the file
+    When the head is instead cut with -frames:v <exact count> -c copy
+    Then it yields exactly that many frames, and head+span+tail == source total.
+
+  @hw-verified
+  Scenario: the redaction is gated on FRAME NUMBER, not on time  (bug found + fixed 2026-08-13)
+    Given the span is encoded with an input -ss, so the filtergraph's `t` is
+      offset by the seek and enable='between(t,A,B)' silently never fires
+      (the first hand-built attempt produced a completely unredacted span)
+    When the gate is written enable='between(n,<lo>,<hi>)' with n relative to the
+      first frame handed to the graph
+    Then the redaction lands on exactly the intended frames, confirmed by reading
+      a 10fps contact sheet row by row: rows before show the previous app crisp,
+      every row showing the target is covered, rows after show the next page crisp
+    And the encode also passes -noaccurate_seek so it starts on the same keyframe
+      a stream-copy would, matching how the span boundary was measured.
+
+  @hw-verified
+  Scenario: never pass both -map 0:v:0 and -map "[vout]"  (bug found + fixed 2026-08-13)
+    Given the first hand-built encode listed both maps
+    Then ffmpeg wrote TWO video streams — stream 0 the UNFILTERED source and
+      stream 1 the redacted one — and every verification that read v:0 reported
+      a crisp, unredacted picture, sending me hunting a filter bug that did not
+      exist for three rounds
+    When only -map "[vout]" is passed
+    Then the file has exactly one video stream, and the tool asserts this by
+      checking the encoded span's frame count before going any further.
+
+  @hw-verified
+  Scenario: segments are joined as MPEG-TS, not MOV  (real file, 2026-08-13)
+    Given a MOV/MP4 video track carries ONE avcC parameter set, so concatenating
+      a stream-copied segment with a freshly-encoded one can produce a file whose
+      SPS/PPS does not describe every frame in it
+    When each segment is written as -bsf:v h264_mp4toannexb -f mpegts, in-band
+      parameter sets and all, and joined with the concat DEMUXER (which offsets
+      each file's timestamps) rather than the concat protocol
+    Then decoding across both splice points reports no errors at all
+    And the verification proves this per-run by decoding the span plus 3s either
+      side and failing on any stderr output.
+
+  @hw-verified
+  Scenario: a frame shift is caught even though the counts add up  (verified both ways 2026-08-13)
+    Given the tool controls each segment's frame count, so counting frames alone
+      cannot detect a span that started at the wrong frame
+    When verification hashes the decoded frame two frames before and two frames
+      after the re-encoded span in BOTH files
+    Then those frames are stream copies and must be pixel-identical, and any
+      shift diverges the hashes
+    And on the clean 60s excerpt and the real 34-minute file it prints
+      "ok no shift : copied frames either side of the span are pixel-identical"
+    And on the deliberately edit-list-skewed excerpt the check correctly refused
+      to compare by timestamp and said so, rather than passing quietly.
+
+  @hw-verified
+  Scenario: the coverage is a mosaic THEN a blur, not a soft smudge  (real file, 2026-08-13)
+    Given a weak gaussian over 30px UI text can leave it legible, or recoverable
+    When --method pixel (the default) is used
+    Then the region is scaled down to one block per ~24 source px, scaled back with
+      flags=neighbor, and only then blurred to take the block edges off
+    And on the real file the Stripe URL and the whole Destination column are
+      unreadable in every frame of the window, checked at 10fps
+    But the payout amounts, dates and account name were deliberately left
+      readable — the point of that video was streaming-income transparency.
+
+  @hw-verified
+  Scenario: --scan finds WHICH frames, --probe finds WHERE  (both run live 2026-08-13)
+    Given "it's at about 19:58" is how a human knows where the problem is, and
+      pixel coordinates are how ffmpeg needs it
+    When I run --scan 27.4-29.2
+    Then it writes a 10fps contact sheet, opens it, and prints the row->time map
+      ("row k = 27.40 + 0.1*k") so the first and last offending row can be read off
+    And when I run --probe 28.2
+    Then it writes that one frame at full resolution with a 10x10 red grid
+      (302px x 196px cells on a 3024x1964 capture), opens it, and prints both
+      box spellings — absolute pixels and fractions.
+
+  @hw-verified
+  Scenario: the source file is never touched  (enforced 2026-08-13)
+    Given an in-place edit of a 34-minute render has no undo
+    When --out is omitted
+    Then the output is <input>-redacted.mov, and the run ends by printing
+      "source untouched: <input>"
+    And writing over the input is refused outright even with --force
+    And an existing --out is refused unless --force is given.
+
+  @hw-verified
+  Scenario: verification is fast enough to always run  (measured 2026-08-13)
+    Given the first full-file run took 7m15s, almost all of it -count_frames
+      DECODING both 34-minute files just to count
+    When counting switched to packet counts (copy-to-null for video,
+      -count_packets for audio), which decode nothing
+    Then a 60s clip verifies end-to-end in 5.9s
+    And no truth was given up: the packet count IS the frame count for h264 in
+      MOV, and the pixel-level claims are made by the hash and decode checks.
+
+  @built
+  Scenario: --method black and --method blur
+    Given some redactions want an obvious black box (it reads as deliberate) and
+      some want a plain blur
+    Then --method black fills the region via drawbox t=fill, and --method blur
+      uses boxblur=20:3
+    But only --method pixel has been run against a real capture; these two are
+      wired and reachable, not exercised.
+    # NOTE drawtext is NOT compiled into this ffmpeg 8.1 — drawbox and drawgrid
+    # are, which is why --probe labels its grid by arithmetic in the printout
+    # rather than by drawing numbers into the image.
+
+  @built
+  Scenario: a window that reaches the first or last frame of the file
+    Given the head segment is skipped when the span starts at frame 0, and the
+      tail segment is skipped when no keyframe follows the window
+    Then the concat list is built from whichever segments exist
+    But both edge cases are code paths only; every live run so far had a real
+      head and a real tail.
+
+  @built
+  Scenario: a source with no audio track
+    Given probe() records has_audio, and the muxer only adds -map 1:a:0 when true
+    Then a silent capture is redacted the same way and the audio check is skipped
+    But recburn always records audio, so this has not been exercised.
+
+  @note
+  Scenario: the presets are measured, not universal
+    Given `urlbar` and `stripe-destination` are stored as fractions of frame
+      width/height so they survive a different capture size
+    And they were measured on ONE layout: a full-screen Safari window on a
+      3024x1964 capture, 2026-08-13
+    Then a different window size, a different browser chrome, or a sidebar open
+      will move them
+    So --probe is the answer for any new layout, and --list-presets prints the
+      fractions so they can be adjusted rather than guessed.
+
+  @note
+  Scenario: this redacts the copy, not the past
+    Given the source file still contains the picture, and so does anything
+      already uploaded
+    Then redaction is only useful BEFORE publishing, or alongside taking the
+      published copy down
+    And it is worth remembering what the tool cannot judge: whether the region
+      you chose is the only exposure in the other 34 minutes. A screencast can
+      also show a customer's name and email — which, unlike your own account id,
+      is not yours to publish.

@@ -1,0 +1,513 @@
+#!/usr/bin/env python3
+# recburn-redact — surgically redact a region of a recburn video for a time window.
+#
+# A recburn screencast is a 30+ minute recording of your actual screen. Sooner or later
+# it contains one second of something you did not mean to publish: a Stripe account id in
+# the URL bar, a bank last-4, an API key, a customer's email. This tool removes it WITHOUT
+# re-encoding the other 34 minutes: it re-encodes only the keyframe span that contains the
+# offending frames, stream-copies everything else bit-exact, never touches the audio track,
+# and then VERIFIES that frame count / duration / audio sample count still match the source.
+#
+# Usage:
+#   recburn-redact VIDEO --scan 19:55-20:05            # find WHICH frames (10fps contact sheet)
+#   recburn-redact VIDEO --probe 19:58.2               # find WHERE (full frame + coord grid)
+#   recburn-redact VIDEO --at 19:57.7-19:58.9 --box urlbar --box stripe-destination
+#
+# Modes:
+#   --scan A-B     build a 10fps contact sheet across the window and open it, so you can read
+#                  off the exact first/last second that needs covering. Prints time->row map.
+#   --probe T      extract that one frame at full resolution with a labelled coordinate grid
+#                  and open it, so you can read off box coordinates.
+#   --at A-B       do the edit.
+#
+# Boxes (repeatable; at least one required with --at):
+#   --box urlbar                 preset, fraction-based so it survives other capture sizes
+#   --box stripe-destination     preset, the Stripe payouts Destination column
+#   --box full                   preset, the whole frame
+#   --box 1140,95,1040,95        absolute pixels  x,y,w,h
+#   --box 0.377,0.048,0.344,0.048%   fractions of frame (note the % suffix)
+#
+# Options:
+#   --out PATH     output path (default <input>-redacted.mov). NEVER overwrites the input.
+#   --method pixel|blur|black    pixel (default) = pixelate THEN blur, irrecoverable.
+#   --pad SEC      padding added each side of --at (default 0.10)
+#   --crf N        quality for the re-encoded span only (default 15, visually lossless)
+#   --dry-run      print the plan and the exact ffmpeg commands, change nothing
+#   --force        allow overwriting an existing --out
+#   --keep-temp    leave the intermediate .ts files in place (debugging)
+#
+# Times accept  SS | SS.s | MM:SS | MM:SS.s | HH:MM:SS.s  and ranges may be written
+# "19:58-19:59", "19:58->19:59" or "19:58..19:59".
+#
+# FEATURE-CARD >> features/recburn-redact.feature
+
+import argparse
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+
+# Presets are FRACTIONS of frame width/height, so they carry across capture resolutions.
+# 'urlbar' and 'stripe-destination' were measured on a 3024x1964 recburn capture with a
+# full-screen Safari window (2026-08-13) and verified frame-by-frame. Always confirm with
+# --probe before trusting a preset on a differently-shaped recording.
+PRESETS = {
+    "urlbar":             (0.3770, 0.0484, 0.3439, 0.0484),
+    "stripe-destination": (0.2894, 0.3029, 0.1257, 0.5754),
+    "full":               (0.0,    0.0,    1.0,    1.0),
+}
+
+BLOCK_PX = 24  # one mosaic block per ~24 source px — destroys 30px UI text
+
+
+def die(msg, code=1):
+    print(f"recburn-redact: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+def run(cmd, capture=True, check=True):
+    r = subprocess.run(cmd, capture_output=capture, text=True)
+    if check and r.returncode != 0:
+        err = (r.stderr or "").strip()
+        die(f"command failed ({r.returncode}): {' '.join(cmd[:6])} ...\n{err}")
+    return r
+
+
+def parse_time(s):
+    """SS | SS.s | MM:SS | HH:MM:SS  ->  float seconds."""
+    s = s.strip()
+    if not re.fullmatch(r"(\d+:){0,2}\d+(\.\d+)?", s):
+        die(f"cannot parse time {s!r} (want SS, MM:SS or HH:MM:SS)")
+    parts = [float(p) for p in s.split(":")]
+    total = 0.0
+    for p in parts:
+        total = total * 60 + p
+    return total
+
+
+def parse_range(s):
+    for sep in ("->", "..", "-"):
+        if sep in s:
+            a, _, b = s.partition(sep)
+            if a.strip() and b.strip():
+                return parse_time(a), parse_time(b)
+    die(f"cannot parse range {s!r} (want e.g. 19:57.7-19:58.9)")
+
+
+def parse_box(spec, W, H):
+    """Return (x, y, w, h) in even pixels."""
+    if spec in PRESETS:
+        fx, fy, fw, fh = PRESETS[spec]
+        vals = (fx * W, fy * H, fw * W, fh * H)
+    else:
+        frac = spec.endswith("%")
+        raw = spec[:-1] if frac else spec
+        try:
+            nums = [float(v) for v in raw.split(",")]
+        except ValueError:
+            die(f"bad --box {spec!r}: want a preset name, x,y,w,h or x,y,w,h%")
+        if len(nums) != 4:
+            die(f"bad --box {spec!r}: need exactly 4 values (x,y,w,h)")
+        vals = (nums[0] * W, nums[1] * H, nums[2] * W, nums[3] * H) if frac else tuple(nums)
+
+    x, y, w, h = (int(round(v)) for v in vals)
+    # clamp into frame, keep even (yuv420p chroma siting)
+    x, y = max(0, x - x % 2), max(0, y - y % 2)
+    w, h = min(W - x, w), min(H - y, h)
+    w, h = w - w % 2, h - h % 2
+    if w < 4 or h < 4:
+        die(f"--box {spec!r} resolves to {w}x{h}, too small (frame is {W}x{H})")
+    return x, y, w, h
+
+
+def probe(path):
+    r = run(["ffprobe", "-v", "error", "-print_format", "json",
+             "-show_streams", "-show_format", path])
+    d = json.loads(r.stdout)
+    v = next((s for s in d["streams"] if s["codec_type"] == "video"), None)
+    a = next((s for s in d["streams"] if s["codec_type"] == "audio"), None)
+    if not v:
+        die(f"no video stream in {path}")
+    num, den = (int(x) for x in v["r_frame_rate"].split("/"))
+    if den == 0:
+        die("video has no usable frame rate")
+    return {
+        "W": int(v["width"]), "H": int(v["height"]),
+        "fps": num / den,
+        "nb_frames": int(v.get("nb_frames") or 0),
+        "duration": float(d["format"]["duration"]),
+        "has_audio": a is not None,
+        "vidx": v["index"],
+    }
+
+
+def keyframes(path, lo, hi):
+    """Keyframe pts_times within [lo, hi]."""
+    r = run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-skip_frame", "nokey",
+             "-show_entries", "frame=pts_time", "-of", "csv=p=0",
+             "-read_intervals", f"{max(0, lo)}%{hi}", path])
+    out = []
+    for line in r.stdout.splitlines():
+        line = line.strip().rstrip(",")
+        if line:
+            try:
+                out.append(float(line))
+            except ValueError:
+                pass
+    return sorted(out)
+
+
+def copy_frame_count(path, ss=None):
+    """
+    How many video frames a stream-COPY from `ss` to EOF actually yields.
+
+    This is the load-bearing measurement of the whole tool. Container nb_frames can
+    disagree with reality, and an input -ss does not always land on the frame whose
+    pts_time you asked for (edit lists, rebased timelines, DTS-vs-PTS seeking) — a
+    tail cut can silently start frames EARLY, duplicating frames and drifting audio.
+    So never compute a cut point from timestamps alone: measure it. A copy-to-null
+    pass decodes nothing and takes a couple of seconds even on a 2 GB file.
+    """
+    cmd = ["ffmpeg", "-v", "error", "-stats"]
+    if ss is not None:
+        cmd += ["-ss", f"{ss:.6f}"]
+    cmd += ["-i", path, "-map", "0:v:0", "-c", "copy", "-f", "null", "-"]
+    r = run(cmd)
+    hits = re.findall(r"frame=\s*(\d+)", r.stderr or "")
+    return int(hits[-1]) if hits else -1
+
+
+def count_frames(path):
+    r = run(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
+             "-show_entries", "stream=nb_read_frames", "-of", "csv=p=0", path])
+    for line in r.stdout.splitlines():
+        line = line.strip().rstrip(",")
+        if line.isdigit():
+            return int(line)
+    return -1
+
+
+def frame_md5(path, t):
+    """MD5 of the single decoded frame at time t (used to prove no frame shift)."""
+    r = run(["ffmpeg", "-v", "error", "-ss", f"{t:.6f}", "-i", path,
+             "-map", "0:v:0", "-frames:v", "1", "-f", "md5", "-"], check=False)
+    m = re.search(r"MD5=(\S+)", r.stdout or "")
+    return m.group(1) if m else None
+
+
+def count_samples(path):
+    # -count_packets, not -count_frames: counting frames DECODES the whole track, which on a
+    # 34-minute capture turns a 20-second verification into a 7-minute one for no extra truth.
+    r = run(["ffprobe", "-v", "error", "-count_packets", "-select_streams", "a:0",
+             "-show_entries", "stream=nb_read_packets", "-of", "csv=p=0", path], check=False)
+    for line in r.stdout.splitlines():
+        line = line.strip().rstrip(",")
+        if line.isdigit():
+            return int(line)
+    return -1
+
+
+def build_filter(boxes, n_lo, n_hi, method):
+    """
+    Filtergraph that covers each box only for main-input frames n_lo..n_hi.
+
+    Uses enable='between(n,...)' — FRAME NUMBERS, not t. With an input -ss the filter's
+    t is segment-relative and easy to get wrong by exactly the seek offset; n always
+    starts at 0 for the first frame handed to the graph. This is a load-bearing choice.
+    """
+    n = len(boxes)
+    labels = [f"c{i}" for i in range(n)]
+    parts = [f"[0:v]split={n + 1}[base]" + "".join(f"[{l}]" for l in labels)]
+
+    for i, (x, y, w, h) in enumerate(boxes):
+        if method == "black":
+            chain = f"crop={w}:{h}:{x}:{y},drawbox=0:0:{w}:{h}:black@1.0:t=fill"
+        elif method == "blur":
+            chain = f"crop={w}:{h}:{x}:{y},boxblur=20:3"
+        else:  # pixel — mosaic first (irrecoverable), then blur off the block edges
+            dw, dh = max(2, w // BLOCK_PX), max(2, h // BLOCK_PX)
+            chain = (f"crop={w}:{h}:{x}:{y},scale={dw}:{dh},"
+                     f"scale={w}:{h}:flags=neighbor,boxblur=10:2")
+        parts.append(f"[{labels[i]}]{chain}[b{i}]")
+
+    cur = "base"
+    for i, (x, y, _, _) in enumerate(boxes):
+        nxt = "vout" if i == n - 1 else f"o{i}"
+        parts.append(f"[{cur}][b{i}]overlay={x}:{y}:enable='between(n,{n_lo},{n_hi})'[{nxt}]")
+        cur = nxt
+    return ";".join(parts)
+
+
+def mode_scan(path, info, rng, out_dir):
+    a, b = parse_range(rng)
+    dur = max(0.2, b - a)
+    tile = f"1x{int(dur * 10) + 1}"
+    png = os.path.join(out_dir, "recburn-redact-scan.png")
+    run(["ffmpeg", "-v", "error", "-ss", f"{a:.6f}", "-i", path, "-t", f"{dur:.6f}",
+         "-vf", f"fps=10,scale=760:-1,tile={tile}", "-frames:v", "1", "-y", png])
+    print(f"contact sheet : {png}")
+    print(f"rows          : top row = {a:.2f}s, each row +0.10s (row k = {a:.2f} + 0.1*k)")
+    print(f"frame numbers : frame = round(time * {info['fps']:.6f})")
+    print("\nRead off the first and last row that show the thing, convert to seconds,")
+    print("then re-run with --at <first>-<last> --box ...")
+    subprocess.run(["open", png], check=False)
+
+
+def mode_probe(path, info, t, out_dir):
+    ts = parse_time(t)
+    png = os.path.join(out_dir, "recburn-redact-probe.png")
+    W, H = info["W"], info["H"]
+    gx, gy = W // 10, H // 10
+    run(["ffmpeg", "-v", "error", "-ss", f"{ts:.6f}", "-i", path, "-frames:v", "1",
+         "-vf", f"drawgrid=w={gx}:h={gy}:t=2:c=red@0.55", "-update", "1", "-y", png])
+    print(f"frame         : {png}  ({W}x{H} at t={ts:.3f}s, frame {round(ts * info['fps'])})")
+    print(f"grid          : red lines every {gx}px across, {gy}px down (10x10 cells)")
+    print("\nCount cells to the region, then pass either")
+    print(f"  --box x,y,w,h        absolute pixels (frame is {W}x{H})")
+    print("  --box fx,fy,fw,fh%   fractions, e.g. 0.377,0.048,0.344,0.048%")
+    subprocess.run(["open", png], check=False)
+
+
+def mode_redact(path, info, args, tmp):
+    a, b = parse_range(args.at)
+    a, b = max(0.0, a - args.pad), min(info["duration"], b + args.pad)
+    if b <= a:
+        die("--at range is empty after padding")
+
+    W, H, fps = info["W"], info["H"], info["fps"]
+    boxes = [parse_box(s, W, H) for s in args.box]
+
+    f_lo, f_hi = int(a * fps), min(info["nb_frames"] - 1, int(b * fps + 0.999))
+
+    # Cut on keyframes so head/tail can be stream-copied bit-exact.
+    kfs = keyframes(path, a - 12, b + 12)
+    lo_kfs = [k for k in kfs if k <= a + 1e-6]
+    hi_kfs = [k for k in kfs if k > b + 1e-6]
+    kf_lo = max(lo_kfs) if lo_kfs else 0.0
+    kf_hi = min(hi_kfs) if hi_kfs else None
+
+    # Where do these cuts REALLY land? Measure, don't compute from timestamps.
+    total = info["nb_frames"]
+    seg_first = total - copy_frame_count(path, kf_lo) if kf_lo > 0 else 0
+    seg_last = total - copy_frame_count(path, kf_hi) if kf_hi is not None else total
+    seg_frames = seg_last - seg_first
+    if seg_frames <= 0:
+        die(f"keyframe span around --at is empty (measured frames {seg_first}..{seg_last})")
+    if not (seg_first <= f_lo and f_hi <= seg_last - 1):
+        die(f"redact frames {f_lo}-{f_hi} fall outside the measured span "
+            f"{seg_first}-{seg_last - 1}; widen --pad")
+
+    n_lo, n_hi = f_lo - seg_first, f_hi - seg_first
+    vf = build_filter(boxes, max(0, n_lo), min(seg_frames - 1, n_hi), args.method)
+
+    print(f"input         : {path}")
+    print(f"               {W}x{H} @ {fps:g}fps, {info['nb_frames']} frames, {info['duration']:.3f}s")
+    print(f"redact window : {a:.3f}s - {b:.3f}s  (frames {f_lo}-{f_hi}, {f_hi - f_lo + 1} frames)")
+    print(f"re-encode span: {kf_lo:.3f}s - "
+          f"{(kf_hi if kf_hi is not None else info['duration']):.3f}s "
+          f"(frames {seg_first}-{seg_last - 1}, {seg_frames} frames, keyframe-aligned)")
+    print(f"stream-copied : {info['nb_frames'] - seg_frames} of {info['nb_frames']} frames, bit-exact")
+    print(f"method        : {args.method}")
+    for s, (x, y, w, h) in zip(args.box, boxes):
+        print(f"box           : {s} -> x={x} y={y} w={w} h={h}")
+    print(f"output        : {args.out}")
+
+    A, B, C = (os.path.join(tmp, f"{n}.ts") for n in "ABC")
+    seg_dur = seg_frames / fps
+
+    # -noaccurate_seek so the encode starts at the same keyframe a stream-copy would,
+    # matching how seg_first was measured; -frames:v so it ends on an exact count.
+    enc = ["ffmpeg", "-v", "error", "-noaccurate_seek", "-ss", f"{kf_lo:.6f}", "-i", path,
+           "-frames:v", str(seg_frames), "-filter_complex", vf,
+           # ONLY [vout]. Adding -map 0:v:0 here as well silently produces a SECOND,
+           # unredacted video stream — and every verification then reads the wrong one.
+           "-map", "[vout]",
+           "-c:v", "libx264", "-crf", str(args.crf), "-preset", "slow",
+           "-pix_fmt", "yuv420p", "-profile:v", "high",
+           "-x264-params", "keyint=29:min-keyint=29:scenecut=0:bframes=2",
+           "-an", "-bsf:v", "h264_mp4toannexb", "-f", "mpegts", "-y", B]
+    # Head cut by exact FRAME COUNT, not -to: -to with copy can hand back a couple of
+    # extra frames, which duplicates frames and drifts audio for the rest of the file.
+    head = ["ffmpeg", "-v", "error", "-i", path, "-map", "0:v:0", "-c", "copy",
+            "-frames:v", str(seg_first), "-bsf:v", "h264_mp4toannexb",
+            "-f", "mpegts", "-y", A]
+    tail = ["ffmpeg", "-v", "error", "-ss", f"{kf_hi:.6f}", "-i", path,
+            "-map", "0:v:0", "-c", "copy", "-bsf:v", "h264_mp4toannexb",
+            "-f", "mpegts", "-y", C] if kf_hi is not None else None
+
+    listfile = os.path.join(tmp, "list.txt")
+    segs = ([A] if seg_first > 0 else []) + [B] + ([C] if tail else [])
+    mux = ["ffmpeg", "-v", "error", "-f", "concat", "-safe", "0", "-i", listfile,
+           "-i", path, "-map", "0:v:0"] + \
+          (["-map", "1:a:0"] if info["has_audio"] else []) + \
+          ["-c", "copy", "-movflags", "+faststart", "-y", args.out]
+
+    if args.dry_run:
+        print("\n--- dry run, nothing written. commands:")
+        for c in [enc] + ([head] if seg_first > 0 else []) + ([tail] if tail else []) + [mux]:
+            print("\n" + " ".join(f"'{x}'" if " " in x or ";" in x else x for x in c))
+        return 0
+
+    print("\n[1/4] re-encoding the redacted span ...")
+    run(enc, capture=True)
+    if count_frames(B) != seg_frames:
+        die(f"redacted span has {count_frames(B)} frames, expected {seg_frames}")
+
+    if seg_first > 0:
+        print("[2/4] stream-copying the head ...")
+        run(head)
+    if tail:
+        print("[2/4] stream-copying the tail ...")
+        run(tail)
+
+    print("[3/4] concatenating + re-attaching the original audio ...")
+    with open(listfile, "w") as fh:
+        for s in segs:
+            fh.write(f"file '{s}'\n")
+    run(mux)
+
+    print("[4/4] verifying against the source ...")
+    ok = True
+    src_f, out_f = info["nb_frames"], copy_frame_count(args.out)
+    if src_f and src_f != out_f:
+        print(f"  FAIL frames   : {out_f} vs {src_f} in source")
+        ok = False
+    else:
+        print(f"  ok   frames   : {out_f}")
+
+    # The meaningful invariant is frames/fps, not the container's duration field: a source
+    # cut with `-ss ... -c copy` carries an edit list whose duration disagrees with its own
+    # frame count, and failing against that would be crying wolf.
+    out_info = probe(args.out)
+    expected_dur = src_f / fps
+    skewed = abs(info["duration"] - expected_dur) > 1.0 / fps
+    if abs(out_info["duration"] - expected_dur) > 1.0 / fps:
+        print(f"  FAIL duration : {out_info['duration']:.6f} vs {expected_dur:.6f} expected")
+        ok = False
+    else:
+        print(f"  ok   duration : {out_info['duration']:.6f}s")
+    if skewed:
+        print(f"  note          : source container duration ({info['duration']:.3f}s) disagrees "
+              f"with its own frame count ({expected_dur:.3f}s) — it carries an edit list")
+
+    if info["has_audio"]:
+        s_a, o_a = count_samples(path), count_samples(args.out)
+        if s_a != o_a:
+            print(f"  FAIL audio    : {o_a} packets vs {s_a} in source")
+            ok = False
+        else:
+            print(f"  ok   audio    : {o_a} packets, track never re-encoded")
+
+    # Frame-shift check: frames OUTSIDE the re-encoded span are stream copies, so they must
+    # decode pixel-identical to the source at the same timestamp. If a cut landed early or
+    # late, frames get duplicated or dropped and these hashes diverge — which frame counting
+    # alone cannot see, because we control the counts.
+    if skewed:
+        print("  skip shift    : source timestamps are edit-list-skewed, so a frame-for-frame "
+              "comparison by time is not meaningful on this file")
+    else:
+        shift_ok = True
+        for label, t in (("before", (seg_first - 2) / fps), ("after", (seg_last + 2) / fps)):
+            if not (0 <= t <= expected_dur - 1.0 / fps):
+                continue
+            if frame_md5(path, t) != frame_md5(args.out, t):
+                print(f"  FAIL shift    : frame at {t:.3f}s ({label} the span) differs from source")
+                shift_ok = ok = False
+        if shift_ok:
+            print("  ok   no shift : copied frames either side of the span are pixel-identical")
+
+    j0 = max(0, kf_lo - 3)
+    r = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{j0:.6f}", "-i", args.out,
+                        "-t", f"{(seg_dur + 6):.6f}", "-f", "null", "-"],
+                       capture_output=True, text=True)
+    if r.stderr.strip():
+        print(f"  FAIL decode   : errors across the splices:\n{r.stderr.strip()[:400]}")
+        ok = False
+    else:
+        print("  ok   decode   : clean across both splice points")
+
+    print(f"\n{'REDACTED' if ok else 'FINISHED WITH FAILURES'}: {args.out}")
+    print(f"source untouched: {path}")
+    if ok:
+        print(f"\nEyeball it before publishing:\n  recburn-redact '{args.out}' --scan {args.at}")
+    return 0 if ok else 2
+
+
+def main():
+    p = argparse.ArgumentParser(
+        prog="recburn-redact", add_help=True,
+        description="Redact a region of a recburn video for a time window, "
+                    "re-encoding only the affected keyframe span.")
+    p.add_argument("video", nargs="?")
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--at", metavar="A-B", help="time window to redact, e.g. 19:57.7-19:58.9")
+    g.add_argument("--scan", metavar="A-B", help="contact-sheet a window to find the frames")
+    g.add_argument("--probe", metavar="T", help="extract one frame + coord grid to find a box")
+    p.add_argument("--box", action="append", default=[], metavar="SPEC",
+                   help="preset name | x,y,w,h | x,y,w,h%% (repeatable)")
+    p.add_argument("--out", metavar="PATH")
+    p.add_argument("--method", choices=["pixel", "blur", "black"], default="pixel")
+    p.add_argument("--pad", type=float, default=0.10, metavar="SEC")
+    p.add_argument("--crf", type=int, default=15)
+    p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--force", action="store_true")
+    p.add_argument("--keep-temp", action="store_true")
+    p.add_argument("--list-presets", action="store_true")
+    args = p.parse_args()
+
+    if args.list_presets:
+        for k, v in PRESETS.items():
+            print(f"{k:22s} fx={v[0]:.4f} fy={v[1]:.4f} fw={v[2]:.4f} fh={v[3]:.4f}")
+        return 0
+    for tool in ("ffmpeg", "ffprobe"):
+        if not shutil.which(tool):
+            die(f"{tool} not found on PATH")
+    if not args.video:
+        die("need a VIDEO (see --help)")
+    if not (args.at or args.scan or args.probe):
+        die("need one of --at, --scan or --probe (see --help)")
+    if not os.path.isfile(args.video):
+        die(f"no such file: {args.video}")
+
+    info = probe(args.video)
+    if args.at:
+        # Container nb_frames lies on some files (a -c copy excerpt can report 1802 when it
+        # really holds 1814). The cut math must use the measured count, never the metadata.
+        measured = copy_frame_count(args.video)
+        if measured > 0:
+            if info["nb_frames"] and info["nb_frames"] != measured:
+                print(f"note          : container says {info['nb_frames']} frames, "
+                      f"really {measured} — using the measured count")
+            info["nb_frames"] = measured
+    if not info["nb_frames"]:
+        info["nb_frames"] = count_frames(args.video)
+
+    tmpdir = tempfile.mkdtemp(prefix="recburn-redact-")
+    try:
+        if args.scan:
+            return mode_scan(args.video, info, args.scan, tmpdir) or 0
+        if args.probe:
+            return mode_probe(args.video, info, args.probe, tmpdir) or 0
+
+        if not args.box:
+            die("--at needs at least one --box (try --list-presets, or --probe to measure)")
+        if not args.out:
+            base, _ = os.path.splitext(args.video)
+            args.out = f"{base}-redacted.mov"
+        if os.path.abspath(args.out) == os.path.abspath(args.video):
+            die("refusing to write over the input — pick a different --out")
+        if os.path.exists(args.out) and not args.force:
+            die(f"{args.out} exists (use --force to replace it)")
+        return mode_redact(args.video, info, args, tmpdir)
+    finally:
+        if args.keep_temp:
+            print(f"temp kept: {tmpdir}")
+        elif not args.scan and not args.probe:
+            shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

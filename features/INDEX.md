@@ -447,6 +447,28 @@ Trigger recburn from anywhere through one seam, and hand off a typed result  —
   triad: .session✓  transcript✗  RESULT✓
   honesty: 13/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Redact a region of a finished recburn video without re-rendering it  —  18 scenarios   (features/recburn-redact.feature)
+  - [@hw-verified] only the keyframe span that contains the frames is re-encoded  (
+  - [@hw-verified] the audio track is remuxed, never cut and never re-encoded  (rea
+  - [@hw-verified] a cut point is MEASURED, never computed from timestamps  (bug fo
+  - [@hw-verified] the container's own frame count can be a lie  (observed 2026-08-
+  - [@hw-verified] the head is cut by frame count, not by -to  (bug found + fixed 2
+  - [@hw-verified] the redaction is gated on FRAME NUMBER, not on time  (bug found 
+  - [@hw-verified] never pass both -map 0:v:0 and -map "[vout]"  (bug found + fixed
+  - [@hw-verified] segments are joined as MPEG-TS, not MOV  (real file, 2026-08-13)
+  - [@hw-verified] a frame shift is caught even though the counts add up  (verified
+  - [@hw-verified] the coverage is a mosaic THEN a blur, not a soft smudge  (real f
+  - [@hw-verified] --scan finds WHICH frames, --probe finds WHERE  (both run live 2
+  - [@hw-verified] the source file is never touched  (enforced 2026-08-13)
+  - [@hw-verified] verification is fast enough to always run  (measured 2026-08-13)
+  - [@built] --method black and --method blur
+  - [@built] a window that reaches the first or last frame of the file
+  - [@built] a source with no audio track
+  - [(no grade)] the presets are measured, not universal
+  - [(no grade)] this redacts the copy, not the past
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 16/18 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Burn a live click counter into a screen recording  —  13 scenarios   (features/recburnclick.feature)
   - [@hw-verified] counting clicks needs NO event tap and NO Accessibility prompt  
   - [@hw-verified] the number is really in the pixels  (ran live 2026-07-29)
