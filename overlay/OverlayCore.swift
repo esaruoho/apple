@@ -769,26 +769,73 @@ public enum Attachment: String, Codable, Sendable {
 // None of this knows about NSScreen, CGWindowID or AXUIElement — those are runtime
 // details of one resolver. What persists is selector semantics.
 
-/// What kind of thing is being addressed. Only `.localDisplay` is implemented; the
-/// rest exist so the persisted ontology is not "the Mac desktop" from day one.
-/// Deliberately NOT eight adapters — one enum case each, no speculative machinery.
-public enum SurfaceKind: String, Codable, Sendable {
-    case localDisplay, window, captured, browser, remote, image, video
+/// How a surface's coordinates are expressed. This is the contract a resolver must
+/// honour; it is NOT a taxonomy of surface types.
+///
+/// The SDD proposed eight Surface kinds up front. Collapsed on the author's own
+/// second look: enumerating renderers before a second one exists is the speculative
+/// generality their non-goals forbid. What actually has to be persisted is an id, an
+/// epoch, and how to read the numbers. A real second backend can force a taxonomy
+/// later, and will do it better than a guess would.
+public enum CoordinateSpace: String, Codable, Sendable {
+    /// 0…1 of the surface, y up. Everything durable uses this.
+    case normalizedBottomLeft
+    /// 0…1 of the surface, y down — what most capture APIs hand back.
+    case normalizedTopLeft
 }
 
-/// Identity of a surface, plus an epoch.
+/// Identity of a surface, plus an epoch, plus how to read its coordinates.
 ///
 /// The epoch is the part people forget. Display arrangement, resolution and scale all
 /// change; a geometry recorded under one arrangement is not comparable with one
 /// recorded under another. Bumping the epoch makes that mismatch detectable instead
 /// of silently wrong.
 public struct SurfaceRef: Codable, Equatable, Sendable {
-    public var kind: SurfaceKind
+    /// Free-form and opaque: "local-display/Built-in Retina Display", later perhaps
+    /// "captured/stream-3" or "peer/cloudcity/display-0". Nothing branches on it yet.
     public var id: String
     public var epoch: Int
+    public var space: CoordinateSpace
 
-    public init(kind: SurfaceKind = .localDisplay, id: String, epoch: Int = 0) {
-        self.kind = kind; self.id = id; self.epoch = epoch
+    public init(id: String, epoch: Int = 0,
+                space: CoordinateSpace = .normalizedBottomLeft) {
+        self.id = id; self.epoch = epoch; self.space = space
+    }
+}
+
+/// How an attempt to re-find a referent turned out.
+///
+/// Four outcomes, not two. The response was specific about this and it matters: a
+/// resolver that reports success/failure hides the only genuinely dangerous case.
+///
+///   exact      one match, and it is the thing that was meant
+///   ambiguous  several matches — non-actionable, but honest
+///   missing    no match — non-actionable, and honest
+///   wrong      ONE match, confidently, and it is the WRONG THING
+///
+/// `wrong` is the outcome that must be measured and must be zero. `missing` is
+/// merely inconvenient; `wrong` is a system that lies.
+public enum AnchorOutcome: String, Codable, Sendable {
+    case exact, ambiguous, missing, wrong
+
+    public var actionable: Bool { self == .exact }
+    /// Did the resolver claim confidence it had not earned?
+    public var isDangerous: Bool { self == .wrong }
+}
+
+extension Resolution {
+    /// Score a resolution against ground truth. Only a harness knows what was really
+    /// meant, which is why this takes the expected identity explicitly.
+    public func outcome(expecting expectedTargetID: String?) -> AnchorOutcome {
+        switch state {
+        case .resolved:
+            guard let expected = expectedTargetID else { return .exact }
+            return targetID == expected ? .exact : .wrong
+        case .ambiguous:
+            return .ambiguous
+        default:
+            return .missing
+        }
     }
 }
 

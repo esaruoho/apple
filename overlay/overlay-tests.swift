@@ -564,8 +564,7 @@ enum OverlayCoreTests {
         // ═══════════ Observation / Anchor / Resolution ═══════════
 
         do {
-            let surface = SurfaceRef(kind: .localDisplay, id: "Built-in Retina Display",
-                                     epoch: 3)
+            let surface = SurfaceRef(id: "local-display/Built-in Retina Display", epoch: 3)
             let obs = Observation(surface: surface, t: 1000,
                                   rect: NormRect(x: 0.1, y: 0.2, w: 0.3, h: 0.1),
                                   cropPath: "/tmp/a.png", cropDigest: "sha:abc",
@@ -924,6 +923,59 @@ enum OverlayCoreTests {
             let wire = try! JSONEncoder().encode(approved)
             let back = try! JSONDecoder().decode(ActionIntent.self, from: wire)
             check(back == approved, "an intent and its approval survive the wire intact")
+        }
+
+        // ═══════════ the four-way outcome ═══════════
+
+        do {
+            let epoch = 1
+            func res(_ state: ResolutionState, _ id: String?) -> Resolution {
+                Resolution(state: state, confidence: 0.9, surfaceEpoch: epoch,
+                           candidates: state == .ambiguous ? 3 : 1, targetID: id)
+            }
+            let expected = "Safari|Settings"
+
+            check(res(.resolved, expected).outcome(expecting: expected) == .exact,
+                  "one match, and it is the right thing → exact")
+            check(res(.ambiguous, nil).outcome(expecting: expected) == .ambiguous,
+                  "several matches → ambiguous")
+            check(res(.unavailable, nil).outcome(expecting: expected) == .missing,
+                  "no match → missing")
+            check(res(.destroyed, nil).outcome(expecting: expected) == .missing,
+                  "a destroyed target is missing, not wrong")
+
+            // The whole reason four outcomes exist instead of two.
+            let impostor = res(.resolved, "Safari|Apple")
+            check(impostor.outcome(expecting: expected) == .wrong,
+                  "ONE confident match on the WRONG thing → wrong, not success")
+            check(impostor.outcome(expecting: expected).isDangerous,
+                  "…and it is the dangerous outcome, the one that must be zero")
+            check(!AnchorOutcome.missing.isDangerous,
+                  "missing is merely inconvenient; only 'wrong' is a system that lies")
+            check(AnchorOutcome.exact.actionable && !AnchorOutcome.ambiguous.actionable,
+                  "only 'exact' may be acted on")
+
+            check(res(.resolved, nil).outcome(expecting: nil) == .exact,
+                  "with no ground truth to check against, a single match is exact")
+        }
+
+        // ═══════════ surface: id + epoch + coordinate contract ═══════════
+
+        do {
+            let s1 = SurfaceRef(id: "local-display/Built-in Retina Display", epoch: 2)
+            check(s1.space == .normalizedBottomLeft,
+                  "durable geometry defaults to normalized, y-up")
+            let wire = try! JSONEncoder().encode(s1)
+            check(try! JSONDecoder().decode(SurfaceRef.self, from: wire) == s1,
+                  "a surface reference roundtrips")
+            // Opaque on purpose: any string is a valid surface id, because nothing
+            // in the system branches on a taxonomy of surface types.
+            let exotic = SurfaceRef(id: "peer/cloudcity/display-0", epoch: 0,
+                                    space: .normalizedTopLeft)
+            let back = try! JSONDecoder().decode(
+                SurfaceRef.self, from: try! JSONEncoder().encode(exotic))
+            check(back.id == "peer/cloudcity/display-0" && back.space == .normalizedTopLeft,
+                  "a surface id from a machine that does not exist yet roundtrips fine")
         }
 
         print("\n\(passed) passed, \(failed) failed")

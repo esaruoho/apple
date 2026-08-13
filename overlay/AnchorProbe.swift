@@ -86,6 +86,67 @@ func stability(app: String, seconds: Int) {
     out("\nSTABILITY          \(stable)% of samples resolved to exactly one window")
 }
 
+/// Print an anchor for the named window, as JSON, so a driver script can keep it
+/// across an application quitting and relaunching.
+func emitAnchor(app: String, title: String) {
+    guard let w = WindowList.addressable().first(where: {
+        $0.owner.lowercased().contains(app.lowercased())
+            && $0.title.caseInsensitiveCompare(title) == .orderedSame }) else {
+        out("{\"error\":\"no window\"}"); return
+    }
+    let anchor = WindowMatcher.anchor(for: w)
+    let payload: [String: Any] = [
+        "expect": "\(w.owner)|\(w.title)",
+        "selectors": anchor.selectors.map { sel -> [String: Any] in
+            var d: [String: Any] = ["kind": sel.kind.rawValue, "weight": sel.weight]
+            if let a = sel.application { d["application"] = a }
+            if let t = sel.windowTitle { d["windowTitle"] = t }
+            if let n = sel.windowNumber { d["windowNumber"] = n }
+            if let e = sel.exact { d["exact"] = e }
+            return d
+        },
+        "frame": [w.frame.minX, w.frame.minY, w.frame.width, w.frame.height],
+    ]
+    if let d = try? JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys]),
+       let str = String(data: d, encoding: .utf8) { out(str) }
+}
+
+/// Resolve a previously emitted anchor and score it: exact / ambiguous / missing /
+/// wrong. `wrong` is the only outcome that matters — a confident match on the
+/// wrong thing.
+func resolveAnchor(json: String) {
+    guard let data = json.data(using: .utf8),
+          let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+          let raw = payload["selectors"] as? [[String: Any]] else {
+        out("missing\tunparseable anchor"); return
+    }
+    let expect = payload["expect"] as? String
+
+    let selectors = raw.compactMap { d -> AnchorSelector? in
+        guard let kindRaw = d["kind"] as? String,
+              let kind = AnchorSelectorKind(rawValue: kindRaw) else { return nil }
+        return AnchorSelector(kind: kind,
+                              application: d["application"] as? String,
+                              windowTitle: d["windowTitle"] as? String,
+                              windowNumber: d["windowNumber"] as? Int,
+                              exact: d["exact"] as? String)
+    }
+    let anchor = SpatialAnchor(selectors: selectors)
+    let pool = WindowList.addressable()
+    let found = WindowMatcher.candidates(for: anchor, among: pool)
+    let target = found.matches.first.map { "\($0.owner)|\($0.title)" }
+    let resolution = Resolution.grade(candidates: found.matches.count,
+                                      method: found.method, confidence: found.weight,
+                                      rect: nil, surfaceEpoch: 0,
+                                      t: Date().timeIntervalSince1970,
+                                      targetID: target)
+    let outcome = resolution.outcome(expecting: expect)
+    let detail = "\(found.matches.count) candidate(s) via \(found.method.rawValue)"
+              + (target.map { ", got \($0)" } ?? "")
+              + (expect.map { ", expected \($0)" } ?? "")
+    out("\(outcome.rawValue)\t\(detail)")
+}
+
 // ───────────────────────── accessibility ─────────────────────────
 
 func axString(_ element: AXUIElement, _ attribute: String) -> String? {
@@ -189,6 +250,11 @@ enum AnchorProbeMain {
                       seconds: args.count > 2 ? Int(args[2]) ?? 10 : 10)
         case "ax":
             axSurvey(app: args.count > 1 ? args[1] : "Finder")
+        case "anchor":
+            emitAnchor(app: args.count > 1 ? args[1] : "Finder",
+                       title: args.count > 2 ? args[2] : "")
+        case "resolve":
+            resolveAnchor(json: args.count > 1 ? args[1] : "")
         default:
             out("""
             overlay-anchor-probe — measure whether anchoring works
@@ -196,6 +262,8 @@ enum AnchorProbeMain {
               windows                    every window the resolver sees, and which are filtered
               stability <app> [seconds]  does one fingerprint keep resolving to one window?
               ax <app>                   what the accessibility tree offers as selectors
+              anchor <app> <title>       emit an anchor as JSON, to keep across a restart
+              resolve <anchor-json>      re-resolve it and score exact/ambiguous/missing/wrong
             """)
         }
     }

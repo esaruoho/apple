@@ -8,6 +8,12 @@ The SDD asked for numbers and was right to: *"do not claim semantic persistence 
 numbers."* Tool: `bin/overlay-anchor-probe`. Machine: MacBook, macOS 15.6.1, a busy
 desktop (179 on-screen windows, 161 addressable, ten-plus Finder windows).
 
+## Summary
+
+Window anchoring is **durable across process death**, measured, with zero wrong
+answers. AX controls are 67–95% uniquely addressable but their lifecycle is not yet
+measured. Details below.
+
 ## Q1 — how stable is a window fingerprint during one process lifetime?
 
 **100%.** 23 samples at 4 Hz against `Finder — "puthoff-stockholm-1994"`:
@@ -82,8 +88,56 @@ Caveats, stated rather than buried:
 - Every resolution transition is appended to the Converse livefile as
   `spatial.anchor.resolved` / `.ambiguous` / `.unavailable`.
 
-## Next measurement to run
+## The restart experiment — run 2026-08-13
 
-Restart reacquisition: persist a selector, quit and relaunch the app, resolve again,
-across Safari / TextEdit / a terminal / an Electron app. Until that number exists, call
-this **session-durable anchoring**, not semantic persistence.
+`bin/overlay-restart-experiment`. Subject: a scratch TextEdit document in `/tmp`,
+created and destroyed by the script. Scored four ways as the convergence response
+asked, because success/failure hides the only dangerous case.
+
+| step | outcome |
+|---|---|
+| baseline | **exact** |
+| moved | **exact** |
+| resized | **exact** |
+| minimised | missing |
+| restored | **exact** |
+| **app quit** | missing |
+| **app relaunched** | **exact** |
+| + a sibling window opened | **exact** |
+| target closed, sibling still up | missing |
+
+```
+exact      6/9
+missing    3/9
+ambiguous  0
+wrong      0
+```
+
+**The anchor survived process death.** Quit TextEdit and the anchor honestly reports
+`missing`; relaunch it and the same selectors reacquire the window — with a completely
+new `windowNumber`, which is exactly why the number is corroboration and never
+identity. That is the number that was missing, and it is the one that decides whether
+this is durable anchoring or merely long-lived.
+
+**Zero `wrong`.** Every failure was an honest `missing`. The case that would have
+produced a lie — the target closed while a sibling window of the same app is open —
+returned `missing`, not the sibling. The refusal to adopt siblings holds under a real
+application lifecycle, not just in a unit test.
+
+**`missing` on minimise is correct**, not a shortfall: the SDD's acceptance test asks
+for an explicit unavailable state, and a minimised window genuinely leaves
+`CGWindowList`.
+
+### What this does not yet show
+
+- **TextEdit is the easy case** — a plain AppKit app with a stable document title.
+  A Chromium/Electron app and a terminal emulator are the hard ones and are untested.
+- Title-dependent: an app that retitles across a restart would come back `missing`
+  rather than `exact`. Safari with a restored session is the obvious next subject.
+- Nine steps, one run. Not a distribution.
+
+### Next measurement
+
+The same lifecycle against a browser, a terminal and an Electron app — and then the
+same four-way scoring against individual **AX controls** rather than windows, which is
+where `wrong` becomes genuinely likely.

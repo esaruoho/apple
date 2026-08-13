@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""overlay-restart-experiment — does an anchor survive an application's life?
+
+The measurement the convergence response asked for, deliberately brutal, and scored
+four ways rather than two:
+
+    exact      one match, and it is the thing that was meant
+    ambiguous  several matches — non-actionable, but honest
+    missing    no match — non-actionable, and honest
+    wrong      ONE confident match, on the WRONG THING
+
+`wrong` is the only outcome that must be zero. `missing` is inconvenient; `wrong` is
+a system that lies, and a system that lies must never be allowed to act.
+
+The subject is a scratch TextEdit document in /tmp, created and destroyed by this
+script, so nothing of yours is touched. TextEdit is a plain AppKit app — the easy
+case. A Chromium/Electron app and a terminal are the hard ones and are not yet
+covered; that is stated rather than hidden.
+
+    overlay-restart-experiment            run it
+    overlay-restart-experiment --keep     leave the scratch file behind
+"""
+
+import json
+import os
+import subprocess
+import sys
+import time
+
+BIN = os.path.dirname(os.path.realpath(__file__))
+PROBE = os.path.join(BIN, "overlay-anchor-probe")
+SCRATCH = "/tmp/overlay-anchor-subject.txt"
+APP = "TextEdit"
+TITLE = os.path.basename(SCRATCH)
+
+
+def osa(script, timeout=20):
+    r = subprocess.run(["/usr/bin/osascript", "-e", script],
+                       capture_output=True, text=True, timeout=timeout)
+    return r.returncode == 0, (r.stdout or r.stderr).strip()
+
+
+def probe(*args, timeout=30):
+    r = subprocess.run([PROBE, *args], capture_output=True, text=True, timeout=timeout)
+    return (r.stdout or "").strip()
+
+
+def score(anchor_json):
+    """Resolve the anchor now and return (outcome, detail)."""
+    line = probe("resolve", anchor_json)
+    if "\t" in line:
+        outcome, detail = line.split("\t", 1)
+        return outcome, detail
+    return "missing", line or "no output"
+
+
+def step(name, anchor_json, results):
+    outcome, detail = score(anchor_json)
+    results.append((name, outcome, detail))
+    flag = {"exact": "✓", "ambiguous": "?", "missing": "—", "wrong": "✗ WRONG"}[outcome]
+    print(f"  {name:<26} {flag:<9} {detail}")
+    return outcome
+
+
+def main(argv):
+    keep = "--keep" in argv
+    print(f"subject: {APP} — {TITLE}   (scratch file, nothing of yours is touched)\n")
+
+    with open(SCRATCH, "w") as fh:
+        fh.write("overlay anchor lifecycle subject\n")
+    ok, err = osa(f'tell application "{APP}" to open POSIX file "{SCRATCH}"')
+    if not ok:
+        print(f"could not open the scratch document: {err}", file=sys.stderr)
+        return 1
+    time.sleep(2.5)
+
+    anchor_json = probe("anchor", APP, TITLE)
+    if '"error"' in anchor_json or not anchor_json:
+        print(f"could not anchor to the window: {anchor_json}", file=sys.stderr)
+        return 1
+    anchor = json.loads(anchor_json)
+    print("anchor selectors, strongest first:")
+    for s in anchor["selectors"]:
+        bits = {k: v for k, v in s.items() if k not in ("kind", "weight")}
+        print(f"   {s['kind']:<22} {s['weight']:.2f}  {bits}")
+    print(f"\nexpected referent: {anchor['expect']}\n")
+    print("lifecycle:")
+
+    results = []
+    step("baseline", anchor_json, results)
+
+    osa(f'''tell application "{APP}"
+        set b to bounds of front window
+        set bounds of front window to {{(item 1 of b)+180, (item 2 of b)+90,
+                                        (item 3 of b)+180, (item 4 of b)+90}}
+    end tell''')
+    time.sleep(1.2)
+    step("moved", anchor_json, results)
+
+    osa(f'''tell application "{APP}"
+        set b to bounds of front window
+        set bounds of front window to {{item 1 of b, item 2 of b,
+                                        (item 3 of b)-160, (item 4 of b)-120}}
+    end tell''')
+    time.sleep(1.2)
+    step("resized", anchor_json, results)
+
+    osa('tell application "System Events" to tell process "TextEdit" '
+        'to set value of attribute "AXMinimized" of window 1 to true')
+    time.sleep(2)
+    step("minimised", anchor_json, results)
+
+    osa('tell application "System Events" to tell process "TextEdit" '
+        'to set value of attribute "AXMinimized" of window 1 to false')
+    time.sleep(2)
+    step("restored", anchor_json, results)
+
+    # The one that actually prices durable anchoring.
+    osa(f'tell application "{APP}" to quit saving no', timeout=25)
+    time.sleep(3)
+    step("app quit", anchor_json, results)
+
+    osa(f'tell application "{APP}" to open POSIX file "{SCRATCH}"', timeout=25)
+    time.sleep(4)
+    step("app relaunched", anchor_json, results)
+
+    # And the case that produces `wrong` if anything does: a second window of the
+    # same app, with the original gone.
+    other = "/tmp/overlay-anchor-decoy.txt"
+    with open(other, "w") as fh:
+        fh.write("decoy\n")
+    osa(f'tell application "{APP}" to open POSIX file "{other}"')
+    time.sleep(2)
+    step("+ a sibling window", anchor_json, results)
+
+    osa(f'''tell application "{APP}"
+        close (every window whose name is "{TITLE}") saving no
+    end tell''')
+    time.sleep(2)
+    step("target closed, sibling up", anchor_json, results)
+
+    # tidy
+    osa(f'tell application "{APP}" to close every window saving no')
+    if not keep:
+        for f in (SCRATCH, other):
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+
+    print("\n── result ──")
+    tally = {}
+    for _, outcome, _ in results:
+        tally[outcome] = tally.get(outcome, 0) + 1
+    for outcome in ("exact", "ambiguous", "missing", "wrong"):
+        if outcome in tally:
+            print(f"  {outcome:<10} {tally[outcome]}/{len(results)}")
+
+    wrong = tally.get("wrong", 0)
+    print()
+    if wrong:
+        print(f"  ✗ {wrong} WRONG — the resolver confidently returned the wrong window.")
+        print("    That is the outcome that must be zero. Do not act on this anchor.")
+    else:
+        print("  ✓ zero WRONG — every failure was an honest 'missing' or 'ambiguous'.")
+        print("    The resolver never claimed confidence it had not earned.")
+    return 1 if wrong else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
