@@ -109,6 +109,7 @@ def load_claude_meta(row):
     snippet = None
     summary = None
     custom_title = None
+    real_cwd = None
     turns = 0
     try:
         with open(row.path, "r", encoding="utf-8", errors="replace") as f:
@@ -117,6 +118,8 @@ def load_claude_meta(row):
                     d = json.loads(line)
                 except Exception:
                     continue
+                if real_cwd is None and d.get("cwd"):
+                    real_cwd = d["cwd"]
                 t = d.get("type")
                 if t == "custom-title":
                     ct = d.get("customTitle")
@@ -147,6 +150,14 @@ def load_claude_meta(row):
     row.snippet = (snippet or (("≪ " + summary) if summary else "(empty)"))[:200]
     if custom_title:
         row.title = custom_title[:80]
+    # The encoded project-dir name is LOSSY — every non-alphanumeric char became
+    # '-', so `Renoise/Tools` and `Renoise-Tools` encode identically and you
+    # cannot decode your way back to a real path. The transcript records its own
+    # `cwd` on every entry; that is the only authoritative source. Needed because
+    # `claude --resume <uuid>` is folder-scoped: run it from the wrong directory
+    # and the session simply isn't found.
+    if real_cwd:
+        row.cwd = real_cwd
 
 
 # ─────────────────────────── Copilot ─────────────────────────────────
@@ -974,7 +985,36 @@ def cmd_grep(args):
             if match(ln):
                 print(f"    {ln.strip()[:150]}")
                 shown += 1
-    print(f"\n{len(hits)} session(s). Resume one with:  sessions open <id>")
+    print(f"\n{len(hits)} session(s).  sessions where <id>  to see its folder, "
+          f"or  sessions open <id>  to resume it there.")
+
+
+def cmd_where(args):
+    """Print the folder a session ran in, plus the commands to get back into it."""
+    if not args:
+        print("usage: sessions where <session-id>", file=sys.stderr); sys.exit(2)
+    r = find_session(args[0])
+    if r is None:
+        print(f"sessions: not found: {args[0]}", file=sys.stderr); sys.exit(1)
+    ensure_meta_for(r)
+    cwd = r.cwd or "(unknown)"
+    gone = cwd.startswith("/") and not os.path.isdir(cwd)
+    print(f"provider : {r.provider}")
+    print(f"id       : {r.uuid}")
+    print(f"when     : {time.strftime('%Y-%m-%d %H:%M', time.localtime(r.mtime))}"
+          f"   ({r.turns} turns)")
+    print(f"folder   : {cwd}{'   ⚠ NO LONGER EXISTS' if gone else ''}")
+    if r.title:
+        print(f"title    : {r.title}")
+    if r.snippet:
+        print(f"opened   : {r.snippet[:120]}")
+    print()
+    print("resume it:")
+    print(f"  sessions open {r.uuid[:8]}        # chdirs for you")
+    if cwd.startswith("/"):
+        cmd = " ".join(sh_quote(a) for a in resume_argv(r.provider, r.uuid, r.path))
+        print("or by hand:")
+        print(f"  cd {sh_quote(cwd)} && {cmd}")
 
 
 def cmd_open(args):
@@ -983,6 +1023,18 @@ def cmd_open(args):
     r = find_session(args[0])
     if r is None:
         print(f"sessions: not found: {args[0]}", file=sys.stderr); sys.exit(1)
+    # Resume is folder-scoped for claude/copilot/codex — the CLI looks up the
+    # session relative to the cwd it's launched from. So chdir into the folder
+    # the session actually ran in, otherwise `open` reports "no such session"
+    # from anywhere but that one directory. (converse is global; no cwd needed.)
+    ensure_meta_for(r)
+    if r.cwd and r.cwd.startswith("/"):
+        if os.path.isdir(r.cwd):
+            os.chdir(r.cwd)
+        else:
+            print(f"sessions: original folder is gone: {r.cwd}\n"
+                  f"          resuming from {os.getcwd()} — the CLI may not find it.",
+                  file=sys.stderr)
     argv = resume_argv(r.provider, r.uuid, r.path)
     os.execvp(argv[0], argv)
 
@@ -1531,7 +1583,10 @@ Usage:
   sessions grep <pattern>             Literal search of session prose, ranked by hit
               [-w] [-u] [-e] [-c]     count. -w whole-word, -u only your own turns,
               [-n N] [--and P]        --and P to require a 2nd term. `grep --help`
-  sessions open <id>                  Resume a session in its native tool
+  sessions where <id>                 Show which folder a session ran in (+ the
+                                      by-hand cd/resume command)
+  sessions open <id>                  Resume a session in its native tool, chdir'ing
+                                      into its original folder first
   sessions distill <id> [--force]     Produce a ~250-word digest via Claude. Cached
                                       at ~/.sessions/distilled/<provider>/<uuid>.md
   sessions promote <id> [--topic T]   Distill (if needed) and copy the digest into
@@ -1569,6 +1624,8 @@ def main():
         cmd_cat(args[1:]); return
     if args and args[0] in ("grep",):
         cmd_grep(args[1:]); return
+    if args and args[0] in ("where",):
+        cmd_where(args[1:]); return
     if args and args[0] in ("open",):
         cmd_open(args[1:]); return
     if args and args[0] in ("distill",):
