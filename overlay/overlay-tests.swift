@@ -852,7 +852,8 @@ enum OverlayCoreTests {
                 AnchorSelector(kind: .accessibility, application: "com.apple.Safari",
                                role: "AXButton", name: "Delete repository")])
             let resolved = Resolution(state: .resolved, method: .accessibility,
-                                      confidence: 1.0, rect: rect, surfaceEpoch: 5, t: 100)
+                                      confidence: 1.0, rect: rect, surfaceEpoch: 5, t: 100,
+                                      targetID: "Safari|Settings|AXButton|Delete repository")
             let target = SpatialReference(surface: surface, observation: obs,
                                           anchor: anchor, resolution: resolved,
                                           actor: "agent:francois", createdAt: 100)
@@ -873,14 +874,33 @@ enum OverlayCoreTests {
                                            currentDigest: "sha:the-delete-button")
             check(fine.ok, "unchanged target → executes: \(fine.reason)")
 
-            // Target drift — the acceptance test the whole design exists for.
-            let moved = Resolution(state: .resolved, method: .accessibility,
-                                   confidence: 1.0,
-                                   rect: NormRect(x: 0.2, y: 0.3, w: 0.1, h: 0.05),
-                                   surfaceEpoch: 5, t: 300)
-            let drifted = approved.executable(against: moved, epoch: 5)
-            check(!drifted.ok, "the target MOVED after approval → refused")
-            check(drifted.reason.contains("moved"), "…and says so: \(drifted.reason)")
+            // The correction: the same button MOVING is not drift. A window drag must
+            // not revoke consent — the referent is unchanged.
+            let justMoved = Resolution(state: .resolved, method: .accessibility,
+                                       confidence: 1.0,
+                                       rect: NormRect(x: 0.2, y: 0.3, w: 0.1, h: 0.05),
+                                       surfaceEpoch: 5, t: 300,
+                                       targetID: "Safari|Settings|AXButton|Delete repository")
+            check(approved.executable(against: justMoved, epoch: 5,
+                                      currentDigest: "sha:the-delete-button").ok,
+                  "the same button at a new position is STILL approved — a window drag "
+                + "must not revoke consent")
+
+            // Real drift: it now resolves to something else entirely.
+            let different = Resolution(state: .resolved, method: .accessibility,
+                                       confidence: 1.0, rect: rect, surfaceEpoch: 5, t: 300,
+                                       targetID: "Safari|Settings|AXButton|Export Data")
+            let drifted = approved.executable(against: different, epoch: 5)
+            check(!drifted.ok, "it resolves to a DIFFERENT control now → refused")
+            check(drifted.reason.contains("different thing"),
+                  "…and names both: \(drifted.reason)")
+
+            // Degraded evidence: same target, but found by a much weaker selector.
+            let weakened = Resolution(state: .resolved, method: .surfaceNormalizedRect,
+                                      confidence: 0.1, rect: rect, surfaceEpoch: 5, t: 300,
+                                      targetID: "Safari|Settings|AXButton|Delete repository")
+            check(!approved.executable(against: weakened, epoch: 5).ok,
+                  "the same target found only by weak geometry → refused, not executed")
 
             let swapped = approved.executable(against: resolved, epoch: 5,
                                               currentDigest: "sha:something-else")

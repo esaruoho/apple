@@ -929,13 +929,17 @@ public struct Resolution: Codable, Equatable, Sendable {
     public var t: Double
     /// How many candidates matched. More than one is ambiguity, not a tie to break.
     public var candidates: Int
+    /// A stable-ish description of the thing matched — "Safari|Settings" — so two
+    /// resolutions can be compared by REFERENT rather than by pixels.
+    public var targetID: String?
 
     public init(state: ResolutionState, method: AnchorSelectorKind? = nil,
                 confidence: Double = 0, rect: NormRect? = nil,
-                surfaceEpoch: Int = 0, t: Double = 0, candidates: Int = 0) {
+                surfaceEpoch: Int = 0, t: Double = 0, candidates: Int = 0,
+                targetID: String? = nil) {
         self.state = state; self.method = method; self.confidence = confidence
         self.rect = rect; self.surfaceEpoch = surfaceEpoch; self.t = t
-        self.candidates = candidates
+        self.candidates = candidates; self.targetID = targetID
     }
 
     public static let unresolved = Resolution(state: .unresolved)
@@ -945,7 +949,8 @@ public struct Resolution: Codable, Equatable, Sendable {
     /// never "pick the closest".
     public static func grade(candidates: Int, method: AnchorSelectorKind,
                              confidence: Double? = nil,
-                             rect: NormRect?, surfaceEpoch: Int, t: Double) -> Resolution {
+                             rect: NormRect?, surfaceEpoch: Int, t: Double,
+                             targetID: String? = nil) -> Resolution {
         switch candidates {
         case 0:
             return Resolution(state: .unavailable, method: method, confidence: 0,
@@ -953,7 +958,8 @@ public struct Resolution: Codable, Equatable, Sendable {
         case 1:
             return Resolution(state: .resolved, method: method,
                               confidence: confidence ?? method.weightForConfidence, rect: rect,
-                              surfaceEpoch: surfaceEpoch, t: t, candidates: 1)
+                              surfaceEpoch: surfaceEpoch, t: t, candidates: 1,
+                              targetID: targetID)
         default:
             return Resolution(state: .ambiguous, method: method, confidence: 0,
                               rect: rect, surfaceEpoch: surfaceEpoch, t: t,
@@ -1358,14 +1364,35 @@ public struct ActionIntent: Codable, Equatable, Sendable {
         guard approved.surfaceEpoch == current.surfaceEpoch else {
             return (false, "approved under a different surface arrangement")
         }
-        if let a = approved.rect, let c = current.rect, !Self.same(a, c) {
-            return (false, "the target moved since approval — re-approve")
+        // Equivalence is about the REFERENT, not the pixels.
+        //
+        // The first version refused whenever the rectangle changed, which is wrong in
+        // the most ordinary case there is: the same button moves because its window
+        // moved. That is obviously still the same button, and invalidating on it
+        // would make approval useless — every window drag would revoke consent.
+        //
+        // What must match is what the thing IS, not where it is:
+        //   · it still resolves to the same target
+        //   · by a selector at least as trustworthy as the one approved under
+        //   · and the picture the human was shown has not materially changed
+        //
+        // Geometry is deliberately absent from this list. A window-relative rect is
+        // already invariant under a move, and a screen-relative one is not evidence
+        // of identity either way.
+        if let approvedTarget = approved.targetID, let nowTarget = current.targetID,
+           approvedTarget != nowTarget {
+            return (false, "it resolves to a different thing now (\(approvedTarget) "
+                         + "→ \(nowTarget)) — re-approve")
+        }
+        if current.confidence < approved.confidence - 0.2 {
+            return (false, "the match is weaker than the one approved "
+                         + "(\(approved.confidence) → \(current.confidence))")
         }
         if let approvedDigest = approvedObservationDigest, let now = currentDigest,
            approvedDigest != now {
             return (false, "what is there now is not what was approved")
         }
-        return (true, "approved target still resolves to the same thing")
+        return (true, "same referent, still confidently resolved")
     }
 
     /// Same place, within a tolerance that allows for sub-pixel jitter but not for

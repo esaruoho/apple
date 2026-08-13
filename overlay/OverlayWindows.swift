@@ -108,10 +108,15 @@ public struct MacWindowAnchorResolver {
         let windowAppKit = WindowList.appKitRect(fromTopLeft: target.frame)
         let placed = WindowMatcher.place(binding.rel, in: windowAppKit)
 
+        // The referent's identity, so a later approval can ask "is this still the
+        // same thing?" without comparing pixels. Deliberately app+title and NOT the
+        // window number: the number is a runtime handle, and the same window keeps
+        // being the same window across a retitle or a relaunch.
         let resolution = Resolution.grade(candidates: 1, method: found.method,
                                           confidence: found.weight,
                                           rect: binding.rel,
-                                          surfaceEpoch: Self.surfaceEpoch, t: now)
+                                          surfaceEpoch: Self.surfaceEpoch, t: now,
+                                          targetID: "\(target.owner)|\(target.title)")
         return (resolution, target, placed)
     }
 }
