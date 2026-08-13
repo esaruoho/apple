@@ -207,6 +207,30 @@ Feature: Redact a region of a finished recburn video without re-rendering it
     So the pattern is now [•·*][•·*.\s]{1,6}\d{4}\b, which matched 11 times on that frame.
 
   @hw-verified
+  Scenario: the first full sweep produced 3 false windows out of 4  (found + fixed 2026-08-13)
+    Given a full 34-minute sweep at --every 2 (1030 frames, 15.6 min) reported 4 windows
+    When each was checked by extracting the frame and reading its OCR context
+    Then only 19:56-20:00 was real; the other three were my own regex being sloppy:
+      * 0:44 matched "• 0002" — a Renoise SAMPLE FILENAME beginning with 0002, because
+        one mask char plus four digits was enough to fire
+      * 4:46 and 11:22 matched a bullet on one line and "1501" on the NEXT line, because
+        the character class used \s, which includes newline, joining two unrelated bits
+        of screen into one fake account number
+    So the pattern now demands a run of 3-6 mask chars and a literal space rather than \s,
+      and every pattern is matched PER LINE instead of against the whole OCR blob
+    And re-running --find over all three windows now reports "nothing matched", while the
+      real Stripe frame still matches 9 times.
+
+  @hw-verified
+  Scenario: the redaction defeats OCR, proven by pointing --find at the output  (2026-08-13)
+    Given the whole point is that the covered text is no longer readable
+    When --find is run over 19:50-20:05 of the REDACTED file at --every 0.5 (30 frames,
+      finer than the 0.9s exposure)
+    Then Apple Vision finds nothing at all — no account id, no masked account rows
+    But the same sweep of the source reported both, so this is an independent check on the
+      mosaic-then-blur strength rather than a restatement of it.
+
+  @hw-verified
   Scenario: --find prints the sampling gap instead of implying completeness  (2026-08-13)
     Given the exposure this tool was built for lasted 0.9s, and the default sample step is 2s
     Then --find states up front that anything shorter than the step can fall between samples

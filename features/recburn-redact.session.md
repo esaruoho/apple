@@ -163,6 +163,42 @@ Matched secrets print truncated. Printing a live key to the terminal copies it i
 scrollback and from there into whatever transcript is running — which would be a fresh
 exposure created by the tool built to prevent them.
 
+## The full sweep, and what it caught about me
+
+Ran `--find --every 2` over the whole 34-minute capture: 1030 frames, 15.6 minutes. It
+reported **4 windows**. Exactly one was real.
+
+- `0:44` — matched `• 0002`, which is a **Renoise sample filename** starting with 0002.
+  One mask char plus four digits was enough to fire.
+- `4:46` and `11:22` — matched a bullet on one line and `1501` on the **next** line. My
+  character class used `\s`, which includes newline, so it stitched two unrelated pieces of
+  screen into a fake account number.
+- `19:56-20:00` — the real one, already redacted.
+
+Three false positives out of four. Fixed by demanding a run of 3–6 mask chars (kills the
+filename) and matching **per line** with a literal space instead of `\s` (kills the
+cross-line joins). Re-running over all three windows now reports "nothing matched", while
+the real Stripe frame still matches 9 times.
+
+The useful part: **no other exposure was found in the other 33 minutes.** That is a real
+result, but it is not "the video is clean" — it is "no sampled frame matched 14 patterns",
+and the tool says so in those words.
+
+Then a genuinely satisfying check. Pointing `--find` at the **redacted output** over
+19:50–20:05 at `--every 0.5` — 30 frames, finer than the 0.9s exposure — Apple Vision finds
+**nothing at all**. The same sweep of the source found both the account id and the masked
+rows. So the mosaic-then-blur is verified by an independent reader, not by me looking at a
+contact sheet and deciding it looked blurry enough.
+
+## A loose end I did not cause but must report
+
+While probing those three frames, `~/Downloads/2026-08-13-09-55-46-flat-subtitled.mov` — the
+original — had disappeared. It was present and readable during the sweep (12:19–12:35) and
+gone minutes later. Both derived files survive. Nothing I ran touched `~/Downloads`; every
+cleanup was scoped to the session scratchpad and `/var/folders/**/recburn-redact-*`. It is
+not in `~/.Trash` and not on any mounted volume. Reported to Esa rather than quietly worked
+around, because if something is deleting recburn output that is worth knowing.
+
 ## Result
 
 `recburn-redact <file> --at 19:57.8-19:58.7 --box urlbar --box stripe-destination`

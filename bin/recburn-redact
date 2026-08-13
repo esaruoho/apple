@@ -89,7 +89,11 @@ PATTERNS = [
     ("stripe-pub-key",     r"\bpk_(?:live|test)_[A-Za-z0-9]{16,}",              True),
     # Vision reads a •••• mask as U+2022 with some bullets misrecognised as '.' — real
     # output included '••.• 1234' and '•..• 1234'. Requiring 3+ literal bullets misses it.
-    ("masked-account",     r"[•·*][•·*.\s]{1,6}\d{4}\b",                        False),
+    # But requiring only ONE mask char matched a Renoise sample filename ("• 0002 bus2…"),
+    # so demand a run of 3-6 mask chars. Whitespace is a literal space, never \s: with \s
+    # this matched a bullet on one line and a number on the NEXT ("FX •" / "1501"), which
+    # produced two false windows in the first full sweep of a 34-minute capture.
+    ("masked-account",     r"[•·*][•·*.]{2,5}[ ]{0,2}\d{4}\b",                  False),
     ("iban",               r"\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){3,7}\b",         True),
     ("card-number",        r"\b(?:\d{4}[ -]){3}\d{4}\b",                        True),
     ("anthropic-key",      r"sk-ant-[A-Za-z0-9_-]{20,}",                        True),
@@ -361,8 +365,10 @@ def mode_find(path, info, args, out_dir):
                       f"{len(hits)} hits so far", end="", flush=True)
             if not text:
                 continue
+            # Per LINE, never across the whole blob: OCR output is line-oriented, and a
+            # pattern allowed to span a newline joins two unrelated bits of screen.
             for name, rx, redact in PATTERNS:
-                for m in re.finditer(rx, text):
+                for m in (m for line in text.splitlines() for m in re.finditer(rx, line)):
                     s = m.group(0).strip()
                     if any(ig.search(s) for ig in ignore):
                         continue
