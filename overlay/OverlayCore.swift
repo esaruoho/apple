@@ -609,3 +609,138 @@ public enum OverlayPaths {
     public static var asks: URL { root.appendingPathComponent("asks") }
     public static var session: URL { store.appendingPathComponent("session.json") }
 }
+
+// ─────────────────────── depth planes ───────────────────────
+
+/// Who owns a mark, expressed as height above the screen.
+///
+/// From the "Why Overlay Matters" essay §14: depth communicates ownership without
+/// turning the desktop into a game. Screen content is plane 0 and is not ours; the
+/// human's own marks sit just above it; an agent's proposals sit above those; a
+/// warning sits highest of all. Rendered with shadow, scale and draw order — not
+/// with louder colours, which is the trap the source thread warned about.
+public enum DepthPlane: Int, Comparable, Sendable {
+    case screen = 0     // not drawn by us — the thing being annotated
+    case human  = 1     // ink, boxes, the user's own selections
+    case agent  = 2     // answers, generated images, agent annotations
+    case alert  = 3     // warnings, unresolved anchors, things needing attention
+
+    public static func < (a: DepthPlane, b: DepthPlane) -> Bool {
+        a.rawValue < b.rawValue
+    }
+
+    /// Plane from provenance and intent. Colour is consulted only for the alert
+    /// case, because "this needs attention" is the one distinction the actor string
+    /// does not already carry.
+    public static func of(actor: String, colorHex: String = "", alert: Bool = false)
+        -> DepthPlane {
+        if alert || colorHex.uppercased() == "#FF9F0A" { return .alert }
+        if actor.hasPrefix("human:") { return .human }
+        if actor.lowercased().contains("security") { return .alert }
+        return .agent
+    }
+
+    /// How far above the screen this plane reads. Higher planes cast a longer, softer
+    /// shadow and sit fractionally larger — the cues the eye already uses for height.
+    public var shadow: (radius: Double, offsetY: Double, alpha: Double) {
+        switch self {
+        case .screen: return (0, 0, 0)
+        case .human:  return (4, -1, 0.30)
+        case .agent:  return (10, -3, 0.42)
+        case .alert:  return (18, -5, 0.55)
+        }
+    }
+
+    /// Very slight — enough to read as nearer, not enough to look like a mistake.
+    public var scale: Double {
+        switch self {
+        case .screen: return 1.0
+        case .human:  return 1.0
+        case .agent:  return 1.01
+        case .alert:  return 1.03
+        }
+    }
+}
+
+// ─────────────────────── motion ───────────────────────
+
+/// Easing and arrival timing.
+///
+/// From the essay §13 and §16: an element that simply appears tells the eye nothing,
+/// whereas a marker that travels to its target says *actor A is referring to object
+/// B*. And the model does not need to think at 60fps for its pointer to move at
+/// 60fps — it emits a semantic event and the renderer produces the frames.
+public enum Motion {
+
+    /// The essay's own figure, and a good one: long enough to be followed by eye,
+    /// short enough not to be in the way.
+    public static let arrivalSeconds: Double = 0.28
+    /// A departing object gets slightly longer, so a disappearance is never a glitch.
+    public static let departureSeconds: Double = 0.45
+
+    /// Decelerating. Fast out of the gate, settles gently — reads as a thing coming
+    /// to rest rather than a value being interpolated.
+    public static func easeOut(_ t: Double) -> Double {
+        let clamped = min(max(t, 0), 1)
+        return 1 - pow(1 - clamped, 3)
+    }
+
+    /// Overshoots slightly and settles back, which is what physical arrival looks
+    /// like. Used for a marker landing on its target.
+    public static func easeOutBack(_ t: Double, overshoot: Double = 1.7) -> Double {
+        let clamped = min(max(t, 0), 1)
+        let c = clamped - 1
+        return 1 + (overshoot + 1) * pow(c, 3) + overshoot * pow(c, 2)
+    }
+
+    /// 0…1 of the way through an arrival that began at `created`.
+    public static func arrival(created: Double, now: Double,
+                               duration: Double = arrivalSeconds) -> Double {
+        guard duration > 0 else { return 1 }
+        return min(max((now - created) / duration, 0), 1)
+    }
+
+    /// Interpolate a point along the travel from `from` to `to`.
+    public static func lerp(_ from: CGPoint, _ to: CGPoint, _ t: Double) -> CGPoint {
+        CGPoint(x: from.x + (to.x - from.x) * CGFloat(t),
+                y: from.y + (to.y - from.y) * CGFloat(t))
+    }
+
+    /// How visible an ephemeral object should be as its lifetime runs out.
+    ///
+    /// A TTL object used to blink out of existence at the tick that collected it.
+    /// Fading over the last stretch makes the lifetime itself perceptible — you can
+    /// see a thing is temporary before it is gone.
+    public static func fadeOut(created: Double, now: Double,
+                               lifetime: Double, over: Double = 0.8) -> Double {
+        let remaining = (created + lifetime) - now
+        if remaining >= over { return 1 }
+        if remaining <= 0 { return 0 }
+        return easeOut(remaining / over)
+    }
+}
+
+/// How firmly a mark is attached to what it refers to.
+///
+/// The anchoring work is not built yet, so today only two of these occur: everything
+/// screen-anchored is `.firm`, and an image whose file has vanished is `.lost`. The
+/// grammar exists now so that when window and AX anchors land, degradation is
+/// already visible rather than silent — which is the whole point of the
+/// Observation/Anchor/Resolution split.
+public enum Attachment: String, Codable, Sendable {
+    case firm         // resolved, confident
+    case loosening    // resolution degrading — drawn dashed and dimmed
+    case ambiguous    // more than one candidate — never silently guess
+    case lost         // target gone
+
+    public var opacity: Double {
+        switch self {
+        case .firm: return 1.0
+        case .loosening: return 0.62
+        case .ambiguous: return 0.7
+        case .lost: return 0.4
+        }
+    }
+
+    public var isDashed: Bool { self != .firm }
+}

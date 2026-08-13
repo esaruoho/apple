@@ -84,6 +84,9 @@ final class InkView: NSView {
     /// it was a control.
     var hoverPoint: CGPoint?
 
+    /// One frame in flight at a time; see scheduleNextFrameIfAnimating().
+    private var framePending = false
+
     /// Strokes currently being rendered by Image Playground. They pulse in place —
     /// "I am working on THIS" — which is what a sketch turning into a picture should
     /// look like. It replaced a text bubble saying "rendering your drawing…", which
@@ -164,12 +167,27 @@ final class InkView: NSView {
             for s in spotlights { render(s) }
         }
 
-        for object in store.objects where object.kind != .spotlight {
+        // Painted in PLANE order, low to high: the human's own marks sit just above
+        // the screen, an agent's answers above those, a warning above everything.
+        // Ownership is read as height — shadow, a hair of scale, and who covers whom
+        // — rather than as louder colour.
+        let painted = store.objects
+            .filter { $0.kind != .spotlight }
+            .enumerated()
+            .sorted { a, b in
+                let pa = DepthPlane.of(actor: a.element.actor, colorHex: a.element.colorHex)
+                let pb = DepthPlane.of(actor: b.element.actor, colorHex: b.element.colorHex)
+                // Stable: equal planes keep the order they were created in.
+                return pa == pb ? a.offset < b.offset : pa < pb
+            }
+            .map(\.element)
+
+        for object in painted {
             // Only paint what intersects the invalidated rect. Without this, every
             // mouse-drag sample would re-stroke the entire canvas.
             let box = paintedBounds(of: object)
             guard box.isNull || box.intersects(dirtyRect) else { continue }
-            render(object)
+            renderWithDepth(object)
         }
 
         if !live.isEmpty {
@@ -193,6 +211,34 @@ final class InkView: NSView {
         }
 
         if mode == .draw { drawModeChrome() }
+
+        scheduleNextFrameIfAnimating()
+    }
+
+    /// Self-sustaining animation, with no timer to leak.
+    ///
+    /// Adding an object already sets needsDisplay; that first frame notices something
+    /// is mid-arrival and asks for the next one. When everything has settled nothing
+    /// schedules anything and the overlay goes completely idle again — which is the
+    /// rule from the essay: do not repaint a transparent full-resolution desktop at
+    /// maximum refresh for no reason.
+    private func scheduleNextFrameIfAnimating() {
+        guard !framePending else { return }
+        let now = Date().timeIntervalSince1970
+        let animating = store.objects.contains { o in
+            if now - o.created < Motion.arrivalSeconds + 0.05 { return true }
+            if o.lifetime == .ephemeral {
+                let remaining = (o.created + 5) - now
+                return remaining < 1.0 && remaining > -0.2
+            }
+            return false
+        }
+        guard animating else { return }
+        framePending = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 60.0) { [weak self] in
+            self?.framePending = false
+            self?.needsDisplay = true
+        }
     }
 
     /// The live selection rectangle: dashed, so it reads as "I am choosing a region"
@@ -347,6 +393,61 @@ final class InkView: NSView {
     }
 
     // ── the object vocabulary ──
+
+    /// Wrap an object's drawing in its plane's shadow and its arrival/fade opacity.
+    ///
+    /// This is where the two ideas from the essay actually land: §14's depth planes,
+    /// and §13's continuous visual causality — nothing simply appears, and nothing
+    /// simply vanishes.
+    private func renderWithDepth(_ o: OverlayObject) {
+        let plane = DepthPlane.of(actor: o.actor, colorHex: o.colorHex)
+        let now = Date().timeIntervalSince1970
+
+        var alpha = Motion.easeOut(Motion.arrival(created: o.created, now: now))
+        if o.lifetime == .ephemeral {
+            alpha *= Motion.fadeOut(created: o.created, now: now, lifetime: 5)
+        }
+        alpha *= attachment(of: o).opacity
+        guard alpha > 0.01 else { return }
+
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = NSColor.black.withAlphaComponent(plane.shadow.alpha * alpha)
+        shadow.shadowBlurRadius = plane.shadow.radius
+        shadow.shadowOffset = NSSize(width: 0, height: plane.shadow.offsetY)
+        shadow.set()
+
+        // Arrival: the mark rises the last little way onto the screen rather than
+        // being stamped onto it.
+        let settle = Motion.easeOutBack(Motion.arrival(created: o.created, now: now))
+        let scale = plane.scale * (0.94 + 0.06 * min(settle, 1.2))
+        let anchor = o.kind.isRectangular ? o.rect : o.bounds
+        let pivot = CGPoint(x: anchor.midX.isNaN ? bounds.midX : anchor.midX,
+                            y: anchor.midY.isNaN ? bounds.midY : anchor.midY)
+
+        let transform = NSAffineTransform()
+        transform.translateX(by: pivot.x, yBy: pivot.y)
+        transform.scale(by: CGFloat(scale))
+        transform.translateX(by: -pivot.x, yBy: -pivot.y)
+        transform.concat()
+
+        NSGraphicsContext.current?.cgContext.setAlpha(CGFloat(alpha))
+        render(o)
+        NSGraphicsContext.restoreGraphicsState()
+    }
+
+    /// How firmly this object is attached to what it refers to.
+    ///
+    /// Only two states occur today — the anchoring work is not built — but the
+    /// grammar is wired so that degradation will be *visible* the moment window and
+    /// AX anchors land, instead of failing silently.
+    private func attachment(of o: OverlayObject) -> Attachment {
+        if o.kind == .image, let path = o.imagePath,
+           !FileManager.default.fileExists(atPath: path) {
+            return .lost
+        }
+        return .firm
+    }
 
     private func render(_ o: OverlayObject) {
         switch o.kind {

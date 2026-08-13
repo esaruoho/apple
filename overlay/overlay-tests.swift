@@ -495,6 +495,72 @@ enum OverlayCoreTests {
                   "an overlay session is named as one")
         }
 
+        // ═══════════════ depth planes ═══════════════
+
+        do {
+            check(DepthPlane.of(actor: "human:esa") == .human, "the human's marks sit low")
+            check(DepthPlane.of(actor: "agent:fm") == .agent, "agent marks sit above them")
+            check(DepthPlane.of(actor: "agent:security-steward") == .alert,
+                  "a security actor is raised to the alert plane")
+            check(DepthPlane.of(actor: "agent:ask", colorHex: "#FF9F0A") == .alert,
+                  "the warning colour raises the plane too")
+            check(DepthPlane.human < DepthPlane.agent, "planes are ordered")
+            check(DepthPlane.agent < DepthPlane.alert, "…all the way up")
+
+            // Depth must be conveyed by height cues, not by shouting.
+            check(DepthPlane.alert.shadow.radius > DepthPlane.agent.shadow.radius,
+                  "a higher plane casts a longer shadow")
+            check(DepthPlane.agent.shadow.radius > DepthPlane.human.shadow.radius,
+                  "…monotonically")
+            check(DepthPlane.alert.shadow.offsetY < DepthPlane.human.shadow.offsetY,
+                  "and it falls further")
+            check(DepthPlane.human.scale == 1.0 && DepthPlane.alert.scale < 1.05,
+                  "scale is a hint, not a zoom")
+        }
+
+        // ═══════════════ motion ═══════════════
+
+        do {
+            check(Motion.easeOut(0) == 0 && Motion.easeOut(1) == 1, "easeOut spans 0…1")
+            check(Motion.easeOut(0.5) > 0.5, "easeOut decelerates — most distance covered early")
+            check(Motion.easeOut(-3) == 0 && Motion.easeOut(9) == 1, "easing clamps")
+
+            // Overshoot is the point: arrival should look physical.
+            check(Motion.easeOutBack(0.75) > 1.0, "easeOutBack overshoots before settling")
+            check(near(Motion.easeOutBack(1), 1.0, 1e-9), "…and lands exactly on target")
+
+            let t0 = 1_000_000.0
+            check(Motion.arrival(created: t0, now: t0) == 0, "arrival starts at 0")
+            check(Motion.arrival(created: t0, now: t0 + 0.14) > 0.49, "…is half way at half time")
+            check(Motion.arrival(created: t0, now: t0 + 5) == 1, "…and completes")
+            check(Motion.arrival(created: t0, now: t0, duration: 0) == 1,
+                  "a zero duration is instant, not a divide by zero")
+
+            let mid = Motion.lerp(CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 50), 0.5)
+            check(near(mid.x, 50) && near(mid.y, 25), "lerp travels a marker to its target")
+
+            // A TTL object should visibly be running out, not blink away.
+            check(Motion.fadeOut(created: t0, now: t0 + 1, lifetime: 5) == 1,
+                  "an ephemeral mark is fully opaque in mid-life")
+            let dying = Motion.fadeOut(created: t0, now: t0 + 4.6, lifetime: 5)
+            check(dying > 0 && dying < 1, "…fades over its last stretch")
+            check(Motion.fadeOut(created: t0, now: t0 + 6, lifetime: 5) == 0,
+                  "…and is gone when its time is up")
+        }
+
+        // ═══════════════ attachment grammar ═══════════════
+
+        do {
+            check(Attachment.firm.opacity == 1.0, "a firm anchor is fully drawn")
+            check(Attachment.loosening.opacity < Attachment.firm.opacity,
+                  "a degrading anchor visibly weakens")
+            check(Attachment.lost.opacity < Attachment.loosening.opacity,
+                  "a lost one weakens further")
+            check(!Attachment.firm.isDashed, "firm is solid")
+            check(Attachment.ambiguous.isDashed && Attachment.lost.isDashed,
+                  "anything not firm is dashed — uncertainty is never drawn as certainty")
+        }
+
         print("\n\(passed) passed, \(failed) failed")
         exit(failed == 0 ? 0 : 1)
     }
