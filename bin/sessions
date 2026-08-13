@@ -766,7 +766,11 @@ def all_rows_global():
 
 
 def find_session(query):
-    """Find a session by uuid / stamp / prefix. Returns Row or None."""
+    """Find a session by uuid / prefix, or by the name it was renamed to.
+
+    A renamed session is far easier to remember than 8 hex chars, so
+    `sessions open vril` resolves the same way `sessions open f4a35539` does.
+    """
     rows = all_rows_global()
     # Exact match first
     for r in rows:
@@ -782,6 +786,26 @@ def find_session(query):
         for m in matches[:6]:
             print(f"  {m.provider:8} {m.uuid}", file=sys.stderr)
         sys.exit(2)
+    # Not an id at all — try the session's name. Costs a scan of every
+    # transcript (titles live inside them), so it's the last resort.
+    q = query.strip().lower()
+    named = []
+    for r in rows:
+        ensure_meta_for(r)
+        if r.title and q in r.title.lower():
+            named.append(r)
+    if len(named) > 1:
+        exact = [r for r in named if r.title.lower() == q]
+        if len(exact) == 1:
+            return exact[0]
+        print(f"sessions: '{query}' matches {len(named)} session names:",
+              file=sys.stderr)
+        for m in named[:8]:
+            when = time.strftime("%Y-%m-%d %H:%M", time.localtime(m.mtime))
+            print(f"  {m.uuid[:8]}  {when}  {m.title}", file=sys.stderr)
+        sys.exit(2)
+    if named:
+        return named[0]
     return None
 
 
@@ -868,6 +892,9 @@ def cmd_ls(args):
         if r.provider == "converse" and r.cwd:
             where = ("~" + r.cwd[len(HOME):]) if r.cwd.startswith(HOME) else r.cwd
             snip = f"⟨{os.path.basename(where.rstrip('/'))}⟩ {snip}"[:80]
+        # A renamed session is worth more than its opening line — lead with it.
+        if r.title:
+            snip = f"⟨{r.title}⟩ {snip}"[:80]
         print(f"{r.provider:8} {r.uuid[:24]:24} {when}  {r.turns:>4}t  {snip}")
 
 
@@ -974,7 +1001,9 @@ def cmd_grep(args):
 
     for n, r, text in hits:
         when = time.strftime("%Y-%m-%d %H:%M", time.localtime(r.mtime))
-        print(f"{r.provider:8} {r.uuid[:8]}  {when}  {n:>4} hits  {display_cwd(r.cwd)}")
+        name = f"  ⟨{r.title}⟩" if r.title else ""
+        print(f"{r.provider:8} {r.uuid[:8]}  {when}  {n:>4} hits  "
+              f"{display_cwd(r.cwd)}{name}")
         shown = 0
         for ln in text.split("\n"):
             if shown >= per:
@@ -1051,12 +1080,16 @@ def cmd_where(args):
         # are never mistaken for two different folders.
         print(f"           (symlink → {tilde(cwd)})")
     if r.title:
-        print(f"title    : {r.title}")
+        print(f"name     : {r.title}")
+    else:
+        print("name     : (unnamed — rename it in-session with /rename)")
     if r.snippet:
         print(f"opened   : {r.snippet[:120]}")
     print()
     print("resume it:")
     print(f"  sessions open {r.uuid[:8]}        # chdirs for you")
+    if r.title:
+        print(f"  sessions open {sh_quote(r.title)}   # by name — same thing")
     if cwd.startswith("/"):
         cmd = " ".join(sh_quote(a) for a in resume_argv(r.provider, r.uuid, r.path))
         alias = path_aliases().get(cwd)
@@ -1643,7 +1676,8 @@ Usage:
               [--threshold X]         --raw searches full transcripts (newest 30).
 
 Providers:  claude (C) · copilot (G) · codex (X) · fm-chat (F)
-IDs match any uuid / prefix. Use a 6-char prefix in practice.
+IDs match any uuid / prefix (use a 6-char prefix in practice) — or the NAME a
+session was renamed to, so `sessions open vril` works as well as `open f4a3`.
 
 Doctrine — memory promotion chain (ENVOY):
   raw transcript   (the native log — claude .jsonl, fm-chat .jsonl, etc.)
