@@ -974,10 +974,7 @@ def cmd_grep(args):
 
     for n, r, text in hits:
         when = time.strftime("%Y-%m-%d %H:%M", time.localtime(r.mtime))
-        where = r.cwd or ""
-        if where.startswith(HOME):
-            where = "~" + where[len(HOME):]
-        print(f"{r.provider:8} {r.uuid[:8]}  {when}  {n:>4} hits  {where}")
+        print(f"{r.provider:8} {r.uuid[:8]}  {when}  {n:>4} hits  {display_cwd(r.cwd)}")
         shown = 0
         for ln in text.split("\n"):
             if shown >= per:
@@ -987,6 +984,50 @@ def cmd_grep(args):
                 shown += 1
     print(f"\n{len(hits)} session(s).  sessions where <id>  to see its folder, "
           f"or  sessions open <id>  to resume it there.")
+
+
+_ALIAS_CACHE = None
+
+
+def path_aliases():
+    """Map realpath → the symlink under ~/work that points at it.
+
+    Claude stores the *resolved* cwd (encode_cwd calls realpath), so a session
+    started in `~/work/paketti` is recorded under its iCloud target and shown
+    back as a 100-char path Esa doesn't recognise. These are the same folder;
+    the symlink name is the one worth printing.
+    """
+    global _ALIAS_CACHE
+    if _ALIAS_CACHE is None:
+        _ALIAS_CACHE = {}
+        for root in (f"{HOME}/work", HOME):
+            try:
+                entries = os.listdir(root)
+            except OSError:
+                continue
+            for n in entries:
+                p = os.path.join(root, n)
+                if not os.path.islink(p):
+                    continue
+                try:
+                    real = os.path.realpath(p)
+                except OSError:
+                    continue
+                if real != p:
+                    _ALIAS_CACHE.setdefault(real, p)
+    return _ALIAS_CACHE
+
+
+def tilde(p):
+    return ("~" + p[len(HOME):]) if p.startswith(HOME) else p
+
+
+def display_cwd(p):
+    """Short, recognisable form of a cwd: prefer a ~/work symlink, else tilde it."""
+    if not p or not p.startswith("/"):
+        return p or ""
+    alias = path_aliases().get(os.path.realpath(p) if os.path.exists(p) else p)
+    return tilde(alias) if alias else tilde(p)
 
 
 def cmd_where(args):
@@ -1003,7 +1044,12 @@ def cmd_where(args):
     print(f"id       : {r.uuid}")
     print(f"when     : {time.strftime('%Y-%m-%d %H:%M', time.localtime(r.mtime))}"
           f"   ({r.turns} turns)")
-    print(f"folder   : {cwd}{'   ⚠ NO LONGER EXISTS' if gone else ''}")
+    short = display_cwd(cwd)
+    print(f"folder   : {short}{'   ⚠ NO LONGER EXISTS' if gone else ''}")
+    if short != tilde(cwd):
+        # We're showing a symlink; say what it resolves to so the two names
+        # are never mistaken for two different folders.
+        print(f"           (symlink → {tilde(cwd)})")
     if r.title:
         print(f"title    : {r.title}")
     if r.snippet:
@@ -1013,8 +1059,9 @@ def cmd_where(args):
     print(f"  sessions open {r.uuid[:8]}        # chdirs for you")
     if cwd.startswith("/"):
         cmd = " ".join(sh_quote(a) for a in resume_argv(r.provider, r.uuid, r.path))
+        alias = path_aliases().get(cwd)
         print("or by hand:")
-        print(f"  cd {sh_quote(cwd)} && {cmd}")
+        print(f"  cd {sh_quote(alias or cwd)} && {cmd}")
 
 
 def cmd_open(args):
