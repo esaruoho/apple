@@ -110,7 +110,9 @@ enum OverlaySelfTest {
         check(panel.level == .floating, "panel sits at .floating, above ordinary windows")
         check(panel.isVisible, "panel is on screen")
         check(panel.styleMask.contains(.borderless), "panel is borderless")
-        check(panel.styleMask.contains(.nonactivatingPanel), "panel is non-activating")
+        check(!panel.styleMask.contains(.nonactivatingPanel),
+              "panel is NOT non-activating — that flag makes NSApp.activate a no-op on "
+            + "an .accessory app, which cost Esc, undo and the crosshair")
         check(panel.canBecomeKey, "panel can take the keyboard (Esc / ⌘Z depend on it)")
         check(!panel.canBecomeMain, "panel never becomes the main window")
 
@@ -179,12 +181,9 @@ enum OverlaySelfTest {
         canvas.view.keyDown(with: key(kVK_ANSI_Z, "z", [.command, .shift], in: panel))
         check(canvas.view.store.objects.count == before + 1, "⇧⌘Z redid it")
 
-        // 11. Esc is the way out, and it must work from inside the view
-        canvas.view.keyDown(with: key(kVK_Escape, "\u{1b}", [], in: panel))
-        check(manager.mode == .passthrough, "Esc leaves draw mode")
-        check(panel.ignoresMouseEvents, "…and the panel goes click-through again")
-
-        // 12. persistence
+        // 12. persistence — checked BEFORE Esc, because Esc now clears the canvas as
+        //     well as leaving draw mode. That is deliberate (Esa could not get rid of
+        //     anything otherwise) and this ordering keeps the test honest about it.
         manager.persist()
         let session = OverlayPaths.session
         check(FileManager.default.fileExists(atPath: session.path),
@@ -197,6 +196,12 @@ enum OverlaySelfTest {
         } else {
             check(false, "the persisted file parses back")
         }
+
+        // 11. Esc leaves draw mode AND clears — one key to get your screen back.
+        canvas.view.keyDown(with: key(kVK_Escape, "\u{1b}", [], in: panel))
+        check(manager.mode == .passthrough, "Esc leaves draw mode")
+        check(panel.ignoresMouseEvents, "…and the panel goes click-through again")
+        check(manager.markCount == 0, "…and Esc clears the canvas, so nothing is stranded")
 
         // 13. clearing
         manager.clearHere()
