@@ -1,13 +1,16 @@
-// PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone/iPad screen.
+// PhoneMirror — live, auto-oriented, auto-cropped mirrors of USB iPhone/iPad screens.
 //
 // Run it bare:  phonemirror
 //
-// It works out the rest by LOOKING at the first frame with Vision OCR:
+// MULTI-DEVICE: every connected iOS device gets its OWN window, with its own orientation, crop
+// and remembered calibration. Plug another phone in while it is running and a window appears for
+// it. Two or three phones side by side is the point — one Mac screen, several devices, one take.
+//
+// Each window works out its own settings by LOOKING at its first frame with Vision OCR:
 //   • which rotation makes text upright  → so a landscape-held phone whose iOS UI is stuck in
 //     portrait comes out landscape, with no flags
 //   • where iOS Camera.app's chrome is   → the mode wheel (PHOTO / VIDEO / SLO-MO / PORTRAIT /
-//     SQUARE …) is found by name, and cropped OUT, so you get viewfinder only
-//   • where the letterbox black bars are → trimmed by luminance
+//     SQUARE …) is found by name, and the 4:3 viewfinder is kept
 //
 // Why this app exists: QuickTime Player can mirror a Lightning-connected iOS device, but its
 // Edit ▸ Rotate Left/Right/Flip items are DISABLED during a live capture session and its
@@ -42,6 +45,8 @@ func allowScreenCaptureDevices() {
                               UInt32(MemoryLayout<UInt32>.size), &allow)
 }
 
+// MARK: - Device discovery
+
 func captureDevices() -> [AVCaptureDevice] {
     var seen = Set<String>(); var out: [AVCaptureDevice] = []
     for mt in [AVMediaType.video, .muxed] {
@@ -52,19 +57,26 @@ func captureDevices() -> [AVCaptureDevice] {
     return out
 }
 
-func findDevice(match: String?, timeout: TimeInterval) -> AVCaptureDevice? {
-    let deadline = Date().addingTimeInterval(timeout)
-    repeat {
-        let devs = captureDevices()
-        if let m = match?.lowercased(), !m.isEmpty {
-            if let d = devs.first(where: { $0.localizedName.lowercased().contains(m) }) { return d }
-        } else if let d = devs.first(where: {
-            let n = $0.localizedName.lowercased()
-            return n.contains("iphone") || n.contains("ipad") || n.contains("ipod")
-        }) { return d }
-        RunLoop.current.run(until: Date().addingTimeInterval(0.25))
-    } while Date() < deadline
-    return nil
+/// A Continuity Camera is a genuine camera feed (A12+ device), not a screen mirror. It needs no
+/// rotation and no chrome crop, so it is classified separately and never auto-opened — otherwise
+/// an iPhone 16 Pro would produce TWO windows, since it publishes both kinds.
+func isContinuityCamera(_ d: AVCaptureDevice) -> Bool {
+    if #available(macOS 14.0, *), d.deviceType == .continuityCamera { return true }
+    return d.localizedName.hasSuffix(" Camera") && looksLikeIOSName(d.localizedName)
+}
+
+func looksLikeIOSName(_ n: String) -> Bool {
+    let l = n.lowercased()
+    return l.contains("iphone") || l.contains("ipad") || l.contains("ipod")
+}
+
+/// The iOS SCREEN mirrors — what this app is for.
+func iosScreenDevices() -> [AVCaptureDevice] {
+    captureDevices().filter { looksLikeIOSName($0.localizedName) && !isContinuityCamera($0) }
+}
+
+func iosContinuityDevices() -> [AVCaptureDevice] {
+    captureDevices().filter { isContinuityCamera($0) }
 }
 
 // MARK: - Grab one frame
@@ -79,7 +91,12 @@ final class FirstFrameWatcher: NSObject, AVCaptureVideoDataOutputSampleBufferDel
     var onFrame: ((CGImage) -> Void)?
     private var taken = false
     private let ciContext = CIContext()
-    let queue = DispatchQueue(label: "org.esaruoho.phonemirror.frames")
+    let queue: DispatchQueue
+
+    init(label: String) {
+        self.queue = DispatchQueue(label: "org.esaruoho.phonemirror.frames.\(label)")
+        super.init()
+    }
 
     func arm() { taken = false }
 
@@ -234,90 +251,20 @@ func detectOrientation(_ frame: CGImage) -> Detection {
     return Detection(rotation: 90, score: 0, chromeBoxes: [], words: [], basis: "no text found — assuming 90°")
 }
 
-/// Per-column / per-row MEDIAN luminance of a downscaled copy, for finding control bands.
-///
-/// Median, not mean, and this matters twice over:
-///   • iOS Camera.app's control bands are black but carry white glyphs (flash, timer, Live Photo).
-///     Their MEAN is lifted above any black threshold, so a mean-based trim leaves them in shot.
-///     Their MEDIAN is ~0, because they are mostly black.
-///   • A relative/max-based threshold fails the other way: one overexposed window in the scene
-///     raises max so far that most of the real viewfinder falls below the bar (measured: it
-///     cropped to a 0.156-wide sliver).
-/// Median + a low ABSOLUTE threshold is immune to both.
-func luminanceProfile(_ img: CGImage, side: Int = 96) -> (cols: [Double], rows: [Double])? {
-    var buf = [UInt8](repeating: 0, count: side * side)
-    guard let cs = CGColorSpace(name: CGColorSpace.linearGray),
-          let ctx = CGContext(data: &buf, width: side, height: side, bitsPerComponent: 8,
-                              bytesPerRow: side, space: cs,
-                              bitmapInfo: CGImageAlphaInfo.none.rawValue) else { return nil }
-    ctx.draw(img, in: CGRect(x: 0, y: 0, width: side, height: side))
-    func median(_ v: inout [Double]) -> Double { v.sort(); return v[v.count / 2] }
-    var cols = [Double](repeating: 0, count: side), rows = [Double](repeating: 0, count: side)
-    for x in 0..<side {
-        var col = (0..<side).map { Double(buf[$0 * side + x]) }
-        cols[x] = median(&col)
-    }
-    for y in 0..<side {
-        var row = (0..<side).map { Double(buf[y * side + $0]) }
-        rows[y] = median(&row)
-    }
-    // CGContext row 0 is the BOTTOM, which is already the y-up convention used throughout
-    // the analysis. No flip here — conversion to top-down happens once, at the very end.
-    return (cols, rows)
-}
-
-/// Longest contiguous BRIGHT run in a luminance profile, as normalized (start, end).
-///
-/// A plain near-black trim is not enough: iOS Camera.app's control bands are black but carry
-/// white glyphs (flash, timer, Live Photo, filters), and those glyphs lift the band's mean above
-/// any absolute black threshold — so the band survives the trim and stays in the shot. A
-/// RELATIVE threshold plus longest-run selection discards it, because the viewfinder is a
-/// photographic image and is dramatically brighter across its whole width than an icon strip.
-/// Trim near-black runs from both ends of a MEDIAN profile. Absolute threshold, so scene
-/// brightness and overexposure are irrelevant.
-func trimDark(_ p: [Double], threshold: Double = 14.0) -> (Double, Double) {
-    let n = p.count
-    guard n > 0 else { return (0, 1) }
-    var lo = 0, hi = n - 1
-    while lo < hi && p[lo] < threshold { lo += 1 }
-    while hi > lo && p[hi] < threshold { hi -= 1 }
-    if hi <= lo { return (0, 1) }
-    return (Double(lo) / Double(n), Double(hi + 1) / Double(n))
-}
-
-func brightRun(_ p: [Double], relative: Double = 0.35) -> (Double, Double) {
-    let n = p.count
-    guard n > 0, let mx = p.max(), mx > 0 else { return (0, 1) }
-    let thr = max(8.0, mx * relative)
-    var bestStart = 0, bestLen = 0, runStart = -1
-    for i in 0..<n {
-        if p[i] >= thr {
-            if runStart < 0 { runStart = i }
-        } else if runStart >= 0 {
-            if i - runStart > bestLen { bestLen = i - runStart; bestStart = runStart }
-            runStart = -1
-        }
-    }
-    if runStart >= 0, n - runStart > bestLen { bestLen = n - runStart; bestStart = runStart }
-    if bestLen == 0 { return (0, 1) }
-    return (Double(bestStart) / Double(n), Double(bestStart + bestLen) / Double(n))
-}
-
-/// Work out the crop that keeps the viewfinder and drops chrome + letterbox.
-/// Everything here is in SOURCE-frame normalized coords, y-up (Vision convention).
-/// Callers map it into display orientation afterwards.
+// MARK: - Crop: pure geometry
+//
+// NEVER crop by luminance. Four brightness-based approaches were measured and every one failed,
+// because the SUBJECT can itself be black (a DOS CRT) and no brightness test can separate "black
+// control band" from "black subject":
+//   1. MEAN luminance          — white glyphs lift a black band's mean above any threshold
+//   2. RELATIVE/max threshold  — one overexposed window dominated max → 0.156-wide sliver
+//   3. MEDIAN luminance        — ate the middle of the feed (w=0.523), clipping the prompt
+//   4. Sliding a 4:3 window to maximise contained image — picked the chrome band, because its
+//      white shutter circle and colour thumbnail outweigh a dark subject
+// Geometry is content-independent: the viewfinder spans the full short edge, PHOTO mode is 4:3,
+// and the mode wheel is located BY NAME via OCR.
 func detectCrop(sourceFrame: CGImage, chromeBoxesSource: [CGRect]) -> CGRect {
     let full = CGRect(x: 0, y: 0, width: 1, height: 1)
-
-    // NEVER crop by luminance. It looks reasonable and is wrong: the scene being filmed can
-    // itself be black (measured: a DOS CRT), and no brightness test can separate "black control
-    // band" from "black subject". Doing so ate the middle of the feed and produced a 0.517-wide
-    // window when the viewfinder needed the full width. Geometry is content-independent; use it.
-    //
-    // Facts we can rely on for iOS Camera.app on a phone screen:
-    //   • the viewfinder spans the FULL short edge (full width in portrait)
-    //   • PHOTO mode is 4:3, so its height is (4/3) x the width
-    //   • the mode wheel sits in the control band directly beyond one end of the viewfinder
     guard !chromeBoxesSource.isEmpty else { return full }
 
     let w = CGFloat(sourceFrame.width), h = CGFloat(sourceFrame.height)
@@ -325,31 +272,12 @@ func detectCrop(sourceFrame: CGImage, chromeBoxesSource: [CGRect]) -> CGRect {
     let shortEdge = min(w, h), longEdge = max(w, h)
     let viewfinderFrac = min(1.0, (4.0 / 3.0) * (shortEdge / longEdge))
 
-    // SLIDE a band of exactly the viewfinder's height over the frame and keep the position that
-    // contains the most actual image. This beats anchoring off the chrome, which failed twice:
-    //   • flush against the mode-wheel TEXT starts too low — the text sits below the viewfinder
-    //     edge by more than any fixed margin, so a black strip rode along (bar on one side only)
-    //   • centring the leftover slack pulls in the OPPOSITE chrome band, because that slack is
-    //     the icon row (flash / timer / Live Photo), not padding
-    // The two black chrome bands lose this contest on their own merits — they are near-black,
-    // while the viewfinder holds a real image. Nothing has to know where they are.
-    // Anchor the 4:3 band just beyond the chrome, then shave any PURE-BLACK rows still riding
-    // along at either edge. Two things make this reliable where earlier attempts failed:
-    //   • the anchor is the chrome band, which OCR locates by name — not image statistics, which
-    //     cannot tell a black control band from a black subject (a DOS CRT)
-    //   • the shave is capped and only removes rows whose MEDIAN is essentially zero, so a merely
-    //     dark subject survives while a true letterbox strip does not. That is what makes the
-    //     leftover bars uniform instead of all-on-one-side.
-    let meanY = chromeBoxesSource.map { $0.midY }.reduce(0, +) / CGFloat(chromeBoxesSource.count)
-
-    // MEASURED gap between the top of the mode-wheel TEXT and the edge of the 4:3 preview on iOS
-    // Camera.app. It is a fixed layout, so a constant is honest here — unlike a luminance probe,
-    // which cannot survive a black subject. Anchoring flush (0.012) left a ~5% black strip riding
-    // along, which showed as a bar on one side only. If this is ever off, ⌘[ / ⌘] nudge it live.
-    // Calibrated between two measured extremes: 0.012 left a black bar on the far side, 0.062
-    // pulled the icon strip in on the near side. The midpoint lands the 4:3 band on the preview.
+    // MEASURED gap between the top of the mode-wheel TEXT and the edge of the 4:3 preview.
+    // Bracketed empirically: 0.012 left a black bar on the far side only; 0.062 pulled the icon
+    // strip in on the near side. ⌘[ / ⌘] nudge it live if a device disagrees.
     let gapToPreview: CGFloat = 0.040
 
+    let meanY = chromeBoxesSource.map { $0.midY }.reduce(0, +) / CGFloat(chromeBoxesSource.count)
     var y0: CGFloat, y1: CGFloat
     if meanY < 0.5 {                                       // chrome at the bottom
         y0 = min((chromeBoxesSource.map { $0.maxY }.max() ?? 0) + gapToPreview, 1.0)
@@ -407,77 +335,135 @@ final class PreviewView: NSView {
     }
 }
 
-// MARK: - App
+// MARK: - Defaults shared by every new window
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
-    var window: NSWindow!
-    let session = AVCaptureSession()
-    var preview: PreviewView!
-    let detectorOutput = AVCaptureVideoDataOutput()
-    let watcher = FirstFrameWatcher()
-
-    // Defaults are the whole point: bare `phonemirror` should just be right.
+struct MirrorOptions {
     var autoRotate = true
     var autoCrop = true
-    var rotation: CGFloat = 0
+    var rotation: CGFloat = 90
     var crop = CGRect(x: 0, y: 0, width: 1, height: 1)
     var mirrored = false
-    var deviceMatch: String? = nil
     var borderless = false
-    var startWidth: CGFloat = 0
-    var waitSeconds: TimeInterval = 20     // generous: the USB link to a phone flaps
+    var width: CGFloat = 900
+}
+
+// MARK: - Mirror — ONE window per device
+//
+// Everything device-specific lives here rather than on the app delegate, which is what makes two
+// or three phones possible: separate session, separate detection, separate rotation/crop, and
+// separate persisted calibration keyed by the device's uniqueID.
+final class Mirror: NSObject, NSWindowDelegate {
+    let device: AVCaptureDevice
+    let session = AVCaptureSession()
+    let detectorOutput = AVCaptureVideoDataOutput()
+    let watcher: FirstFrameWatcher
+    var window: NSWindow!
+    var preview: PreviewView!
+
+    var rotation: CGFloat
+    var crop: CGRect
+    var mirrored: Bool
+    var autoRotate: Bool
+    var autoCrop: Bool
     var srcAspect: CGFloat = 1125.0 / 2436.0
+    weak var owner: AppDelegate?
 
-    func applicationDidFinishLaunching(_ note: Notification) {
-        allowScreenCaptureDevices()
-        parseArgs()
+    init?(device: AVCaptureDevice, options: MirrorOptions, owner: AppDelegate) {
+        self.device = device
+        self.owner = owner
+        self.watcher = FirstFrameWatcher(label: device.uniqueID)
+        self.mirrored = options.mirrored
+        self.autoRotate = options.autoRotate
+        self.autoCrop = options.autoCrop
+        // A saved calibration for THIS device wins over auto-detection, so a phone you have
+        // already dialled in comes back correct instead of being re-guessed every launch.
+        let saved = Mirror.loadCalibration(uniqueID: device.uniqueID)
+        self.rotation = saved?.rotation ?? options.rotation
+        self.crop = saved?.crop ?? options.crop
+        if saved != nil { self.autoRotate = false; self.autoCrop = false }
+        super.init()
 
-        guard let dev = findDevice(match: deviceMatch, timeout: waitSeconds) else { failNoDevice(); return }
-        guard let input = try? AVCaptureDeviceInput(device: dev), session.canAddInput(input) else {
-            fail("Could not open \(dev.localizedName) for capture.\n\n"
-               + "iOS screen-capture devices are SINGLE-CLIENT — if QuickTime has a Movie "
-               + "Recording window open on the phone, close it and try again.")
-            return
+        guard let input = try? AVCaptureDeviceInput(device: device), session.canAddInput(input) else {
+            // Single-client device: another app (QuickTime, or another PhoneMirror) holds it.
+            // Skip THIS device rather than failing the whole app — the other phones still work.
+            owner.log("\(device.localizedName): could not open (single-client — QuickTime or another app holds it)")
+            return nil
         }
         session.addInput(input)
 
-        if let f = dev.formats.last {
+        if let f = device.formats.last {
             let d = CMVideoFormatDescriptionGetDimensions(f.formatDescription)
             if d.width > 0 && d.height > 0 { srcAspect = CGFloat(d.width) / CGFloat(d.height) }
         }
 
-        // Safe default while Vision has not spoken yet: a portrait UI held landscape is exactly
-        // the case this tool exists for, so 90° is the right guess to show immediately.
-        if autoRotate && rotation == 0 { rotation = 90 }
-
-        buildWindow(title: "PhoneMirror — \(dev.localizedName)")
-        buildMenu()
-
+        buildWindow(options: options)
         if autoRotate || autoCrop { attachDetector() }
         session.startRunning()
-
-        // Plain Space (no modifier) toggles solo. A menu keyEquivalent of " " would render as
-        // ⌘Space, which is Spotlight — so this is a local key monitor instead.
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
-            let mods = e.modifierFlags.intersection(.deviceIndependentFlagsMask)
-                .subtracting([.capsLock, .function, .numericPad])
-            if e.keyCode == 49 && mods.isEmpty {
-                self?.toggleSolo(nil)
-                return nil
-            }
-            return e
+        if saved != nil {
+            owner.log("\(device.localizedName): restored saved calibration "
+                    + String(format: "rot=%d crop=%.3f,%.3f,%.3f,%.3f", Int(rotation),
+                             crop.origin.x, crop.origin.y, crop.width, crop.height))
         }
-
-        // The shared Help panel is also reachable via the shared notification, so the menu item
-        // and any other trigger open the same thing.
-        NotificationCenter.default.addObserver(forName: .showAppHelp, object: nil, queue: .main) {
-            [weak self] _ in self?.showHelp(nil)
-        }
-
-        NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// Add a video data output whose first frame drives the Vision pass.
+    // MARK: window
+
+    func buildWindow(options: MirrorOptions) {
+        let outAspect = currentAspect()
+        let w = options.width
+        let h = (w / outAspect).rounded()
+        preview = PreviewView(session: session, rotation: rotation, mirrored: mirrored, crop: crop)
+        let style: NSWindow.StyleMask = options.borderless
+            ? [.borderless, .resizable] : [.titled, .closable, .miniaturizable, .resizable]
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: w, height: h),
+                          styleMask: style, backing: .buffered, defer: false)
+        window.title = titleText()
+        window.contentView = preview
+        window.contentAspectRatio = NSSize(width: outAspect, height: 1)
+        window.isMovableByWindowBackground = true
+        window.collectionBehavior.insert(.fullScreenPrimary)
+        // A programmatically-created NSWindow defaults to isReleasedWhenClosed = true, which under
+        // ARC double-releases: AppKit releases it on close AND ARC releases our strong reference.
+        // Measured crash: EXC_BAD_ACCESS in objc_release during objc_autoreleasePoolPop, straight
+        // after unticking a device. Must be false whenever you hold the window in a property.
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func titleText() -> String {
+        let kind = isContinuityCamera(device) ? "camera" : "screen"
+        return "\(device.localizedName) — \(kind) @ \(Int(rotation))°"
+    }
+
+    func currentAspect() -> CGFloat {
+        let quarterTurn = Int(rotation) % 180 != 0
+        let rotA = quarterTurn ? (1.0 / srcAspect) : srcAspect
+        return rotA * (crop.width / max(crop.height, 0.01))
+    }
+
+    func refit() {
+        let aspect = currentAspect()
+        window.contentAspectRatio = NSSize(width: aspect, height: 1)
+        var f = window.frame
+        let chrome = window.frame.height - window.contentLayoutRect.height
+        f.size.height = (f.size.width / aspect).rounded() + chrome
+        window.setFrame(f, display: true, animate: false)
+        window.title = titleText()
+    }
+
+    func windowWillClose(_ n: Notification) {
+        // Tear the capture graph down explicitly; leaving the DAL device open would keep this
+        // single-client phone unavailable to anything else.
+        detectorOutput.setSampleBufferDelegate(nil, queue: nil)
+        watcher.onFrame = nil
+        session.stopRunning()
+        window.delegate = nil
+        owner?.mirrorClosed(self)
+    }
+
+    // MARK: detection
+
     func attachDetector() {
         guard session.canAddOutput(detectorOutput) else { return }
         detectorOutput.alwaysDiscardsLateVideoFrames = true
@@ -487,9 +473,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         detectorOutput.setSampleBufferDelegate(watcher, queue: watcher.queue)
     }
 
-    /// Vision runs off-main (it takes ~4 OCR passes), then the result is applied on main.
+    /// Vision runs off-main (four OCR passes), then the result is applied on main.
     func inspect(_ frame: CGImage) {
         let wantRotate = autoRotate, wantCrop = autoCrop
+        let name = device.localizedName
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let det = detectOrientation(frame)
             let rot = wantRotate ? CGFloat(det.rotation) : (self?.rotation ?? 90)
@@ -506,62 +493,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard let self = self else { return }
                 if wantRotate {
                     self.rotation = rot
-                    self.log("orientation: \(Int(rot))° — \(det.basis)"
+                    self.owner?.log("\(name): orientation \(Int(rot))° — \(det.basis)"
                         + (det.words.isEmpty ? "" : " [\(det.words.prefix(6).joined(separator: ", "))]"))
                 }
                 if wantCrop {
                     self.crop = newCrop
-                    self.log(String(format: "crop: x=%.3f y=%.3f w=%.3f h=%.3f (chrome + letterbox removed)",
-                                    newCrop.origin.x, newCrop.origin.y, newCrop.width, newCrop.height))
+                    self.owner?.log(name + String(format: ": crop x=%.3f y=%.3f w=%.3f h=%.3f",
+                                                  newCrop.origin.x, newCrop.origin.y,
+                                                  newCrop.width, newCrop.height))
                 }
                 self.preview.rotation = self.rotation
                 self.preview.crop = self.crop
                 self.refit()
+                self.saveCalibration()
             }
         }
     }
 
-    func buildWindow(title: String) {
-        let quarterTurn = Int(rotation) % 180 != 0
-        let rotA = quarterTurn ? (1.0 / srcAspect) : srcAspect
-        let outAspect = rotA * (crop.width / max(crop.height, 0.01))
-        let w = startWidth > 0 ? startWidth : 900
-        let h = (w / outAspect).rounded()
-
-        preview = PreviewView(session: session, rotation: rotation, mirrored: mirrored, crop: crop)
-        let style: NSWindow.StyleMask = borderless
-            ? [.borderless, .resizable] : [.titled, .closable, .miniaturizable, .resizable]
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: w, height: h),
-                          styleMask: style, backing: .buffered, defer: false)
-        window.title = title
-        window.contentView = preview
-        window.contentAspectRatio = NSSize(width: outAspect, height: 1)
-        window.center()
-        window.isMovableByWindowBackground = true
-        window.collectionBehavior.insert(.fullScreenPrimary)
-        window.makeKeyAndOrderFront(nil)
+    func redetect() {
+        autoRotate = true; autoCrop = true
+        owner?.log("\(device.localizedName): re-detecting from the next frame…")
+        watcher.arm()
     }
 
-    func refit() {
-        let quarterTurn = Int(rotation) % 180 != 0
-        let rotA = quarterTurn ? (1.0 / srcAspect) : srcAspect
-        let aspect = rotA * (crop.width / max(crop.height, 0.01))
-        window.contentAspectRatio = NSSize(width: aspect, height: 1)
-        var f = window.frame
-        let chrome = window.frame.height - window.contentLayoutRect.height
-        f.size.height = (f.size.width / aspect).rounded() + chrome
-        window.setFrame(f, display: true, animate: false)
+    // MARK: live adjustments
+
+    func rotateBy(_ d: CGFloat) {
+        rotation = CGFloat(((Int(rotation + d) % 360) + 360) % 360)
+        preview.rotation = rotation
+        refit(); saveCalibration()
     }
-
-    @objc func rotateLeft(_ s: Any?)  { rotation = norm(rotation - 90); preview.rotation = rotation; refit() }
-    @objc func rotateRight(_ s: Any?) { rotation = norm(rotation + 90); preview.rotation = rotation; refit() }
-    @objc func toggleMirror(_ s: Any?) { mirrored.toggle(); preview.mirrored = mirrored }
-    @objc func resetCrop(_ s: Any?) { crop = CGRect(x: 0, y: 0, width: 1, height: 1); preview.crop = crop; refit() }
-
-    // Live nudge along the crop's long axis, so a slightly-off anchor is a keypress to fix
-    // rather than a rebuild. Width/height are preserved — this only slides the window.
-    @objc func nudgeCropBack(_ s: Any?) { slideCrop(-0.01) }
-    @objc func nudgeCropFwd(_ s: Any?)  { slideCrop(+0.01) }
+    func toggleMirror() { mirrored.toggle(); preview.mirrored = mirrored; saveCalibration() }
+    func resetCrop() {
+        crop = CGRect(x: 0, y: 0, width: 1, height: 1)
+        autoCrop = false
+        preview.crop = crop; refit(); saveCalibration()
+    }
     func slideCrop(_ d: CGFloat) {
         if crop.width < 0.999 {
             crop.origin.x = max(0, min(1 - crop.width, crop.origin.x + d))
@@ -569,18 +536,223 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             crop.origin.y = max(0, min(1 - crop.height, crop.origin.y + d))
         }
         preview.crop = crop
-        log(String(format: "crop nudged → x=%.3f y=%.3f w=%.3f h=%.3f",
-                   crop.origin.x, crop.origin.y, crop.width, crop.height))
+        saveCalibration()
+        owner?.log(device.localizedName + String(format: ": crop nudged → x=%.3f y=%.3f w=%.3f h=%.3f",
+                                                 crop.origin.x, crop.origin.y, crop.width, crop.height))
     }
-    @objc func redetect(_ s: Any?) {
-        autoRotate = true; autoCrop = true
-        log("re-detecting from the next frame…")
-        watcher.arm()          // the next frame re-triggers the Vision pass
+
+    // MARK: per-device persistence
+
+    struct Calibration { var rotation: CGFloat; var crop: CGRect }
+
+    static func key(_ uid: String) -> String { "calib.\(uid)" }
+
+    func saveCalibration() {
+        let v: [Double] = [Double(rotation), crop.origin.x, crop.origin.y, crop.width, crop.height,
+                           mirrored ? 1 : 0]
+        UserDefaults.standard.set(v, forKey: Mirror.key(device.uniqueID))
     }
-    func norm(_ d: CGFloat) -> CGFloat { CGFloat(((Int(d) % 360) + 360) % 360) }
+
+    static func loadCalibration(uniqueID: String) -> Calibration? {
+        guard let v = UserDefaults.standard.array(forKey: key(uniqueID)) as? [Double], v.count >= 5
+        else { return nil }
+        return Calibration(rotation: CGFloat(v[0]),
+                           crop: CGRect(x: v[1], y: v[2], width: v[3], height: v[4]))
+    }
+
+    static func forgetCalibration(uniqueID: String) {
+        UserDefaults.standard.removeObject(forKey: key(uniqueID))
+    }
+}
+
+// MARK: - App
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    var mirrors: [Mirror] = []
+    var options = MirrorOptions()
+    var deviceMatch: String? = nil
+    var waitSeconds: TimeInterval = 20
+    var autoOpenNew = false
+    var openAllAtLaunch = false
+    var includeContinuity = false
+    var pollTimer: Timer?
+    var knownIDs = Set<String>()
+    var windowOffset: CGFloat = 0
+
+    func applicationDidFinishLaunching(_ note: Notification) {
+        allowScreenCaptureDevices()
+        parseArgs()
+        buildMenu()
+
+        openInitialDevices()
+
+        // POLLING rather than AVCaptureDevice connect/disconnect notifications: DAL screen-capture
+        // devices are published by an out-of-process assistant and do not reliably post those, and
+        // enumeration is cheap. 3s is fast enough that plugging a phone in feels immediate.
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: true) { [weak self] _ in
+            self?.rescanDevices()
+        }
+
+        // Plain Space (no modifier) toggles solo. A menu keyEquivalent of " " would render as
+        // ⌘Space, which is Spotlight — so this is a local key monitor instead.
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+            let mods = e.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                .subtracting([.capsLock, .function, .numericPad])
+            if e.keyCode == 49 && mods.isEmpty {
+                self?.toggleSolo(nil)
+                return nil
+            }
+            return e
+        }
+
+        NotificationCenter.default.addObserver(forName: .showAppHelp, object: nil, queue: .main) {
+            [weak self] _ in self?.showHelp(nil)
+        }
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    // MARK: opening devices
+
+    func candidateDevices() -> [AVCaptureDevice] {
+        var list = iosScreenDevices()
+        if includeContinuity { list += iosContinuityDevices() }
+        if let m = deviceMatch?.lowercased(), !m.isEmpty {
+            list = list.filter { $0.localizedName.lowercased().contains(m) }
+        }
+        return list
+    }
+
+    /// Menu-driven by default: nothing opens by itself. The Devices menu lists every phone and a
+    /// click ticks it on. --all (or --device X) opens immediately instead, for scripted use.
+    func openInitialDevices() {
+        let wantImmediate = openAllAtLaunch || (deviceMatch != nil)
+        let deadline = Date().addingTimeInterval(wantImmediate ? waitSeconds : 6)
+        var found = candidateDevices()
+        while found.isEmpty && Date() < deadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
+            found = candidateDevices()
+        }
+        for d in found { knownIDs.insert(d.uniqueID) }
+        rebuildDevicesMenu()
+
+        if wantImmediate {
+            guard !found.isEmpty else { failNoDevice(); return }
+            for d in found { open(d) }
+            rebuildDevicesMenu()
+            return
+        }
+        if found.isEmpty {
+            log("no iOS devices yet — plug one in; the Devices menu updates every 3s")
+        } else {
+            log("ready: " + found.map { $0.localizedName }.joined(separator: ", ")
+                + "  —  tick one in the Devices menu to show it")
+        }
+    }
+
+    @discardableResult
+    func open(_ d: AVCaptureDevice) -> Bool {
+        if let existing = mirrors.first(where: { $0.device.uniqueID == d.uniqueID }) {
+            existing.window.makeKeyAndOrderFront(nil)
+            return true
+        }
+        guard let m = Mirror(device: d, options: options, owner: self) else { return false }
+        // Cascade, so two or three phones do not stack exactly on top of each other.
+        m.window.center()
+        var f = m.window.frame
+        f.origin.x += windowOffset; f.origin.y -= windowOffset
+        m.window.setFrame(f, display: true)
+        windowOffset += 32
+        mirrors.append(m)
+        knownIDs.insert(d.uniqueID)
+        log("\(d.localizedName): window open (\(mirrors.count) mirror(s) now)")
+        return true
+    }
+
+    func mirrorClosed(_ m: Mirror) {
+        // Dropping the array's reference here would deallocate the Mirror while we are still
+        // inside its own windowWillClose. Defer to the next turn of the run loop so the callback
+        // finishes on a live object.
+        let name = m.device.localizedName
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.mirrors.removeAll { $0 === m }
+            self.rebuildDevicesMenu()
+            self.log("\(name): window closed (\(self.mirrors.count) left)")
+        }
+    }
+
+    /// Notice phones plugged in or pulled out while running.
+    func rescanDevices() {
+        let now = candidateDevices()
+        let nowIDs = Set(now.map { $0.uniqueID })
+
+        for d in now where !knownIDs.contains(d.uniqueID) {
+            knownIDs.insert(d.uniqueID)
+            log("\(d.localizedName): appeared")
+            if autoOpenNew { open(d) }
+        }
+        // Close windows whose device went away, so a yanked cable does not leave a dead frame.
+        for m in mirrors where !nowIDs.contains(m.device.uniqueID) {
+            log("\(m.device.localizedName): disconnected — closing its window")
+            m.window.close()
+        }
+        knownIDs.formIntersection(nowIDs.union(Set(mirrors.map { $0.device.uniqueID })))
+        rebuildDevicesMenu()
+    }
+
+    // MARK: routing keys to the FRONT window
+
+    var front: Mirror? {
+        if let w = NSApp.keyWindow, let m = mirrors.first(where: { $0.window === w }) { return m }
+        return mirrors.last
+    }
+
+    @objc func rotateLeft(_ s: Any?)  { front?.rotateBy(-90) }
+    @objc func rotateRight(_ s: Any?) { front?.rotateBy(+90) }
+    @objc func toggleMirrorAction(_ s: Any?) { front?.toggleMirror() }
+    @objc func resetCropAction(_ s: Any?) { front?.resetCrop() }
+    @objc func nudgeCropBack(_ s: Any?) { front?.slideCrop(-0.01) }
+    @objc func nudgeCropFwd(_ s: Any?)  { front?.slideCrop(+0.01) }
+    @objc func redetect(_ s: Any?) { front?.redetect() }
+    @objc func forgetCalibration(_ s: Any?) {
+        guard let m = front else { return }
+        Mirror.forgetCalibration(uniqueID: m.device.uniqueID)
+        log("\(m.device.localizedName): saved calibration forgotten — re-detecting")
+        m.redetect()
+    }
+    @objc func openAllDevices(_ s: Any?) {
+        for d in candidateDevices() { open(d) }
+        rebuildDevicesMenu()
+    }
+    /// Tick = window open, untick = window closed. One menu, one click per phone.
+    @objc func toggleDeviceFromMenu(_ sender: NSMenuItem) {
+        guard let uid = sender.representedObject as? String else { return }
+        if let m = mirrors.first(where: { $0.device.uniqueID == uid }) {
+            m.window.close()                       // windowWillClose tidies up and rebuilds
+            return
+        }
+        guard let d = captureDevices().first(where: { $0.uniqueID == uid }) else {
+            log("that device is gone — rescanning")
+            rescanDevices(); return
+        }
+        open(d)
+        rebuildDevicesMenu()
+    }
+
+    @objc func rescanNow(_ s: Any?) {
+        log("rescanning for iOS devices…")
+        rescanDevices()
+        let screens = iosScreenDevices(), cams = iosContinuityDevices()
+        log("found \(screens.count) screen mirror(s), \(cams.count) Continuity Camera(s)")
+    }
+
+    // MARK: menus
+
+    var devicesMenu = NSMenu(title: "Devices")
 
     func buildMenu() {
         let main = NSMenu()
+
         let appItem = NSMenuItem(); let appMenu = NSMenu()
         let aboutItem = NSMenuItem(title: "About PhoneMirror — and how to support Esa",
                                    action: #selector(showHelp(_:)), keyEquivalent: "")
@@ -605,12 +777,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         add("Rotate Left",  #selector(rotateLeft(_:)),  "L")
         add("Rotate Right", #selector(rotateRight(_:)), "R")
-        add("Flip Horizontal", #selector(toggleMirror(_:)), "H")
+        add("Flip Horizontal", #selector(toggleMirrorAction(_:)), "H")
         v.addItem(.separator())
         add("Re-detect (Vision)", #selector(redetect(_:)), "d")
-        add("Show Whole Screen (no crop)", #selector(resetCrop(_:)), "0")
+        add("Show Whole Screen (no crop)", #selector(resetCropAction(_:)), "0")
         add("Nudge Crop ←", #selector(nudgeCropBack(_:)), "[")
         add("Nudge Crop →", #selector(nudgeCropFwd(_:)), "]")
+        add("Forget Saved Calibration for This Device", #selector(forgetCalibration(_:)), "")
         v.addItem(.separator())
         let solo = NSMenuItem(title: "Hide All Other Apps  (Space)", action: #selector(toggleSolo(_:)), keyEquivalent: "")
         solo.target = self
@@ -618,7 +791,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         v.addItem(withTitle: "Enter Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
         vItem.submenu = v; main.addItem(vItem)
 
-        // Help menu — the shared panel, same in every app here.
+        // Devices menu — every connected iOS device, so a second or third phone is one click away.
+        let dItem = NSMenuItem(title: "Devices", action: nil, keyEquivalent: "")
+        dItem.submenu = devicesMenu
+        main.addItem(dItem)
+
         let hItem = NSMenuItem(title: "Help", action: nil, keyEquivalent: "")
         let h = NSMenu(title: "Help")
         let hi = NSMenuItem(title: "PhoneMirror Help", action: #selector(showHelp(_:)), keyEquivalent: "?")
@@ -628,6 +805,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         NSApp.mainMenu = main
         NSApp.helpMenu = h
+        rebuildDevicesMenu()
+    }
+
+    func rebuildDevicesMenu() {
+        devicesMenu.removeAllItems()
+        let openIDs = Set(mirrors.map { $0.device.uniqueID })
+
+        let screens = iosScreenDevices()
+        let cams = iosContinuityDevices()
+
+        if screens.isEmpty && cams.isEmpty {
+            let none = NSMenuItem(title: "No iOS devices connected", action: nil, keyEquivalent: "")
+            none.isEnabled = false
+            devicesMenu.addItem(none)
+        }
+
+        if !screens.isEmpty {
+            let hdr = NSMenuItem(title: "Screen mirrors", action: nil, keyEquivalent: "")
+            hdr.isEnabled = false
+            devicesMenu.addItem(hdr)
+            for d in screens { devicesMenu.addItem(deviceItem(d, isOpen: openIDs.contains(d.uniqueID))) }
+        }
+        if !cams.isEmpty {
+            devicesMenu.addItem(.separator())
+            // Continuity Camera is a clean camera feed with no chrome and no rotation problem —
+            // strictly better than mirroring Camera.app, on any A12-or-later device.
+            let hdr = NSMenuItem(title: "Continuity Cameras (clean feed, no chrome)",
+                                 action: nil, keyEquivalent: "")
+            hdr.isEnabled = false
+            devicesMenu.addItem(hdr)
+            for d in cams { devicesMenu.addItem(deviceItem(d, isOpen: openIDs.contains(d.uniqueID))) }
+        }
+
+        devicesMenu.addItem(.separator())
+        let all = NSMenuItem(title: "Show All iOS Devices", action: #selector(openAllDevices(_:)), keyEquivalent: "")
+        all.target = self
+        devicesMenu.addItem(all)
+        let rescan = NSMenuItem(title: "Rescan for Devices", action: #selector(rescanNow(_:)), keyEquivalent: "r")
+        rescan.target = self
+        devicesMenu.addItem(rescan)
+    }
+
+    func deviceItem(_ d: AVCaptureDevice, isOpen: Bool) -> NSMenuItem {
+        let mi = NSMenuItem(title: "    " + (isOpen ? "Showing " : "Show ") + d.localizedName,
+                            action: #selector(toggleDeviceFromMenu(_:)), keyEquivalent: "")
+        mi.target = self
+        mi.representedObject = d.uniqueID
+        mi.state = isOpen ? .on : .off
+        return mi
     }
 
     // MARK: Shared Help + donate panel
@@ -642,23 +868,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let w = helpWindow { w.makeKeyAndOrderFront(nil); return }
         let view = AppHelpView(
             appName: "PhoneMirror",
-            tagline: "Live mirror of a USB iPhone or iPad screen — rotated and cropped as you want it, "
-                   + "so a one-shot screen recording needs no editing afterwards.",
+            tagline: "Live mirrors of USB iPhone or iPad screens — one window per device, each "
+                   + "rotated and cropped as you want it, so a one-shot screen recording needs no editing.",
             usage: [
-                ("bolt", "Run it bare: Vision OCR reads the first frame, picks the rotation, and crops iOS Camera.app's controls out"),
-                ("rotate.right", "⇧⌘L / ⇧⌘R rotate · ⇧⌘H flip horizontally"),
-                ("crop", "⌘[ / ⌘] nudge the crop · ⌘0 show the whole phone screen · ⌘D re-detect"),
-                ("rectangle.on.rectangle", "Space hides every other app, so only the mirror is on screen"),
-                ("record.circle", "Pair with recburn --system-audio to film it beside anything else")
+                ("bolt", "Run it bare: every connected iPhone gets a window, oriented and cropped by Vision OCR"),
+                ("iphone", "Devices menu lists every phone; plug one in and its window appears"),
+                ("rotate.right", "⇧⌘L / ⇧⌘R rotate · ⇧⌘H flip — applies to the front window"),
+                ("crop", "⌘[ / ⌘] nudge the crop · ⌘0 whole screen · ⌘D re-detect"),
+                ("externaldrive", "Each device remembers its own calibration"),
+                ("rectangle.on.rectangle", "Space hides every other app, so only the mirrors are on screen"),
+                ("record.circle", "Pair with recburn --system-audio to film them beside anything else")
             ],
             note: "QuickTime Player cannot rotate a live device mirror — its Rotate and Flip items are "
-                + "disabled during capture. That is why this exists."
+                + "disabled during capture, and it holds one device exclusively. That is why this exists."
         )
         let host = NSHostingController(rootView: view)
         let w = NSWindow(contentViewController: host)
         w.title = "PhoneMirror Help"
         w.styleMask = [.titled, .closable]
-        w.setContentSize(NSSize(width: 460, height: 620))
+        w.setContentSize(NSSize(width: 460, height: 660))
         w.center()
         w.isReleasedWhenClosed = false
         helpWindow = w
@@ -667,9 +895,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: Solo — hide every other app
     //
-    // Uses NSRunningApplication.hide() rather than synthesising ⌘⌥H through System Events:
-    // synthetic keystrokes land on whatever is frontmost, which is a good way to type into
-    // somebody's editor. This asks each app directly.
     // NSApplication.hideOtherApplications is the same path ⌘⌥H takes, and it works where
     // per-app NSRunningApplication.hide() silently returned false for every app (measured:
     // "hid 0 app(s)"). unhideAllApplications is its counterpart.
@@ -683,10 +908,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             NSApp.hideOtherApplications(nil)
             isSolo = true
-            log("solo on — only the mirror is on screen; Space again to restore")
+            log("solo on — only the mirrors are on screen; Space again to restore")
         }
         NSApp.activate(ignoringOtherApps: true)
     }
+
+    // MARK: args, logging, failure
 
     func parseArgs() {
         let args = Array(CommandLine.arguments.dropFirst())
@@ -695,40 +922,54 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             switch args[i] {
             case "--rotate", "-r":
                 if i + 1 < args.count {
-                    if args[i+1] == "auto" { autoRotate = true }
-                    else { autoRotate = false; rotation = CGFloat(Int(args[i+1]) ?? 90) }
+                    if args[i+1] == "auto" { options.autoRotate = true }
+                    else { options.autoRotate = false; options.rotation = CGFloat(Int(args[i+1]) ?? 90) }
                     i += 1
                 }
             case "--crop":
                 if i + 1 < args.count {
-                    if args[i+1] == "auto" { autoCrop = true }
+                    if args[i+1] == "auto" { options.autoCrop = true }
                     else if args[i+1] == "none" || args[i+1] == "off" {
-                        autoCrop = false; crop = CGRect(x: 0, y: 0, width: 1, height: 1)
+                        options.autoCrop = false; options.crop = CGRect(x: 0, y: 0, width: 1, height: 1)
                     } else {
                         let p = args[i+1].split(separator: ",").compactMap { Double($0) }
-                        if p.count == 4 { autoCrop = false; crop = CGRect(x: p[0], y: p[1], width: p[2], height: p[3]) }
+                        if p.count == 4 {
+                            options.autoCrop = false
+                            options.crop = CGRect(x: p[0], y: p[1], width: p[2], height: p[3])
+                        }
                     }
                     i += 1
                 }
-            case "--no-crop":   autoCrop = false; crop = CGRect(x: 0, y: 0, width: 1, height: 1)
-            case "--no-auto":   autoCrop = false; autoRotate = false
+            case "--no-crop": options.autoCrop = false; options.crop = CGRect(x: 0, y: 0, width: 1, height: 1)
+            case "--no-auto": options.autoCrop = false; options.autoRotate = false
             case "--device", "-d": if i + 1 < args.count { deviceMatch = args[i+1]; i += 1 }
-            case "--mirror":     mirrored = true
-            case "--borderless": borderless = true
-            case "--width", "-w": if i + 1 < args.count { startWidth = CGFloat(Double(args[i+1]) ?? 0); i += 1 }
+            case "--continuity": includeContinuity = true
+            case "--all", "--open-all": openAllAtLaunch = true
+            case "--auto-open": autoOpenNew = true
+            case "--no-auto-open": autoOpenNew = false
+            case "--mirror": options.mirrored = true
+            case "--borderless": options.borderless = true
+            case "--width", "-w":
+                if i + 1 < args.count, let n = Double(args[i+1]) { options.width = CGFloat(n); i += 1 }
             case "--wait":
                 if i + 1 < args.count, let n = Double(args[i+1]) { waitSeconds = n; i += 1 }
                 else { waitSeconds = 86_400 }
             case "--list":
                 Thread.sleep(forTimeInterval: 1.5)
-                for d in captureDevices() { print("\(d.localizedName)  [\(d.uniqueID)]") }
+                let screens = iosScreenDevices().map { $0.uniqueID }
+                let cams = iosContinuityDevices().map { $0.uniqueID }
+                for d in captureDevices() {
+                    let tag = screens.contains(d.uniqueID) ? "  [iOS screen mirror]"
+                            : cams.contains(d.uniqueID)    ? "  [Continuity Camera]" : ""
+                    print("\(d.localizedName)  [\(d.uniqueID)]\(tag)")
+                }
                 NSApp.terminate(nil)
             case "--help", "-h": printUsage(); NSApp.terminate(nil)
             default: break
             }
             i += 1
         }
-        rotation = norm(rotation)
+        options.rotation = CGFloat(((Int(options.rotation) % 360) + 360) % 360)
     }
 
     func log(_ s: String) {
@@ -736,10 +977,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func failNoDevice() {
-        fail("""
+        let msg = """
              No iOS device found as a capture source.
 
-             Looked for \(deviceMatch.map { "a device matching \"\($0)\"" } ?? "an iPhone/iPad/iPod") \
+             Looked for \(deviceMatch.map { "a device matching \"\($0)\"" } ?? "any iPhone/iPad/iPod") \
              for \(Int(waitSeconds))s after enabling CoreMediaIO screen-capture devices.
 
              Available now:
@@ -747,19 +988,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
              Checks, in order:
               1. iOS screen-capture devices are SINGLE-CLIENT. Close QuickTime's Movie Recording
-                 window — while it owns the phone, nothing else can see it.
-              2. Is the phone even on the bus?
+                 window — while it owns a phone, nothing else can see it.
+              2. Is the phone on the bus?
                    ioreg -rc IOUSBHostDevice -w0 -l | grep -c '"idVendor" = 1452'
-              3. If it is present but absent here, it is a PAIRING problem, not this app:
+              3. If present but absent here, it is a PAIRING problem, not this app:
                    log show --last 5m --predicate 'subsystem == "com.apple.mobiledevice"' \\
                      --style compact | grep -iE 'iOSScreenCapture|pair'
                  Unlock the phone, replug, tap Trust.
 
              `phonemirror --wait` keeps looking, so you can launch first and plug in after.
-             """)
-    }
-
-    func fail(_ msg: String) {
+             """
         FileHandle.standardError.write((msg + "\n").data(using: .utf8)!)
         let a = NSAlert(); a.alertStyle = .warning
         a.messageText = "PhoneMirror: no iOS screen source"
@@ -770,32 +1008,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func printUsage() {
         print("""
-            PhoneMirror — live mirror of a USB iPhone/iPad screen, auto-oriented, auto-cropped.
+            PhoneMirror — live mirrors of USB iPhone/iPad screens, one window per device.
 
-              phonemirror                    just works: Vision OCR picks the rotation and
-                                             crops iOS Camera.app's controls out of the shot
+              phonemirror                    every connected iPhone gets a window; Vision OCR
+                                             picks each one's rotation and crops Camera.app's
+                                             controls out. Plug another in and it appears.
 
+              --device, -d <str>       only devices whose name contains this
+              --continuity             also open Continuity Cameras (A12+; clean feed, no chrome)
+              --no-auto-open           do not open windows for phones plugged in later
               --rotate, -r auto|<deg>  default auto (0/90/180/270 clockwise)
               --crop auto|none|x,y,w,h default auto; x,y,w,h normalized 0…1, origin top-left
-              --no-crop                show the phone's whole screen, chrome and all
+              --no-crop                show each phone's whole screen, chrome and all
               --no-auto                no Vision pass at all
-              --device, -d <str>       capture-device name substring
               --mirror                 flip horizontally
-              --borderless             no title bar — cleanest for screen recording
+              --borderless             no title bars — cleanest for screen recording
               --width, -w <px>         initial window width (default 900)
-              --wait [secs]            keep looking for the device (bare --wait = forever)
-              --list                   list capture devices (iOS unhidden) and exit
+              --wait [secs]            keep looking for a device (bare --wait = forever)
+              --list                   list capture devices, tagged by kind, and exit
 
-            Live: ⇧⌘L / ⇧⌘R rotate · ⇧⌘H flip · ⌘D re-detect · ⌘0 uncropped
-                  ⌘[ / ⌘] nudge the crop · ⌘F full screen
+            Live (applies to the FRONT window):
+              ⇧⌘L / ⇧⌘R rotate · ⇧⌘H flip · ⌘D re-detect · ⌘0 uncropped
+              ⌘[ / ⌘] nudge the crop · ⌘F full screen · Space hides every other app
 
-            One-shot recording of everything on one screen:
+            Each device remembers its own rotation and crop, keyed by its uniqueID, so a phone you
+            have dialled in comes back correct. View ▸ Forget Saved Calibration to re-detect.
+
+            One-shot recording of two phones plus anything else on one screen:
               phonemirror --borderless &
               recburn --system-audio --fps 60 -o dosbox-vs-schism.mov
             """)
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ a: NSApplication) -> Bool { true }
+    func applicationShouldTerminateAfterLastWindowClosed(_ a: NSApplication) -> Bool { false }
 }
 
 // Top-level code is only legal in main.swift, and this target has two files (the shared

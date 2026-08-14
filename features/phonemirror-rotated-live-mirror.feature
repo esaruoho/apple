@@ -169,6 +169,62 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
     # NOT visually confirmed in the Dock: the Dock is auto-hidden here, so the icon's rendered
     # appearance at Dock size is unverified. The bundle contents and lsregister run are verified.
 
+  @built @hw-verified
+  Scenario: Several phones at once, ticked on and off from a menu
+    Given two or three iOS devices are plugged in
+    When PhoneMirror starts
+    Then nothing opens by itself; the Devices menu lists every device
+    And clicking a device ticks it ON and opens its own window
+    And clicking it again unticks it and closes that window
+    And each window has its OWN session, orientation, crop and resize
+    # Verified with esaiPhoneX (Lightning) + esaiPhone16Pro (USB-C) open simultaneously, each
+    # detected independently. Menu shows "Showing <name>" ticked vs "Show <name>".
+    # Menu-driven rather than auto-opening: Esa wants to choose which phones are on screen.
+    # → Mirror (one per device), AppDelegate.toggleDeviceFromMenu, rebuildDevicesMenu
+
+  @built @hw-verified
+  Scenario: Unticking a device does not crash the app
+    Given a Mirror owns its window and is owned by the app's mirrors array
+    When its window closes
+    Then the window is NOT released by AppKit, and the Mirror outlives its own callback
+    # MEASURED CRASH: EXC_BAD_ACCESS / SIGSEGV in objc_release during objc_autoreleasePoolPop,
+    # immediately on unticking a device. TWO distinct lifetime bugs:
+    #   1. A programmatically-created NSWindow defaults to isReleasedWhenClosed = true, so AppKit
+    #      released it AND ARC released our strong property → double release.
+    #   2. mirrors.removeAll() ran inside the Mirror's own windowWillClose, deallocating it
+    #      mid-callback. Removal is now deferred to the next run-loop turn.
+    # Stress-verified: 4 untick/retick cycles, no new crash report.
+    # → buildWindow (isReleasedWhenClosed = false), windowWillClose, mirrorClosed
+
+  @built @hw-verified
+  Scenario: Each device remembers its own calibration
+    Given rotation and crop are dialled in for one phone
+    When it is reopened, or the app restarts
+    Then that device's own settings come back, keyed by its uniqueID
+    # Verified from the log: "esaiPhoneX: restored saved calibration rot=0 crop=0,0,1,1" and
+    # "esaiPhone16Pro: restored saved calibration rot=0 crop=0,0.275,1,0.613".
+    # A restored calibration disables auto-detect for that device — ⌘D re-detects, and
+    # View ▸ Forget Saved Calibration clears it. → Mirror.saveCalibration / loadCalibration
+
+  @built @hw-verified
+  Scenario: Continuity Cameras are offered but never auto-opened
+    Given an A12-or-later device publishes BOTH a screen mirror and a Continuity Camera
+    When the Devices menu is built
+    Then they are listed in separate sections and only screen mirrors are the default
+    # An iPhone 16 Pro publishes "esaiPhone16Pro" (screen) and "esaiPhone16Pro Camera"
+    # (Continuity). Auto-opening both would give one phone two windows. The Continuity feed is a
+    # CLEAN camera with no chrome and no rotation problem — strictly better than mirroring
+    # Camera.app when the hardware supports it. → isContinuityCamera(), rebuildDevicesMenu()
+
+  @built @untested
+  Scenario: A yanked cable closes its window instead of freezing a frame
+    Given a device disappears from enumeration
+    When the 3s rescan runs
+    Then its window closes and the menu updates
+    # Polling, not AVCaptureDevice connect/disconnect notifications: DAL screen-capture devices
+    # come from an out-of-process assistant and do not reliably post those. NOT yet tested by
+    # actually pulling a cable mid-session. → rescanDevices()
+
   @todo
   Scenario: recburn can bake the phone feed in directly
     Given recburn resolves --pip-camera through AVCaptureDevice

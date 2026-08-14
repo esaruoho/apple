@@ -409,7 +409,7 @@ The on-device agentic tool-calling loop on the Mini's MLX brain  —  10 scenari
   triad: .session✓  transcript✗  RESULT✓
   honesty: 10/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen  —  15 scenarios   (features/phonemirror-rotated-live-mirror.feature)
+PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen  —  20 scenarios   (features/phonemirror-rotated-live-mirror.feature)
   - [@built @hw-verified] A Lightning iPhone is found at all
   - [@built @hw-verified] The live feed is rotated, which QuickTime cannot do
   - [@built @hw-verified] Orientation is chosen by reading the SCENE, not the chrome
@@ -424,9 +424,14 @@ PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen 
   - [@built @hw-verified] It ships the SHARED Help and donate panel, like every app here
   - [@built @hw-verified] It has a real app icon, on the macOS icon grid
   - [@built @hw-verified] There is exactly ONE copy of the app, in /Applications
+  - [@built @hw-verified] Several phones at once, ticked on and off from a menu
+  - [@built @hw-verified] Unticking a device does not crash the app
+  - [@built @hw-verified] Each device remembers its own calibration
+  - [@built @hw-verified] Continuity Cameras are offered but never auto-opened
+  - [@built @untested] A yanked cable closes its window instead of freezing a frame
   - [@todo] recburn can bake the phone feed in directly
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 14/15 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 19/20 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Post-process a screen recording's audio (split / flatten)  —  4 scenarios   (features/rec-audio.feature)
   - [@hw-verified] split writes each audio track to its own .m4a  (ran live)
