@@ -338,11 +338,11 @@ Feature: Redact a region of a finished recburn video without re-rendering it
 
   @hw-verified
   Scenario: --find-text hunts a name, not just the built-in secret patterns  (2026-08-14)
-    Given "there's an iMessage from <family member> showing, i can't find it in the video"
+    Given "there is an iMessage from <a family member> showing, i cannot find it in the video"
     And a person's name can never be a built-in pattern — only the person watching knows
       whose name matters
-    When `--find --find-text "Olga" --every 1` swept all 78 minutes (4681 frames, ~23 min)
-    Then it reported three windows, one of them 22:29-22:32 "wanted:Olga  Olga (x2)"
+    When `--find --find-text "<name>" --every 1` swept all 78 minutes (4681 frames, ~23 min)
+    Then it reported three windows, one of them a 3s span matching the supplied name
     And a 0.2s follow-up OCR pass bracketed the real exposure at 22:29.8-22:31.8 exactly
     # innards: the `--find-text` arg + the per-run `patterns` list in `mode_find`
     # NOTE: custom terms are matched case-insensitively and never truncated in the report;
