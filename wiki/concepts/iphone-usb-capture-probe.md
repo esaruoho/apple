@@ -124,6 +124,50 @@ Fixes, in order:
 Success tells: the assistant gets a session instead of `0xe800001a`, and QuickTime's recording window
 resizes off its default 1280×720 to the device's aspect (2.16:1 for iPhone X).
 
+## The assistant EXITS while you watch a Continuity Camera
+
+`iOSScreenCaptureAssistant` is not resident. It is spawned on demand, and it **exits when no
+screen-capture device is in use** — which is exactly the situation while you are watching a
+Continuity Camera instead of a screen mirror.
+
+Once it is gone, **plain enumeration will not bring it back.** Every iPhone silently reports as
+absent even though `ioreg` shows it plainly on the bus. Setting
+`kCMIOHardwarePropertyAllowScreenCaptureDevices` is what respawns it, so any long-running app must
+**re-assert that property periodically**, not once at launch:
+
+```swift
+// iPhoneMirror re-asserts on every 3s device rescan
+allowScreenCaptureDevices()
+```
+
+Measured 2026-08-14: with a Continuity Camera window open, both an iPhone X and an iPhone 16 Pro
+vanished from enumeration (22 `IOUSBHostDevice` nodes present the whole time) and
+`pgrep iOSScreenCaptureAssistant` returned nothing. Quitting the app respawned it.
+
+## One phone gives you EITHER its screen mirror OR its Continuity Camera
+
+These devices are **single-client**. Consequences worth knowing before debugging:
+
+| Situation | Result |
+|---|---|
+| QuickTime has a Movie Recording window on a phone | nothing else can even *see* that phone |
+| Your app mirrors phone A's screen | phone A's Continuity Camera stops publishing |
+| Two apps both want the same phone | second one fails at `AVCaptureDeviceInput` |
+
+So handle a failed open per-device and carry on with the others, rather than failing the whole app.
+
+An A12-or-later phone publishes **both** kinds, e.g. `esaiPhone16Pro` (screen) and
+`esaiPhone16Pro Camera` (Continuity). Never auto-open both — that gives one phone two windows.
+
+### Prefer Continuity when the hardware has it
+
+A Continuity Camera is a clean, upright, landscape camera feed: no Camera.app chrome, nothing to
+crop, nothing to rotate. **Do not run orientation/crop heuristics on it** — OCR-ing whatever the
+lens happens to see makes the orientation flip-flop on every re-detect. Pin it at 0°, uncropped.
+
+Rule of thumb: pre-A12 (iPhone X and older) → screen mirror plus the crop machinery is the only
+option. A12+ → Continuity, and skip all of it.
+
 ## Charging rate note
 
 A USB hub is the wrong place to fast-charge. Observed VIA-Labs hub advertised **500 mA (2.5 W)** on

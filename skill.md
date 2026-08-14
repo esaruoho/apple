@@ -58,6 +58,55 @@ For everything else, treat this file as a routing table: identify the topic, gre
 
 **Tag pipeline + Dock manager (added 2026-05-21):** Two Apple-native control surfaces wired into the skill. When the user says "tag this", "needs-ocr", "send to OCR", "ocr-failed", "Smart Folder", "talkback" → see [`wiki/concepts/finder-tag-pipeline.md`](wiki/concepts/finder-tag-pipeline.md). When the user says "add to Dock", "pin to Dock", "Dock tile" → see [`wiki/concepts/dock-management.md`](wiki/concepts/dock-management.md). Sidebar Favorites is dead on Sequoia — [`wiki/concepts/finder-sidebar-locked.md`](wiki/concepts/finder-sidebar-locked.md) for why.
 
+**Shipping an app: icon + About/Support/Help (added 2026-08-14):** Two pages that exist because
+both were got wrong in a shipped product first. When the user says "app icon", "icon is too large",
+"icns", "squircle", "iconutil", "icon looks wrong in the Dock" → see
+[`wiki/concepts/macos-app-icon-sizing.md`](wiki/concepts/macos-app-icon-sizing.md): the shape is
+**824×824 on a 1024×1024 canvas** (inset `0.098`, corner radius `0.2237` **of the shape**), every size
+rendered natively, `lsregister -f` afterwards. When the user says "About box", "About window",
+"donate", "support links", "Ko-fi", "Help menu", "the app quits when I click About", "black on grey",
+"no menu bar" → see
+[`wiki/concepts/macos-about-and-support-window.md`](wiki/concepts/macos-about-and-support-window.md).
+Its three load-bearing rules: an `NSAttributedString` with no `.foregroundColor` draws **black**
+(unreadable in dark mode); `applicationShouldTerminateAfterLastWindowClosed` **must be `false`**
+because AppKit does not count a `.utilityWindow` panel, so the app otherwise quits itself when
+About closes; and a `.nonactivatingPanel` has no menu bar in practice, so put the commands on a
+`⋯` button and the content view's right-click menu. **An icon that looks too big has TWO causes —
+full-bleed artwork AND the About panel drawing it larger than Apple's 64pt.**
+
+**iPhone as a camera / screen on the Mac (added 2026-08-14):** When the user says "iPhone as a
+webcam", "iPhone screen on my Mac", "phonemirror"/"iPhonemirror", "record what the phone sees",
+"Continuity Camera", "QuickTime won't rotate", or two/three phones side by side → use
+[`bin/iphonemirror`](bin/iphonemirror); entity page
+[`wiki/entities/iphonemirror.md`](wiki/entities/iphonemirror.md); the diagnosis knowledge is
+[`wiki/concepts/iphone-usb-capture-probe.md`](wiki/concepts/iphone-usb-capture-probe.md). **Five
+facts that each cost a wrong answer first:** (1) an iOS device is **invisible** to
+`AVCaptureDevice` until `kCMIOHardwarePropertyAllowScreenCaptureDevices` is set — four probes
+reported "no iPhone" while the phone was working, so never conclude absence from enumeration alone;
+(2) that property must be **re-asserted periodically**, because `iOSScreenCaptureAssistant` exits
+whenever no screen mirror is in use (e.g. while a Continuity Camera is open) and then every phone
+reads as disconnected; (3) devices are **single-client** — one phone gives you mirror *or*
+Continuity, never both, and QuickTime holding one hides it from everything; (4) `system_profiler
+SPUSBDataType` can return an **entirely empty tree** — use `ioreg -rc IOUSBHostDevice`, and note
+`/var/db/lockdown` is `drwx-----x _usbmuxd` so "empty" from a plain `ls` proves nothing; (5) a
+phone that appears but won't pair is a **lock-screen race** — grep `iOSScreenCaptureAssistant` and
+the `0xe800001a` / `0xe8000016` codes, set Auto-Lock to Never, replug, tap Trust. **Prefer
+Continuity on A12+** (clean feed, no chrome, no rotation) and never run orientation heuristics on
+it. **Cropping Camera.app's chrome must be GEOMETRY, never luminance** — the subject can itself be
+black (a DOS CRT), which defeated four brightness-based attempts.
+
+**AppKit multi-window traps (added 2026-08-14):** Before debugging "the window crashed / ignored my
+keystroke / is the wrong size" in any app here → see
+[`wiki/concepts/appkit-window-gotchas.md`](wiki/concepts/appkit-window-gotchas.md).
+`isReleasedWhenClosed` defaults to **true** and double-releases under ARC (crash is
+`objc_release` inside `objc_autoreleasePoolPop`, with none of your code in the trace); a
+**borderless window cannot become key**, so every front-window command silently targets the wrong
+window after you hide the title bar; never deallocate a controller inside its own
+`windowWillClose`; the title bar is not content, so budget it before fitting an aspect ratio, and
+tile against `NSScreen.visibleFrame`. Also: **SourceKit reports phantom errors** in any target that
+compiles more than one file — `swiftc` is the authority, and such a target needs `@main` +
+`-parse-as-library`.
+
 **Finder Settings via `defaults` (added 2026-06-11):** Every checkbox in **Finder ▸ Settings** is a preference key — no UI scripting. When the user says "Finder settings", "show all extensions", "search the current folder", "keep folders on top", "search this Mac", "warn before emptying bin", or names any Advanced/General-pane toggle → use [`bin/finder-settings`](bin/finder-settings) / `/finder-settings` (show · set <name> on|off · search current|thismac|previous · apply). Key map + the `SCev`/`SCcf`/`SCsp` search-scope values are in [`wiki/concepts/finder-settings.md`](wiki/concepts/finder-settings.md). The tool relaunches Finder after any write. **Sidebar pane is NOT a `defaults` job** (`sfl2` store) — see [`wiki/concepts/finder-sidebar-locked.md`](wiki/concepts/finder-sidebar-locked.md).
 
 **Mail flag → routing pipeline (added 2026-05-26):** Fourth instance of the trigger→worker chassis (Finder tag, Voice Memo `#process`, Stickies, now Mail flag). When the user says "mail flag", "flag color", "purple is Free Energy", "tag email to X", "auto-route email", "AppleToolbox mail row" → see [`wiki/concepts/mail-flag-pipeline.md`](wiki/concepts/mail-flag-pipeline.md). Edit `bin/mail-flag-config.json` to add/edit a contract; no rebuild needed. **Critical: Mail Rules cannot trigger on user-flagging (Apple limitation — rule conditions only see incoming-mail attrs), so the polling watcher in AppleToolbox (`MailFlagWatcherRunner`, 30s tick) is the primary path for manual flagging. Manual flag → automation fires within ≤30s. Mail Rules remain useful for "incoming pattern → auto-flag + dispatch" combos.**

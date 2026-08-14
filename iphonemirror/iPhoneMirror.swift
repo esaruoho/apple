@@ -970,6 +970,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         m.refit()
     }
 
+    /// ⌘0 — get every mirror window back on screen: un-minimise, un-hide, raise.
+    ///
+    /// Minimising a mirror is easy to do by accident and hard to undo when the title bar is off
+    /// (⌘B leaves no Dock-clickable proxy people look for), so this is the one-key rescue.
+    @objc func bringAllBack(_ s: Any?) {
+        var restored = 0, raised = 0
+        if isSolo { NSApp.unhideAllApplications(nil); isSolo = false }
+        for m in mirrors {
+            guard let w = m.window else { continue }
+            if w.isMiniaturized { w.deminiaturize(nil); restored += 1 }
+            if !w.isVisible { w.orderFront(nil) }
+            w.orderFrontRegardless()
+            raised += 1
+        }
+        NSApp.unhide(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        mirrors.last?.window.makeKeyAndOrderFront(nil)
+        log("brought back \(raised) window(s)\(restored > 0 ? " (\(restored) un-minimised)" : "")")
+    }
+
     @objc func openAllDevices(_ s: Any?) {
         for d in candidateDevices() { open(d) }
         rebuildDevicesMenu()
@@ -1030,7 +1050,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add("Flip Horizontal", #selector(toggleMirrorAction(_:)), "H")
         v.addItem(.separator())
         add("Re-detect (Vision)", #selector(redetect(_:)), "d")
-        add("Show Whole Screen (no crop)", #selector(resetCropAction(_:)), "0")
+        add("Show Whole Phone Screen (no crop)", #selector(resetCropAction(_:)), "u")
         add("Nudge Crop ←", #selector(nudgeCropBack(_:)), "[")
         add("Nudge Crop →", #selector(nudgeCropFwd(_:)), "]")
         add("Forget Saved Calibration for This Device", #selector(forgetCalibration(_:)), "")
@@ -1040,6 +1060,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add("Stack Top and Bottom", #selector(tileTopBottom(_:)), "2")
         add("Full Screen — Cycle Phones", #selector(fillScreen(_:)), "3")
         add("Title Bar On/Off (front window)", #selector(toggleChrome(_:)), "b")
+        add("Bring All Windows Back", #selector(bringAllBack(_:)), "0")
         v.addItem(.separator())
         let solo = NSMenuItem(title: "Hide All Other Apps  (Space)", action: #selector(toggleSolo(_:)), keyEquivalent: "")
         solo.target = self

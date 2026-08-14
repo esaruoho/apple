@@ -270,6 +270,61 @@ Feature: iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPho
     # come from an out-of-process assistant and do not reliably post those. NOT yet tested by
     # actually pulling a cable mid-session. → rescanDevices()
 
+  @built @hw-verified
+  Scenario: The screen-capture assistant is kept alive
+    Given iOSScreenCaptureAssistant exits whenever no screen mirror is in use
+    When a Continuity Camera is the only thing open
+    Then re-asserting the CMIO property on each rescan brings the mirrors back
+    # MEASURED: with the 16 Pro's Continuity Camera showing, BOTH phones vanished from
+    # enumeration — 22 IOUSBHostDevice nodes present the whole time, pgrep of the assistant empty.
+    # Enumeration alone does not respawn it; setting the property does. Esa: "i am not able to
+    # connect the iPhoneX while continuity camera is on". → rescanDevices()
+
+  @built @hw-verified
+  Scenario: Continuity Cameras get no Vision pass at all
+    Given a Continuity feed is already upright, landscape and chrome-free
+    When such a device is opened
+    Then it is pinned at 0°, uncropped, and never analysed
+    # Esa: "the re-detect (vision) on iphone16pro goes from landscape to portrait, does a shoddy
+    # detect". Of course it did — it was OCR-ing whatever the lens saw. → Mirror.init
+
+  @built @hw-verified
+  Scenario: Layout is one keypress before a take
+    Given two or three mirrors are open with DIFFERENT aspect ratios
+    When ⌘1 / ⌘2 / ⌘3 is pressed
+    Then windows tile into equal cells, letterboxed inside them, never stretched
+    And ⌘3 cycles which phone is full screen, wrapping forever
+    # Aspect ratios genuinely differ (a cropped 4:3 viewfinder beside a 16:9 Continuity feed), so
+    # cells are divided evenly and each window is FITTED, not stretched. Two details that make it
+    # land on the pixels: NSScreen.visibleFrame (excludes menu bar + Dock) and subtracting the
+    # title-bar height before fitting the aspect.
+    # ⌘3 WRAPS rather than exiting — Esa: "if im looking at one, pressing cmd-3 will always show
+    # the other". ⌘1/⌘2 is the way out. One phone open → fill/restore toggle instead of a no-op.
+    # Verified: five ⌘3 presses alternate 16Pro→X→16Pro→X→16Pro.
+    # → tile(), fit(), fillScreen(), fillOrder()
+
+  @built @hw-verified
+  Scenario: ⌘0 rescues minimised windows
+    Given a mirror has been minimised, and the title bar may be off
+    When ⌘0 is pressed
+    Then every mirror window is un-minimised, un-hidden and raised
+    # Minimising is easy by accident and awkward to undo once ⌘B has removed the title bar. Also
+    # drops solo mode, since hidden-app state is the other way windows "disappear".
+    # Verified: both windows AXMinimized true → false. → bringAllBack()
+    # NOTE this moved "no crop" off ⌘0 onto ⌘U.
+
+  @built @untested
+  Scenario: Front-window commands hit the window you clicked
+    Given a borderless window cannot become key by default
+    When you click a phone and press ⌘B or ⌘3
+    Then the command applies to THAT window
+    # Esa: "im stuck with iPhoneX getting the cmd-b commands". Two causes: NSWindow.canBecomeKey
+    # is FALSE for .borderless (fixed with a subclass), and `front` was a guess (now: keyWindow →
+    # last windowDidBecomeKey → most recent). PreviewView.mouseDown focuses its window, since the
+    # image is the only hit target with no title bar.
+    # @untested because I drove it through System Events, not a real mouse click — the mechanism is
+    # right but the click path is unverified by hand. → MirrorWindow, front, PreviewView.mouseDown
+
   @todo
   Scenario: recburn can bake the phone feed in directly
     Given recburn resolves --pip-camera through AVCaptureDevice
