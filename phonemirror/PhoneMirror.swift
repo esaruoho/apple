@@ -20,6 +20,7 @@
 // FEATURE-CARD >> features/phonemirror-rotated-live-mirror.feature
 
 import Cocoa
+import SwiftUI
 import AVFoundation
 import CoreMediaIO
 import Vision
@@ -193,16 +194,26 @@ func detectOrientation(_ frame: CGImage) -> Detection {
     let chromeHits = chromeBest.words.filter { isChrome($0.text) }
     let chromeSource = chromeHits.map { mapRect($0.box, quarterTurns: chromeBest.deg / 90, forward: false) }
 
-    // The viewfinder region in SOURCE coords. Text outside it is chrome — and, crucially, so is
-    // the GARBAGE that OCR invents when it reads the chrome band upside down (SQUARE→"IYVNUS",
-    // PHOTO→"OIOHD"). Restricting scene scoring to inside this box kills that whole failure mode.
-    let viewfinder = detectCrop(sourceFrame: frame, chromeBoxesSource: chromeSource)
+    // The BAND the chrome occupies, in SOURCE coords, padded generously. Any text landing in this
+    // strip is chrome — including the GARBAGE that OCR invents when it reads the mode wheel upside
+    // down (SQUARE→"IYVNUS", PORTRAIT→"IIVIIITIOD", PHOTO→"OIOHD", VIDEO→"OAAIA", SLO-MO→"OW-OIS").
+    // Excluding the band, rather than requiring membership in a detected viewfinder, keeps this
+    // independent of the crop heuristic — which is what let 180° win twice.
+    var chromeBandLo = -1.0, chromeBandHi = -1.0
+    if !chromeSource.isEmpty {
+        let lo = chromeSource.map { $0.minY }.min()!, hi = chromeSource.map { $0.maxY }.max()!
+        let pad = max(0.05, (hi - lo) * 1.5)
+        chromeBandLo = Double(lo) - Double(pad)
+        chromeBandHi = Double(hi) + Double(pad)
+    }
 
     func sceneWords(_ deg: Int, _ words: [Word]) -> [String] {
         words.filter { w in
             guard w.confidence >= 0.4, isSceneWord(w.text) else { return false }
+            guard chromeBandLo >= 0 else { return true }
             let inSource = mapRect(w.box, quarterTurns: deg / 90, forward: false)
-            return viewfinder.contains(CGPoint(x: inSource.midX, y: inSource.midY))
+            let cy = Double(inSource.midY)
+            return cy < chromeBandLo || cy > chromeBandHi
         }.map { $0.text }
     }
 
@@ -296,39 +307,60 @@ func brightRun(_ p: [Double], relative: Double = 0.35) -> (Double, Double) {
 /// Everything here is in SOURCE-frame normalized coords, y-up (Vision convention).
 /// Callers map it into display orientation afterwards.
 func detectCrop(sourceFrame: CGImage, chromeBoxesSource: [CGRect]) -> CGRect {
-    // Start from the letterbox-trimmed content area.
-    var x0 = 0.0, x1 = 1.0, y0 = 0.0, y1 = 1.0
-    if let prof = luminanceProfile(sourceFrame) {
-        let (cx0, cx1) = trimDark(prof.cols); x0 = cx0; x1 = cx1
-        let (ry0, ry1) = trimDark(prof.rows); y0 = ry0; y1 = ry1
+    let full = CGRect(x: 0, y: 0, width: 1, height: 1)
+
+    // NEVER crop by luminance. It looks reasonable and is wrong: the scene being filmed can
+    // itself be black (measured: a DOS CRT), and no brightness test can separate "black control
+    // band" from "black subject". Doing so ate the middle of the feed and produced a 0.517-wide
+    // window when the viewfinder needed the full width. Geometry is content-independent; use it.
+    //
+    // Facts we can rely on for iOS Camera.app on a phone screen:
+    //   • the viewfinder spans the FULL short edge (full width in portrait)
+    //   • PHOTO mode is 4:3, so its height is (4/3) x the width
+    //   • the mode wheel sits in the control band directly beyond one end of the viewfinder
+    guard !chromeBoxesSource.isEmpty else { return full }
+
+    let w = CGFloat(sourceFrame.width), h = CGFloat(sourceFrame.height)
+    guard w > 0, h > 0 else { return full }
+    let shortEdge = min(w, h), longEdge = max(w, h)
+    let viewfinderFrac = min(1.0, (4.0 / 3.0) * (shortEdge / longEdge))
+
+    // SLIDE a band of exactly the viewfinder's height over the frame and keep the position that
+    // contains the most actual image. This beats anchoring off the chrome, which failed twice:
+    //   • flush against the mode-wheel TEXT starts too low — the text sits below the viewfinder
+    //     edge by more than any fixed margin, so a black strip rode along (bar on one side only)
+    //   • centring the leftover slack pulls in the OPPOSITE chrome band, because that slack is
+    //     the icon row (flash / timer / Live Photo), not padding
+    // The two black chrome bands lose this contest on their own merits — they are near-black,
+    // while the viewfinder holds a real image. Nothing has to know where they are.
+    // Anchor the 4:3 band just beyond the chrome, then shave any PURE-BLACK rows still riding
+    // along at either edge. Two things make this reliable where earlier attempts failed:
+    //   • the anchor is the chrome band, which OCR locates by name — not image statistics, which
+    //     cannot tell a black control band from a black subject (a DOS CRT)
+    //   • the shave is capped and only removes rows whose MEDIAN is essentially zero, so a merely
+    //     dark subject survives while a true letterbox strip does not. That is what makes the
+    //     leftover bars uniform instead of all-on-one-side.
+    let meanY = chromeBoxesSource.map { $0.midY }.reduce(0, +) / CGFloat(chromeBoxesSource.count)
+
+    // MEASURED gap between the top of the mode-wheel TEXT and the edge of the 4:3 preview on iOS
+    // Camera.app. It is a fixed layout, so a constant is honest here — unlike a luminance probe,
+    // which cannot survive a black subject. Anchoring flush (0.012) left a ~5% black strip riding
+    // along, which showed as a bar on one side only. If this is ever off, ⌘[ / ⌘] nudge it live.
+    // Calibrated between two measured extremes: 0.012 left a black bar on the far side, 0.062
+    // pulled the icon strip in on the near side. The midpoint lands the 4:3 band on the preview.
+    let gapToPreview: CGFloat = 0.040
+
+    var y0: CGFloat, y1: CGFloat
+    if meanY < 0.5 {                                       // chrome at the bottom
+        y0 = min((chromeBoxesSource.map { $0.maxY }.max() ?? 0) + gapToPreview, 1.0)
+        y1 = min(1.0, y0 + viewfinderFrac)
+    } else {                                               // chrome at the top
+        y1 = max((chromeBoxesSource.map { $0.minY }.min() ?? 1) - gapToPreview, 0.0)
+        y0 = max(0.0, y1 - viewfinderFrac)
     }
 
-    // Then cut off whichever side the Camera chrome sits on.
-    if !chromeBoxesSource.isEmpty {
-        let cxs = chromeBoxesSource.map { Double($0.midX) }
-        let cys = chromeBoxesSource.map { Double($0.midY) }
-        let meanX = cxs.reduce(0,+) / Double(cxs.count)
-        let meanY = cys.reduce(0,+) / Double(cys.count)
-        let spreadX = (cxs.max() ?? 0) - (cxs.min() ?? 0)
-        let spreadY = (cys.max() ?? 0) - (cys.min() ?? 0)
-
-        // The mode wheel is a LINE of words, so it spreads along its own band. The axis with the
-        // larger spread is the band's long axis, which means the band itself lies across the
-        // other axis — that's the edge to cut.
-        if spreadX >= spreadY {
-            // horizontal band → chrome along the top or the bottom
-            if meanY > 0.5 { y1 = min(y1, (chromeBoxesSource.map { Double($0.minY) }.min() ?? y1) - 0.01) }
-            else           { y0 = max(y0, (chromeBoxesSource.map { Double($0.maxY) }.max() ?? y0) + 0.01) }
-        } else {
-            // vertical band → chrome along the left or the right
-            if meanX > 0.5 { x1 = min(x1, (chromeBoxesSource.map { Double($0.minX) }.min() ?? x1) - 0.01) }
-            else           { x0 = max(x0, (chromeBoxesSource.map { Double($0.maxX) }.max() ?? x0) + 0.01) }
-        }
-    }
-
-    x0 = max(0, min(x0, 0.9)); y0 = max(0, min(y0, 0.9))
-    x1 = min(1, max(x1, x0 + 0.05)); y1 = min(1, max(y1, y0 + 0.05))
-    return CGRect(x: x0, y: y0, width: x1 - x0, height: y1 - y0)
+    if y1 - y0 < 0.35 { return full }          // implausible → whole screen beats a sliver
+    return CGRect(x: 0, y: y0, width: 1, height: y1 - y0)
 }
 
 // MARK: - Rotating / cropping preview view
@@ -423,6 +455,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if autoRotate || autoCrop { attachDetector() }
         session.startRunning()
+
+        // Plain Space (no modifier) toggles solo. A menu keyEquivalent of " " would render as
+        // ⌘Space, which is Spotlight — so this is a local key monitor instead.
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] e in
+            let mods = e.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                .subtracting([.capsLock, .function, .numericPad])
+            if e.keyCode == 49 && mods.isEmpty {
+                self?.toggleSolo(nil)
+                return nil
+            }
+            return e
+        }
+
+        // The shared Help panel is also reachable via the shared notification, so the menu item
+        // and any other trigger open the same thing.
+        NotificationCenter.default.addObserver(forName: .showAppHelp, object: nil, queue: .main) {
+            [weak self] _ in self?.showHelp(nil)
+        }
+
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -506,6 +557,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func rotateRight(_ s: Any?) { rotation = norm(rotation + 90); preview.rotation = rotation; refit() }
     @objc func toggleMirror(_ s: Any?) { mirrored.toggle(); preview.mirrored = mirrored }
     @objc func resetCrop(_ s: Any?) { crop = CGRect(x: 0, y: 0, width: 1, height: 1); preview.crop = crop; refit() }
+
+    // Live nudge along the crop's long axis, so a slightly-off anchor is a keypress to fix
+    // rather than a rebuild. Width/height are preserved — this only slides the window.
+    @objc func nudgeCropBack(_ s: Any?) { slideCrop(-0.01) }
+    @objc func nudgeCropFwd(_ s: Any?)  { slideCrop(+0.01) }
+    func slideCrop(_ d: CGFloat) {
+        if crop.width < 0.999 {
+            crop.origin.x = max(0, min(1 - crop.width, crop.origin.x + d))
+        } else if crop.height < 0.999 {
+            crop.origin.y = max(0, min(1 - crop.height, crop.origin.y + d))
+        }
+        preview.crop = crop
+        log(String(format: "crop nudged → x=%.3f y=%.3f w=%.3f h=%.3f",
+                   crop.origin.x, crop.origin.y, crop.width, crop.height))
+    }
     @objc func redetect(_ s: Any?) {
         autoRotate = true; autoCrop = true
         log("re-detecting from the next frame…")
@@ -516,42 +582,110 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func buildMenu() {
         let main = NSMenu()
         let appItem = NSMenuItem(); let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "About PhoneMirror", action: #selector(about), keyEquivalent: "")
+        let aboutItem = NSMenuItem(title: "About PhoneMirror — and how to support Esa",
+                                   action: #selector(showHelp(_:)), keyEquivalent: "")
+        aboutItem.target = self
+        appMenu.addItem(aboutItem)
         appMenu.addItem(.separator())
+        let soloApp = NSMenuItem(title: "Hide All Other Apps", action: #selector(toggleSolo(_:)), keyEquivalent: "")
+        soloApp.target = self
+        appMenu.addItem(soloApp)
         appMenu.addItem(withTitle: "Hide PhoneMirror", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Quit PhoneMirror", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu; main.addItem(appItem)
 
         let vItem = NSMenuItem(title: "View", action: nil, keyEquivalent: "")
         let v = NSMenu(title: "View")
-        v.addItem(withTitle: "Rotate Left",  action: #selector(rotateLeft(_:)),  keyEquivalent: "L")
-        v.addItem(withTitle: "Rotate Right", action: #selector(rotateRight(_:)), keyEquivalent: "R")
-        v.addItem(withTitle: "Flip Horizontal", action: #selector(toggleMirror(_:)), keyEquivalent: "H")
+        // Explicit targets: relying on the responder chain silently dropped these (⌘D did nothing).
+        func add(_ title: String, _ sel: Selector, _ key: String) {
+            let mi = NSMenuItem(title: title, action: sel, keyEquivalent: key)
+            mi.target = self
+            v.addItem(mi)
+        }
+        add("Rotate Left",  #selector(rotateLeft(_:)),  "L")
+        add("Rotate Right", #selector(rotateRight(_:)), "R")
+        add("Flip Horizontal", #selector(toggleMirror(_:)), "H")
         v.addItem(.separator())
-        v.addItem(withTitle: "Re-detect (Vision)", action: #selector(redetect(_:)), keyEquivalent: "d")
-        v.addItem(withTitle: "Show Whole Screen (no crop)", action: #selector(resetCrop(_:)), keyEquivalent: "0")
+        add("Re-detect (Vision)", #selector(redetect(_:)), "d")
+        add("Show Whole Screen (no crop)", #selector(resetCrop(_:)), "0")
+        add("Nudge Crop ←", #selector(nudgeCropBack(_:)), "[")
+        add("Nudge Crop →", #selector(nudgeCropFwd(_:)), "]")
         v.addItem(.separator())
+        let solo = NSMenuItem(title: "Hide All Other Apps  (Space)", action: #selector(toggleSolo(_:)), keyEquivalent: "")
+        solo.target = self
+        v.addItem(solo)
         v.addItem(withTitle: "Enter Full Screen", action: #selector(NSWindow.toggleFullScreen(_:)), keyEquivalent: "f")
         vItem.submenu = v; main.addItem(vItem)
+
+        // Help menu — the shared panel, same in every app here.
+        let hItem = NSMenuItem(title: "Help", action: nil, keyEquivalent: "")
+        let h = NSMenu(title: "Help")
+        let hi = NSMenuItem(title: "PhoneMirror Help", action: #selector(showHelp(_:)), keyEquivalent: "?")
+        hi.target = self
+        h.addItem(hi)
+        hItem.submenu = h; main.addItem(hItem)
+
         NSApp.mainMenu = main
+        NSApp.helpMenu = h
     }
 
-    @objc func about(_ s: Any?) {
-        let a = NSAlert()
-        a.messageText = "PhoneMirror"
-        a.informativeText = """
-            Live mirror of a USB-connected iOS device screen, auto-oriented and auto-cropped.
+    // MARK: Shared Help + donate panel
+    //
+    // PROJECT GROUND RULE: every Apple-native app here ships the SAME Help, which is the same set
+    // of ways to donate to Esa — one component, `shared/SupportHelp.swift`, never a per-app list.
+    // This app is AppKit rather than SwiftUI, so the shared SwiftUI view is hosted in a panel via
+    // NSHostingController; the donation links still come from the one shared source.
+    var helpWindow: NSWindow?
 
-            QuickTime cannot rotate a live device mirror — its Rotate/Flip items are disabled \
-            during capture. This rotates the preview layer instead, so the window is already \
-            correct and a one-shot screen recording needs no post-edit.
+    @objc func showHelp(_ s: Any?) {
+        if let w = helpWindow { w.makeKeyAndOrderFront(nil); return }
+        let view = AppHelpView(
+            appName: "PhoneMirror",
+            tagline: "Live mirror of a USB iPhone or iPad screen — rotated and cropped as you want it, "
+                   + "so a one-shot screen recording needs no editing afterwards.",
+            usage: [
+                ("bolt", "Run it bare: Vision OCR reads the first frame, picks the rotation, and crops iOS Camera.app's controls out"),
+                ("rotate.right", "⇧⌘L / ⇧⌘R rotate · ⇧⌘H flip horizontally"),
+                ("crop", "⌘[ / ⌘] nudge the crop · ⌘0 show the whole phone screen · ⌘D re-detect"),
+                ("rectangle.on.rectangle", "Space hides every other app, so only the mirror is on screen"),
+                ("record.circle", "Pair with recburn --system-audio to film it beside anything else")
+            ],
+            note: "QuickTime Player cannot rotate a live device mirror — its Rotate and Flip items are "
+                + "disabled during capture. That is why this exists."
+        )
+        let host = NSHostingController(rootView: view)
+        let w = NSWindow(contentViewController: host)
+        w.title = "PhoneMirror Help"
+        w.styleMask = [.titled, .closable]
+        w.setContentSize(NSSize(width: 460, height: 620))
+        w.center()
+        w.isReleasedWhenClosed = false
+        helpWindow = w
+        w.makeKeyAndOrderFront(nil)
+    }
 
-            Vision OCR reads the first frame to find which way is up and where iOS Camera.app's \
-            controls are, then crops them out.
+    // MARK: Solo — hide every other app
+    //
+    // Uses NSRunningApplication.hide() rather than synthesising ⌘⌥H through System Events:
+    // synthetic keystrokes land on whatever is frontmost, which is a good way to type into
+    // somebody's editor. This asks each app directly.
+    // NSApplication.hideOtherApplications is the same path ⌘⌥H takes, and it works where
+    // per-app NSRunningApplication.hide() silently returned false for every app (measured:
+    // "hid 0 app(s)"). unhideAllApplications is its counterpart.
+    var isSolo = false
 
-            ⇧⌘L / ⇧⌘R rotate · ⇧⌘H flip · ⌘D re-detect · ⌘0 uncropped · ⌘F full screen
-            """
-        a.runModal()
+    @objc func toggleSolo(_ s: Any?) {
+        if isSolo {
+            NSApp.unhideAllApplications(nil)
+            isSolo = false
+            log("solo off — other apps restored")
+        } else {
+            NSApp.hideOtherApplications(nil)
+            isSolo = true
+            log("solo on — only the mirror is on screen; Space again to restore")
+        }
+        NSApp.activate(ignoringOtherApps: true)
     }
 
     func parseArgs() {
@@ -652,7 +786,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
               --wait [secs]            keep looking for the device (bare --wait = forever)
               --list                   list capture devices (iOS unhidden) and exit
 
-            Live: ⇧⌘L / ⇧⌘R rotate · ⇧⌘H flip · ⌘D re-detect · ⌘0 uncropped · ⌘F full screen
+            Live: ⇧⌘L / ⇧⌘R rotate · ⇧⌘H flip · ⌘D re-detect · ⌘0 uncropped
+                  ⌘[ / ⌘] nudge the crop · ⌘F full screen
 
             One-shot recording of everything on one screen:
               phonemirror --borderless &
@@ -663,8 +798,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ a: NSApplication) -> Bool { true }
 }
 
-let app = NSApplication.shared
-let delegate = AppDelegate()
-app.delegate = delegate
-app.setActivationPolicy(.regular)
-app.run()
+// Top-level code is only legal in main.swift, and this target has two files (the shared
+// SupportHelp), so the entry point is an explicit @main with -parse-as-library.
+@main
+struct PhoneMirrorMain {
+    // Held statically so the delegate outlives main() — NSApplication does not retain it.
+    static let delegate = AppDelegate()
+
+    static func main() {
+        let app = NSApplication.shared
+        app.delegate = delegate
+        app.setActivationPolicy(.regular)
+        app.run()
+    }
+}

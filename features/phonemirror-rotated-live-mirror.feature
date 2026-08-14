@@ -69,17 +69,21 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
     # Verified on screen: mode wheel and shutter absent from the window.
     # → detectCrop(), mapRect() for source↔display coordinate mapping
 
-  @built @untested
+  @built @hw-verified
   Scenario: Camera.app's ICON control row is also cropped out
     Given the opposite control band holds glyphs (flash, timer, Live Photo) and no words
-    When the crop is computed from per-column MEDIAN luminance with an absolute threshold
+    When the crop is computed from the viewfinder's known GEOMETRY, not from luminance
     Then that band is removed too
-    # Two measured dead ends first: MEAN luminance leaves the band in (white glyphs lift the
-    # mean above any black threshold); a RELATIVE/max threshold cropped to a 0.156-wide sliver
-    # because one overexposed window dominated max. Median + absolute threshold is immune to both.
-    # NOT yet confirmed on screen with Camera.app in frame — the phone was on the home screen
-    # when this landed. This grade stays @untested until a screenshot proves it.
-    # → luminanceProfile() median, trimDark()
+    # FOUR measured dead ends before this worked, all recorded so they are not re-walked:
+    #   1. MEAN luminance — white glyphs lift a black band's mean above any threshold; band stayed
+    #   2. RELATIVE/max threshold — one overexposed window dominated max; cropped to a 0.156 sliver
+    #   3. MEDIAN luminance — the SUBJECT is a black DOS CRT, so no brightness test can separate
+    #      "black control band" from "black subject". It ate the middle of the feed (w=0.523).
+    #   4. Sliding a 4:3 window to maximise contained image — picked the chrome band, whose big
+    #      white shutter circle and colour thumbnail outweighed a dark subject.
+    # What works: pure GEOMETRY. The viewfinder spans the full short edge and PHOTO mode is 4:3,
+    # so the band is anchored to the OCR-located mode wheel with one measured gap constant.
+    # → detectCrop(), gapToPreview
 
   @built @hw-verified
   Scenario: Bare invocation just works
@@ -105,6 +109,48 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
     When PhoneMirror cannot open the device
     Then the failure text says the device is SINGLE-CLIENT and names QuickTime
     # → failNoDevice(), AVCaptureDeviceInput failure branch
+
+  @built @hw-verified
+  Scenario: The crop constant is calibrated, and nudgeable when it is not right
+    Given the gap between the mode-wheel text and the 4:3 preview edge is a fixed iOS layout
+    When the band is anchored with gapToPreview = 0.040
+    Then the viewfinder fills the window with uniform edges
+    And ⌘[ / ⌘] slide the crop live, preserving its size
+    # Measured extremes that bracket it: 0.012 left a black bar on the far side only; 0.062 pulled
+    # the icon strip in on the near side. Esa's read at 0.062: "almost.. just a little bit to the
+    # right". → gapToPreview, slideCrop()
+
+  @built @hw-verified
+  Scenario: Space hides every other app
+    Given the mirror should be the only thing on screen for a recording
+    When Space is pressed with no modifier
+    Then every other app hides, and Space again restores them
+    # Uses NSApplication.hideOtherApplications / unhideAllApplications — the ⌘⌥H path. Per-app
+    # NSRunningApplication.hide() returned false for every app (measured: "hid 0 app(s)").
+    # A plain-Space menu keyEquivalent would render as ⌘Space (Spotlight), so it is a local
+    # key monitor. NOT synthesised keystrokes — those land on whatever is frontmost.
+    # → toggleSolo(), addLocalMonitorForEvents
+
+  @built @hw-verified
+  Scenario: It ships the SHARED Help and donate panel, like every app here
+    Given the project ground rule is one Help component for all Apple-native apps
+    When Help ▸ PhoneMirror Help (⌘?) or the About item is chosen
+    Then the shared AppHelpView from shared/SupportHelp.swift opens
+    And the donation links come from SupportLinks, not a per-app list
+    # This app is AppKit, so the shared SwiftUI view is hosted via NSHostingController. Compiling
+    # two files means top-level code is illegal → @main + -parse-as-library.
+    # I shipped the first version WITHOUT this and Esa had to ask. It is a ground rule; bake it in
+    # from the start. → showHelp(), build.sh compiling ../shared/SupportHelp.swift
+
+  @built @hw-verified
+  Scenario: It has a real app icon, not scaffolding
+    Given a generic placeholder icon reads as unfinished
+    When build.sh runs
+    Then AppIcon.icns is generated and referenced by CFBundleIconFile
+    # Drawn programmatically (AppKit NSBezierPath) at all 10 iconutil sizes — a landscape phone
+    # with a rotation arc, which is literally what the app does. No third-party asset pipeline.
+    # First render hid the arc behind the phone and the notch read as a defect; fixed by moving
+    # the arc outside the body and dropping the notch. → make-icon.swift
 
   @todo
   Scenario: recburn can bake the phone feed in directly

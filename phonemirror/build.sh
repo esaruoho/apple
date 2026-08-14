@@ -13,12 +13,21 @@ rm -rf "$APP"
 
 echo "==> Compiling Swift..."
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-xcrun swiftc -O PhoneMirror.swift -o "$APP/Contents/MacOS/$NAME" \
+xcrun swiftc -O -parse-as-library PhoneMirror.swift ../shared/SupportHelp.swift -o "$APP/Contents/MacOS/$NAME" \
     -framework AppKit \
+    -framework SwiftUI \
     -framework AVFoundation \
     -framework CoreMediaIO \
     -framework Vision \
     -framework CoreImage
+
+echo "==> Generating app icon (AppIcon.icns)..."
+if [ ! -f AppIcon.icns ] || [ make-icon.swift -nt AppIcon.icns ]; then
+    xcrun swift make-icon.swift >/dev/null
+    iconutil -c icns AppIcon.iconset -o AppIcon.icns
+    rm -rf AppIcon.iconset
+fi
+command cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
 echo "==> Writing Info.plist..."
 # NSCameraUsageDescription is REQUIRED: a CoreMediaIO iOS screen-capture device is gated by the
@@ -35,6 +44,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleVersion</key>           <string>1.0</string>
     <key>CFBundleShortVersionString</key><string>1.0</string>
     <key>CFBundlePackageType</key>       <string>APPL</string>
+    <key>CFBundleIconFile</key>          <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>    <string>13.0</string>
     <key>NSHighResolutionCapable</key>   <true/>
     <key>NSCameraUsageDescription</key>
