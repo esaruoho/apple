@@ -975,8 +975,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Minimising a mirror is easy to do by accident and hard to undo when the title bar is off
     /// (⌘B leaves no Dock-clickable proxy people look for), so this is the one-key rescue.
     @objc func bringAllBack(_ s: Any?) {
+        // ONLY this app's windows. It must NOT touch solo mode: un-hiding every other app is the
+        // opposite of what you want mid-recording, and Space already owns that toggle.
         var restored = 0, raised = 0
-        if isSolo { NSApp.unhideAllApplications(nil); isSolo = false }
         for m in mirrors {
             guard let w = m.window else { continue }
             if w.isMiniaturized { w.deminiaturize(nil); restored += 1 }

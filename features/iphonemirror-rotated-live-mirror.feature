@@ -308,9 +308,13 @@ Feature: iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPho
     Given a mirror has been minimised, and the title bar may be off
     When ⌘0 is pressed
     Then every mirror window is un-minimised, un-hidden and raised
-    # Minimising is easy by accident and awkward to undo once ⌘B has removed the title bar. Also
-    # drops solo mode, since hidden-app state is the other way windows "disappear".
-    # Verified: both windows AXMinimized true → false. → bringAllBack()
+    And other apps stay hidden if you are in solo mode
+    # Minimising is easy by accident and awkward to undo once ⌘B has removed the title bar.
+    # v1 also dropped solo mode, which un-hid every other app — Esa: "the cmd-0 now acts as if
+    # 'unhide all other windows' is what i want. thats not what i want." Correct: ⌘0 touches ONLY
+    # this app's windows; Space owns the solo toggle and nothing else may reach into it.
+    # Verified in solo mode: mirrors AXMinimized true → false while iTerm2 AXHidden stayed true.
+    # → bringAllBack()
     # NOTE this moved "no crop" off ⌘0 onto ⌘U.
 
   @built @untested
