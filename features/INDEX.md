@@ -346,7 +346,7 @@ An iPhone photo, on the Mac clipboard, the way you took it  —  4 scenarios   (
   triad: .session✗  transcript✗  RESULT✓
   honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen  —  29 scenarios   (features/iphonemirror-rotated-live-mirror.feature)
+iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen  —  31 scenarios   (features/iphonemirror-rotated-live-mirror.feature)
   - [@built @hw-verified] A Lightning iPhone is found at all
   - [@built @hw-verified] The live feed is rotated, which QuickTime cannot do
   - [@built @hw-verified] Orientation is chosen by reading the SCENE, not the chrome
@@ -375,9 +375,11 @@ iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen
   - [@built @hw-verified] Layout is one keypress before a take
   - [@built @hw-verified] ⌘0 rescues minimised windows
   - [@built @untested] Front-window commands hit the window you clicked
+  - [@built @hw-verified] The picture does not flip on its own
+  - [@built @untested] Orientation can be hard-locked for a demo
   - [@todo] recburn can bake the phone feed in directly
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 28/29 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 30/31 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 mailfe is a reusable Convey belt from source material to emailed analysis  —  14 scenarios   (features/mailfe-convey-belt.feature)
   - [@built] the front door accepts stdin as a source

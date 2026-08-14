@@ -429,6 +429,11 @@ final class Mirror: NSObject, NSWindowDelegate {
     /// Hand adjustments win over continuous detection until ⌘D re-detect.
     var manualOverride = false
     var analysing = false
+    /// Candidate orientation and how many consecutive analyses have agreed on it.
+    var pendingRot: CGFloat? = nil
+    var pendingRotCount = 0
+    /// Hard stop on automatic changes — for a demo, where an unexpected flip is unacceptable.
+    var orientationLocked = false
     var lastSignature: [UInt8] = []
 
     init?(device: AVCaptureDevice, options: MirrorOptions, owner: AppDelegate) {
@@ -450,6 +455,7 @@ final class Mirror: NSObject, NSWindowDelegate {
         // A Continuity Camera is already a clean, upright, landscape camera feed — there is no
         // Camera.app chrome to crop and nothing to rotate. Running Vision on it is pure harm:
         // it OCRs whatever the lens happens to see and flip-flops the orientation.
+        self.orientationLocked = saved?.locked ?? false
         if isContinuityCamera(device) {
             self.autoRotate = false; self.autoCrop = false
             self.rotation = 0
@@ -582,20 +588,57 @@ final class Mirror: NSObject, NSWindowDelegate {
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.analysing = false
-                let changed = (wantRotate && self.rotation != rot)
-                           || (wantCrop && self.crop != newCrop)
-                guard changed else { return }
-                if wantRotate {
-                    self.rotation = rot
-                    self.owner?.log("\(name): orientation \(Int(rot))° — \(det.basis)"
-                        + (det.words.isEmpty ? "" : " [\(det.words.prefix(6).joined(separator: ", "))]"))
+                var touched = false
+
+                // ORIENTATION NEEDS HYSTERESIS.
+                //
+                // A single OCR pass is not evidence. Applying every reading immediately is why the
+                // picture flipped mid-demo for no visible reason: one frame where the lens caught
+                // some text at an angle, and the whole feed turned over. Rotation Lock on the phone
+                // cannot help — the flip is happening here, on the Mac, not on the device.
+                //
+                // So a new orientation must be AGREED ON REPEATEDLY before it is applied, and a
+                // 180° flip — which is the classic OCR-read-it-upside-down mistake, and the most
+                // jarring on camera — has to clear a higher bar than a 90° turn.
+                if wantRotate && !self.orientationLocked {
+                    if rot == self.rotation {
+                        self.pendingRot = nil; self.pendingRotCount = 0     // current reading agrees
+                    } else if det.score >= 2 {
+                        let flip180 = abs(Int(rot) - Int(self.rotation)) == 180
+                        let needed = flip180 ? 5 : 3
+                        if self.pendingRot == rot { self.pendingRotCount += 1 }
+                        else { self.pendingRot = rot; self.pendingRotCount = 1 }
+
+                        if self.pendingRotCount >= needed {
+                            self.rotation = rot
+                            self.pendingRot = nil; self.pendingRotCount = 0
+                            touched = true
+                            self.owner?.log("\(name): orientation \(Int(rot))° — \(det.basis)"
+                                + (det.words.isEmpty ? "" : " [\(det.words.prefix(4).joined(separator: ", "))]"))
+                        } else {
+                            self.owner?.log("\(name): ignoring a \(Int(rot))° reading "
+                                + "(\(self.pendingRotCount)/\(needed) agreeing\(flip180 ? ", 180° needs more" : ""))")
+                        }
+                    } else {
+                        // Weak evidence: not enough to even start a streak.
+                        self.pendingRot = nil; self.pendingRotCount = 0
+                    }
                 }
-                if wantCrop {
-                    self.crop = newCrop
-                    self.owner?.log(name + String(format: ": crop x=%.3f y=%.3f w=%.3f h=%.3f",
-                                                  newCrop.origin.x, newCrop.origin.y,
-                                                  newCrop.width, newCrop.height))
+
+                // Crop is far less jarring, but still must not jitter frame to frame.
+                if wantCrop && !self.orientationLocked {
+                    let d = abs(newCrop.origin.x - self.crop.origin.x) + abs(newCrop.origin.y - self.crop.origin.y)
+                          + abs(newCrop.width - self.crop.width) + abs(newCrop.height - self.crop.height)
+                    if d > 0.02 {
+                        self.crop = newCrop
+                        touched = true
+                        self.owner?.log(name + String(format: ": crop x=%.3f y=%.3f w=%.3f h=%.3f",
+                                                      newCrop.origin.x, newCrop.origin.y,
+                                                      newCrop.width, newCrop.height))
+                    }
                 }
+
+                guard touched else { return }
                 self.preview.rotation = self.rotation
                 self.preview.crop = self.crop
                 self.refit()
@@ -607,6 +650,8 @@ final class Mirror: NSObject, NSWindowDelegate {
     func redetect() {
         autoRotate = true; autoCrop = true
         manualOverride = false
+        orientationLocked = false
+        pendingRot = nil; pendingRotCount = 0
         lastSignature = []                 // force the next frame to be analysed
         owner?.log("\(device.localizedName): automatic detection resumed")
         watcher.arm()
@@ -642,13 +687,13 @@ final class Mirror: NSObject, NSWindowDelegate {
 
     // MARK: per-device persistence
 
-    struct Calibration { var rotation: CGFloat; var crop: CGRect }
+    struct Calibration { var rotation: CGFloat; var crop: CGRect; var locked = false }
 
     static func key(_ uid: String) -> String { "calib.\(uid)" }
 
     func saveCalibration() {
         let v: [Double] = [Double(rotation), crop.origin.x, crop.origin.y, crop.width, crop.height,
-                           mirrored ? 1 : 0]
+                           mirrored ? 1 : 0, orientationLocked ? 1 : 0]
         UserDefaults.standard.set(v, forKey: Mirror.key(device.uniqueID))
     }
 
@@ -656,7 +701,8 @@ final class Mirror: NSObject, NSWindowDelegate {
         guard let v = UserDefaults.standard.array(forKey: key(uniqueID)) as? [Double], v.count >= 5
         else { return nil }
         return Calibration(rotation: CGFloat(v[0]),
-                           crop: CGRect(x: v[1], y: v[2], width: v[3], height: v[4]))
+                           crop: CGRect(x: v[1], y: v[2], width: v[3], height: v[4]),
+                           locked: v.count >= 7 && v[6] == 1)
     }
 
     static func forgetCalibration(uniqueID: String) {
@@ -828,6 +874,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func nudgeCropBack(_ s: Any?) { front?.slideCrop(-0.01) }
     @objc func nudgeCropFwd(_ s: Any?)  { front?.slideCrop(+0.01) }
     @objc func redetect(_ s: Any?) { front?.redetect() }
+    @objc func toggleOrientationLock(_ s: Any?) {
+        guard let m = front else { return }
+        m.orientationLocked.toggle()
+        m.saveCalibration()
+        log("\(m.device.localizedName): orientation \(m.orientationLocked ? "LOCKED — no automatic changes" : "unlocked")")
+    }
     @objc func forgetCalibration(_ s: Any?) {
         guard let m = front else { return }
         Mirror.forgetCalibration(uniqueID: m.device.uniqueID)
@@ -1062,6 +1114,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add("Show Whole Phone Screen (no crop)", #selector(resetCropAction(_:)), "u")
         add("Nudge Crop ←", #selector(nudgeCropBack(_:)), "[")
         add("Nudge Crop →", #selector(nudgeCropFwd(_:)), "]")
+        add("Lock Orientation (front window)", #selector(toggleOrientationLock(_:)), "k")
         add("Forget Saved Calibration for This Device", #selector(forgetCalibration(_:)), "")
         v.addItem(.separator())
         // Layout, for framing a recording in one keypress.

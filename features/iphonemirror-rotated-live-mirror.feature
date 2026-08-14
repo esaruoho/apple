@@ -335,6 +335,33 @@ Feature: iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPho
     # @untested because I drove it through System Events, not a real mouse click — the mechanism is
     # right but the click path is unverified by hand. → MirrorWindow, front, PreviewView.mouseDown
 
+  @built @hw-verified
+  Scenario: The picture does not flip on its own
+    Given continuous detection re-reads the feed every ~1.2s
+    When one analysis disagrees with the current orientation
+    Then it is IGNORED until several consecutive analyses agree
+    And a 180° flip must clear a higher bar than a 90° turn
+    # Esa, mid-demo: "it keeps rotating the video even though there should be no reason […] i have
+    # enabled portrait lock on the iPhone, yet something in the iPhoneMirror actually does it".
+    # He was right and Rotation Lock could not have helped — the flip was happening on the MAC.
+    # Cause: continuous detection applied EVERY reading immediately. One frame where the lens
+    # caught text at an angle turned the whole feed over. A single OCR pass is not evidence.
+    # Now: a change needs 3 consecutive agreeing analyses (~4s), a 180° change needs 5 (~6s, because
+    # upside-down misreads are the classic OCR failure and the most jarring on camera), and weak
+    # evidence (score < 2) cannot even start a streak. Crop needs a >0.02 delta so it cannot jitter.
+    # Verified: 80s of continuous watching with both feeds live — ZERO orientation changes, where
+    # before it flipped unprompted. → pendingRot / pendingRotCount in Mirror.inspect()
+
+  @built @untested
+  Scenario: Orientation can be hard-locked for a demo
+    Given hysteresis makes a spurious flip unlikely but not impossible
+    When ⌘K is pressed on a window
+    Then no automatic orientation or crop change is applied to it at all
+    And the lock persists for that device, and ⌘D clears it
+    # Belt and braces: hysteresis is a probability argument, and a demo wants a guarantee.
+    # @untested — the toggle and its persistence compile and are wired, but I have not exercised it.
+    # → orientationLocked, toggleOrientationLock(), Calibration.locked
+
   @todo
   Scenario: recburn can bake the phone feed in directly
     Given recburn resolves --pip-camera through AVCaptureDevice
