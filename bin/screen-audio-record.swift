@@ -48,6 +48,7 @@ struct Options {
     var clicksCorner = "tl"   // tl|tr|bl|br
     var clicksSeed = 0        // start the counter at n (demo / headless verification)
     var clicksLabel = "CLICKS"
+    var normalizeAudio = true   // flatten step lifts the mix to a normal listening level
 }
 
 // MARK: - Click counting without an event tap
@@ -122,6 +123,7 @@ func parseArgs() -> Options {
         case "--no-pip":       o.pip = false
         case "--no-burn":      o.burn = false
         case "--no-clicks":    o.clicks = false
+        case "--no-normalize", "--no-normalise": o.normalizeAudio = false
         case "--fps":          o.fps = Int(it.next() ?? "60") ?? 60
         case "--out", "-o":    o.outPath = (it.next() as NSString?)?.expandingTildeInPath ?? ""
         case "--reveal":       o.reveal = true
@@ -153,6 +155,8 @@ func printUsage() {
       --app <name>           capture only this app's screen windows AND its audio
       --system-audio         capture the whole display + all system audio
       --display <n>          display index from --list (default 0 = main)
+      --no-normalize         leave the flattened audio at its recorded level (default is
+                             to lift it to a normal listening loudness, peak-safe)
       --no-mic / --no-pip / --no-burn / --no-clicks
                              turn one off again — for subtracting from a chained wrapper
                              (recburnclick → recburn → rec each ADD flags; these remove)
@@ -805,7 +809,12 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         FileHandle.standardError.write("⧉ making YouTube version (system + mic mixed) → \((flatPath as NSString).lastPathComponent) …\n".data(using: .utf8)!)
         let p = Process()
         p.launchPath = recAudio
-        p.arguments = ["flatten", inPath, "-o", flatPath]
+        // Normalisation happens HERE, in the flatten step — before this file is handed on
+        // and therefore before subtitles are burned into it, so the delivered video (flat
+        // AND subtitled) is already at a normal listening level.
+        var flatArgs = ["flatten", inPath, "-o", flatPath]
+        if !opts.normalizeAudio { flatArgs.append("--no-normalize") }
+        p.arguments = flatArgs
         do { try p.run() } catch {
             FileHandle.standardError.write("auto-flatten failed to launch: \(error.localizedDescription)\n".data(using: .utf8)!)
             return nil

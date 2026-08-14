@@ -339,6 +339,20 @@ def mode_find(path, info, args, out_dir):
         die("nothing to sample in that range")
 
     ignore = [re.compile(p) for p in args.ignore]
+
+    # Per-run pattern list = the built-ins plus anything Esa named with --find-text. A name
+    # in a notification banner is a real exposure but can't be a built-in pattern, because
+    # only the person watching knows whose name matters. Custom terms are matched
+    # case-insensitively and never truncated in the report — you need to READ the hit to
+    # judge it, and it is not a secret you'd mind seeing in your own scrollback.
+    patterns = list(PATTERNS)
+    for rx in args.find_text:
+        try:
+            re.compile(rx)
+        except re.error as e:
+            die(f"--find-text {rx!r} is not a valid regex: {e}")
+        patterns.append((f"wanted:{rx}", f"(?i){rx}", False))
+
     per = (0.23 if args.fast_ocr else 0.91) * 6 / max(1, args.jobs)
     print(f"sweeping      : {path}")
     print(f"range         : {t0:.1f}s - {t1:.1f}s, one frame every {step:g}s "
@@ -367,7 +381,7 @@ def mode_find(path, info, args, out_dir):
                 continue
             # Per LINE, never across the whole blob: OCR output is line-oriented, and a
             # pattern allowed to span a newline joins two unrelated bits of screen.
-            for name, rx, redact in PATTERNS:
+            for name, rx, redact in patterns:
                 for m in (m for line in text.splitlines() for m in re.finditer(rx, line)):
                     s = m.group(0).strip()
                     if any(ig.search(s) for ig in ignore):
@@ -381,7 +395,7 @@ def mode_find(path, info, args, out_dir):
         print("That is NOT a clean bill of health: it means no sampled frame matched these")
         print("patterns. Anything shorter than the sample step, or exposed as a picture")
         print("rather than as text, would not be seen. Patterns checked:")
-        print("  " + ", ".join(n for n, _, _ in PATTERNS))
+        print("  " + ", ".join(n for n, _, _ in patterns))
         return 0
 
     # Group hits into windows, merging anything within --gap of the previous hit.
@@ -625,6 +639,10 @@ def main():
                    help="--find: merge hits closer together than this into one window")
     p.add_argument("--ignore", action="append", default=[], metavar="REGEX",
                    help="--find: suppress matches containing this (e.g. your own email)")
+    p.add_argument("--find-text", action="append", default=[], metavar="REGEX",
+                   help="--find: also hunt this literal/regex (e.g. a person's name that "
+                        "appeared in a notification). Repeatable. Searched ALONGSIDE the "
+                        "built-in patterns, since the OCR pass costs the same either way")
     p.add_argument("--fast-ocr", dest="fast_ocr", action="store_true",
                    help="--find: ~4x faster OCR that WILL miss masked digits (•••• 1234); "
                         "use for a first triage pass only, never as the final check")

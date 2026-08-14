@@ -484,6 +484,17 @@ Trigger recburn from anywhere through one seam, and hand off a typed result  —
   triad: .session✓  transcript✗  RESULT✓
   honesty: 13/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Deliver a recording at a normal listening level, measured not guessed  —  7 scenarios   (features/recburn-loudness.feature)
+  - [@hw-verified] the absolute peak is the wrong thing to normalise against  (meas
+  - [@hw-verified] whole-file RMS is also wrong, because a screencast is mostly pau
+  - [@hw-verified] the whole thing is lifted, on Esa's own material  (ran live 2026
+  - [@hw-verified] the ceiling is a ceiling — a bug the tool's own output caught  (
+  - [@hw-verified] it happens in flatten, so the subtitled video inherits it  (ran 
+  - [@hw-verified] near-silence is not amplified into hiss  (observed live 2026-08-
+  - [@hw-verified] the volume is SHOWN, not just changed  (ran live 2026-08-14)
+  triad: .session✗  transcript✗  RESULT✓
+  honesty: 7/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Redact a region of a finished recburn video without re-rendering it  —  26 scenarios   (features/recburn-redact.feature)
   - [@hw-verified] only the keyframe span that contains the frames is re-encoded  (
   - [@hw-verified] the audio track is remuxed, never cut and never re-encoded  (rea
