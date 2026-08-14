@@ -6,6 +6,7 @@
 set -e
 cd "$(dirname "$0")"
 APP="PhoneMirror.app"
+APP_REL="PhoneMirror.app/Contents/MacOS/PhoneMirror"
 NAME="PhoneMirror"
 
 echo "==> Cleaning previous build..."
@@ -56,20 +57,39 @@ PLIST
 echo "==> Signing (ad-hoc, so TCC can attach a stable identity)..."
 codesign --force --deep --sign - "$APP"
 
-echo "==> Refreshing Launch Services..."
-/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
-    -f "$PWD/$APP" >/dev/null 2>&1 || true
+# ONE canonical copy lives in /Applications, so Spotlight, the Dock, Launch Services and the CLI
+# shim all resolve to the same bundle. Building in the repo and running it from there means every
+# rebuild is a different app to macOS — different TCC identity, stale Dock entries, two icons.
+INSTALLED="/Applications/$APP"
+
+echo "==> Installing to $INSTALLED ..."
+if pgrep -f "$APP/Contents/MacOS/$NAME" >/dev/null 2>&1; then
+    echo "    (quitting the running copy first)"
+    osascript -e "tell application \"$NAME\" to quit" >/dev/null 2>&1 || true
+    sleep 2
+fi
+# ditto, not cp: it copies bundles faithfully and preserves the code signature.
+command rm -rf "$INSTALLED"
+ditto "$APP" "$INSTALLED"
+
+echo "==> Refreshing Launch Services (both copies)..."
+LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+"$LSREG" -f "$PWD/$APP" >/dev/null 2>&1 || true
+"$LSREG" -f "$INSTALLED" >/dev/null 2>&1 || true
 
 echo "==> Installing CLI shim -> bin/phonemirror"
 cat > ../bin/phonemirror <<SHIM
 #!/bin/bash
-# Launch PhoneMirror.app's binary directly so CLI flags and stdout work.
-exec "$PWD/$APP/Contents/MacOS/$NAME" "\$@"
+# Launch the INSTALLED PhoneMirror.app's binary directly, so CLI flags and stdout work while
+# still being the same bundle the Dock and Spotlight launch.
+APP="/Applications/PhoneMirror.app/Contents/MacOS/PhoneMirror"
+[ -x "\$APP" ] || APP="$PWD/$APP_REL"
+exec "\$APP" "\$@"
 SHIM
 chmod +x ../bin/phonemirror
 
 echo
-echo "Built $APP"
+echo "Built and installed → $INSTALLED"
 echo "  phonemirror              # just works: auto-rotate + crop Camera controls out"
 echo "  phonemirror --borderless # cleanest for screen recording"
 echo "  phonemirror --no-crop    # show the phone's whole screen"

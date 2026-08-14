@@ -143,14 +143,31 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
     # from the start. → showHelp(), build.sh compiling ../shared/SupportHelp.swift
 
   @built @hw-verified
-  Scenario: It has a real app icon, not scaffolding
+  Scenario: It has a real app icon, on the macOS icon grid
     Given a generic placeholder icon reads as unfinished
+    And a full-bleed icon reads as OVERSIZED next to every other Dock icon
     When build.sh runs
-    Then AppIcon.icns is generated and referenced by CFBundleIconFile
+    Then AppIcon.icns is generated on Apple's grid and referenced by CFBundleIconFile
     # Drawn programmatically (AppKit NSBezierPath) at all 10 iconutil sizes — a landscape phone
     # with a rotation arc, which is literally what the app does. No third-party asset pipeline.
-    # First render hid the arc behind the phone and the notch read as a defect; fixed by moving
-    # the arc outside the body and dropping the notch. → make-icon.swift
+    # Apple's macOS template is an 824x824 shape on a 1024x1024 canvas: ~9.77% transparent margin
+    # per side, corner radius 22.48% of the shape, plus a soft contact shadow. v1 filled the whole
+    # canvas and looked too big. ALL interior geometry is relative to the inset art square (A),
+    # never the canvas (S) — otherwise contents overflow the shape. → make-icon.swift
+    # v1 also hid the arc behind the phone body and drew a notch that read as a defect.
+
+  @built @hw-verified
+  Scenario: There is exactly ONE copy of the app, in /Applications
+    Given running the bundle from the build directory makes every rebuild a different app to macOS
+    When build.sh finishes
+    Then it dittos the bundle to /Applications/PhoneMirror.app and lsregisters both
+    And bin/phonemirror execs the INSTALLED binary, falling back to the build copy
+    # Why it matters: separate bundle paths mean separate TCC identities (so the Camera grant is
+    # re-prompted), stale Launch Services entries, and two icons in the Dock. ditto rather than cp
+    # because it copies bundles faithfully and preserves the signature — and cp is aliased to -iv
+    # on this machine, which would prompt and silently leave the destination stale.
+    # NOT visually confirmed in the Dock: the Dock is auto-hidden here, so the icon's rendered
+    # appearance at Dock size is unverified. The bundle contents and lsregister run are verified.
 
   @todo
   Scenario: recburn can bake the phone feed in directly
