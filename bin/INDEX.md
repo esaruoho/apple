@@ -1,4 +1,4 @@
-# CLI Tools Index — 332 tools in bin/
+# CLI Tools Index — 333 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -303,6 +303,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `thought-archive.py` — (no description) — `bin/thought-archive.py`
 `toolbox-goto` — open AppleToolbox --live at a given folder. — `bin/toolbox-goto`
 `transcribe-bench` — (no description) — `bin/transcribe-bench`
+`usbprobe` — (no description) — `bin/usbprobe`
 `va` — short-cut for "vault-ask against merlib-dump, free on-device synthesis". — `bin/va`
 `va-batch` — run a list of questions through vault-ask, concatenate the answers — `bin/va-batch`
 `vault-ask` — (no description) — `bin/vault-ask`

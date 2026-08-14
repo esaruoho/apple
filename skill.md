@@ -74,6 +74,37 @@ About closes; and a `.nonactivatingPanel` has no menu bar in practice, so put th
 `⋯` button and the content view's right-click menu. **An icon that looks too big has TWO causes —
 full-bleed artwork AND the About panel drawing it larger than Apple's 64pt.**
 
+**USB + HID devices — "why doesn't my device work on the Mac?" (added 2026-08-14):** When the
+user says "USB device", "it doesn't show up", "no driver for this", "jog wheel", "foot pedal",
+"game controller", "HID", "Shuttle"/"ShuttlePro", "write a driver for X", or plugs in anything
+exotic → two tools, **used in this order**:
+
+1. **[`bin/usbprobe`](bin/usbprobe)** (`list` · `tree` · `watch` · `find <q>` · `doctor`) — is the
+   device on the bus **at all**? Python stdlib over `ioreg -a` XML. Answer this first: **absence
+   here is not a driver problem.** macOS enumerates devices it has never heard of, so a device
+   missing from `usbprobe list` has completed no USB handshake — that is cable/port/device, and no
+   amount of code fixes it.
+2. **[`bin/hidprobe`](bin/hidprobe)** (`list` · `elements` · `descriptor` · `watch` · `access`) —
+   Swift + IOHIDManager. Once it is on the bus, this reads it. **`elements` BEFORE `watch`:** macOS
+   already parsed the report descriptor, so it hands you every field with usage, bit size and
+   logical range for free — guessing byte offsets from a hex dump is wasted effort. `watch` then
+   confirms against physical reality, highlighting changed bytes and printing a before/after bit
+   diff that turns a button press into a bit number in one press. It is hotplug-aware, so start it
+   *before* plugging in.
+
+**Four traps, each of which cost a wrong answer first:** (1) **`log stream`/`log show` are NOT USB
+presence evidence** — at default log level this Mac logs *nothing* on attach; a confirmed replug of
+a working mouse produced zero kernel lines. `ioreg` is the detector. (2) **Never parse flat `ioreg`
+with awk/grep** — it mispairs `idVendor` with `idProduct` when IOKit emits keys in a different
+order; parse the XML (`ioreg -a`). (3) **Interface nodes inherit their parent's `idVendor`/
+`idProduct`**, so dedup on `Device Speed` presence or one device counts several times. (4) **Input
+Monitoring gates ALL `IOHIDManager` access, not just keyboards**, and the grant follows the *binary*
+— iTerm having it does not give your `.app` anything (same shape as the Screen Recording trap).
+Reading HID = Input Monitoring; posting `CGEvent`s = **Accessibility**, a second separate grant.
+Concepts: [`wiki/concepts/usb-hid-probing.md`](wiki/concepts/usb-hid-probing.md); worked example
+(incl. a unit diagnosed dead across three hosts):
+[`wiki/entities/contour-shuttlepro.md`](wiki/entities/contour-shuttlepro.md).
+
 **iPhone as a camera / screen on the Mac (added 2026-08-14):** When the user says "iPhone as a
 webcam", "iPhone screen on my Mac", "phonemirror"/"iPhonemirror", "record what the phone sees",
 "Continuity Camera", "QuickTime won't rotate", or two/three phones side by side → use

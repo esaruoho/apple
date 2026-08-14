@@ -2,7 +2,39 @@
 description: Reverse-engineering any USB HID device on macOS with IOHIDManager and bin/hidprobe — enumerate, dump the report descriptor, watch live reports byte-by-byte.
 ---
 
-# USB HID probing (`bin/hidprobe`)
+# USB + HID probing (`bin/usbprobe`, `bin/hidprobe`)
+
+**Two layers, two tools, and the order matters.**
+[`bin/usbprobe`](../../bin/usbprobe) answers *is the device on the bus at all?*
+(`list` · `tree` · `watch` · `find` · `doctor`). Only when the answer is yes does
+[`bin/hidprobe`](../../bin/hidprobe) — the rest of this page — become relevant.
+
+Ask the USB question first, because **absence at the USB layer is never a driver
+problem.** macOS enumerates hardware it has never heard of; a device missing from
+`usbprobe list` has completed no USB handshake at all, and that is a cable, port,
+or device fault that no code can fix. Confusing the two layers means writing a
+driver for something the Mac is not electrically talking to.
+
+```bash
+usbprobe doctor          # what's present + an ordered checklist if yours isn't
+usbprobe find 0x0b33     # present/absent for one vendor, by id or name
+usbprobe watch           # poll for attach/detach (see the log warning below)
+```
+
+`usbprobe` is Python stdlib over `ioreg -a` XML. Three things it gets right that
+a naive version does not: it **parses the XML** rather than grepping flat `ioreg`
+output (which mispairs `idVendor` with `idProduct` when IOKit emits the keys in a
+different order); it **dedups interface nodes**, which inherit their parent's
+ids and otherwise count one device several times; and it treats a failed `ioreg`
+as an error rather than an empty list, so "nothing found" can never be confused
+with "the command broke".
+
+> **`log stream` / `log show` are NOT USB presence evidence.** At default log
+> level this Mac logs *nothing* on USB attach — a confirmed replug of a working
+> mouse produced zero kernel lines across a 10-minute window. Poll `ioreg`
+> (`usbprobe watch`) instead. This cost two rounds of a real diagnosis.
+
+## HID probing (`bin/hidprobe`)
 
 macOS can talk to **any** HID device with no driver, no kext, and no Homebrew —
 `IOHIDManager` is public API and the HID parser is in the OS. When a device has

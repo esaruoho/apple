@@ -1,0 +1,311 @@
+#!/usr/bin/env python3
+"""usbprobe — what is actually on the USB bus, and why your device is not.
+
+Apple-native: parses `ioreg -a -rc IOUSBHostDevice` (XML plist) with the Python
+stdlib. No Homebrew, no libusb, no lsusb.
+
+This exists because of a real diagnosis (see wiki/entities/contour-shuttlepro.md)
+where the question "is the Mac even seeing this device?" had to be answered
+before any driver work could start. Two traps that cost real time there are
+baked in as the tool's defaults:
+
+  * `log stream` / `log show` are NOT reliable USB presence evidence. On Apple
+    Silicon at default log level a confirmed replug of a working mouse produces
+    ZERO kernel log lines. ioreg is the detector; `watch` polls it.
+  * Line-based awk/grep over flat `ioreg` output mispairs idVendor with
+    idProduct when IOKit emits the keys in a different order. Parse the XML.
+
+Subcommands:
+  list            flat, deduplicated device list
+  tree            the bus topology, so you can see what is behind which hub
+  watch           poll for attach/detach and print changes as they happen
+  find <q>        is this device present? q = 0x1234, decimal, or a name substring
+  doctor          "my device is not showing up" — evidence + what to try next
+
+See wiki/concepts/usb-hid-probing.md
+"""
+
+import plistlib
+import subprocess
+import sys
+import time
+
+SPEEDS = {0: "low (1.5M)", 1: "full (12M)", 2: "high (480M)",
+          3: "super (5G)", 4: "super+ (10G)", 5: "super+ (20G)"}
+
+CLASSES = {
+    1: "audio", 2: "comms", 3: "HID", 5: "physical", 6: "image", 7: "printer",
+    8: "mass-storage", 9: "hub", 10: "CDC-data", 11: "smartcard", 13: "content-sec",
+    14: "video", 15: "healthcare", 16: "A/V", 17: "billboard", 0xdc: "diagnostic",
+    0xe0: "wireless", 0xef: "misc", 0xfe: "app-specific", 0xff: "vendor-specific",
+}
+
+# Vendors worth naming when the device itself does not supply a string.
+KNOWN_VENDORS = {
+    0x05ac: "Apple", 0x046d: "Logitech", 0x0b33: "Contour Design",
+    0x05f3: "PI Engineering", 0x2109: "VIA Labs", 0x0bda: "Realtek",
+    0x0b95: "ASIX", 0x2537: "Norelsys", 0x0b05: "ASUS", 0x2e1a: "Insta360",
+    0x1532: "Razer", 0x045e: "Microsoft", 0x059f: "LaCie", 0x0781: "SanDisk",
+}
+
+
+def ioreg():
+    """The USB device tree as nested dicts. Raises on failure rather than
+    returning an empty tree, so 'nothing found' can never be confused with
+    'the command broke'."""
+    out = subprocess.run(
+        ["/usr/sbin/ioreg", "-a", "-rc", "IOUSBHostDevice", "-l"],
+        capture_output=True, timeout=30,
+    )
+    if out.returncode != 0:
+        raise RuntimeError(f"ioreg failed: {out.stderr.decode()[:200]}")
+    if not out.stdout.strip():
+        return []
+    return plistlib.loads(out.stdout)
+
+
+class Dev:
+    __slots__ = ("vid", "pid", "product", "vendor", "serial", "location",
+                 "speed", "cls", "power", "depth")
+
+    def __init__(self, n, depth):
+        self.vid = n.get("idVendor")
+        self.pid = n.get("idProduct")
+        self.product = (n.get("USB Product Name") or n.get("kUSBProductString") or "").strip()
+        self.vendor = (n.get("USB Vendor Name") or n.get("kUSBVendorString") or "").strip()
+        self.serial = (n.get("USB Serial Number") or n.get("kUSBSerialNumberString") or "").strip()
+        self.location = n.get("locationID")
+        self.speed = n.get("Device Speed")
+        self.power = n.get("Requested Power")
+        self.depth = depth
+        info = n.get("USB Device Info") or {}
+        # bDeviceClass 0 is the "class is declared per-interface" sentinel, so it
+        # is never worth printing — fall through to the interface class.
+        cls = n.get("bDeviceClass")
+        self.cls = cls if cls else info.get("bInterfaceClass")
+
+    @property
+    def key(self):
+        # locationID is the bus-unique identity. Falling back to vid:pid would
+        # merge two identical devices into one; keep them distinct.
+        return self.location if self.location is not None else (self.vid, self.pid, self.serial)
+
+    @property
+    def ids(self):
+        v = f"0x{self.vid:04x}" if self.vid is not None else "?"
+        p = f"0x{self.pid:04x}" if self.pid is not None else "?"
+        return f"{v}:{p}"
+
+    @property
+    def name(self):
+        vendor = self.vendor or KNOWN_VENDORS.get(self.vid, "")
+        parts = [x for x in (vendor, self.product) if x]
+        return " ".join(parts) if parts else "(unnamed device)"
+
+    def line(self):
+        bits = [self.ids, self.name]
+        extra = []
+        if self.cls is not None:
+            extra.append(CLASSES.get(self.cls, f"class {self.cls}"))
+        if self.speed is not None:
+            extra.append(SPEEDS.get(self.speed, f"speed {self.speed}"))
+        if self.power:
+            extra.append(f"{self.power}mA")
+        if extra:
+            bits.append("[" + ", ".join(extra) + "]")
+        return "  ".join(bits)
+
+
+def collect(nodes, depth=0, out=None):
+    """Walk the registry, keeping depth so `tree` can show what sits behind
+    which hub. Interfaces repeat their parent's ids, so dedup on locationID."""
+    if out is None:
+        out = []
+    if isinstance(nodes, list):
+        for n in nodes:
+            collect(n, depth, out)
+        return out
+    if isinstance(nodes, dict):
+        # Interface nodes inherit idVendor/idProduct from their parent device, so
+        # matching on those alone counts one device several times. Only a real
+        # device node carries "Device Speed".
+        is_dev = (nodes.get("idVendor") is not None
+                  and nodes.get("idProduct") is not None
+                  and "Device Speed" in nodes)
+        if is_dev:
+            out.append(Dev(nodes, depth))
+        kids = nodes.get("IORegistryEntryChildren")
+        if kids:
+            collect(kids, depth + (1 if is_dev else 0), out)
+    return out
+
+
+def devices(dedup=True):
+    devs = collect(ioreg())
+    if not dedup:
+        return devs
+    seen, uniq = set(), []
+    for d in devs:
+        if d.key in seen:
+            continue
+        seen.add(d.key)
+        uniq.append(d)
+    return uniq
+
+
+# ───────────────────────────── commands ─────────────────────────────
+
+def cmd_list():
+    devs = devices()
+    if not devs:
+        print("No USB devices found. On a laptop with nothing plugged in this is normal.")
+        return
+    for d in sorted(devs, key=lambda d: (d.vid or 0, d.pid or 0)):
+        print("  " + d.line())
+    print(f"\n{len(devs)} device(s).")
+
+
+def cmd_tree():
+    devs = devices()
+    if not devs:
+        print("No USB devices found.")
+        return
+    for d in devs:
+        print("  " + "│  " * d.depth + d.line())
+    print(f"\n{len(devs)} device(s). Indentation = what is plugged into what.")
+
+
+def cmd_find(query):
+    devs = devices()
+    q = query.strip()
+    num = None
+    try:
+        num = int(q, 16) if q.lower().startswith("0x") else int(q)
+    except ValueError:
+        pass
+
+    hits = []
+    for d in devs:
+        if num is not None and num in (d.vid, d.pid):
+            hits.append(d)
+        elif num is None and q.lower() in d.name.lower():
+            hits.append(d)
+
+    if hits:
+        print(f"PRESENT — {len(hits)} match(es) for {query!r}:")
+        for d in hits:
+            print("  " + d.line())
+        return 0
+
+    print(f"ABSENT — nothing matching {query!r} is on the USB bus.")
+    print(f"({len(devs)} other device(s) are enumerated, so the bus itself is working.)")
+    print()
+    print("Absence here is strong evidence. An unrecognised or driverless device")
+    print("still enumerates — that is what a no-name hub or disk in this list is.")
+    print("Missing entirely means no USB handshake happened at all, which is a")
+    print("cable/port/device problem, not a driver problem. Try `usbprobe doctor`.")
+    return 1
+
+
+def cmd_watch(interval=0.5):
+    print("Polling ioreg for attach/detach. Ctrl-C to stop.")
+    print("(Polling, not the kernel log — this Mac may not log USB attach at all.)\n")
+    prev = {d.key: d for d in devices()}
+    print(f"baseline: {len(prev)} device(s)")
+    for d in sorted(prev.values(), key=lambda x: (x.vid or 0, x.pid or 0)):
+        print("    " + d.line())
+    print("\nwatching…\n")
+    t0 = time.time()
+    try:
+        while True:
+            time.sleep(interval)
+            cur = {d.key: d for d in devices()}
+            for k in cur.keys() - prev.keys():
+                print(f"[{time.time()-t0:7.1f}s] + ATTACH  {cur[k].line()}", flush=True)
+            for k in prev.keys() - cur.keys():
+                print(f"[{time.time()-t0:7.1f}s] - DETACH  {prev[k].line()}", flush=True)
+            prev = cur
+    except KeyboardInterrupt:
+        print("\nstopped.")
+
+
+def cmd_doctor():
+    devs = devices()
+    hubs = [d for d in devs if d.cls == 9]
+    print("═══ usbprobe doctor ═══\n")
+    print(f"{len(devs)} device(s) enumerated, {len(hubs)} of them hub(s).\n")
+    for d in sorted(devs, key=lambda d: (d.vid or 0, d.pid or 0)):
+        print("  " + d.line())
+
+    print("""
+─── if your device is NOT in that list ───
+
+It is not a driver problem. macOS enumerates devices it has never heard of —
+any no-name hub or disk above is proof. Absence means no USB handshake.
+
+Test in this order, each one eliminating a single variable:
+
+ 1. `usbprobe watch`, then unplug/replug. Nothing at all = no electrical
+    connection. Do NOT trust `log stream` for this; at default log level this
+    Mac may log no USB attach events whatsoever, so log silence proves nothing.
+ 2. Move it to a port where a KNOWN-GOOD device just enumerated. Same socket,
+    same hub, same cable path. This is the single most informative test.
+ 3. Bypass any hub. Old low-speed devices (USB 1.1 controllers, jog wheels,
+    foot pedals) are the ones hubs drop.
+ 4. Try another host entirely — the Mini has native USB-A. A different USB
+    controller eliminates the whole host side at once.
+ 5. Suspect the cable, especially if captive. Strain relief at the housing is
+    where 20-year-old peripherals die.
+
+If it IS in the list but no app can use it, the problem moved to the HID layer:
+run `hidprobe list`, then `hidprobe access` — Input Monitoring gates ALL
+IOHIDManager access, not just keyboards, and the grant follows the binary that
+runs, not the script.""")
+
+
+USAGE = """usbprobe — what is actually on the USB bus, and why your device is not
+
+  usbprobe list           flat, deduplicated device list
+  usbprobe tree           bus topology — what is plugged into what
+  usbprobe watch          poll for attach/detach, print changes live
+  usbprobe find <q>       is it present? q = 0x0b33, decimal, or a name substring
+  usbprobe doctor         "my device is not showing up" — evidence + next steps
+
+HID-level follow-up lives in `hidprobe`."""
+
+
+def main():
+    # `watch` is normally piped to tee for a capture log, and block buffering
+    # would hide every event until the buffer filled — or lose them entirely if
+    # the process is killed. Same trap as setvbuf() in hidprobe.
+    sys.stdout.reconfigure(line_buffering=True)
+    args = sys.argv[1:]
+    if not args or args[0] in ("-h", "--help", "help"):
+        print(USAGE)
+        return 0
+    cmd, rest = args[0], args[1:]
+    try:
+        if cmd == "list":
+            cmd_list()
+        elif cmd == "tree":
+            cmd_tree()
+        elif cmd == "watch":
+            cmd_watch(float(rest[0]) if rest else 0.5)
+        elif cmd == "find":
+            if not rest:
+                print("usbprobe find needs something to look for", file=sys.stderr)
+                return 2
+            return cmd_find(" ".join(rest))
+        elif cmd == "doctor":
+            cmd_doctor()
+        else:
+            print(f"usbprobe: unknown command {cmd!r} — try `usbprobe --help`", file=sys.stderr)
+            return 2
+    except RuntimeError as e:
+        print(f"usbprobe: {e}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
