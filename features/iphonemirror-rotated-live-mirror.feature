@@ -313,7 +313,13 @@ Feature: iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPho
     # v1 also dropped solo mode, which un-hid every other app — Esa: "the cmd-0 now acts as if
     # 'unhide all other windows' is what i want. thats not what i want." Correct: ⌘0 touches ONLY
     # this app's windows; Space owns the solo toggle and nothing else may reach into it.
+    And each window gets EXACTLY ONE ordering call, so there is no flicker
     # Verified in solo mode: mirrors AXMinimized true → false while iTerm2 AXHidden stayed true.
+    # v2 flicker Esa saw — "they appear quickly, and then vanish and animate back as if they come
+    # from the dock" — was deminiaturize() plus orderFront/orderFrontRegardless/makeKeyAndOrderFront
+    # on the SAME window: the window snapped on screen, then the un-minimise animation replayed it
+    # out of the Dock. deminiaturize() already raises; never mix it with another ordering call, and
+    # do not force key on a window with an animation in flight.
     # → bringAllBack()
     # NOTE this moved "no crop" off ⌘0 onto ⌘U.
 

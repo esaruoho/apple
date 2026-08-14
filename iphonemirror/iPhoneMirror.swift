@@ -977,18 +977,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func bringAllBack(_ s: Any?) {
         // ONLY this app's windows. It must NOT touch solo mode: un-hiding every other app is the
         // opposite of what you want mid-recording, and Space already owns that toggle.
+        // EXACTLY ONE ordering call per window. deminiaturize() runs its own un-minimise animation
+        // and raises the window itself; adding orderFront/orderFrontRegardless/makeKeyAndOrderFront
+        // on top makes the window snap on screen and then re-animate out of the Dock — the
+        // "appear, vanish, fly back in" flicker. Never mix them.
         var restored = 0, raised = 0
         for m in mirrors {
             guard let w = m.window else { continue }
-            if w.isMiniaturized { w.deminiaturize(nil); restored += 1 }
-            if !w.isVisible { w.orderFront(nil) }
-            w.orderFrontRegardless()
-            raised += 1
+            if w.isMiniaturized {
+                w.deminiaturize(nil)          // ordering is its job, not ours
+                restored += 1
+            } else if !w.isVisible {
+                w.orderFront(nil)
+                raised += 1
+            }
         }
+        // Activating is enough to bring the app forward; whichever window was key regains key.
+        // Forcing key on one here would fight an in-flight un-minimise animation.
         NSApp.unhide(nil)
         NSApp.activate(ignoringOtherApps: true)
-        mirrors.last?.window.makeKeyAndOrderFront(nil)
-        log("brought back \(raised) window(s)\(restored > 0 ? " (\(restored) un-minimised)" : "")")
+        log("⌘0: un-minimised \(restored), re-showed \(raised)")
     }
 
     @objc func openAllDevices(_ s: Any?) {
