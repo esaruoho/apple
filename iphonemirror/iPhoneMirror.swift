@@ -804,6 +804,84 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         log("\(m.device.localizedName): saved calibration forgotten — re-detecting")
         m.redetect()
     }
+    // MARK: - Tiling, for framing a recording fast
+    //
+    // The point is one keypress before a RecBurn take: two phones side by side, each as large as
+    // it can be without distortion, filling the screen. Each window keeps its own aspect ratio
+    // (they differ — a cropped 4:3 viewfinder next to a 16:9 Continuity feed), so cells are
+    // divided evenly and the window is letterboxed INSIDE its cell rather than stretched.
+
+    enum TileMode { case sideBySide, topBottom, fillFront }
+
+    @objc func tileSideBySide(_ s: Any?) { tile(.sideBySide) }
+    @objc func tileTopBottom(_ s: Any?)  { tile(.topBottom) }
+    @objc func fillScreen(_ s: Any?)     { tile(.fillFront) }
+
+    func tile(_ mode: TileMode) {
+        // visibleFrame, not frame: it already excludes the menu bar and the Dock, so windows do
+        // not slide under either.
+        guard let screen = NSScreen.main else { return }
+        let vf = screen.visibleFrame
+        let shown = mirrors.filter { $0.window.isVisible }
+        guard !shown.isEmpty else { log("nothing to tile — tick a device first"); return }
+
+        switch mode {
+        case .sideBySide:
+            let colW = vf.width / CGFloat(shown.count)
+            for (i, m) in shown.enumerated() {
+                fit(m, in: NSRect(x: vf.minX + CGFloat(i) * colW, y: vf.minY,
+                                  width: colW, height: vf.height))
+            }
+            log("tiled \(shown.count) side by side")
+        case .topBottom:
+            let rowH = vf.height / CGFloat(shown.count)
+            for (i, m) in shown.enumerated() {
+                fit(m, in: NSRect(x: vf.minX, y: vf.maxY - CGFloat(i + 1) * rowH,
+                                  width: vf.width, height: rowH))
+            }
+            log("tiled \(shown.count) top to bottom")
+        case .fillFront:
+            guard let m = front else { return }
+            fit(m, in: vf)
+            log("\(m.device.localizedName): filled the screen")
+        }
+    }
+
+    /// Largest frame for this window that fits `cell` without changing its aspect ratio, centred.
+    func fit(_ m: Mirror, in cell: NSRect) {
+        let aspect = m.currentAspect()                                  // content width / height
+        guard aspect > 0 else { return }
+        // The title bar is not part of the content, so it has to come out of the budget first.
+        let chrome = max(0, m.window.frame.height - m.window.contentLayoutRect.height)
+        var cw = cell.width
+        var ch = cw / aspect
+        if ch + chrome > cell.height {
+            ch = cell.height - chrome
+            cw = ch * aspect
+        }
+        let fw = cw.rounded(), fh = (ch + chrome).rounded()
+        m.window.setFrame(NSRect(x: (cell.midX - fw / 2).rounded(),
+                                 y: (cell.midY - fh / 2).rounded(),
+                                 width: fw, height: fh),
+                          display: true, animate: false)
+    }
+
+    /// Drop the title bar so a recording has no chrome in it — and put it back.
+    @objc func toggleChrome(_ s: Any?) {
+        guard let m = front else { return }
+        let w = m.window!
+        if w.styleMask.contains(.titled) {
+            w.styleMask = [.borderless, .resizable]
+            w.isMovableByWindowBackground = true
+            log("\(m.device.localizedName): title bar off (drag by the picture)")
+        } else {
+            w.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            w.title = m.titleText()
+            log("\(m.device.localizedName): title bar on")
+        }
+        m.refit()
+    }
+
     @objc func openAllDevices(_ s: Any?) {
         for d in candidateDevices() { open(d) }
         rebuildDevicesMenu()
@@ -868,6 +946,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         add("Nudge Crop ←", #selector(nudgeCropBack(_:)), "[")
         add("Nudge Crop →", #selector(nudgeCropFwd(_:)), "]")
         add("Forget Saved Calibration for This Device", #selector(forgetCalibration(_:)), "")
+        v.addItem(.separator())
+        // Layout, for framing a recording in one keypress.
+        add("Stack Side by Side", #selector(tileSideBySide(_:)), "1")
+        add("Stack Top and Bottom", #selector(tileTopBottom(_:)), "2")
+        add("Fill Screen (front window)", #selector(fillScreen(_:)), "3")
+        add("Title Bar On/Off (front window)", #selector(toggleChrome(_:)), "b")
         v.addItem(.separator())
         let solo = NSMenuItem(title: "Hide All Other Apps  (Space)", action: #selector(toggleSolo(_:)), keyEquivalent: "")
         solo.target = self
