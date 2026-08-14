@@ -492,7 +492,7 @@ Deliver a recording at a normal listening level, measured not guessed  —  7 sc
   - [@hw-verified] it happens in flatten, so the subtitled video inherits it  (ran 
   - [@hw-verified] near-silence is not amplified into hiss  (observed live 2026-08-
   - [@hw-verified] the volume is SHOWN, not just changed  (ran live 2026-08-14)
-  triad: .session✗  transcript✗  RESULT✓
+  triad: .session✓  transcript✗  RESULT✓
   honesty: 7/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Redact a region of a finished recburn video without re-rendering it  —  26 scenarios   (features/recburn-redact.feature)

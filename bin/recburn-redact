@@ -388,6 +388,13 @@ def mode_find(path, info, args, out_dir):
                         continue
                     shown = (s[:8] + "…" + f"[{len(s)} chars]") if redact else s
                     hits.append((tt, name, shown))
+                    # Report each hit THE MOMENT it is found, on stderr, unbuffered. A sweep
+                    # of a 78-minute recording takes ~23 minutes; holding every finding until
+                    # the end means you cannot tell "still looking" from "found nothing", and
+                    # if the run is piped anywhere (or killed early) the findings are simply
+                    # lost. Discovered the hard way: a run piped through `tail` showed a
+                    # 0-byte log for 20 minutes.
+                    print(f"\n  HIT {fmt_time(tt)}  {name}: {shown}", file=sys.stderr, flush=True)
     print()
 
     if not hits:
