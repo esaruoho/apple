@@ -362,6 +362,33 @@ Feature: iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPho
     # @untested — the toggle and its persistence compile and are wired, but I have not exercised it.
     # → orientationLocked, toggleOrientationLock(), Calibration.locked
 
+  @built @hw-verified
+  Scenario: A Continuity Camera that flaps does not flap its window
+    Given a Continuity Camera drops out of enumeration intermittently while still streaming fine
+    When a device scan does not see it
+    Then its window stays open unless it is absent for 3 consecutive scans AND not streaming
+    # Esa's log: "window open / disconnected — closing its window / window closed / window open /
+    # disconnected …" — closing on a SINGLE missed scan turned unreliable enumeration into a visible
+    # flap. Three misses (~9s) plus a stopped session means genuinely gone; less means enumeration
+    # is being unreliable, which is its normal state for these devices.
+    # Verified: 60s with both feeds live, ZERO close events. → Mirror.missedScans, rescanDevices()
+
+  @built @hw-verified
+  Scenario: Device enumeration must be LIVE, not a per-process snapshot
+    Given AVCaptureDevice.devices(for:) returns a stale snapshot for the life of a process
+    When a device disappears and comes back
+    Then a long-lived AVCaptureDevice.DiscoverySession still sees it
+    # Esa: "i briefly turned on the iPhone16Pro non-continuity method and then turned it off and
+    # tried to get to continuity one and it didnt work." Proof it was OUR staleness and not the
+    # system: a FRESH `--list` process saw all three devices while the running app still said
+    # "(not connected)". Hence his workaround — "i had to disconnect the cable and reconnect" — a
+    # replug forced an event the old snapshot could not miss. No longer needed.
+    # The compiler had been warning about devices(for:) being deprecated all along; this is exactly
+    # why. DiscoverySession must be created ONCE and re-read, never rebuilt per call. Legacy lists
+    # are still merged in as a safety net for the unusual DAL devices.
+    # Also added NSCameraUseContinuityCameraDeviceType to Info.plist, which the runtime warning had
+    # been asking for. → deviceDiscovery, captureDevices()
+
   @todo
   Scenario: recburn can bake the phone feed in directly
     Given recburn resolves --pip-camera through AVCaptureDevice

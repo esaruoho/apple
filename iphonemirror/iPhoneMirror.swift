@@ -49,8 +49,27 @@ func allowScreenCaptureDevices() {
 
 // MARK: - Device discovery
 
+/// A LONG-LIVED discovery session, because `AVCaptureDevice.devices(for:)` hands back a stale
+/// per-process snapshot.
+///
+/// Measured: a Continuity Camera that had been briefly displaced by its phone's screen mirror was
+/// visible to a FRESH process while the running app still reported it "(not connected)" — the old
+/// process never saw it come back. `devices(for:)` is deprecated for exactly this reason;
+/// DiscoverySession tracks connect/disconnect for the life of the object, so it must be created
+/// ONCE and re-read, never rebuilt per call.
+let deviceDiscovery: AVCaptureDevice.DiscoverySession = {
+    var types: [AVCaptureDevice.DeviceType] = [.external, .builtInWideAngleCamera]
+    if #available(macOS 14.0, *) { types.append(.continuityCamera) }
+    return AVCaptureDevice.DiscoverySession(deviceTypes: types, mediaType: nil, position: .unspecified)
+}()
+
 func captureDevices() -> [AVCaptureDevice] {
     var seen = Set<String>(); var out: [AVCaptureDevice] = []
+    // DiscoverySession first (live), then the legacy lists as a safety net — an iOS screen-capture
+    // DAL device is an unusual beast and belt-and-braces here costs nothing.
+    for d in deviceDiscovery.devices where !seen.contains(d.uniqueID) {
+        seen.insert(d.uniqueID); out.append(d)
+    }
     for mt in [AVMediaType.video, .muxed] {
         for d in AVCaptureDevice.devices(for: mt) where !seen.contains(d.uniqueID) {
             seen.insert(d.uniqueID); out.append(d)
@@ -430,6 +449,9 @@ final class Mirror: NSObject, NSWindowDelegate {
     var manualOverride = false
     var analysing = false
     /// Candidate orientation and how many consecutive analyses have agreed on it.
+    /// Consecutive device scans in which this mirror's device did not enumerate.
+    /// A Continuity Camera flaps constantly, so ONE miss must never close a working window.
+    var missedScans = 0
     var pendingRot: CGFloat? = nil
     var pendingRotCount = 0
     /// Hard stop on automatic changes — for a demo, where an unexpected flip is unacceptable.
@@ -844,10 +866,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             log("\(d.localizedName): appeared")
             if autoOpenNew { open(d) }
         }
-        // Close windows whose device went away, so a yanked cable does not leave a dead frame.
-        for m in mirrors where !nowIDs.contains(m.device.uniqueID) {
-            log("\(m.device.localizedName): disconnected — closing its window")
-            m.window.close()
+        // Close a window only on SUSTAINED absence. A Continuity Camera drops out of enumeration
+        // intermittently while still streaming perfectly, and closing on a single missed scan made
+        // it flap: open → "disconnected" → closed → reappears → open → … Three consecutive misses
+        // (~9s) means it is genuinely gone; anything less is enumeration being unreliable, not the
+        // device leaving. A still-running session is also evidence it is alive.
+        for m in mirrors {
+            if nowIDs.contains(m.device.uniqueID) {
+                m.missedScans = 0
+                continue
+            }
+            m.missedScans += 1
+            if m.missedScans >= 3 && !m.session.isRunning {
+                log("\(m.device.localizedName): gone for \(m.missedScans) scans — closing its window")
+                m.window.close()
+            } else if m.missedScans == 1 {
+                log("\(m.device.localizedName): missed a scan (keeping the window — it is still streaming)")
+            }
         }
         noteInRoster(now)
         knownIDs.formIntersection(nowIDs.union(Set(mirrors.map { $0.device.uniqueID })))

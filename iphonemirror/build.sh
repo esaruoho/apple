@@ -48,6 +48,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
     <key>CFBundleIconFile</key>          <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>    <string>13.0</string>
     <key>NSHighResolutionCapable</key>   <true/>
+    <key>NSCameraUseContinuityCameraDeviceType</key>
+    <true/>
     <key>NSCameraUsageDescription</key>
     <string>iPhoneMirror shows the screen of an iPhone or iPad connected over USB, so it can be rotated live and screen-recorded in one pass.</string>
 </dict>
