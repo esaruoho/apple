@@ -105,6 +105,38 @@ Feature: Deliver a recording at a normal listening level, measured not guessed
     And `flatten` prints the same measurement inline while recording finishes
     # innards: the `level` verb
 
+  @hw-verified
+  Scenario: delivered on the real 78-minute recording  (ran live 2026-08-14)
+    Given Esa's own capture, after redaction
+    When `rec-audio normalize` ran on the full 14 GB file
+    Then loudness went -29.6 -> -20.9 dBFS (+9.5 dB) in 53 seconds
+    And frame count (140401) and duration (4680.033s) were unchanged, because the video
+      is stream-copied and only the audio is re-encoded
+    # NOTE ON THE SHORTFALL: it stopped at -20.9, not the -18 target, because the gain is
+    #   capped by headroom — the 99.9th-percentile sample sits at -10.5 dBFS. Reaching -18
+    #   would mean shaping considerably more transients. The tool chose the honest cap.
+    # NOTE ON THE PEAK: the delivered file measures 0.0 dBFS peak although the limiter
+    #   ceiling is -1. The limiter runs on PCM BEFORE the AAC encode, and AAC reconstructs
+    #   a few samples slightly above where they went in. p99.99 sits at -1.1 dBFS, so the
+    #   bulk respects the ceiling. A true-peak limiter would be needed to guarantee it.
+
+  @hw-verified
+  Scenario: recburn does it automatically, on every take  (ran live 2026-08-14)
+    Given `recburn --no-pip --no-burn` (mic on, which is what makes flatten run)
+    When ~7s was recorded and stopped
+    Then the raw capture measured -52.1 dBFS and the delivered -flat.mov measured
+      -23.4 dBFS, peak -1.6 — a +28.7 dB lift with no flag passed
+    And the +30 dB boost cap was reported rather than silently applied
+    # innards: screen-audio-record `makeYouTubeVersion` -> rec-audio `flatten`
+
+  @note
+  Boundary: plain `rec` is NOT normalised
+    Flatten only runs when `--auto-flatten` AND the mic was actually used
+    (`opts.autoFlatten && micEverOn`), so a system-audio-only `rec` take never reaches the
+    normaliser. recburn/recburnclick always pass --mic, so they always do. Closing this
+    would mean either re-encoding audio on every plain capture, or having `rec` emit a
+    -flat.mov it does not produce today — a design choice, not an oversight.
+
   @note
   Boundary: one constant gain, deliberately — not compression or AGC
     The whole recording is multiplied by a single number, so nothing pumps, breathes, or
