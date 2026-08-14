@@ -355,6 +355,14 @@ final class PreviewView: NSView {
     }
     required init?(coder: NSCoder) { fatalError("not used") }
 
+    /// Clicking the image focuses its window. Essential once the title bar is off (⌘B) — there is
+    /// no other hit target, and every front-window command depends on focus being unambiguous.
+    override func mouseDown(with event: NSEvent) {
+        window?.makeKeyAndOrderFront(nil)
+        super.mouseDown(with: event)
+    }
+    override var acceptsFirstResponder: Bool { true }
+
     override func layout() {
         super.layout()
         let b = bounds
@@ -374,6 +382,16 @@ final class PreviewView: NSView {
         if mirrored { t = CATransform3DConcat(CATransform3DMakeScale(-1, 1, 1), t) }
         previewLayer.transform = t
     }
+}
+
+/// A mirror window that can still take focus with its title bar off.
+///
+/// Default NSWindow returns false from canBecomeKey/canBecomeMain when the style mask is
+/// .borderless. That silently breaks every front-window command after ⌘B: you click the phone you
+/// want, nothing becomes key, and the keystroke goes to the other window instead.
+final class MirrorWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
 }
 
 // MARK: - Defaults shared by every new window
@@ -471,8 +489,8 @@ final class Mirror: NSObject, NSWindowDelegate {
         preview = PreviewView(session: session, rotation: rotation, mirrored: mirrored, crop: crop)
         let style: NSWindow.StyleMask = options.borderless
             ? [.borderless, .resizable] : [.titled, .closable, .miniaturizable, .resizable]
-        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: w, height: h),
-                          styleMask: style, backing: .buffered, defer: false)
+        window = MirrorWindow(contentRect: NSRect(x: 0, y: 0, width: w, height: h),
+                              styleMask: style, backing: .buffered, defer: false)
         window.title = titleText()
         window.contentView = preview
         window.contentAspectRatio = NSSize(width: outAspect, height: 1)
@@ -506,6 +524,10 @@ final class Mirror: NSObject, NSWindowDelegate {
         f.size.height = (f.size.width / aspect).rounded() + chrome
         window.setFrame(f, display: true, animate: false)
         window.title = titleText()
+    }
+
+    func windowDidBecomeKey(_ n: Notification) {
+        owner?.lastFrontUID = device.uniqueID
     }
 
     func windowWillClose(_ n: Notification) {
@@ -754,6 +776,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.mirrors.removeAll { $0 === m }
+            self.filledIndex = nil            // the cycle's indices are no longer valid
+            self.savedFrames.removeValue(forKey: m.device.uniqueID)
             self.rebuildDevicesMenu()
             self.log("\(name): window closed (\(self.mirrors.count) left)")
         }
@@ -786,8 +810,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: routing keys to the FRONT window
 
+    /// The window commands act on. keyWindow first; then the last one that took focus (a
+    /// borderless window may not be key at the moment the menu fires); then, only as a last
+    /// resort, the most recently opened.
+    var lastFrontUID: String?
+
     var front: Mirror? {
         if let w = NSApp.keyWindow, let m = mirrors.first(where: { $0.window === w }) { return m }
+        if let uid = lastFrontUID, let m = mirrors.first(where: { $0.device.uniqueID == uid }) { return m }
         return mirrors.last
     }
 
@@ -813,9 +843,68 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     enum TileMode { case sideBySide, topBottom, fillFront }
 
-    @objc func tileSideBySide(_ s: Any?) { tile(.sideBySide) }
-    @objc func tileTopBottom(_ s: Any?)  { tile(.topBottom) }
-    @objc func fillScreen(_ s: Any?)     { tile(.fillFront) }
+    @objc func tileSideBySide(_ s: Any?) { resetFillCycle(); tile(.sideBySide) }
+    @objc func tileTopBottom(_ s: Any?)  { resetFillCycle(); tile(.topBottom) }
+
+    func resetFillCycle() { filledIndex = nil; savedFrames.removeAll() }
+
+    // ⌘3 is a CYCLE, not a one-way trip: none → first phone big → second phone big → back to
+    // normal size. So the same key both switches which phone is being shown large AND gets you
+    // out again, which is what you want while framing a take with one hand.
+    var filledIndex: Int? = nil
+    var savedFrames: [String: NSRect] = [:]
+
+    /// Deterministic order — sorted by name, so ⌘3 always visits the phones in the same sequence
+    /// regardless of which window happens to be in front.
+    func fillOrder() -> [Mirror] {
+        mirrors.filter { $0.window.isVisible }
+            .sorted { $0.device.localizedName.localizedStandardCompare($1.device.localizedName) == .orderedAscending }
+    }
+
+    @objc func fillScreen(_ s: Any?) {
+        let shown = fillOrder()
+        guard !shown.isEmpty else { log("nothing to fill — tick a device first"); return }
+
+        // WRAPS forever: whichever phone is big, ⌘3 shows the next one. Never dumps you back to
+        // small windows, so "the other one" is always exactly one keypress away while filming.
+        // ⌘1 / ⌘2 is how you leave full screen and get the tiles back.
+        if let i = filledIndex, i < shown.count {
+            if shown.count == 1 {
+                // Only one phone: nothing to cycle to, so make it a toggle instead of a no-op.
+                restoreSize(shown[0])
+                filledIndex = nil
+                log("back to normal size")
+                return
+            }
+            restoreSize(shown[i])
+            filledIndex = (i + 1) % shown.count
+            fillOne(shown[filledIndex!])
+        } else {
+            // Start on the phone you are already looking at, if it is identifiable.
+            let start = front.flatMap { f in shown.firstIndex(where: { $0 === f }) } ?? 0
+            filledIndex = start
+            fillOne(shown[start])
+        }
+    }
+
+    func fillOne(_ m: Mirror) {
+        // Remember where it was, so the cycle can put it back rather than leaving it huge.
+        savedFrames[m.device.uniqueID] = m.window.frame
+        guard let vf = NSScreen.main?.visibleFrame else { return }
+        fit(m, in: vf)
+        m.window.makeKeyAndOrderFront(nil)
+        let shown = fillOrder()
+        let pos = (filledIndex ?? 0) + 1
+        let next = shown.count > 1
+            ? shown[((filledIndex ?? 0) + 1) % shown.count].device.localizedName
+            : "back to normal size"
+        log("\(m.device.localizedName) full screen  [\(pos)/\(shown.count)]  ⌘3 → \(next)")
+    }
+
+    func restoreSize(_ m: Mirror) {
+        guard let f = savedFrames.removeValue(forKey: m.device.uniqueID) else { return }
+        m.window.setFrame(f, display: true, animate: false)
+    }
 
     func tile(_ mode: TileMode) {
         // visibleFrame, not frame: it already excludes the menu bar and the Dock, so windows do
@@ -843,7 +932,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         case .fillFront:
             guard let m = front else { return }
             fit(m, in: vf)
-            log("\(m.device.localizedName): filled the screen")
         }
     }
 
@@ -950,7 +1038,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Layout, for framing a recording in one keypress.
         add("Stack Side by Side", #selector(tileSideBySide(_:)), "1")
         add("Stack Top and Bottom", #selector(tileTopBottom(_:)), "2")
-        add("Fill Screen (front window)", #selector(fillScreen(_:)), "3")
+        add("Full Screen — Cycle Phones", #selector(fillScreen(_:)), "3")
         add("Title Bar On/Off (front window)", #selector(toggleChrome(_:)), "b")
         v.addItem(.separator())
         let solo = NSMenuItem(title: "Hide All Other Apps  (Space)", action: #selector(toggleSolo(_:)), keyEquivalent: "")
