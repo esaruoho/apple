@@ -11,6 +11,8 @@
 # RESULT
 #   Feature commits : see RESULT-LOG below (stamped by hooks/pre-commit)
 #   PR              : direct-push, no PR
+#   Published       : github.com/esaruoho/iPhoneMirror (public, MIT, flat layout)
+#                     lackluster.gumroad.com/l/iphonemirror (€13.54+, dark page)
 #   Files changed   : phonemirror/iPhoneMirror.swift, phonemirror/build.sh, bin/phonemirror,
 #                     features/phonemirror-rotated-live-mirror.feature (+ .session.md),
 #                     wiki/concepts/iphone-usb-capture-probe.md
@@ -261,14 +263,16 @@ Feature: iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPho
     # bug: a value saved while the phone showed the home screen came back portrait and STAYED
     # portrait with Camera.app open. → Mirror.init
 
-  @built @untested
-  Scenario: A yanked cable closes its window instead of freezing a frame
-    Given a device disappears from enumeration
+  @built @hw-verified
+  Scenario: A yanked cable leaves the window alone
+    Given every iPhone is unplugged mid-session
     When the 3s rescan runs
-    Then its window closes and the menu updates
-    # Polling, not AVCaptureDevice connect/disconnect notifications: DAL screen-capture devices
-    # come from an out-of-process assistant and do not reliably post those. NOT yet tested by
-    # actually pulling a cable mid-session. → rescanDevices()
+    Then the windows stay open showing their last frame, blurred, and nothing crashes
+    # Esa confirmed by hand: "i disconnected all iPhones and the windows kept being open, but
+    # blurred, that was fine. it seems safe." They persist because a still-running session counts as
+    # evidence of life — deliberately, since enumeration blinking is normal for these devices.
+    # Polling, not AVCaptureDevice connect/disconnect notifications: DAL screen-capture devices come
+    # from an out-of-process assistant and do not reliably post those. → rescanDevices()
 
   @built @hw-verified
   Scenario: The screen-capture assistant is kept alive
@@ -323,7 +327,7 @@ Feature: iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPho
     # → bringAllBack()
     # NOTE this moved "no crop" off ⌘0 onto ⌘U.
 
-  @built @untested
+  @built @hw-verified
   Scenario: Front-window commands hit the window you clicked
     Given a borderless window cannot become key by default
     When you click a phone and press ⌘B or ⌘3
@@ -332,8 +336,8 @@ Feature: iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPho
     # is FALSE for .borderless (fixed with a subclass), and `front` was a guess (now: keyWindow →
     # last windowDidBecomeKey → most recent). PreviewView.mouseDown focuses its window, since the
     # image is the only hit target with no title bar.
-    # @untested because I drove it through System Events, not a real mouse click — the mechanism is
-    # right but the click path is unverified by hand. → MirrorWindow, front, PreviewView.mouseDown
+    # Esa confirmed by hand: "click to focus real mouse works."
+    # → MirrorWindow, front, PreviewView.mouseDown
 
   @built @hw-verified
   Scenario: The picture does not flip on its own

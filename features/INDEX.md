@@ -369,12 +369,12 @@ iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen
   - [@built @hw-verified] Menu rows never swap slots
   - [@built @hw-verified] A device row never vanishes while you reach for it
   - [@built @hw-verified] A saved calibration seeds, it does not lock
-  - [@built @untested] A yanked cable closes its window instead of freezing a frame
+  - [@built @hw-verified] A yanked cable leaves the window alone
   - [@built @hw-verified] The screen-capture assistant is kept alive
   - [@built @hw-verified] Continuity Cameras get no Vision pass at all
   - [@built @hw-verified] Layout is one keypress before a take
   - [@built @hw-verified] ⌘0 rescues minimised windows
-  - [@built @untested] Front-window commands hit the window you clicked
+  - [@built @hw-verified] Front-window commands hit the window you clicked
   - [@built @hw-verified] The picture does not flip on its own
   - [@built @untested] Orientation can be hard-locked for a demo
   - [@built @hw-verified] A Continuity Camera that flaps does not flap its window

@@ -12,6 +12,11 @@ captures them correctly with no post-editing.
 - Build + install: `iphonemirror/build.sh` (dittos to `/Applications`, regenerates the icon)
 - Card: [`../../features/iphonemirror-rotated-live-mirror.feature`](../../features/iphonemirror-rotated-live-mirror.feature)
 - Built 2026-08-14. Apple-native: AppKit + AVFoundation + CoreMediaIO + Vision, `xcrun swiftc`.
+- **Standalone public repo: [esaruoho/iPhoneMirror](https://github.com/esaruoho/iPhoneMirror)** —
+  flat layout, MIT, vendors `shared/SupportHelp.swift`. Store page:
+  [lackluster.gumroad.com/l/iphonemirror](https://lackluster.gumroad.com/l/iphonemirror) (€13.54+).
+  Keep both copies in sync; **the standalone is canonical on divergence**, as with `apple-rec` and
+  `apple-energy`.
 
 ## Why it exists
 
