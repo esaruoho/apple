@@ -4,6 +4,39 @@ description: Contour ShuttlePro v1 (0x0b33:0x0010) — a 13-button jog/shuttle U
 
 # Contour ShuttlePro v1
 
+## ⚠️ Esa's unit is dead (diagnosed 2026-08-14)
+
+**Do not re-run this diagnosis.** The unit does not enumerate at USB level on
+**three hosts, two operating systems, four USB controllers**:
+
+| Host | Path | Result |
+|---|---|---|
+| MacBook Pro (Apple Silicon) | VIA Labs hub, arbitrary port | absent from `ioreg -rc IOUSBHostDevice` |
+| MacBook Pro | VIA hub, **the exact socket a Logitech mouse enumerated in seconds earlier** | absent |
+| XP32Bit PC | native USB-A — an OS with in-box support for this device | absent |
+| CloudcityMacMini | native USB-A, no hub | `CONTOUR_2867=0`, `PIENG_1523=0` |
+
+This is **not** a driver, TCC, or HID-layer problem. An unrecognised or
+driverless device still enumerates — that is what the Norelsys and ASIX entries
+in the same tree are. Absence at the USB layer means no handshake at all.
+
+Most likely cause: **the captive cable**, which on v1 fails at the strain relief
+where it enters the housing. Second candidate: the internal cable-to-PCB
+connector backing out (a known v1 failure; the case is screwed, not glued, so
+re-seating is feasible). The report layout below is therefore **still
+unconfirmed against real hardware** — confirm with `hidprobe watch` if a working
+unit ever appears.
+
+**Method note for the next session:** this Mac does **not** log USB attach/detach
+at default log level — a confirmed replug of a working mouse produced zero
+kernel log lines. `log show`/`log stream` are useless as USB presence evidence
+here. `ioreg -rc IOUSBHostDevice` is the reliable detector. Parse it as XML
+(`ioreg -a`) — a line-based `awk` over the flat output mispairs `idVendor` with
+`idProduct` when IOKit emits those keys in a different order.
+
+---
+
+
 A jog/shuttle USB controller from Contour A/V Solutions (~2002), sold for video
 editing. Esa owns one. **Contour ships no working macOS driver for it** — the
 current download, `ContourDesign Mac Driver v6.0.5.dmg`, is
