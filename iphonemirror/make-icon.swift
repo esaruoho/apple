@@ -1,4 +1,4 @@
-// Generates phonemirror/AppIcon.icns — a landscape phone with a rotation arc, which is what the
+// Generates iphonemirror/AppIcon.icns — a landscape phone with a rotation arc, which is what the
 // app does: takes a portrait mirror and turns it the right way up.
 // Apple-native: AppKit drawing + iconutil. Run: xcrun swift make-icon.swift
 

@@ -155,6 +155,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `iphone-import` — pull a full-resolution photo off a USB-tethered iPhone via — `bin/iphone-import`
 `iphone-photo` — thin wrapper that execs the in-bundle binary so Bundle.main — `bin/iphone-photo`
 `iphone-screen` — grab a still of a USB-tethered iPhone's SCREEN via CoreMediaIO — `bin/iphone-screen`
+`iphonemirror` — Launch the INSTALLED iPhoneMirror.app's binary directly, so CLI flags and stdout work while — `bin/iphonemirror`
 `keelynet-energy-mailer` — (no description) — `bin/keelynet-energy-mailer`
 `keelynet-energy-mailer-cloudcity-runner` — (no description) — `bin/keelynet-energy-mailer-cloudcity-runner`
 `list-vocal-shortcuts.py` — (no description) — `bin/list-vocal-shortcuts.py`
@@ -221,7 +222,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `panel-worker` — (no description) — `bin/panel-worker`
 `patch-sal-libraries-for-current-bundle-ids.sh` — Patch Sal's installed .scptd libraries to use current Apple bundle IDs. — `bin/patch-sal-libraries-for-current-bundle-ids.sh`
 `pdf-textlen` — self-building Swift wrapper around PDFKit. Prints, per PDF path, — `bin/pdf-textlen`
-`phonemirror` — Launch the INSTALLED PhoneMirror.app's binary directly, so CLI flags and stdout work while — `bin/phonemirror`
 `photo-submit` — ask CloudcityMacMini to photograph EACH video input device. — `bin/photo-submit`
 `port-revive` — (no description) — `bin/port-revive`
 `prism` — FEATURE-CARD >> ~/work/convey/features/convey-prism.feature — `bin/prism`

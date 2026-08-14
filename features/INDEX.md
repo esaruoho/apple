@@ -346,6 +346,34 @@ An iPhone photo, on the Mac clipboard, the way you took it  —  4 scenarios   (
   triad: .session✗  transcript✗  RESULT✓
   honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen  —  24 scenarios   (features/iphonemirror-rotated-live-mirror.feature)
+  - [@built @hw-verified] A Lightning iPhone is found at all
+  - [@built @hw-verified] The live feed is rotated, which QuickTime cannot do
+  - [@built @hw-verified] Orientation is chosen by reading the SCENE, not the chrome
+  - [@built @hw-verified] OCR garbage from upside-down chrome is rejected
+  - [@built @hw-verified] Camera.app's mode wheel is cropped out by default
+  - [@built @hw-verified] Camera.app's ICON control row is also cropped out
+  - [@built @hw-verified] Bare invocation just works
+  - [@built @untested] Detection does not deadlock the main thread
+  - [@built @untested] The device is single-client, and that is explained not swallowed
+  - [@built @hw-verified] The crop constant is calibrated, and nudgeable when it is not ri
+  - [@built @hw-verified] Space hides every other app
+  - [@built @hw-verified] It ships the SHARED Help and donate panel, like every app here
+  - [@built @hw-verified] It has a real app icon, on the macOS icon grid
+  - [@built @hw-verified] There is exactly ONE copy of the app, in /Applications
+  - [@built @hw-verified] Several phones at once, ticked on and off from a menu
+  - [@built @hw-verified] Unticking a device does not crash the app
+  - [@built @hw-verified] Each device remembers its own calibration
+  - [@built @hw-verified] Continuity Cameras are offered but never auto-opened
+  - [@built @hw-verified] Detection is CONTINUOUS, not one-shot
+  - [@built @hw-verified] Menu rows never swap slots
+  - [@built @hw-verified] A device row never vanishes while you reach for it
+  - [@built @hw-verified] A saved calibration seeds, it does not lock
+  - [@built @untested] A yanked cable closes its window instead of freezing a frame
+  - [@todo] recburn can bake the phone feed in directly
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 23/24 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 mailfe is a reusable Convey belt from source material to emailed analysis  —  14 scenarios   (features/mailfe-convey-belt.feature)
   - [@built] the front door accepts stdin as a source
   - [@built] the front door accepts one local file
@@ -408,30 +436,6 @@ The on-device agentic tool-calling loop on the Mini's MLX brain  —  10 scenari
   - [@built @sim-verified] the final answer is shown via the ONE shared presenter (DRY)
   triad: .session✓  transcript✗  RESULT✓
   honesty: 10/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
-
-PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen  —  20 scenarios   (features/phonemirror-rotated-live-mirror.feature)
-  - [@built @hw-verified] A Lightning iPhone is found at all
-  - [@built @hw-verified] The live feed is rotated, which QuickTime cannot do
-  - [@built @hw-verified] Orientation is chosen by reading the SCENE, not the chrome
-  - [@built @hw-verified] OCR garbage from upside-down chrome is rejected
-  - [@built @hw-verified] Camera.app's mode wheel is cropped out by default
-  - [@built @hw-verified] Camera.app's ICON control row is also cropped out
-  - [@built @hw-verified] Bare invocation just works
-  - [@built @untested] Detection does not deadlock the main thread
-  - [@built @untested] The device is single-client, and that is explained not swallowed
-  - [@built @hw-verified] The crop constant is calibrated, and nudgeable when it is not ri
-  - [@built @hw-verified] Space hides every other app
-  - [@built @hw-verified] It ships the SHARED Help and donate panel, like every app here
-  - [@built @hw-verified] It has a real app icon, on the macOS icon grid
-  - [@built @hw-verified] There is exactly ONE copy of the app, in /Applications
-  - [@built @hw-verified] Several phones at once, ticked on and off from a menu
-  - [@built @hw-verified] Unticking a device does not crash the app
-  - [@built @hw-verified] Each device remembers its own calibration
-  - [@built @hw-verified] Continuity Cameras are offered but never auto-opened
-  - [@built @untested] A yanked cable closes its window instead of freezing a frame
-  - [@todo] recburn can bake the phone feed in directly
-  triad: .session✓  transcript✗  RESULT✓
-  honesty: 19/20 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Post-process a screen recording's audio (split / flatten)  —  4 scenarios   (features/rec-audio.feature)
   - [@hw-verified] split writes each audio track to its own .m4a  (ran live)

@@ -1,6 +1,0 @@
-#!/bin/bash
-# Launch the INSTALLED PhoneMirror.app's binary directly, so CLI flags and stdout work while
-# still being the same bundle the Dock and Spotlight launch.
-APP="/Applications/PhoneMirror.app/Contents/MacOS/PhoneMirror"
-[ -x "$APP" ] || APP="/Users/esaruoho/work/apple/phonemirror/PhoneMirror.app/Contents/MacOS/PhoneMirror"
-exec "$APP" "$@"

@@ -1,6 +1,6 @@
 # WHAT THIS CARD SPAWNS
 #
-# Codespace: phonemirror/PhoneMirror.swift · phonemirror/build.sh · bin/phonemirror (shim)
+# Codespace: iphonemirror/iiPhoneMirror.swift · iphonemirror/build.sh · bin/iphonemirror (shim)
 #            wiki/concepts/iphone-usb-capture-probe.md (the diagnosis knowledge)
 # Thinkspace: features/phonemirror-rotated-live-mirror.session.md
 # Areaspace: OWNS the live display of a USB iOS device screen on this Mac — orientation, crop,
@@ -11,11 +11,11 @@
 # RESULT
 #   Feature commits : see RESULT-LOG below (stamped by hooks/pre-commit)
 #   PR              : direct-push, no PR
-#   Files changed   : phonemirror/PhoneMirror.swift, phonemirror/build.sh, bin/phonemirror,
+#   Files changed   : phonemirror/iPhoneMirror.swift, phonemirror/build.sh, bin/phonemirror,
 #                     features/phonemirror-rotated-live-mirror.feature (+ .session.md),
 #                     wiki/concepts/iphone-usb-capture-probe.md
 
-Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen
+Feature: iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen
   QuickTime Player can mirror a Lightning-connected iOS device, but its Edit ▸ Rotate Left /
   Rotate Right / Flip items are DISABLED during a live capture session, and its scripting
   dictionary has no rotate terminology at all. So a phone held in landscape whose iOS UI is
@@ -26,17 +26,17 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
   @built @hw-verified
   Scenario: A Lightning iPhone is found at all
     Given an iOS device connected over USB and trusted
-    When PhoneMirror starts
+    When iPhoneMirror starts
     Then it sets kCMIOHardwarePropertyAllowScreenCaptureDevices on the CMIO system object
     And the device then appears in AVCaptureDevice enumeration
     # Without that property an iOS screen-capture DAL device is INVISIBLE to AVCaptureDevice.
     # QuickTime sets it; nothing else does by default. Verified: device "esaiPhoneX" opened.
-    # → allowScreenCaptureDevices(), PhoneMirror.swift
+    # → allowScreenCaptureDevices(), iPhoneMirror.swift
 
   @built @hw-verified
   Scenario: The live feed is rotated, which QuickTime cannot do
     Given the phone's iOS UI is drawing portrait while the phone is held landscape
-    When PhoneMirror displays it at 90°
+    When iPhoneMirror displays it at 90°
     Then the scene is upright and landscape in the window with no recording step
     # Verified on screen: a CRT showing "E:\ITNU2026>_" legible and upright.
     # → PreviewView.layout(), CATransform3DMakeRotation
@@ -44,7 +44,7 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
   @built @hw-verified
   Scenario: Orientation is chosen by reading the SCENE, not the chrome
     Given Vision OCR can read text at all four rotations
-    When PhoneMirror scores each rotation
+    When iPhoneMirror scores each rotation
     Then it prefers the rotation where text INSIDE the viewfinder reads upright
     And it falls back to (chrome-upright + 90°) when the scene has no readable text
     # Upright chrome indicates the iOS UI orientation, which is the WRONG target: with Rotation
@@ -88,7 +88,7 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
   @built @hw-verified
   Scenario: Bare invocation just works
     Given no command-line arguments
-    When `phonemirror` runs
+    When `iphonemirror` runs
     Then rotation and crop are both auto-detected
     And a non-Camera screen (home screen) yields 0° and no crop
     # Verified: home screen read as PHONE/MESSAGES/MAIL/SETTINGS/FIND MY → 0°, crop 1.0×1.0,
@@ -106,7 +106,7 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
   @built @untested
   Scenario: The device is single-client, and that is explained not swallowed
     Given QuickTime holds a Movie Recording window on the same phone
-    When PhoneMirror cannot open the device
+    When iPhoneMirror cannot open the device
     Then the failure text says the device is SINGLE-CLIENT and names QuickTime
     # → failNoDevice(), AVCaptureDeviceInput failure branch
 
@@ -148,6 +148,8 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
     And a full-bleed icon reads as OVERSIZED next to every other Dock icon
     When build.sh runs
     Then AppIcon.icns is generated on Apple's grid and referenced by CFBundleIconFile
+    # The grid is now DOCUMENTED: wiki/concepts/macos-app-icon-sizing.md. guidance/ and topbar/
+    # already used 0.098 / 0.2237 — the convention existed, undocumented, and I ignored it.
     # Drawn programmatically (AppKit NSBezierPath) at all 10 iconutil sizes — a landscape phone
     # with a rotation arc, which is literally what the app does. No third-party asset pipeline.
     # Apple's macOS template is an 824x824 shape on a 1024x1024 canvas: ~9.77% transparent margin
@@ -172,7 +174,7 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
   @built @hw-verified
   Scenario: Several phones at once, ticked on and off from a menu
     Given two or three iOS devices are plugged in
-    When PhoneMirror starts
+    When iPhoneMirror starts
     Then nothing opens by itself; the Devices menu lists every device
     And clicking a device ticks it ON and opens its own window
     And clicking it again unticks it and closes that window
@@ -216,6 +218,49 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
     # CLEAN camera with no chrome and no rotation problem — strictly better than mirroring
     # Camera.app when the hardware supports it. → isContinuityCamera(), rebuildDevicesMenu()
 
+  @built @hw-verified
+  Scenario: Detection is CONTINUOUS, not one-shot
+    Given a phone's screen changes while its window is open
+    When the picture changes materially
+    Then Vision re-runs and the rotation/crop follow it
+    # THE REGRESSION Esa hit: "the cropping has stopped working. it used to be automatic." A
+    # one-shot first-frame pass detected "home screen → no chrome → no crop", and opening Camera
+    # afterwards changed nothing, forever. Gated three ways so continuous ≠ expensive:
+    #   • manualOverride — a hand rotate/nudge/uncrop wins until ⌘D resumes automatic tracking
+    #   • 16x16 grayscale signature — skip frames that look like the last analysed one
+    #   • busy flag + 1.2s throttle — never overlap two Vision passes (4 OCR passes each)
+    # Verified: both phones came up 90° landscape and cropped (w=0.616 and w=0.613) without any
+    # manual step. → FrameWatcher, frameSignature(), signatureDelta(), Mirror.inspect()
+
+  @built @hw-verified
+  Scenario: Menu rows never swap slots
+    Given AVCaptureDevice enumeration order is not stable
+    When the Devices menu is rebuilt after ticking a device
+    Then rows stay in the same order, sorted by name
+    # Esa: "its not okay that when you show something, it moves from 2nd slot to 1st slot". For a
+    # menu, stable order is correctness — you click by position and hit the wrong phone otherwise.
+    # Verified: 16Pro then X, identical before and after ticking. → localizedStandardCompare sort
+
+  @built @hw-verified
+  Scenario: A device row never vanishes while you reach for it
+    Given a Continuity Camera comes and goes with proximity, wake and other apps' use
+    When it stops enumerating
+    Then its row REMAINS, greyed, labelled "(not connected)"
+    # Esa: "the continuity camera keeps vanishing as an option". A menu built only from what
+    # enumerates right now loses the row mid-click. A persisted roster (uniqueID → name, kind)
+    # keeps every device ever seen; Devices ▸ Forget Disconnected Devices clears it.
+    # Verified: "Show esaiPhone16Pro Camera  (not connected)" still listed while absent.
+    # → roster, loadRoster/saveRoster, rosterItem()
+
+  @built @hw-verified
+  Scenario: A saved calibration seeds, it does not lock
+    Given a device has a remembered rotation and crop
+    When its window opens
+    Then those values seed the window AND Vision still re-checks them
+    # Suppressing detection when a calibration existed was the other half of the "not landscape"
+    # bug: a value saved while the phone showed the home screen came back portrait and STAYED
+    # portrait with Camera.app open. → Mirror.init
+
   @built @untested
   Scenario: A yanked cable closes its window instead of freezing a frame
     Given a device disappears from enumeration
@@ -231,4 +276,4 @@ Feature: PhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhon
     When the name refers to a Lightning iPhone
     Then recburn must set kCMIOHardwarePropertyAllowScreenCaptureDevices first
     # Today --pip-camera silently falls back to the built-in camera for an iPhone.
-    # Working Swift for the flag exists in PhoneMirror.swift; not yet ported to recburn.
+    # Working Swift for the flag exists in iPhoneMirror.swift; not yet ported to recburn.

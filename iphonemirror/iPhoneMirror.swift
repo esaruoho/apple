@@ -1,12 +1,14 @@
-// PhoneMirror — live, auto-oriented, auto-cropped mirrors of USB iPhone/iPad screens.
+// iPhoneMirror — live, auto-oriented, auto-cropped mirrors of USB iPhone/iPad screens.
 //
-// Run it bare:  phonemirror
+// Run it bare:  iphonemirror
 //
 // MULTI-DEVICE: every connected iOS device gets its OWN window, with its own orientation, crop
 // and remembered calibration. Plug another phone in while it is running and a window appears for
 // it. Two or three phones side by side is the point — one Mac screen, several devices, one take.
 //
-// Each window works out its own settings by LOOKING at its first frame with Vision OCR:
+// Each window works out its own settings by CONTINUOUSLY LOOKING at the feed with Vision OCR
+// (throttled, and only when the picture actually changes), so switching the phone to Camera.app
+// re-crops by itself:
 //   • which rotation makes text upright  → so a landscape-held phone whose iOS UI is stuck in
 //     portrait comes out landscape, with no flags
 //   • where iOS Camera.app's chrome is   → the mode wheel (PHOTO / VIDEO / SLO-MO / PORTRAIT /
@@ -20,7 +22,7 @@
 //
 // Apple-native: AppKit + AVFoundation + CoreMediaIO + Vision. xcrun swiftc. No Homebrew.
 //
-// FEATURE-CARD >> features/phonemirror-rotated-live-mirror.feature
+// FEATURE-CARD >> features/iphonemirror-rotated-live-mirror.feature
 
 import Cocoa
 import SwiftUI
@@ -71,44 +73,83 @@ func looksLikeIOSName(_ n: String) -> Bool {
 }
 
 /// The iOS SCREEN mirrors — what this app is for.
+///
+/// SORTED BY NAME, always. AVCaptureDevice enumeration order is not stable, so an unsorted list
+/// makes menu items swap slots — a device you just ticked jumps from the 2nd row to the 1st, and
+/// you end up clicking the wrong phone. Deterministic order is a correctness requirement for a
+/// menu, not a nicety.
 func iosScreenDevices() -> [AVCaptureDevice] {
-    captureDevices().filter { looksLikeIOSName($0.localizedName) && !isContinuityCamera($0) }
+    captureDevices()
+        .filter { looksLikeIOSName($0.localizedName) && !isContinuityCamera($0) }
+        .sorted { $0.localizedName.localizedStandardCompare($1.localizedName) == .orderedAscending }
 }
 
 func iosContinuityDevices() -> [AVCaptureDevice] {
-    captureDevices().filter { isContinuityCamera($0) }
+    captureDevices()
+        .filter { isContinuityCamera($0) }
+        .sorted { $0.localizedName.localizedStandardCompare($1.localizedName) == .orderedAscending }
 }
 
 // MARK: - Grab one frame
 
-/// Hands the FIRST frame to a callback and then goes quiet.
+/// Hands frames to a callback, throttled.
 ///
-/// This must never block the main thread: waiting on a semaphore in
+/// Detection must be CONTINUOUS, not one-shot. A one-shot first-frame pass looked fine in testing
+/// and was wrong in use: tick a device while the phone shows the home screen and it detects "no
+/// Camera chrome, no crop" — then you open Camera.app and nothing re-evaluates, so the crop just
+/// never happens. The phone's screen is a live thing; the analysis has to keep up with it.
+///
+/// It must also never block the main thread: waiting on a semaphore in
 /// applicationDidFinishLaunching starves the CoreMediaIO plugin and no frame ever arrives
-/// (measured: 0 frames in 5s). So detection is asynchronous — the window opens immediately with
-/// safe defaults and snaps to the detected orientation/crop a moment later.
-final class FirstFrameWatcher: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+/// (measured: 0 frames in 5s).
+final class FrameWatcher: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     var onFrame: ((CGImage) -> Void)?
-    private var taken = false
+    /// Minimum gap between delivered frames. Vision runs four OCR passes per analysis, so this is
+    /// the CPU governor — do not lower it casually.
+    var minInterval: TimeInterval = 1.2
+    private var lastDelivered = Date.distantPast
     private let ciContext = CIContext()
     let queue: DispatchQueue
 
     init(label: String) {
-        self.queue = DispatchQueue(label: "org.esaruoho.phonemirror.frames.\(label)")
+        self.queue = DispatchQueue(label: "org.esaruoho.iphonemirror.frames.\(label)")
         super.init()
     }
 
-    func arm() { taken = false }
+    /// Force the next frame through, ignoring the throttle (⌘D re-detect).
+    func arm() { lastDelivered = .distantPast }
 
     func captureOutput(_ out: AVCaptureOutput, didOutput sample: CMSampleBuffer,
                        from conn: AVCaptureConnection) {
+        let now = Date()
+        guard now.timeIntervalSince(lastDelivered) >= minInterval else { return }
         // The pixel buffer is only valid inside this callback, so convert here and now.
-        guard !taken, let pb = CMSampleBufferGetImageBuffer(sample) else { return }
+        guard let pb = CMSampleBufferGetImageBuffer(sample) else { return }
         let ci = CIImage(cvPixelBuffer: pb)
         guard let cg = ciContext.createCGImage(ci, from: ci.extent) else { return }
-        taken = true
+        lastDelivered = now
         DispatchQueue.main.async { [weak self] in self?.onFrame?(cg) }
     }
+}
+
+/// A tiny grayscale thumbnail used to tell "the screen changed" from "same picture, new frame",
+/// so Vision only runs when there is something new to read.
+func frameSignature(_ img: CGImage, side: Int = 16) -> [UInt8] {
+    var buf = [UInt8](repeating: 0, count: side * side)
+    guard let cs = CGColorSpace(name: CGColorSpace.linearGray),
+          let ctx = CGContext(data: &buf, width: side, height: side, bitsPerComponent: 8,
+                              bytesPerRow: side, space: cs,
+                              bitmapInfo: CGImageAlphaInfo.none.rawValue) else { return buf }
+    ctx.draw(img, in: CGRect(x: 0, y: 0, width: side, height: side))
+    return buf
+}
+
+/// Mean absolute difference between two signatures, 0…255.
+func signatureDelta(_ a: [UInt8], _ b: [UInt8]) -> Double {
+    guard a.count == b.count, !a.isEmpty else { return 255 }
+    var total = 0
+    for i in 0..<a.count { total += abs(Int(a[i]) - Int(b[i])) }
+    return Double(total) / Double(a.count)
 }
 
 // MARK: - Vision: what am I looking at?
@@ -356,7 +397,7 @@ final class Mirror: NSObject, NSWindowDelegate {
     let device: AVCaptureDevice
     let session = AVCaptureSession()
     let detectorOutput = AVCaptureVideoDataOutput()
-    let watcher: FirstFrameWatcher
+    let watcher: FrameWatcher
     var window: NSWindow!
     var preview: PreviewView!
 
@@ -367,24 +408,31 @@ final class Mirror: NSObject, NSWindowDelegate {
     var autoCrop: Bool
     var srcAspect: CGFloat = 1125.0 / 2436.0
     weak var owner: AppDelegate?
+    /// Hand adjustments win over continuous detection until ⌘D re-detect.
+    var manualOverride = false
+    var analysing = false
+    var lastSignature: [UInt8] = []
 
     init?(device: AVCaptureDevice, options: MirrorOptions, owner: AppDelegate) {
         self.device = device
         self.owner = owner
-        self.watcher = FirstFrameWatcher(label: device.uniqueID)
+        self.watcher = FrameWatcher(label: device.uniqueID)
         self.mirrored = options.mirrored
         self.autoRotate = options.autoRotate
         self.autoCrop = options.autoCrop
         // A saved calibration for THIS device wins over auto-detection, so a phone you have
         // already dialled in comes back correct instead of being re-guessed every launch.
+        // A saved calibration SEEDS the window so it opens at roughly the right shape — it does NOT
+        // suppress detection. Suppressing it was wrong: a phone whose saved value was captured while
+        // it showed the home screen came back portrait and stayed portrait even with Camera.app
+        // open, which reads as "the app doesn't work". Vision always gets to correct the seed.
         let saved = Mirror.loadCalibration(uniqueID: device.uniqueID)
         self.rotation = saved?.rotation ?? options.rotation
         self.crop = saved?.crop ?? options.crop
-        if saved != nil { self.autoRotate = false; self.autoCrop = false }
         super.init()
 
         guard let input = try? AVCaptureDeviceInput(device: device), session.canAddInput(input) else {
-            // Single-client device: another app (QuickTime, or another PhoneMirror) holds it.
+            // Single-client device: another app (QuickTime, or another iPhoneMirror) holds it.
             // Skip THIS device rather than failing the whole app — the other phones still work.
             owner.log("\(device.localizedName): could not open (single-client — QuickTime or another app holds it)")
             return nil
@@ -400,7 +448,7 @@ final class Mirror: NSObject, NSWindowDelegate {
         if autoRotate || autoCrop { attachDetector() }
         session.startRunning()
         if saved != nil {
-            owner.log("\(device.localizedName): restored saved calibration "
+            owner.log("\(device.localizedName): seeded from saved calibration (Vision will still re-check) "
                     + String(format: "rot=%d crop=%.3f,%.3f,%.3f,%.3f", Int(rotation),
                              crop.origin.x, crop.origin.y, crop.width, crop.height))
         }
@@ -474,7 +522,19 @@ final class Mirror: NSObject, NSWindowDelegate {
     }
 
     /// Vision runs off-main (four OCR passes), then the result is applied on main.
+    ///
+    /// Gated three ways so continuous analysis stays cheap and never fights the user:
+    ///   • manualOverride — once you rotate/nudge/uncrop by hand, your choice stands (⌘D resumes)
+    ///   • signature — skip frames that look like the last analysed one (nothing new to read)
+    ///   • busy — never overlap two Vision passes
     func inspect(_ frame: CGImage) {
+        guard !manualOverride else { return }
+        guard !analysing else { return }
+        let sig = frameSignature(frame)
+        if signatureDelta(sig, lastSignature) < 6.0 { return }
+        lastSignature = sig
+        analysing = true
+
         let wantRotate = autoRotate, wantCrop = autoCrop
         let name = device.localizedName
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -491,6 +551,10 @@ final class Mirror: NSObject, NSWindowDelegate {
             }
             DispatchQueue.main.async {
                 guard let self = self else { return }
+                self.analysing = false
+                let changed = (wantRotate && self.rotation != rot)
+                           || (wantCrop && self.crop != newCrop)
+                guard changed else { return }
                 if wantRotate {
                     self.rotation = rot
                     self.owner?.log("\(name): orientation \(Int(rot))° — \(det.basis)"
@@ -512,24 +576,29 @@ final class Mirror: NSObject, NSWindowDelegate {
 
     func redetect() {
         autoRotate = true; autoCrop = true
-        owner?.log("\(device.localizedName): re-detecting from the next frame…")
+        manualOverride = false
+        lastSignature = []                 // force the next frame to be analysed
+        owner?.log("\(device.localizedName): automatic detection resumed")
         watcher.arm()
     }
 
     // MARK: live adjustments
 
     func rotateBy(_ d: CGFloat) {
+        manualOverride = true
         rotation = CGFloat(((Int(rotation + d) % 360) + 360) % 360)
         preview.rotation = rotation
         refit(); saveCalibration()
     }
-    func toggleMirror() { mirrored.toggle(); preview.mirrored = mirrored; saveCalibration() }
+    func toggleMirror() { manualOverride = true; mirrored.toggle(); preview.mirrored = mirrored; saveCalibration() }
     func resetCrop() {
+        manualOverride = true
         crop = CGRect(x: 0, y: 0, width: 1, height: 1)
         autoCrop = false
         preview.crop = crop; refit(); saveCalibration()
     }
     func slideCrop(_ d: CGFloat) {
+        manualOverride = true
         if crop.width < 0.999 {
             crop.origin.x = max(0, min(1 - crop.width, crop.origin.x + d))
         } else if crop.height < 0.999 {
@@ -582,6 +651,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ note: Notification) {
         allowScreenCaptureDevices()
         parseArgs()
+        loadRoster()
         buildMenu()
 
         openInitialDevices()
@@ -696,6 +766,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             log("\(m.device.localizedName): disconnected — closing its window")
             m.window.close()
         }
+        noteInRoster(now)
         knownIDs.formIntersection(nowIDs.union(Set(mirrors.map { $0.device.uniqueID })))
         rebuildDevicesMenu()
     }
@@ -754,7 +825,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let main = NSMenu()
 
         let appItem = NSMenuItem(); let appMenu = NSMenu()
-        let aboutItem = NSMenuItem(title: "About PhoneMirror — and how to support Esa",
+        let aboutItem = NSMenuItem(title: "About iPhoneMirror — and how to support Esa",
                                    action: #selector(showHelp(_:)), keyEquivalent: "")
         aboutItem.target = self
         appMenu.addItem(aboutItem)
@@ -762,9 +833,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let soloApp = NSMenuItem(title: "Hide All Other Apps", action: #selector(toggleSolo(_:)), keyEquivalent: "")
         soloApp.target = self
         appMenu.addItem(soloApp)
-        appMenu.addItem(withTitle: "Hide PhoneMirror", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: "Hide iPhoneMirror", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Quit PhoneMirror", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        appMenu.addItem(withTitle: "Quit iPhoneMirror", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu; main.addItem(appItem)
 
         let vItem = NSMenuItem(title: "View", action: nil, keyEquivalent: "")
@@ -798,7 +869,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let hItem = NSMenuItem(title: "Help", action: nil, keyEquivalent: "")
         let h = NSMenu(title: "Help")
-        let hi = NSMenuItem(title: "PhoneMirror Help", action: #selector(showHelp(_:)), keyEquivalent: "?")
+        let hi = NSMenuItem(title: "iPhoneMirror Help", action: #selector(showHelp(_:)), keyEquivalent: "?")
         hi.target = self
         h.addItem(hi)
         hItem.submenu = h; main.addItem(hItem)
@@ -808,15 +879,53 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         rebuildDevicesMenu()
     }
 
+    /// Every device ever seen, so entries do not VANISH from the menu.
+    ///
+    /// A Continuity Camera in particular comes and goes with the phone's proximity, wake state and
+    /// whether another app is using it — so a menu built only from "what enumerates right now"
+    /// loses the row while you are reaching for it. Remembered rows stay put, greyed, labelled
+    /// "not connected". uniqueID → (display name, is it a Continuity Camera).
+    struct RosterEntry { var name: String; var isCam: Bool }
+    var roster: [String: RosterEntry] = [:]
+
+    static let rosterKey = "deviceRoster"
+
+    func loadRoster() {
+        guard let raw = UserDefaults.standard.dictionary(forKey: AppDelegate.rosterKey) else { return }
+        for (uid, v) in raw {
+            guard let d = v as? [String: Any], let n = d["name"] as? String else { continue }
+            roster[uid] = RosterEntry(name: n, isCam: (d["isCam"] as? Bool) ?? false)
+        }
+    }
+
+    func saveRoster() {
+        var out: [String: Any] = [:]
+        for (uid, e) in roster { out[uid] = ["name": e.name, "isCam": e.isCam] }
+        UserDefaults.standard.set(out, forKey: AppDelegate.rosterKey)
+    }
+
+    func noteInRoster(_ devices: [AVCaptureDevice]) {
+        for d in devices {
+            roster[d.uniqueID] = RosterEntry(name: d.localizedName, isCam: isContinuityCamera(d))
+        }
+        saveRoster()
+    }
+
     func rebuildDevicesMenu() {
         devicesMenu.removeAllItems()
         let openIDs = Set(mirrors.map { $0.device.uniqueID })
+        let present = Set(captureDevices().map { $0.uniqueID })
 
-        let screens = iosScreenDevices()
-        let cams = iosContinuityDevices()
+        noteInRoster(iosScreenDevices() + iosContinuityDevices())
 
-        if screens.isEmpty && cams.isEmpty {
-            let none = NSMenuItem(title: "No iOS devices connected", action: nil, keyEquivalent: "")
+        // Sorted by name so rows never swap slots between rebuilds.
+        let rows = roster.map { (uid: $0.key, entry: $0.value) }
+            .sorted { $0.entry.name.localizedStandardCompare($1.entry.name) == .orderedAscending }
+        let screens = rows.filter { !$0.entry.isCam }
+        let cams = rows.filter { $0.entry.isCam }
+
+        if rows.isEmpty {
+            let none = NSMenuItem(title: "No iOS devices seen yet", action: nil, keyEquivalent: "")
             none.isEnabled = false
             devicesMenu.addItem(none)
         }
@@ -825,7 +934,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let hdr = NSMenuItem(title: "Screen mirrors", action: nil, keyEquivalent: "")
             hdr.isEnabled = false
             devicesMenu.addItem(hdr)
-            for d in screens { devicesMenu.addItem(deviceItem(d, isOpen: openIDs.contains(d.uniqueID))) }
+            for r in screens {
+                devicesMenu.addItem(rosterItem(uid: r.uid, entry: r.entry,
+                                               isOpen: openIDs.contains(r.uid),
+                                               isPresent: present.contains(r.uid)))
+            }
         }
         if !cams.isEmpty {
             devicesMenu.addItem(.separator())
@@ -835,7 +948,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                                  action: nil, keyEquivalent: "")
             hdr.isEnabled = false
             devicesMenu.addItem(hdr)
-            for d in cams { devicesMenu.addItem(deviceItem(d, isOpen: openIDs.contains(d.uniqueID))) }
+            for r in cams {
+                devicesMenu.addItem(rosterItem(uid: r.uid, entry: r.entry,
+                                               isOpen: openIDs.contains(r.uid),
+                                               isPresent: present.contains(r.uid)))
+            }
         }
 
         devicesMenu.addItem(.separator())
@@ -845,15 +962,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let rescan = NSMenuItem(title: "Rescan for Devices", action: #selector(rescanNow(_:)), keyEquivalent: "r")
         rescan.target = self
         devicesMenu.addItem(rescan)
+        let forget = NSMenuItem(title: "Forget Disconnected Devices", action: #selector(forgetRoster(_:)), keyEquivalent: "")
+        forget.target = self
+        devicesMenu.addItem(forget)
     }
 
-    func deviceItem(_ d: AVCaptureDevice, isOpen: Bool) -> NSMenuItem {
-        let mi = NSMenuItem(title: "    " + (isOpen ? "Showing " : "Show ") + d.localizedName,
+    func rosterItem(uid: String, entry: RosterEntry, isOpen: Bool, isPresent: Bool) -> NSMenuItem {
+        let label = isOpen ? "Showing " : "Show "
+        let suffix = isPresent ? "" : "  (not connected)"
+        let mi = NSMenuItem(title: "    " + label + entry.name + suffix,
                             action: #selector(toggleDeviceFromMenu(_:)), keyEquivalent: "")
         mi.target = self
-        mi.representedObject = d.uniqueID
+        mi.representedObject = uid
         mi.state = isOpen ? .on : .off
+        mi.isEnabled = isPresent || isOpen
         return mi
+    }
+
+    @objc func forgetRoster(_ s: Any?) {
+        let keepOpen = Set(mirrors.map { $0.device.uniqueID })
+        roster = roster.filter { pair in keepOpen.contains(pair.key) }
+        noteInRoster(iosScreenDevices() + iosContinuityDevices())
+        rebuildDevicesMenu()
+        log("device list reset to what is connected now")
     }
 
     // MARK: Shared Help + donate panel
@@ -867,7 +998,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc func showHelp(_ s: Any?) {
         if let w = helpWindow { w.makeKeyAndOrderFront(nil); return }
         let view = AppHelpView(
-            appName: "PhoneMirror",
+            appName: "iPhoneMirror",
             tagline: "Live mirrors of USB iPhone or iPad screens — one window per device, each "
                    + "rotated and cropped as you want it, so a one-shot screen recording needs no editing.",
             usage: [
@@ -884,7 +1015,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
         let host = NSHostingController(rootView: view)
         let w = NSWindow(contentViewController: host)
-        w.title = "PhoneMirror Help"
+        w.title = "iPhoneMirror Help"
         w.styleMask = [.titled, .closable]
         w.setContentSize(NSSize(width: 460, height: 660))
         w.center()
@@ -973,7 +1104,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func log(_ s: String) {
-        FileHandle.standardError.write(("PhoneMirror: " + s + "\n").data(using: .utf8)!)
+        FileHandle.standardError.write(("iPhoneMirror: " + s + "\n").data(using: .utf8)!)
     }
 
     func failNoDevice() {
@@ -996,11 +1127,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                      --style compact | grep -iE 'iOSScreenCapture|pair'
                  Unlock the phone, replug, tap Trust.
 
-             `phonemirror --wait` keeps looking, so you can launch first and plug in after.
+             `iphonemirror --wait` keeps looking, so you can launch first and plug in after.
              """
         FileHandle.standardError.write((msg + "\n").data(using: .utf8)!)
         let a = NSAlert(); a.alertStyle = .warning
-        a.messageText = "PhoneMirror: no iOS screen source"
+        a.messageText = "iPhoneMirror: no iOS screen source"
         a.informativeText = msg
         a.runModal()
         NSApp.terminate(nil)
@@ -1008,9 +1139,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func printUsage() {
         print("""
-            PhoneMirror — live mirrors of USB iPhone/iPad screens, one window per device.
+            iPhoneMirror — live mirrors of USB iPhone/iPad screens, one window per device.
 
-              phonemirror                    every connected iPhone gets a window; Vision OCR
+              iphonemirror                    every connected iPhone gets a window; Vision OCR
                                              picks each one's rotation and crops Camera.app's
                                              controls out. Plug another in and it appears.
 
@@ -1035,7 +1166,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             have dialled in comes back correct. View ▸ Forget Saved Calibration to re-detect.
 
             One-shot recording of two phones plus anything else on one screen:
-              phonemirror --borderless &
+              iphonemirror --borderless &
               recburn --system-audio --fps 60 -o dosbox-vs-schism.mov
             """)
     }
@@ -1046,7 +1177,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 // Top-level code is only legal in main.swift, and this target has two files (the shared
 // SupportHelp), so the entry point is an explicit @main with -parse-as-library.
 @main
-struct PhoneMirrorMain {
+struct iPhoneMirrorMain {
     // Held statically so the delegate outlives main() — NSApplication does not retain it.
     static let delegate = AppDelegate()
 
