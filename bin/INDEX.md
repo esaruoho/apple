@@ -1,4 +1,4 @@
-# CLI Tools Index — 331 tools in bin/
+# CLI Tools Index — 332 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -139,6 +139,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `health-export` — (no description) — `bin/health-export`
 `hertsi` — (no description) — `bin/hertsi`
 `hey-sal` — (no description) — `bin/hey-sal`
+`hidprobe` — Apple-native USB HID inspector (IOHIDManager). Enumerate any HID — `bin/hidprobe`
 `homepod-now` — (no description) — `bin/homepod-now`
 `html-to-pdf` — render HTML to a properly-formatted paginated PDF via WKWebView. — `bin/html-to-pdf`
 `html-to-png` — render HTML to a crisp PNG via WKWebView takeSnapshot. — `bin/html-to-png`

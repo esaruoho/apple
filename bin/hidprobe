@@ -1,0 +1,28 @@
+#!/bin/bash
+# hidprobe — Apple-native USB HID inspector (IOHIDManager). Enumerate any HID
+# device, dump its parsed report-descriptor elements or raw descriptor bytes,
+# and watch its live input reports byte-by-byte with changed bytes highlighted.
+#
+# Built to reverse-engineer devices macOS has no driver for (first target: a
+# Contour ShuttlePro v1), but it is fully generic.
+#
+# Self-building: compiles bin/hidprobe.swift to a cached binary on first use
+# (or when the source changes), then runs it.
+#
+#   hidprobe list
+#   hidprobe elements --vid 0x0b33 --pid 0x0010
+#   hidprobe watch --name Shuttle --both
+#   hidprobe access --request
+#
+# See wiki/concepts/usb-hid-probing.md
+set -e
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SRC="$HERE/hidprobe.swift"
+CACHE="$HOME/.cache/apple"
+BIN="$CACHE/hidprobe"
+mkdir -p "$CACHE"
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+    xcrun swiftc -O "$SRC" -o "$BIN" \
+        -framework Foundation -framework IOKit
+fi
+exec "$BIN" "$@"
