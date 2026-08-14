@@ -429,6 +429,14 @@ final class Mirror: NSObject, NSWindowDelegate {
         let saved = Mirror.loadCalibration(uniqueID: device.uniqueID)
         self.rotation = saved?.rotation ?? options.rotation
         self.crop = saved?.crop ?? options.crop
+        // A Continuity Camera is already a clean, upright, landscape camera feed — there is no
+        // Camera.app chrome to crop and nothing to rotate. Running Vision on it is pure harm:
+        // it OCRs whatever the lens happens to see and flip-flops the orientation.
+        if isContinuityCamera(device) {
+            self.autoRotate = false; self.autoCrop = false
+            self.rotation = 0
+            self.crop = CGRect(x: 0, y: 0, width: 1, height: 1)
+        }
         super.init()
 
         guard let input = try? AVCaptureDeviceInput(device: device), session.canAddInput(input) else {
@@ -753,6 +761,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Notice phones plugged in or pulled out while running.
     func rescanDevices() {
+        // RE-ASSERT the CMIO flag every scan. iOSScreenCaptureAssistant EXITS when no screen-capture
+        // device is in use — e.g. while you are watching a Continuity Camera — and once it is gone,
+        // plain enumeration will not bring it back, so every iPhone silently reads "(not connected)"
+        // and cannot be ticked on. Setting the property is what respawns the assistant.
+        allowScreenCaptureDevices()
         let now = candidateDevices()
         let nowIDs = Set(now.map { $0.uniqueID })
 
@@ -975,7 +988,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mi.target = self
         mi.representedObject = uid
         mi.state = isOpen ? .on : .off
-        mi.isEnabled = isPresent || isOpen
+        mi.isEnabled = true
         return mi
     }
 
