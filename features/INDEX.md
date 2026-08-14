@@ -495,7 +495,7 @@ Deliver a recording at a normal listening level, measured not guessed  —  7 sc
   triad: .session✓  transcript✗  RESULT✓
   honesty: 7/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Redact a region of a finished recburn video without re-rendering it  —  26 scenarios   (features/recburn-redact.feature)
+Redact a region of a finished recburn video without re-rendering it  —  29 scenarios   (features/recburn-redact.feature)
   - [@hw-verified] only the keyframe span that contains the frames is re-encoded  (
   - [@hw-verified] the audio track is remuxed, never cut and never re-encoded  (rea
   - [@hw-verified] a cut point is MEASURED, never computed from timestamps  (bug fo
@@ -522,8 +522,11 @@ Redact a region of a finished recburn video without re-rendering it  —  26 sce
   - [(no grade)] the presets are measured, not universal
   - [(no grade)] --find is triage, not a guarantee
   - [(no grade)] this redacts the copy, not the past
+  - [@hw-verified] --find-text hunts a name, not just the built-in secret patterns 
+  - [@hw-verified] the splice produces a silent 2-frame A/V drift on some files  (F
+  - [@hw-verified] the GOP length is measured, not assumed  (2026-08-14)
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 23/26 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 26/29 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Burn a live click counter into a screen recording  —  13 scenarios   (features/recburnclick.feature)
   - [@hw-verified] counting clicks needs NO event tap and NO Accessibility prompt  

@@ -335,3 +335,44 @@ Feature: Redact a region of a finished recburn video without re-rendering it
       you chose is the only exposure in the other 34 minutes. A screencast can
       also show a customer's name and email — which, unlike your own account id,
       is not yours to publish.
+
+  @hw-verified
+  Scenario: --find-text hunts a name, not just the built-in secret patterns  (2026-08-14)
+    Given "there's an iMessage from <family member> showing, i can't find it in the video"
+    And a person's name can never be a built-in pattern — only the person watching knows
+      whose name matters
+    When `--find --find-text "Olga" --every 1` swept all 78 minutes (4681 frames, ~23 min)
+    Then it reported three windows, one of them 22:29-22:32 "wanted:Olga  Olga (x2)"
+    And a 0.2s follow-up OCR pass bracketed the real exposure at 22:29.8-22:31.8 exactly
+    # innards: the `--find-text` arg + the per-run `patterns` list in `mode_find`
+    # NOTE: custom terms are matched case-insensitively and never truncated in the report;
+    #       you have to READ a name to judge it, and it is not a secret you mind seeing.
+
+  @hw-verified
+  Scenario: the splice produces a silent 2-frame A/V drift on some files  (FOUND 2026-08-14)
+    Given a 78-minute 30fps capture, keyframes every 29 frames
+    When the head/re-encode/tail splice ran
+    Then frames (140401) and audio packets (219377) both verified OK
+    But the duration came out one frame short, and every frame after the splice was
+      2 frames (67ms) EARLY relative to the audio — for the remaining 56 minutes
+    And the content itself was perfect: identical frames, identical order, confirmed by
+      hashing consecutive frames and finding the sequence intact but offset
+    # ROOT CAUSE: the head stream-copy's first TS frame lands at PTS 0.0667 while the
+    #   source's first frame is at 0.000 — it drops two frames at the very start, and the
+    #   concat compensates by sliding everything after the splice earlier.
+    # NOT FIXED. Tried and did NOT help: bframes=0, -muxdelay/-muxpreload 0,
+    #   -copyts, absolute -output_ts_offset + byte-concat, -fflags +genpts on the mux.
+    # WHY IT IS SAFE ANYWAY: the tool's own no-shift check catches it and refuses to call
+    #   the output finished. This is exactly the failure the check exists for.
+    # WORKAROUND USED: a single-pass full re-encode with drawbox enable=between(t,..) —
+    #   structurally cannot splice, so it cannot drift. Costs ~32 min and one generation
+    #   of quality on a 78-minute file, versus ~90 seconds for a working splice.
+
+  @hw-verified
+  Scenario: the GOP length is measured, not assumed  (2026-08-14)
+    Given the re-encode hardcoded keyint=29
+    Then any file with a different GOP would get an IDR in the wrong place
+    When the keyframe list is already being read to align the span
+    Then the GOP is derived from the smallest gap between those keyframes
+    # innards: the `gaps`/`gop` lines in `mode_redact`
+    # NOTE: this did not fix the drift above — it is correct on its own terms.

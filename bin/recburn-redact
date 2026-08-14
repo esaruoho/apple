@@ -488,6 +488,12 @@ def mode_redact(path, info, args, tmp):
         die(f"redact frames {f_lo}-{f_hi} fall outside the measured span "
             f"{seg_first}-{seg_last - 1}; widen --pad")
 
+    # Match the SOURCE's GOP length instead of assuming 29. The re-encoded segment has to
+    # start on a keyframe and end where the next stream-copied keyframe picks up; a
+    # hardcoded keyint that disagrees with the file puts an IDR in the wrong place.
+    gaps = [round((y - x) * fps) for x, y in zip(kfs, kfs[1:]) if y > x]
+    gop = max(1, min(gaps)) if gaps else 29
+
     n_lo, n_hi = f_lo - seg_first, f_hi - seg_first
     vf = build_filter(boxes, max(0, n_lo), min(seg_frames - 1, n_hi), args.method)
 
@@ -515,15 +521,33 @@ def mode_redact(path, info, args, tmp):
            "-map", "[vout]",
            "-c:v", "libx264", "-crf", str(args.crf), "-preset", "slow",
            "-pix_fmt", "yuv420p", "-profile:v", "high",
-           "-x264-params", "keyint=29:min-keyint=29:scenecut=0:bframes=2",
-           "-an", "-bsf:v", "h264_mp4toannexb", "-f", "mpegts", "-y", B]
+           # bframes=0 on purpose. B-frames reorder, so decode order != presentation
+           # order, and splicing a reordered segment between two stream-copied ones is
+           # exactly where "non monotonically increasing dts" comes from. Seen on a
+           # 78-minute 30fps capture: frames/audio verified fine, but duration came out
+           # one frame short, the frame after the span no longer matched the source, and
+           # the decode check reported DTS errors at both splices. Costs a few KB across
+           # ~100 frames and buys a splice that verifies.
+           "-x264-params", f"keyint={gop}:min-keyint={gop}:scenecut=0:bframes=0",
+           "-an", "-bsf:v", "h264_mp4toannexb",
+           # -muxdelay/-muxpreload 0: ffmpeg's mpegts muxer otherwise starts each segment's
+           # timeline at ~1.4s, and NOT always at the same 1.4s — measured A=1.400, B=1.400,
+           # C=1.467 on one file. The concat demuxer offsets each segment by the previous
+           # one's duration, so an inconsistent start makes two frames collide on one
+           # timestamp; ffmpeg drops one, and EVERY frame after the splice shifts early.
+           # Frame counts and audio still verify, so this is invisible unless you compare
+           # frames after the cut against the source — which is why that check exists.
+           "-muxdelay", "0", "-muxpreload", "0",
+           "-f", "mpegts", "-y", B]
     # Head cut by exact FRAME COUNT, not -to: -to with copy can hand back a couple of
     # extra frames, which duplicates frames and drifts audio for the rest of the file.
     head = ["ffmpeg", "-v", "error", "-i", path, "-map", "0:v:0", "-c", "copy",
             "-frames:v", str(seg_first), "-bsf:v", "h264_mp4toannexb",
+            "-muxdelay", "0", "-muxpreload", "0",
             "-f", "mpegts", "-y", A]
     tail = ["ffmpeg", "-v", "error", "-ss", f"{kf_hi:.6f}", "-i", path,
             "-map", "0:v:0", "-c", "copy", "-bsf:v", "h264_mp4toannexb",
+            "-muxdelay", "0", "-muxpreload", "0",
             "-f", "mpegts", "-y", C] if kf_hi is not None else None
 
     listfile = os.path.join(tmp, "list.txt")
