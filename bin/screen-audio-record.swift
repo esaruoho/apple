@@ -231,6 +231,109 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     var sessionStarted = false
     var firstPTS: CMTime?             // first & last video timestamps → final recording length
     var lastPTS: CMTime = .zero
+
+    // MARK: - Frame health
+    //
+    // Frames were being dropped in THREE places without a word on the terminal: ScreenCaptureKit
+    // delivering a non-.complete frame, the asset writer not being ready (encoder starved), and the
+    // PIP compositor bailing for the same reason. A silent drop is the worst kind — the recording
+    // just looks bad afterwards. These counters exist so the terminal can say so WHILE it happens,
+    // and name whatever is stealing the CPU.
+    let healthLock = NSLock()
+    var hFramesDelivered = 0          // frames ScreenCaptureKit handed us
+    var hFramesWritten = 0            // frames that actually reached the writer
+    var hDropIncomplete = 0           // status != .complete
+    var hDropNotReady = 0             // writer/adaptor not ready → encoder cannot keep up
+    var hCamFrames = 0                // webcam frames arriving (PIP freshness)
+    var healthTimer: DispatchSourceTimer?
+    var lastWarnAt = Date.distantPast
+    var monitorStart = Date()
+
+    func startHealthMonitor() {
+        monitorStart = Date()
+        let t = DispatchSource.makeTimerSource(queue: DispatchQueue(label: "sar.health"))
+        t.schedule(deadline: .now() + 3.0, repeating: 3.0)
+        t.setEventHandler { [weak self] in self?.checkHealth() }
+        t.resume()
+        healthTimer = t
+    }
+
+    /// Report only when it matters, and only every 6s, so a warning never becomes noise that
+    /// itself costs frames.
+    func checkHealth() {
+        healthLock.lock()
+        let delivered = hFramesDelivered, written = hFramesWritten
+        let incomplete = hDropIncomplete, notReady = hDropNotReady, cam = hCamFrames
+        hFramesDelivered = 0; hFramesWritten = 0
+        hDropIncomplete = 0; hDropNotReady = 0; hCamFrames = 0
+        healthLock.unlock()
+
+        let window = 3.0
+        let target = Double(opts.fps) * window
+        let gotRate = Double(written) / window
+        let camRate = Double(cam) / window
+
+        // Below 80% of the requested frame rate, or a PIP webcam feeding under 10fps, is trouble.
+        let starved = target > 0 && Double(written) < target * 0.80
+        let camStarved = opts.pip && cam > 0 && camRate < 10
+        guard starved || camStarved, Date().timeIntervalSince(lastWarnAt) > 6 else { return }
+        lastWarnAt = Date()
+
+        var lines: [String] = []
+        lines.append(String(format: "⚠︎ dropping frames: writing %.0f fps of %d requested",
+                            gotRate, opts.fps))
+        if notReady > 0 {
+            lines.append("   \(notReady) frame(s) dropped because the encoder could not keep up")
+        }
+        if incomplete > 0 {
+            lines.append("   \(incomplete) frame(s) arrived incomplete from ScreenCaptureKit")
+        }
+        if delivered > written + notReady + incomplete {
+            lines.append("   \(delivered - written - notReady - incomplete) frame(s) lost in compositing")
+        }
+        if camStarved {
+            lines.append(String(format: "   webcam is only delivering %.0f fps — the PIP will look stuttery", camRate))
+        }
+        // Name the thief. Shelling out is only acceptable because this runs at most once per 6s
+        // AND only when something is already wrong.
+        if let hogs = topCPU(), !hogs.isEmpty {
+            lines.append("   using the CPU right now: " + hogs.joined(separator: ", "))
+            lines.append("   (Spotlight indexing is the usual culprit: mds_stores / CGPDFService /")
+            lines.append("    spotlightknowledged — `sudo mdutil -a -i off` while you record)")
+        }
+        FileHandle.standardError.write((lines.joined(separator: "\n") + "\n").data(using: .utf8)!)
+    }
+
+    @inline(__always) func hBump(_ key: Int) {
+        healthLock.lock()
+        switch key {
+        case 0: hFramesDelivered += 1
+        case 1: hFramesWritten += 1
+        case 2: hDropIncomplete += 1
+        case 3: hDropNotReady += 1
+        default: hCamFrames += 1
+        }
+        healthLock.unlock()
+    }
+
+    func topCPU() -> [String]? {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/ps")
+        p.arguments = ["-Aceo", "pcpu,comm", "-r"]
+        let pipe = Pipe(); p.standardOutput = pipe
+        do { try p.run() } catch { return nil }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+        guard let text = String(data: data, encoding: .utf8) else { return nil }
+        let me = ProcessInfo.processInfo.processName
+        return text.split(separator: "\n").dropFirst().prefix(6).compactMap { line -> String? in
+            let parts = line.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+            guard parts.count == 2, let cpu = Double(parts[0]), cpu >= 15 else { return nil }
+            let name = parts[1].trimmingCharacters(in: .whitespaces)
+            if name == me { return nil }                 // do not blame ourselves
+            return String(format: "%@ %.0f%%", name, cpu)
+        }.prefix(3).map { $0 }
+    }
     let lock = NSLock()
     let sampleQueue = DispatchQueue(label: "sar.samples")
 
@@ -322,6 +425,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         s.startCapture { [weak self] error in
             if let error { err("startCapture: \(error.localizedDescription)") }
             guard let self else { return }
+            self.startHealthMonitor()
             let scope = self.opts.appName.map { "app \"\($0)\"" } ?? "whole display + all system audio"
             let pid = ProcessInfo.processInfo.processIdentifier
             let micLine = self.micOn
@@ -395,9 +499,10 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         guard CMSampleBufferDataIsReady(sampleBuffer) else { return }
 
         if type == .screen {
+            hBump(0)
             guard let attach = CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, createIfNecessary: false) as? [[SCStreamFrameInfo: Any]],
                   let raw = attach.first?[.status] as? Int,
-                  let status = SCFrameStatus(rawValue: raw), status == .complete else { return }
+                  let status = SCFrameStatus(rawValue: raw), status == .complete else { hBump(2); return }
         }
 
         let pts = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
@@ -419,7 +524,9 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
             if opts.pip || opts.clicks, let px = CMSampleBufferGetImageBuffer(sampleBuffer) {
                 compositeFrame(screen: px, pts: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
             } else if videoInput.isReadyForMoreMediaData {
-                videoInput.append(sampleBuffer)
+                videoInput.append(sampleBuffer); hBump(1)
+            } else {
+                hBump(3)   // encoder starved — this is the drop that used to be silent
             }
         case .audio:
             if sysAudioInput.isReadyForMoreMediaData { sysAudioInput.append(sampleBuffer) }
@@ -436,6 +543,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard let px = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         cameraLock.lock(); latestCameraBuffer = px; cameraLock.unlock()
+        hBump(4)
     }
 
     // Re-rendering the text every frame would be wasteful and would shimmer; the badge
@@ -479,15 +587,15 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     /// click counter (--clicks), and append it. If an overlay can't be produced the screen
     /// frame is appended unchanged — a recording is never lost to a decoration.
     func compositeFrame(screen: CVPixelBuffer, pts: CMTime) {
-        guard let adaptor = videoAdaptor, let ctx = ciContext,
-              adaptor.assetWriterInput.isReadyForMoreMediaData else { return }
+        guard let adaptor = videoAdaptor, let ctx = ciContext else { return }
+        guard adaptor.assetWriterInput.isReadyForMoreMediaData else { hBump(3); return }
         guard let pool = adaptor.pixelBufferPool else {
-            if videoInput.isReadyForMoreMediaData { adaptor.append(screen, withPresentationTime: pts) }
+            if videoInput.isReadyForMoreMediaData { adaptor.append(screen, withPresentationTime: pts); hBump(1) } else { hBump(3) }
             return
         }
         var outBuf: CVPixelBuffer?
         CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outBuf)
-        guard let dst = outBuf else { adaptor.append(screen, withPresentationTime: pts); return }
+        guard let dst = outBuf else { adaptor.append(screen, withPresentationTime: pts); hBump(1); return }
 
         var image = CIImage(cvPixelBuffer: screen)
         let baseW = CGFloat(CVPixelBufferGetWidth(screen))
@@ -555,7 +663,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         }
 
         ctx.render(image, to: dst)
-        adaptor.append(dst, withPresentationTime: pts)
+        adaptor.append(dst, withPresentationTime: pts); hBump(1)
     }
 
     /// Start webcam capture for PiP. Returns false (and records screen-only) if no camera
@@ -763,6 +871,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         lock.lock(); if finishing { lock.unlock(); return }; finishing = true; lock.unlock()
         FileHandle.standardError.write("\n■ stopping…\n".data(using: .utf8)!)
         captureSession?.stopRunning()
+        healthTimer?.cancel(); healthTimer = nil
         stream?.stopCapture { [weak self] _ in
             guard let self else { return }
             self.sampleQueue.async {

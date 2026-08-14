@@ -527,7 +527,7 @@ Burn a live click counter into a screen recording  —  13 scenarios   (features
   triad: .session✓  transcript✗  RESULT✓
   honesty: 13/13 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Record screen + system audio to one .mov with no loopback driver  —  19 scenarios   (features/screen-audio-record.feature)
+Record screen + system audio to one .mov with no loopback driver  —  20 scenarios   (features/screen-audio-record.feature)
   - [@hw-verified] single-app audio isolation captures screen + only that app's sou
   - [@hw-verified] Ctrl-C stops cleanly and finalizes a playable file  (ran live)
   - [@hw-verified] --list enumerates displays and audible apps  (ran live)
@@ -547,8 +547,9 @@ Record screen + system audio to one .mov with no loopback driver  —  19 scenar
   - [@hw-verified] start banner states plainly whether the mic is recording  (ran l
   - [@built] q + Enter stops the recording as an alternative to Ctrl-C
   - [(no grade)] Sequoia re-prompts screen-recording permission
+  - [@built @untested] The terminal says when frames are being dropped, and names the t
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 18/19 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 19/20 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 The master session list is bootable with one word  —  11 scenarios   (features/sesh.feature)
   - [@built @hw-verified] Sessions are open, so sesh saves them

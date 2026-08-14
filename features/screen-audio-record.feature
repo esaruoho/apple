@@ -236,3 +236,22 @@ Feature: Record screen + system audio to one .mov with no loopback driver
     Given macOS 15 asks weekly / after reboot for screen recording + screenshots
     Then any ScreenCaptureKit tool inherits that prompt; the code cannot suppress it —
       approve the launching terminal (iTerm) once when the OS asks
+
+  @built @untested
+  Scenario: The terminal says when frames are being dropped, and names the thief
+    Given frames can be lost in three places, all previously SILENT
+    When the written frame rate falls below 80% of --fps, or a PIP webcam drops under 10fps
+    Then a warning names the count, the reason, and the top CPU processes
+    # Esa: "can recburn not just tell me on the terminal that something is killing the framerate".
+    # It could not. The three silent drops: SCFrameStatus != .complete; videoInput
+    # isReadyForMoreMediaData false (encoder starved); and compositeFrame() bailing on the same
+    # check for --pip. A silent drop is the worst kind — the recording only looks bad afterwards.
+    # Real-world cause found the same day: Spotlight bulk-indexing PDFs — mds_stores at 97% with
+    # CGPDFService workers at 85-95% each, plus spotlightknowledged running away for 21 HOURS at
+    # ~99% of a core, and Finder walking node_modules/target trees under ~/work. The warning names
+    # these and suggests `sudo mdutil -a -i off` while recording.
+    # Sampled every 3s, warns at most every 6s, and only shells out to `ps` when already degraded,
+    # so the diagnostics cannot themselves cost frames.
+    # @untested: compiles and the counters are wired at all five sites, but I have NOT yet forced a
+    # drop and seen the warning fire.
+    # → hBump(), startHealthMonitor(), checkHealth(), topCPU()
