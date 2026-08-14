@@ -1,4 +1,4 @@
-# CLI Tools Index — 333 tools in bin/
+# CLI Tools Index — 334 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -221,6 +221,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `panel-worker` — (no description) — `bin/panel-worker`
 `patch-sal-libraries-for-current-bundle-ids.sh` — Patch Sal's installed .scptd libraries to use current Apple bundle IDs. — `bin/patch-sal-libraries-for-current-bundle-ids.sh`
 `pdf-textlen` — self-building Swift wrapper around PDFKit. Prints, per PDF path, — `bin/pdf-textlen`
+`phonemirror` — Launch PhoneMirror.app's binary directly so CLI flags and stdout work. — `bin/phonemirror`
 `photo-submit` — ask CloudcityMacMini to photograph EACH video input device. — `bin/photo-submit`
 `port-revive` — (no description) — `bin/port-revive`
 `prism` — FEATURE-CARD >> ~/work/convey/features/convey-prism.feature — `bin/prism`

@@ -1,0 +1,3 @@
+#!/bin/bash
+# Launch PhoneMirror.app's binary directly so CLI flags and stdout work.
+exec "/Users/esaruoho/work/apple/phonemirror/PhoneMirror.app/Contents/MacOS/PhoneMirror" "$@"
