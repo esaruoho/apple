@@ -1,4 +1,4 @@
-# CLI Tools Index — 334 tools in bin/
+# CLI Tools Index — 331 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -159,9 +159,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `keelynet-energy-mailer` — (no description) — `bin/keelynet-energy-mailer`
 `keelynet-energy-mailer-cloudcity-runner` — (no description) — `bin/keelynet-energy-mailer-cloudcity-runner`
 `list-vocal-shortcuts.py` — (no description) — `bin/list-vocal-shortcuts.py`
-`live-arrows` — start/stop/status the hover-gated arrow-key tap for Live's Clip Envelopes. — `bin/live-arrows`
-`live-envelope` — (no description) — `bin/live-envelope`
-`live-envelope-arrows` — (no description) — `bin/live-envelope-arrows`
 `loom-status` — report progress of loom-mirror running on CloudcityMacMini — `bin/loom-status`
 `loupedeck-import-dictation-commands.py` — (no description) — `bin/loupedeck-import-dictation-commands.py`
 `mac-stats` — (no description) — `bin/mac-stats`

@@ -148,12 +148,6 @@ if str(e, kAXRoleAttribute as String) == "AXButton" { buttons.append(str(e, kAXT
 Drive the menu item with `AXUIElementPerformAction(item, kAXPressAction)` and then assert the app
 is **still running** — that is the regression test for the terminate trap above.
 
-## Implementations in this repo family
-
-- `~/work/LiveClipEnvelopes/LiveEnvelopePanel/main.swift` — the reference: custom About with
-  clickable Ko-fi / BuyMeACoffee / PayPal / GitHub Sponsors / Patreon / Bandcamp / Gumroad /
-  `mailto:`, bundled-README Help window, `⋯` + right-click menu, and a "Check Setup" report.
-
 ## Related
 
 - [`macos-app-icon-sizing.md`](macos-app-icon-sizing.md) — the 824/1024 grid, and `lsregister -f`

@@ -91,9 +91,6 @@ bold silhouette survives; fine detail turns to mud. Draw the mark, render `icon_
 - `guidance/scripts/make-icon.sh` — bash + `xcrun swift` heredoc per size, SF Symbol on a gradient
   badge. Uses `0.098` / `0.2237`.
 - `topbar/scripts/make-icon.sh` — same shape, AppleToolbox's glyph.
-- `~/work/LiveClipEnvelopes/LiveEnvelopePanel/IconGen/main.swift` — Swift, all ten sizes
-  natively + runs `iconutil` itself; uses `0.0977` / `0.2248`. Shipped full-bleed until
-  2026-08-14, which is the failure this page exists to prevent.
 
 - [`macos-about-and-support-window.md`](macos-about-and-support-window.md) — the About panel
   draws the icon at **64pt**; oversized-looking icons have a second cause there.
