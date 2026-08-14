@@ -70,7 +70,21 @@ import tempfile
 # 'urlbar' and 'stripe-destination' were measured on a 3024x1964 recburn capture with a
 # full-screen Safari window (2026-08-13) and verified frame-by-frame. Always confirm with
 # --probe before trusting a preset on a differently-shaped recording.
-OCR_BIN = "/Users/esaruoho/work/apple/bin/vision-ocr"  # Apple Vision, on-device, no network
+def _find_ocr():
+    """Apple Vision OCR helper — on-device, no network. Look NEXT TO this script first so
+    the tool is self-contained wherever it ships, then fall back to the apple checkout and
+    finally to PATH. A hardcoded /Users/esaruoho/... path made this unusable for anyone
+    else the moment it was published."""
+    here = os.path.dirname(os.path.realpath(__file__))
+    for c in (os.path.join(here, "vision-ocr"),
+              os.path.expanduser("~/work/apple/bin/vision-ocr"),
+              os.path.expanduser("~/.cache/apple/vision-ocr")):
+        if os.path.exists(c):
+            return c
+    return shutil.which("vision-ocr") or os.path.join(here, "vision-ocr")
+
+
+OCR_BIN = _find_ocr()
 
 PRESETS = {
     "urlbar":             (0.3770, 0.0484, 0.3439, 0.0484),
