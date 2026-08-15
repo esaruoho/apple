@@ -18,7 +18,7 @@ Esa had just finished a 34-minute recburn screencast and was about to post it to
 Instagram and YouTube. He sent two frames and asked, plainly: *"is this a bad idea"*.
 
 The frame showed `dashboard.stripe.com/acct_<REDACTED>/payouts` in the Safari
-URL bar, with `a bank name •••• 1234` repeated down the Destination column of a payouts
+URL bar, with `a bank name •••• 1234` repeated down the Destination column of a payouts   <!-- secret-scan: allow (fake example) -->
 table, fourteen rows of it, amounts from €3.87 to €56.14.
 
 My read, which I still stand by: the Stripe **account** id is a semi-public identifier
@@ -143,7 +143,7 @@ required at all.
   full resolution, always.
 - Full-res `--fast` did catch the account id, so I nearly shipped it. Then I checked the
   bank rows properly and found `--fast` returns `a bank name` while **silently dropping the
-  `•••• 1234` after it**. It finds the account id and loses the last-4, which is the piece
+  `•••• 1234` after it**. It finds the account id and loses the last-4, which is the piece   <!-- secret-scan: allow (fake example) -->
   with actual leverage. Accurate is now the default; `--fast-ocr` exists and says in its own
   help that it will miss masked digits.
 - My masked-account regex `[•·*]{3,}\s*\d{4}` matched **nothing**. Vision reads the mask as

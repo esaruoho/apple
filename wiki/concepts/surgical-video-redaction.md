@@ -93,7 +93,7 @@ Three settings that are **not** free choices, each measured on 2026-08-13:
 - **Full resolution, always.** At half size Vision stops resolving the 30px URL-bar
   `acct_…` id — precisely the thing being hunted.
 - **Accurate, not `--fast`.** `--fast` is ~8x cheaper and returns `a bank name` while
-  silently **dropping the `•••• 1234` after it**. It finds the account id and loses the bank
+  silently **dropping the `•••• 1234` after it**. It finds the account id and loses the bank   # secret-scan: allow (fake example)
   last-4, which is the piece with actual leverage. `--fast-ocr` exists for triage and says so.
 - **The `••••` mask is not four bullets.** Vision reads it as U+2022 with some bullets
   misrecognised as `.` — real output was `•• .• 1234` and `• .. • 1234`. The obvious

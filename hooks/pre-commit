@@ -21,6 +21,16 @@ set -e
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
 
+# ─── secret scan, BEFORE anything else ────────────────────────────────────────
+# Runs first on purpose: if the commit is going to be refused, refuse it before
+# spending time regenerating indexes. Blocks account ids, keys, tokens, cards,
+# IBANs and masked account digits. Bypass, deliberately: git commit --no-verify
+if [ -x "$REPO_ROOT/bin/secret-scan" ]; then
+  if ! "$REPO_ROOT/bin/secret-scan"; then
+    exit 1
+  fi
+fi
+
 # Only regen if Python is available — fail loudly if not.
 if ! command -v python3 >/dev/null 2>&1; then
   echo "pre-commit: python3 not found, skipping wiki regen" >&2

@@ -1,4 +1,4 @@
-# CLI Tools Index — 333 tools in bin/
+# CLI Tools Index — 334 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -265,6 +265,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `screen-frame-minus-toolbox` — screen-frame-minus-toolbox <screen-index> — `bin/screen-frame-minus-toolbox`
 `sdef-extract.py` — (no description) — `bin/sdef-extract.py`
 `sdef-to-jxa.py` — (no description) — `bin/sdef-to-jxa.py`
+`secret-scan` — (no description) — `bin/secret-scan`
 `seed-script-triggers.py` — (no description) — `bin/seed-script-triggers.py`
 `send-to-media-editor` — (no description) — `bin/send-to-media-editor`
 `sentiment-map-svg` — (no description) — `bin/sentiment-map-svg`

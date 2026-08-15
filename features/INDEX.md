@@ -571,6 +571,15 @@ Record screen + system audio to one .mov with no loopback driver  —  20 scenar
   triad: .session✓  transcript✗  RESULT✓
   honesty: 19/20 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Refuse to commit an account id, bank last-4, key or token  —  5 scenarios   (features/secret-scan.feature)
+  - [@hw-verified] it blocks the exact pair that leaked  (ran live 2026-08-16)
+  - [@hw-verified] the patterns are imported, never redefined  (2026-08-16)
+  - [@hw-verified] two of those patterns are wrong for a repo and are dropped  (mea
+  - [@hw-verified] deliberate examples can be kept  (2026-08-16)
+  - [@hw-verified] it reads what will be COMMITTED, not what is on disk  (2026-08-1
+  triad: .session✗  transcript✗  RESULT✓
+  honesty: 5/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 The master session list is bootable with one word  —  11 scenarios   (features/sesh.feature)
   - [@built @hw-verified] Sessions are open, so sesh saves them
   - [@built @hw-verified] Nothing is open, so sesh boots the snapshot

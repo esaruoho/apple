@@ -191,7 +191,7 @@ Feature: Redact a region of a finished recburn video without re-rendering it
       so frames are never downscaled for OCR (measured: half-res --fast lost acct_…, and
       half-res accurate cost 5.18s/frame for no gain)
     And when --fast is used at full resolution
-    Then it returns "a bank name" and silently DROPS the "•••• 1234" after it, so it finds
+    Then it returns "a bank name" and silently DROPS the "•••• 1234" after it, so it finds   # secret-scan: allow (fake example)
       the account id but loses the bank last-4 — the piece with real leverage
     So accurate is the default (0.77s/frame at 6-way parallel vs 0.09s for fast), and
       --fast-ocr exists but says in its own help that it will miss masked digits.
