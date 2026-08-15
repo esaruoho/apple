@@ -60,6 +60,11 @@ func allowScreenCaptureDevices() {
 let deviceDiscovery: AVCaptureDevice.DiscoverySession = {
     var types: [AVCaptureDevice.DeviceType] = [.external, .builtInWideAngleCamera]
     if #available(macOS 14.0, *) { types.append(.continuityCamera) }
+    // Desk View is a SECOND simultaneous stream from the same iPhone — a downward-corrected
+    // crop of the ultra-wide, delivered as its own device while the main Continuity Camera keeps
+    // running. Without asking for the type it never enumerates, so one phone could only ever
+    // give one picture.
+    if #available(macOS 13.0, *) { types.append(.deskViewCamera) }
     return AVCaptureDevice.DiscoverySession(deviceTypes: types, mediaType: nil, position: .unspecified)
 }()
 
@@ -103,9 +108,14 @@ func iosScreenDevices() -> [AVCaptureDevice] {
         .sorted { $0.localizedName.localizedStandardCompare($1.localizedName) == .orderedAscending }
 }
 
+func isDeskView(_ d: AVCaptureDevice) -> Bool {
+    if #available(macOS 13.0, *) { return d.deviceType == .deskViewCamera }
+    return false
+}
+
 func iosContinuityDevices() -> [AVCaptureDevice] {
     captureDevices()
-        .filter { isContinuityCamera($0) }
+        .filter { isContinuityCamera($0) || isDeskView($0) }
         .sorted { $0.localizedName.localizedStandardCompare($1.localizedName) == .orderedAscending }
 }
 
@@ -138,8 +148,17 @@ final class FrameWatcher: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate
     /// Force the next frame through, ignoring the throttle (⌘D re-detect).
     func arm() { lastDelivered = .distantPast }
 
+    /// Raw arrival count, incremented before the Vision throttle. --rig reports the rate from
+    /// this: a phone that is thermally throttling shows up as its fps sagging while the others
+    /// hold, which is invisible if you only look at the picture.
+    private let statsLock = NSLock()
+    private var _raw = 0
+    var rawFrames: Int { statsLock.lock(); defer { statsLock.unlock() }; return _raw }
+    func takeRawCount() -> Int { statsLock.lock(); defer { statsLock.unlock() }; let n = _raw; _raw = 0; return n }
+
     func captureOutput(_ out: AVCaptureOutput, didOutput sample: CMSampleBuffer,
                        from conn: AVCaptureConnection) {
+        statsLock.lock(); _raw += 1; statsLock.unlock()
         let now = Date()
         guard now.timeIntervalSince(lastDelivered) >= minInterval else { return }
         // The pixel buffer is only valid inside this callback, so convert here and now.
@@ -742,6 +761,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var autoOpenNew = false
     var openAllAtLaunch = false
     var includeContinuity = false
+    /// --rig: a permanent multi-phone installation. Open everything, keep opening whatever gets
+    /// plugged in, tile it so nothing hides behind anything, and report each device's negotiated
+    /// format and live frame rate so a phone that is struggling is VISIBLE rather than mysterious.
+    var rigMode = false
+    var rigTimer: Timer?
+    /// Treat EVERY capture device as a candidate, not just things whose name looks like an
+    /// iPhone. Exists so a rig can include a capture card, an OBS/Insta360 virtual camera or a
+    /// USB webcam alongside the phones — and so the rig layout can be tested without four
+    /// iPhones plugged in, which is otherwise untestable on a desk with none.
+    var includeAnyDevice = false
     var pollTimer: Timer?
     var knownIDs = Set<String>()
     var windowOffset: CGFloat = 0
@@ -782,8 +811,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: opening devices
 
     func candidateDevices() -> [AVCaptureDevice] {
-        var list = iosScreenDevices()
-        if includeContinuity { list += iosContinuityDevices() }
+        var list = includeAnyDevice ? captureDevices() : iosScreenDevices()
+        if includeContinuity && !includeAnyDevice { list += iosContinuityDevices() }
         if let m = deviceMatch?.lowercased(), !m.isEmpty {
             list = list.filter { $0.localizedName.lowercased().contains(m) }
         }
@@ -833,7 +862,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         mirrors.append(m)
         knownIDs.insert(d.uniqueID)
         log("\(d.localizedName): window open (\(mirrors.count) mirror(s) now)")
+        if rigMode {
+            // Re-tile on every arrival so plugging in a fourth phone re-packs the other three
+            // instead of dropping it on top of them.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in self?.tileMirrors() }
+            if rigTimer == nil { startRigStats() }
+        }
         return true
+    }
+
+    /// Lay every open window out in a grid on the main screen. Cascading is right for two or
+    /// three windows you are moving by hand; for a rack of phones you want to see all of them at
+    /// once, so this packs them into the squarest grid that fits the count.
+    func tileMirrors() {
+        guard !mirrors.isEmpty, let vf = NSScreen.main?.visibleFrame else { return }
+        let n = mirrors.count
+        let cols = Int(ceil(sqrt(Double(n))))
+        let rows = Int(ceil(Double(n) / Double(cols)))
+        let cw = vf.width / CGFloat(cols), ch = vf.height / CGFloat(rows)
+        for (i, m) in mirrors.enumerated() {
+            let c = i % cols, r = i / cols
+            // Keep each phone's own aspect ratio inside its cell rather than stretching it.
+            let cell = NSRect(x: vf.minX + CGFloat(c) * cw,
+                              y: vf.maxY - CGFloat(r + 1) * ch,
+                              width: cw, height: ch).insetBy(dx: 6, dy: 6)
+            let a = max(0.1, m.srcAspect)
+            var w = cell.width, h = w / a
+            if h > cell.height { h = cell.height; w = h * a }
+            m.window.setFrame(NSRect(x: cell.midX - w / 2, y: cell.midY - h / 2, width: w, height: h),
+                              display: true)
+        }
+        log("tiled \(n) window(s) into a \(cols)x\(rows) grid")
+    }
+
+    /// Per-device format + live fps, every 3s. Printed rather than drawn: a rig is usually
+    /// headless-ish, and a log you can scroll back through beats a number that only exists on
+    /// screen while you are looking at it.
+    func startRigStats() {
+        rigTimer?.invalidate()
+        let interval: TimeInterval = 3
+        rigTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            guard let self, !self.mirrors.isEmpty else { return }
+            var parts: [String] = []
+            for m in self.mirrors {
+                let fps = Double(m.watcher.takeRawCount()) / interval
+                let d = CMVideoFormatDescriptionGetDimensions(m.device.activeFormat.formatDescription)
+                let name = m.device.localizedName
+                parts.append(String(format: "%@ %dx%d %.1ffps", name, d.width, d.height, fps))
+            }
+            self.log("rig: " + parts.joined(separator: "  |  "))
+        }
     }
 
     func mirrorClosed(_ m: Mirror) {
@@ -1378,6 +1456,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case "--no-auto": options.autoCrop = false; options.autoRotate = false
             case "--device", "-d": if i + 1 < args.count { deviceMatch = args[i+1]; i += 1 }
             case "--continuity": includeContinuity = true
+            case "--rig":
+                openAllAtLaunch = true; includeContinuity = true; autoOpenNew = true; rigMode = true
+            case "--any", "--include-any": includeAnyDevice = true
             case "--all", "--open-all": openAllAtLaunch = true
             case "--auto-open": autoOpenNew = true
             case "--no-auto-open": autoOpenNew = false
