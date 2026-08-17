@@ -153,12 +153,26 @@ final class FrameWatcher: NSObject, AVCaptureVideoDataOutputSampleBufferDelegate
     /// hold, which is invisible if you only look at the picture.
     private let statsLock = NSLock()
     private var _raw = 0
+    /// Dimensions taken from the FRAMES, because a CoreMediaIO screen device leaves
+    /// activeFormat at 0x0 — the size only exists once pictures start arriving.
+    private var _dims = (w: Int32(0), h: Int32(0))
+    var lastDimensions: (w: Int32, h: Int32) { statsLock.lock(); defer { statsLock.unlock() }; return _dims }
     var rawFrames: Int { statsLock.lock(); defer { statsLock.unlock() }; return _raw }
     func takeRawCount() -> Int { statsLock.lock(); defer { statsLock.unlock() }; let n = _raw; _raw = 0; return n }
 
     func captureOutput(_ out: AVCaptureOutput, didOutput sample: CMSampleBuffer,
                        from conn: AVCaptureConnection) {
-        statsLock.lock(); _raw += 1; statsLock.unlock()
+        statsLock.lock()
+        _raw += 1
+        if let fd = CMSampleBufferGetFormatDescription(sample) {
+            let d = CMVideoFormatDescriptionGetDimensions(fd)
+            if d.width > 0 { _dims = (d.width, d.height) }
+        }
+        statsLock.unlock()
+        // With no consumer there is nothing to convert. --rig attaches this output purely to
+        // COUNT frames on devices that need no orientation detection (a camera feed has no iOS
+        // chrome to read), and converting a CGImage for nobody would burn CPU per frame.
+        guard onFrame != nil else { return }
         let now = Date()
         guard now.timeIntervalSince(lastDelivered) >= minInterval else { return }
         // The pixel buffer is only valid inside this callback, so convert here and now.
@@ -518,7 +532,14 @@ final class Mirror: NSObject, NSWindowDelegate {
         }
 
         buildWindow(options: options)
-        if autoRotate || autoCrop { attachDetector() }
+        if autoRotate || autoCrop {
+            attachDetector()
+        } else if owner.rigMode {   // the init parameter, not the weak property
+            // Counting-only: a camera device skips orientation detection, and without this its
+            // --rig fps read 0.0 while the window was showing perfectly good video. A stat that
+            // says "dead" about a working device is worse than no stat.
+            attachDetector(countingOnly: true)
+        }
         session.startRunning()
         if saved != nil {
             owner.log("\(device.localizedName): seeded from saved calibration (Vision will still re-check) "
@@ -589,11 +610,13 @@ final class Mirror: NSObject, NSWindowDelegate {
 
     // MARK: detection
 
-    func attachDetector() {
+    func attachDetector(countingOnly: Bool = false) {
         guard session.canAddOutput(detectorOutput) else { return }
         detectorOutput.alwaysDiscardsLateVideoFrames = true
         session.addOutput(detectorOutput)
-        watcher.onFrame = { [weak self] frame in self?.inspect(frame) }
+        // countingOnly leaves onFrame nil, so FrameWatcher increments its counter and returns
+        // without converting anything — frames get measured, Vision never runs.
+        watcher.onFrame = countingOnly ? nil : { [weak self] frame in self?.inspect(frame) }
         watcher.arm()
         detectorOutput.setSampleBufferDelegate(watcher, queue: watcher.queue)
     }
@@ -906,7 +929,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             var parts: [String] = []
             for m in self.mirrors {
                 let fps = Double(m.watcher.takeRawCount()) / interval
-                let d = CMVideoFormatDescriptionGetDimensions(m.device.activeFormat.formatDescription)
+                var d = CMVideoFormatDescriptionGetDimensions(m.device.activeFormat.formatDescription)
+                if d.width == 0 { let f = m.watcher.lastDimensions; d.width = f.w; d.height = f.h }
                 let name = m.device.localizedName
                 parts.append(String(format: "%@ %dx%d %.1ffps", name, d.width, d.height, fps))
             }
