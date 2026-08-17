@@ -170,6 +170,16 @@ Directions home via Apple Maps  —  6 scenarios   (features/directions-home.fea
   triad: .session✓  transcript✗  RESULT✓
   honesty: 5/6 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Front and rear iPhone cameras in one picture  —  6 scenarios   (features/dualcam.feature)
+  - [@built] both sensors run simultaneously
+  - [@built] five layouts, cycled by tapping
+  - [@built] it is built to be FILMED, not used
+  - [@hw-verified] it compiles and signs  (2026-08-17)
+  - [@hw-verified] the build discovers the team instead of hardcoding it  (2026-08-
+  - [@built] INSTALL IS BLOCKED — the free team is full
+  triad: .session✗  transcript✗  RESULT✓
+  honesty: 6/6 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Find My — open the right tab and surface the right person/device  —  5 scenarios   (features/find-my.feature)
   - [@verified] "find" and the wife phrasings all route to the wife (Olga)
   - [@verified] devices and phone phrasings route distinctly

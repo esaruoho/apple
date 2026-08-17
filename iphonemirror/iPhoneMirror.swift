@@ -789,6 +789,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// format and live frame rate so a phone that is struggling is VISIBLE rather than mysterious.
     var rigMode = false
     var rigTimer: Timer?
+    /// A phone serves ONE role at a time. Opening its screen takes it out of Continuity mode,
+    /// and its Camera / Desk View windows freeze on their last frame (blurred, halted) while
+    /// still counting frames — so the stats do not even show it. --rig therefore refuses to open
+    /// a phone's SCREEN when that same phone is offering cameras, because doing so silently
+    /// destroys two working streams to gain one. --prefer-screen inverts the choice.
+    var preferScreen = false
+    /// Devices already explained in the log, so a 3s rescan does not repeat itself forever.
+    var explainedSkips = Set<String>()
+
     /// Treat EVERY capture device as a candidate, not just things whose name looks like an
     /// iPhone. Exists so a rig can include a capture card, an OBS/Insta360 virtual camera or a
     /// USB webcam alongside the phones — and so the rig layout can be tested without four
@@ -833,9 +842,80 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: opening devices
 
+    /// Screen and camera devices for the same phone are named "<phone>" and "<phone> Camera" /
+    /// "<phone> Desk View Camera" — the screen's name is a PREFIX of its cameras'. That is how a
+    /// pair is recognised without guessing from device types.
+    func dropConflictingRoles(_ list: [AVCaptureDevice]) -> [AVCaptureDevice] {
+        // Name-based, for the same reason as enforceRolePolicy: these cameras enumerate as
+        // .external, so a deviceType test classifies every one of them as a screen.
+        let all = list.map { $0.localizedName }
+        func hasChild(_ n: String) -> Bool { all.contains { $0.hasPrefix(n + " ") } }
+        let screenNames = all.filter { hasChild($0) }
+        let cameraNames = all.filter { !hasChild($0) }
+        return list.filter { d in
+            let n = d.localizedName
+            if !hasChild(n) {
+                // Drop a camera only if we were told to prefer that phone's screen.
+                guard preferScreen else { return true }
+                let owner = screenNames.first { n.hasPrefix($0 + " ") }
+                if owner != nil {
+                    if explainedSkips.insert(n).inserted {
+                        log("skipping \(n): --prefer-screen, so this phone gives its screen")
+                    }
+                    return false
+                }
+                return true
+            }
+            // A screen: drop it if this phone also offers cameras, unless --prefer-screen.
+            guard !preferScreen else { return true }
+            if cameraNames.contains(where: { $0.hasPrefix(n + " ") }) {
+                if explainedSkips.insert(n).inserted {
+                    log("\(n): serving cameras, so its screen is left closed (opening it would "
+                        + "freeze them). --prefer-screen takes the screen instead.")
+                }
+                return false
+            }
+            return true
+        }
+    }
+
+    /// Filtering candidates is not enough: the screen and the cameras of one phone do not
+    /// enumerate at the same instant, so whichever appears first gets opened before there is
+    /// anything to conflict with. This closes the loser afterwards, which makes the outcome
+    /// independent of arrival order.
+    func enforceRolePolicy() {
+        guard rigMode, !mirrors.isEmpty else { return }
+        let open = mirrors
+        // Classify by NAME, not deviceType. A cabled iPhone's Continuity and Desk View cameras
+        // enumerate as .external, NOT .continuityCamera — so a deviceType test finds zero
+        // cameras, detects no conflict, and happily leaves the screen open while both camera
+        // windows sit frozen. The naming relationship is the reliable signal: the screen is
+        // "<phone>" and its cameras are "<phone> Camera" / "<phone> Desk View Camera".
+        let names = open.map { $0.device.localizedName }
+        func isScreenFor(_ n: String) -> Bool { names.contains { $0.hasPrefix(n + " ") } }
+        let screens = open.filter { isScreenFor($0.device.localizedName) }
+        let cameras = open.filter { !isScreenFor($0.device.localizedName) }
+        for scr in screens {
+            let n = scr.device.localizedName
+            let itsCameras = cameras.filter { $0.device.localizedName.hasPrefix(n + " ") }
+            guard !itsCameras.isEmpty else { continue }
+            if preferScreen {
+                for cam in itsCameras {
+                    log("closing \(cam.device.localizedName): --prefer-screen, and \(n) is open")
+                    cam.window.close()
+                }
+            } else {
+                log("closing \(n) (screen): it froze this phone's \(itsCameras.count) camera "
+                    + "window(s). --prefer-screen if you want the screen instead.")
+                scr.window.close()
+            }
+        }
+    }
+
     func candidateDevices() -> [AVCaptureDevice] {
         var list = includeAnyDevice ? captureDevices() : iosScreenDevices()
         if includeContinuity && !includeAnyDevice { list += iosContinuityDevices() }
+        if rigMode { list = dropConflictingRoles(list) }
         if let m = deviceMatch?.lowercased(), !m.isEmpty {
             list = list.filter { $0.localizedName.lowercased().contains(m) }
         }
@@ -968,6 +1048,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             log("\(d.localizedName): appeared")
             if autoOpenNew { open(d) }
         }
+        enforceRolePolicy()
         // Close a window only on SUSTAINED absence. A Continuity Camera drops out of enumeration
         // intermittently while still streaming perfectly, and closing on a single missed scan made
         // it flap: open → "disconnected" → closed → reappears → open → … Three consecutive misses
@@ -1190,6 +1271,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func openAllDevices(_ s: Any?) {
         for d in candidateDevices() { open(d) }
+        enforceRolePolicy()
         rebuildDevicesMenu()
     }
     /// Tick = window open, untick = window closed. One menu, one click per phone.
@@ -1483,6 +1565,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case "--rig":
                 openAllAtLaunch = true; includeContinuity = true; autoOpenNew = true; rigMode = true
             case "--any", "--include-any": includeAnyDevice = true
+            case "--prefer-screen": preferScreen = true
             case "--all", "--open-all": openAllAtLaunch = true
             case "--auto-open": autoOpenNew = true
             case "--no-auto-open": autoOpenNew = false
