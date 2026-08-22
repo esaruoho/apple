@@ -71,6 +71,232 @@ func parseSRT(_ path: String) -> [Cue] {
     return cues
 }
 
+// MARK: - vocabulary (proper-noun alignment)
+
+/// The words a transcript keeps getting wrong. Whisper guesses proper nouns phonetically
+/// ("Paketti" → "Pucketty" / "Pocketty", "Renoise" → "Reno", "Lackluster" → "Lacklustre"),
+/// so the fix is applied at BOTH ends of the transcription:
+///
+///   1. BIAS   — the canonical terms are fed to Whisper as `--initial_prompt`, which makes it
+///               far more likely to spell them right in the first place.
+///   2. REPAIR — the finished .srt is swept for the known mishearings and for sound-alikes,
+///               and rewritten to the canonical spelling.
+///
+/// Bias alone is probabilistic (it nudges, it does not guarantee); the sweep is what makes
+/// "Paketti" come out as Paketti every single time. Both read the same vocabulary file.
+struct Vocabulary {
+    var terms: [String] = []                    // canonical spellings → --initial_prompt
+    var corrections: [String: [String]] = [:]   // canonical → literal mishearings to rewrite
+    var prompt: String? = nil                   // explicit initial_prompt (overrides `terms`)
+    var fuzzy: Bool = true                      // also sweep UNLISTED sound-alikes (Soundex)
+    var source: String = "(built-in)"
+    var isEmpty: Bool { terms.isEmpty && corrections.isEmpty && (prompt?.isEmpty ?? true) }
+}
+
+/// Where a vocabulary comes from, first hit wins: an explicit --vocab, $RECBURN_VOCAB, a
+/// per-project file in the recording's own folder, the user's config, then the copy shipped
+/// beside this binary (also inside RecBurn.app/Contents/MacOS).
+func vocabularyPaths(explicit: String?, near dir: String?) -> [String] {
+    var p: [String] = []
+    if let e = explicit { p.append((e as NSString).expandingTildeInPath) }
+    if let e = ProcessInfo.processInfo.environment["RECBURN_VOCAB"], !e.isEmpty {
+        p.append((e as NSString).expandingTildeInPath)
+    }
+    if let d = dir, !d.isEmpty { p.append((d as NSString).appendingPathComponent(".recburn-vocabulary.json")) }
+    p.append(FileManager.default.currentDirectoryPath + "/.recburn-vocabulary.json")
+    p.append(("~/.config/recburn/vocabulary.json" as NSString).expandingTildeInPath)
+    let selfDir = (CommandLine.arguments[0] as NSString).resolvingSymlinksInPath as NSString
+    p.append((selfDir.deletingLastPathComponent as NSString).appendingPathComponent("recburn-vocabulary.json"))
+    return p
+}
+
+func loadVocabulary(explicit: String?, near dir: String? = nil) -> Vocabulary {
+    for path in vocabularyPaths(explicit: explicit, near: dir) {
+        guard FileManager.default.fileExists(atPath: path),
+              let data = FileManager.default.contents(atPath: path),
+              let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else { continue }
+        var v = Vocabulary()
+        v.source = path
+        v.terms = (obj["terms"] as? [String]) ?? []
+        v.prompt = obj["prompt"] as? String
+        v.fuzzy = (obj["fuzzy"] as? Bool) ?? true
+        if let c = obj["corrections"] as? [String: [String]] { v.corrections = c }
+        // Every canonical is also a term (so the bias covers everything the sweep repairs).
+        for k in v.corrections.keys where !v.terms.contains(k) { v.terms.append(k) }
+        return v
+    }
+    if let e = explicit { die("vocabulary file not found: \(e)") }
+    return Vocabulary()   // nothing configured: no bias, no sweep
+}
+
+/// The `--initial_prompt` handed to Whisper: a plain glossary sentence. Whisper conditions its
+/// first window on this text, which biases the decoder toward these spellings.
+func vocabularyPrompt(_ v: Vocabulary) -> String? {
+    if let p = v.prompt, !p.isEmpty { return p }
+    guard !v.terms.isEmpty else { return nil }
+    return v.terms.joined(separator: ", ") + "."
+}
+
+// MARK: vocabulary — the repair sweep
+
+/// American Soundex. Two words with the same code sound alike to a first approximation, which
+/// is exactly the failure mode here: Whisper heard the sounds right and spelled them wrong.
+/// "Pucketty" / "Pocketty" / "Paketti" all code P230; "Lacklustre" / "Lackluster" both L242.
+func soundex(_ word: String) -> String {
+    let letters = word.lowercased().unicodeScalars.filter { CharacterSet.letters.contains($0) }
+    guard let first = letters.first else { return "" }
+    func code(_ c: Unicode.Scalar) -> Character? {
+        switch c {
+        case "b", "f", "p", "v": return "1"
+        case "c", "g", "j", "k", "q", "s", "x", "z": return "2"
+        case "d", "t": return "3"
+        case "l": return "4"
+        case "m", "n": return "5"
+        case "r": return "6"
+        default: return nil          // vowels + h,w,y — separators, no code
+        }
+    }
+    var out = String(Character(first)).uppercased()
+    var prev = code(first)
+    for c in letters.dropFirst() {
+        let k = code(c)
+        if let k = k, k != prev { out.append(k) }
+        // h and w are transparent: they do NOT reset the "same code" rule; vowels do.
+        if c != "h" && c != "w" { prev = k }
+        if out.count == 4 { break }
+    }
+    return out.padding(toLength: 4, withPad: "0", startingAt: 0)
+}
+
+/// The system word list, used as a veto: if Whisper produced a REAL English word, leave it
+/// alone no matter what it rhymes with. Only nonsense-looking tokens get sound-alike repair.
+let englishWords: Set<String> = {
+    for p in ["/usr/share/dict/words", "/usr/share/dict/web2"] {
+        if let s = try? String(contentsOfFile: p, encoding: .utf8) {
+            return Set(s.split(separator: "\n").map { $0.lowercased() })
+        }
+    }
+    return []
+}()
+
+func regexEscape(_ s: String) -> String { NSRegularExpression.escapedPattern(for: s) }
+
+/// Rewrite one line of transcript text. Returns the corrected line plus a canonical→count
+/// tally, so the run can report exactly what it fixed rather than silently editing speech.
+func correctText(_ text: String, _ v: Vocabulary) -> (String, [String: Int]) {
+    var out = text
+    var hits: [String: Int] = [:]
+
+    // 1. Listed mishearings. Longest first so "pucketty bot" wins over "pucketty".
+    let listed = v.corrections.flatMap { canon, aliases in aliases.map { (canon, $0) } }
+        .sorted { $0.1.count > $1.1.count }
+    for (canon, alias) in listed {
+        // \b…\b, but the alias may contain spaces/hyphens, so allow either between its words.
+        let body = alias.split(whereSeparator: { $0 == " " || $0 == "-" })
+            .map { regexEscape(String($0)) }.joined(separator: "[ -]+")
+        guard let re = try? NSRegularExpression(pattern: "\\b" + body + "\\b", options: [.caseInsensitive]) else { continue }
+        let ms = re.matches(in: out, range: NSRange(out.startIndex..., in: out))
+        guard !ms.isEmpty else { continue }
+        hits[canon, default: 0] += ms.count
+        out = re.stringByReplacingMatches(in: out, range: NSRange(out.startIndex..., in: out),
+                                          withTemplate: NSRegularExpression.escapedTemplate(for: canon))
+    }
+
+    // 1b. The canonical terms themselves, in the wrong case. Whisper hears the name fine but
+    //     writes "renoise" / "lackluster" lowercase mid-sentence; the spelling we ship is the
+    //     one that goes on screen.
+    for term in v.terms {
+        let body = term.split(separator: " ").map { regexEscape(String($0)) }.joined(separator: "\\s+")
+        guard let re = try? NSRegularExpression(pattern: "\\b" + body + "\\b", options: [.caseInsensitive]) else { continue }
+        for m in re.matches(in: out, range: NSRange(out.startIndex..., in: out)).reversed() {
+            guard let r = Range(m.range, in: out), String(out[r]) != term else { continue }
+            hits[term, default: 0] += 1
+            out.replaceSubrange(r, with: term)
+        }
+    }
+
+    // 2. Sound-alikes nobody listed yet — the whole point being that you should not have to
+    //    enumerate every way Whisper can mangle a name before it gets spelled right.
+    guard v.fuzzy else { return (out, hits) }
+    let singles = v.terms.filter { !$0.contains(" ") && $0.count >= 5 }
+    guard !singles.isEmpty,
+          let tok = try? NSRegularExpression(pattern: "[A-Za-z][A-Za-z'’-]*") else { return (out, hits) }
+    let codes = singles.map { (term: $0, code: soundex($0)) }
+    var result = out
+    for m in tok.matches(in: out, range: NSRange(out.startIndex..., in: out)).reversed() {
+        guard let r = Range(m.range, in: out) else { continue }
+        var word = String(out[r])
+        var suffix = ""
+        for poss in ["'s", "’s"] where word.lowercased().hasSuffix(poss) {
+            suffix = String(word.suffix(2)); word = String(word.dropLast(2))
+        }
+        guard word.count >= 5 else { continue }
+        let lower = word.lowercased()
+        if englishWords.contains(lower) { continue }                       // real word — hands off
+        if singles.contains(where: { $0.lowercased() == lower }) { continue } // already correct
+        let code = soundex(word)
+        guard let hit = codes.first(where: { $0.code == code }) else { continue }
+        guard abs(hit.term.count - word.count) <= 3 else { continue }      // same sound, wildly different length
+        hits[hit.term, default: 0] += 1
+        result.replaceSubrange(r, with: hit.term + suffix)
+    }
+    return (result, hits)
+}
+
+/// Sweep a finished .srt in place. Only the text lines are touched — indices and timecodes are
+/// passed through byte-for-byte, so the file stays a valid .srt and the burn-in still lines up.
+@discardableResult
+func correctSRT(_ path: String, _ v: Vocabulary, quiet: Bool = false) -> [String: Int] {
+    guard !v.isEmpty, let raw = try? String(contentsOfFile: path, encoding: .utf8) else { return [:] }
+    var hits: [String: Int] = [:]
+    let fixed = raw.components(separatedBy: "\n").map { line -> String in
+        let t = line.trimmingCharacters(in: .whitespaces)
+        if t.isEmpty || t.contains("-->") || Int(t) != nil { return line }   // index / timecode / blank
+        let (s, h) = correctText(line, v)
+        for (k, n) in h { hits[k, default: 0] += n }
+        return s
+    }.joined(separator: "\n")
+    if !hits.isEmpty {
+        try? fixed.write(toFile: path, atomically: true, encoding: .utf8)
+        if !quiet {
+            let summary = hits.sorted { $0.value > $1.value }.map { "\($0.key) ×\($0.value)" }.joined(separator: ", ")
+            let total = hits.values.reduce(0, +)
+            note("✓ vocabulary: corrected \(total) word\(total == 1 ? "" : "s") — \(summary)")
+        }
+    } else if !quiet {
+        note("✓ vocabulary: nothing to correct (\((v.source as NSString).lastPathComponent))")
+    }
+    return hits
+}
+
+/// Headless assertions for the vocabulary layer — no audio, no video, no Whisper. `build.sh`
+/// runs this, so a regression in the correction rules fails the build instead of a recording.
+func vocabularySelfTest() -> Never {
+    var v = Vocabulary()
+    v.terms = ["Renoise", "Paketti", "Lackluster", "Redux"]
+    v.corrections = ["Paketti": ["pucketty", "pocketty"], "Renoise": ["reno"],
+                     "Lackluster": ["lacklustre", "lack luster"]]
+    var failed = 0
+    func check(_ input: String, _ want: String, _ why: String) {
+        let got = correctText(input, v).0
+        if got == want { print("  ok   \(why)") }
+        else { failed += 1; print("  FAIL \(why)\n       input: \(input)\n       want:  \(want)\n       got:   \(got)") }
+    }
+    print("rec-subtitle vocabulary self-test")
+    check("So I opened Pucketty in Reno.", "So I opened Paketti in Renoise.", "listed mishearings")
+    check("pocketty is a Renoise tool", "Paketti is a Renoise tool", "listed, sentence-initial + already-correct term untouched")
+    check("my Lacklustre album", "my Lackluster album", "British spelling")
+    check("the lack luster record", "the Lackluster record", "two-word mishearing")
+    check("Packetti and Paketi both", "Paketti and Paketti both", "UNLISTED sound-alikes (Soundex)")
+    check("Pucketty's tools", "Paketti's tools", "possessive preserved")
+    check("Paketti in Renoise", "Paketti in Renoise", "idempotent — correct text unchanged")
+    check("a lackluster performance today", "a Lackluster performance today", "canonical casing applied")
+    check("I put the packet in the tracker", "I put the packet in the tracker", "real English words are never rewritten")
+    check("rendered a nice noise floor", "rendered a nice noise floor", "ordinary speech untouched")
+    print(failed == 0 ? "✓ vocabulary self-test passed" : "✗ \(failed) failure(s)")
+    exit(failed == 0 ? 0 : 1)
+}
+
 // MARK: - transcription via whisp
 
 func shquote(_ args: [String]) -> String {
@@ -350,11 +576,37 @@ if CommandLine.arguments.dropFirst().first == "--render-sample" {
 }
 
 var args = Array(CommandLine.arguments.dropFirst())
+
+// Headless check of the vocabulary rules — no media, no Whisper. Run by build.sh.
+if args.contains("--self-test") { vocabularySelfTest() }
+
+// Repair an EXISTING transcript in place (a take you already burned, a .srt from anywhere).
+if let i = args.firstIndex(of: "--fix-srt") {
+    guard i + 1 < args.count else { die("--fix-srt needs a .srt path") }
+    let path = (args[i+1] as NSString).expandingTildeInPath
+    guard FileManager.default.fileExists(atPath: path) else { die("no such .srt: \(path)") }
+    let vopt: String? = { if let j = args.firstIndex(of: "--vocab"), j + 1 < args.count { return args[j+1] }; return nil }()
+    let v = loadVocabulary(explicit: vopt, near: (path as NSString).deletingLastPathComponent)
+    if v.isEmpty { die("no vocabulary found — ship bin/recburn-vocabulary.json or write ~/.config/recburn/vocabulary.json") }
+    note("⧉ vocabulary: \(v.source)")
+    correctSRT(path, v)
+    print("✓ \(path)")
+    exit(0)
+}
+
 guard let video = args.first, !video.hasPrefix("-") else {
     die("""
     usage:
       rec-subtitle <video> [--mic voice.m4a] [--model NAME]           → <stem>.srt sidecar
       rec-subtitle <video> --burn [--srt FILE] [--mic voice.m4a]      → <stem>-subtitled.mov
+      rec-subtitle --fix-srt <file.srt> [--vocab FILE]                → align proper nouns in place
+      rec-subtitle --self-test                                        → check the vocabulary rules
+
+    vocabulary (proper nouns Whisper mishears — Paketti, Renoise, Lackluster):
+      --vocab FILE   use this vocabulary  ·  --no-vocab   disable bias + correction
+      Default search: ./.recburn-vocabulary.json, ~/.config/recburn/vocabulary.json,
+      then recburn-vocabulary.json beside this binary. Terms are fed to Whisper as
+      --initial_prompt AND the finished .srt is swept for known/sound-alike mishearings.
     """)
 }
 let videoPath = (video as NSString).expandingTildeInPath
@@ -364,7 +616,14 @@ let doBurn = args.contains("--burn")
 // Default is LOCAL (reliable). --mini is an explicit opt-in that itself falls back to local.
 let useMini = args.contains("--mini")
 let model = opt("--model")
-let prompt = opt("--prompt")       // optional vocabulary bias → whisper --initial_prompt
+// Vocabulary: the proper nouns this recording is going to contain. Feeds BOTH the Whisper
+// bias (--initial_prompt) and the correction sweep over the finished .srt.
+let noVocab = args.contains("--no-vocab")
+let vocab = noVocab ? Vocabulary()
+                    : loadVocabulary(explicit: opt("--vocab"), near: (videoPath as NSString).deletingLastPathComponent)
+if !vocab.isEmpty { note("⧉ vocabulary: \(vocab.source) — \(vocab.terms.count) term(s)") }
+// An explicit --prompt still wins; otherwise the vocabulary becomes the bias.
+let prompt = opt("--prompt") ?? vocabularyPrompt(vocab)   // → whisper --initial_prompt
 let lang = opt("--lang") ?? "en"   // default English; pass --lang auto to auto-detect
 let micAudio = opt("--mic")
 let stem = (videoPath as NSString).deletingPathExtension
@@ -382,6 +641,12 @@ if !FileManager.default.fileExists(atPath: srt) {
         srt = stem + ".srt"
     }
 }
+
+// The repair half of the vocabulary: Whisper's bias is a nudge, not a guarantee, so the
+// finished transcript is swept before anything is burned into the picture. Idempotent — a
+// transcript that is already right is left byte-for-byte alone.
+if !noVocab { correctSRT(srt, vocab) }
+
 print("✓ \(srt)")
 
 if doBurn {

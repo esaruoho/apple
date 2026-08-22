@@ -44,6 +44,8 @@ struct Options {
     var burnLang = "en"       // subtitle language (default English; "auto" to auto-detect)
     var burnModel: String?    // whisper model (default: rec-subtitle picks small.en / small)
     var burnPrompt: String?   // vocabulary bias → rec-subtitle --prompt → whisper --initial_prompt
+    var burnVocab: String?    // vocabulary FILE (proper nouns: Paketti, Renoise, Lackluster…)
+    var burnNoVocab = false   // turn the vocabulary bias + correction sweep off entirely
     var clicks = false        // burn a live "CLICKS: n" counter into the video
     var clicksCorner = "tl"   // tl|tr|bl|br
     var clicksSeed = 0        // start the counter at n (demo / headless verification)
@@ -151,6 +153,8 @@ func parseArgs() -> Options {
         case "--burn-lang":    o.burnLang = it.next() ?? "en"   // subtitle language (default en)
         case "--burn-model":   o.burnModel = it.next()          // whisper model (default small.en)
         case "--burn-prompt":  o.burnPrompt = it.next()         // vocabulary bias (proper nouns)
+        case "--burn-vocab":   o.burnVocab = it.next()          // vocabulary file (proper nouns)
+        case "--no-vocab":     o.burnNoVocab = true             // no bias, no correction sweep
         case "--list", "-l":   o.list = true
         case "--help", "-h":   printUsage(); exit(0)
         default: FileHandle.standardError.write("unknown arg: \(a)\n".data(using: .utf8)!); exit(2)
@@ -202,6 +206,10 @@ func printUsage() {
       --burn-mini            opt-in: route transcription to the Mini (falls back to local)
       --burn-lang <code>     subtitle language (default en; "auto" to auto-detect)
       --burn-model <name>    whisper model (default small.en; e.g. medium.en, large-v3)
+      --burn-vocab <file>    proper-noun vocabulary (default: recburn-vocabulary.json beside
+                             the tools, ~/.config/recburn/vocabulary.json, or ./.recburn-vocabulary.json)
+                             — biases Whisper AND corrects the .srt (Paketti, Renoise, Lackluster)
+      --no-vocab             transcribe raw: no vocabulary bias, no correction sweep
 
     Press Ctrl-C (or type q + Enter) to stop and finalize the file.
     On stop it prints the final recording length and whether the mic was recorded.
@@ -1142,6 +1150,8 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         var a = [inPath, "--burn", "--lang", opts.burnLang]
         if let m = opts.burnModel { a += ["--model", m] }
         if let pr = opts.burnPrompt { a += ["--prompt", pr] }
+        if let vf = opts.burnVocab { a += ["--vocab", vf] }
+        if opts.burnNoVocab { a.append("--no-vocab") }
         if opts.burnMini { a.append("--mini") }
         p.arguments = a
         do { try p.run() } catch {

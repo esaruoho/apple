@@ -464,7 +464,7 @@ Post-process a screen recording's audio (split / flatten)  —  4 scenarios   (f
   triad: .session✗  transcript✗  RESULT✓
   honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Subtitle a screen recording (.srt sidecar + burn-in)  —  8 scenarios   (features/rec-subtitle.feature)
+Subtitle a screen recording (.srt sidecar + burn-in)  —  14 scenarios   (features/rec-subtitle.feature)
   - [@hw-verified] transcribe → .srt sidecar via whisp (Whisper)  (ran live)
   - [@hw-verified] --burn hard-paints the subtitles into the video  (ran live)
   - [@hw-verified] version-safe burn export (Ventura+)  (ran live)
@@ -473,8 +473,14 @@ Subtitle a screen recording (.srt sidecar + burn-in)  —  8 scenarios   (featur
   - [@built] transcription shows progress and elapsed time
   - [@built] burn-in reports its export time
   - [@hw-verified] subtitle glyphs keep their counters open (no more muddy a/e)  (r
-  triad: .session✗  transcript✗  RESULT✓
-  honesty: 8/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  - [@hw-verified] known mishearings are rewritten to the canonical spelling  (ran 
+  - [@hw-verified] mishearings NOBODY listed are caught by sound  (ran live)
+  - [@hw-verified] ordinary speech is never rewritten  (ran live)
+  - [@built] the same vocabulary biases Whisper before it decodes
+  - [@hw-verified] the vocabulary is a file, editable without a rebuild  (ran live)
+  - [@hw-verified] the rules are checked headlessly, so a regression fails the buil
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 14/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Two presses of the same key always get the shell back  —  9 scenarios   (features/recburn-abort.feature)
   - [@hw-verified] the second Ctrl-C abandons transcription and exits at once  (mea

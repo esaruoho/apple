@@ -1,0 +1,37 @@
+{
+  "_comment": [
+    "recburn / rec-subtitle vocabulary — the proper nouns Whisper keeps guessing phonetically.",
+    "Used TWICE: 'terms' become whisper --initial_prompt (bias), and 'corrections' sweep the",
+    "finished .srt (repair). Bias alone is not reliable; the sweep is what makes it certain.",
+    "Edit this file (or ~/.config/recburn/vocabulary.json, or ./.recburn-vocabulary.json) —",
+    "no rebuild needed. 'fuzzy' catches UNLISTED mishearings that sound the same (Soundex),",
+    "skipping any word that is real English, so ordinary speech is never rewritten."
+  ],
+  "fuzzy": true,
+  "terms": [
+    "Renoise", "Paketti", "PakettiBot", "Redux", "Lackluster", "Esa Ruoho",
+    "Impulse Tracker", "recburn", "Cloudcity", "Loupedeck"
+  ],
+  "corrections": {
+    "Paketti": [
+      "pucketty", "pucketti", "puckety", "pocketty", "pocketti", "pockety", "packetti",
+      "packety", "packetty", "paketi", "pakety", "pakkiti", "puketti", "bucketty",
+      "pack etty", "pack it he", "packet he", "packet e", "pa ketti", "pack a t"
+    ],
+    "PakettiBot": ["pucketty bot", "pocketty bot", "packetti bot", "paketti bot"],
+    "Renoise": [
+      "reno", "renoy", "renois", "renoize", "renoyes", "ren oise", "re noise",
+      "re-noise", "rain noise", "rhino ice", "renoiz"
+    ],
+    "Lackluster": [
+      "lacklustre", "lack luster", "lack lustre", "lack-lustre",
+      "lacklaster", "lack laster"
+    ],
+    "Redux": ["re ducks", "redoux", "reduxe", "ree ducks"],
+    "Esa Ruoho": ["esa rojo", "asa ruoho", "esa roho", "essa ruoho", "esa row ho"],
+    "Impulse Tracker": ["impulsed tracker", "impulse trekker"],
+    "recburn": ["rec burn", "wreck burn", "rec-burn", "reckburn"],
+    "Cloudcity": ["cloud city"],
+    "Loupedeck": ["loop deck", "loopdeck", "loop-deck"]
+  }
+}

@@ -20,7 +20,11 @@
 #
 # RESULT  Direct-push to main. bin/rec-subtitle(.swift), commands/rec-subtitle.md. Commits:
 #   4725ebc (srt + burn-in), 1705700 (--mini Mini routing + one-command --burn chain).
-#   apple-only (depends on the private whisp CLI); NOT mirrored to apple-rec.
+#   Vocabulary (proper-noun alignment): bin/rec-subtitle.swift + bin/recburn-vocabulary.json +
+#   bin/screen-audio-record.swift (--burn-vocab/--no-vocab) + commands/rec-subtitle.md, mirrored
+#   to esaruoho/apple-rec (README + build.sh self-test gate). Session: rec-subtitle.session.md.
+#   NOTE: rec-subtitle.swift IS mirrored to apple-rec (byte-identical); only the --mini path
+#   depends on the private whisp pipeline, and it falls back to local.
 # ============================================================================
 
 Feature: Subtitle a screen recording (.srt sidecar + burn-in)
@@ -98,3 +102,65 @@ Feature: Subtitle a screen recording (.srt sidecar + burn-in)
       counter open and crisp
     # cite: subtitleAttr() + renderTextImage() offset-composite; @hw-verified via ffmpeg frame
     #       grab + the hidden `rec-subtitle --render-sample "…" out.png` dev tool
+
+  # ==========================================================================================
+  # VOCABULARY — proper-noun alignment (added 2026-08-23)
+  #   Whisper spells names it has never seen phonetically: "Paketti" → Pucketty / Pocketty,
+  #   "Renoise" → Reno, "Lackluster" → Lacklustre. Fixed at BOTH ends — bias the decoder, then
+  #   repair the output — because the bias alone is a nudge, not a guarantee.
+  # ==========================================================================================
+
+  @hw-verified
+  Scenario: known mishearings are rewritten to the canonical spelling  (ran live)
+    Given a vocabulary listing "Paketti" ← pucketty/pocketty, "Renoise" ← reno,
+      "Lackluster" ← lacklustre/lack luster
+    When a transcript says "So today I'm showing Pucketty, which is a tool for Reno."
+    Then the .srt reads "So today I'm showing Paketti, which is a tool for Renoise."
+    And the run prints "✓ vocabulary: corrected 6 words — Paketti ×3, Renoise ×2, Lackluster ×1"
+    # cite: correctText() step 1 + correctSRT(); verified: rec-subtitle --fix-srt on a 3-cue .srt
+
+  @hw-verified
+  Scenario: mishearings NOBODY listed are caught by sound  (ran live)
+    Given "Packetti" and "Paketi" appear in the transcript and neither is in the corrections list
+    When the sweep runs
+    Then both become "Paketti", because American Soundex codes all three P230 — you do not have
+      to enumerate every way a name can be mangled before it gets spelled right
+    # cite: soundex() + correctText() step 2; verified: --self-test case "UNLISTED sound-alikes"
+
+  @hw-verified
+  Scenario: ordinary speech is never rewritten  (ran live)
+    Given the sentence "I put the packet in the tracker and it rendered fine"
+    When the sound-alike sweep runs
+    Then nothing changes, because every candidate word is in /usr/share/dict/words — a REAL
+      English word is vetoed no matter what it rhymes with, so only nonsense tokens get repaired
+    # cite: englishWords veto in correctText(); verified: --self-test cases "real English words"
+    #       and "ordinary speech untouched"
+
+  @built
+  Scenario: the same vocabulary biases Whisper before it decodes
+    Given a vocabulary with N terms and no explicit --prompt
+    When transcription starts
+    Then the terms are joined into a glossary sentence and passed as `whisper --initial_prompt`,
+      so the decoder is nudged toward the right spelling BEFORE the sweep has to repair anything
+    And an explicit --prompt still wins over the vocabulary
+    # cite: vocabularyPrompt() + `let prompt = opt("--prompt") ?? vocabularyPrompt(vocab)`
+
+  @hw-verified
+  Scenario: the vocabulary is a file, editable without a rebuild  (ran live)
+    Given recburn-vocabulary.json beside the binary
+    When rec-subtitle looks for a vocabulary
+    Then it takes the first of: --vocab FILE · $RECBURN_VOCAB · .recburn-vocabulary.json beside
+      the recording · ./.recburn-vocabulary.json · ~/.config/recburn/vocabulary.json ·
+      recburn-vocabulary.json beside the binary (also inside RecBurn.app/Contents/MacOS)
+    And --no-vocab turns both halves off; recburn/rec pass --burn-vocab and --no-vocab through
+    # cite: vocabularyPaths() / loadVocabulary(); screen-audio-record.swift makeSubtitledVersion()
+    # verified: --fix-srt with no flags found the sibling file and corrected the transcript
+
+  @hw-verified
+  Scenario: the rules are checked headlessly, so a regression fails the build  (ran live)
+    Given `rec-subtitle --self-test`
+    Then it runs 10 assertions (listed + unlisted + possessive + casing + idempotence + the
+      English-word veto) with no audio, no video and no Whisper, and exits non-zero on failure
+    And build.sh runs it right after compiling — you find out at build time, not mid-screencast
+    # cite: vocabularySelfTest(); apple-rec/build.sh "▸ checking the vocabulary rules…"
+    # verified: 10/10 ok in the build output
