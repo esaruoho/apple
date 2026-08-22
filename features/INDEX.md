@@ -553,6 +553,18 @@ Redact a region of a finished recburn video without re-rendering it  —  29 sce
   triad: .session✓  transcript✗  RESULT✓
   honesty: 26/29 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+The only thing that ends a take is the person making it  —  8 scenarios   (features/recburn-stream-recovery.feature)
+  - [@hw-verified] dropped frames do not stop anything  (measured 2026-08-22)
+  - [@hw-verified] killing replayd no longer ends the take  (measured 2026-08-22)
+  - [@hw-verified] the interruption is on the record, not just in the scrollback  (
+  - [(no grade)] why writing into the same file works at all
+  - [@built] two failures are deliberately NOT retried through
+  - [@built] giving up is unmistakable
+  - [@hw-verified] a cut-short take does not silently cost you the render  (2026-08
+  - [(no grade)] what is still stale
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 6/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Burn a live click counter into a screen recording  —  13 scenarios   (features/recburnclick.feature)
   - [@hw-verified] counting clicks needs NO event tap and NO Accessibility prompt  
   - [@hw-verified] the number is really in the pixels  (ran live 2026-07-29)

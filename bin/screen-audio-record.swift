@@ -105,6 +105,14 @@ struct RecBurnManifest: Codable {
     // pipeline did NOT run to the end. A consumer must not present `final` as the finished
     // article when this is true.
     var aborted: Bool?
+    // Set when ScreenCaptureKit ended the stream and it could not be restarted. The take is
+    // real and playable, but it is shorter than the one that was being made.
+    var cutShort: Bool?
+    var cutShortReason: String?
+    // How many times the stream died and came back, and how much wall time the picture was
+    // frozen for across all of them. Absent when the recording ran clean.
+    var interruptions: Int?
+    var frozenSeconds: Double?
 }
 
 func parseArgs() -> Options {
@@ -161,6 +169,11 @@ func printUsage() {
       --display <n>          display index from --list (default 0 = main)
       --no-normalize         leave the flattened audio at its recorded level (default is
                              to lift it to a normal listening loudness, peak-safe)
+      Dropped frames NEVER stop a recording — they are reported and nothing else. If
+      ScreenCaptureKit itself ends the stream, the capture is rebuilt and writing
+      continues into the same file; only if that fails for 60s is the take finalized,
+      loudly, and marked cutShort in the manifest.
+
       Ctrl-C stops the recording; Ctrl-C AGAIN abandons whatever post-processing is
       still running (flatten / transcribe / burn) and returns the shell straight away.
       Everything already written is kept, half-written files are removed.
@@ -383,29 +396,20 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         guard opts.displayIndex < content.displays.count else { err("no display at index \(opts.displayIndex)") }
         let display = content.displays[opts.displayIndex]
 
-        // Build the content filter — app-scoped (screen + that app's audio) or whole-display.
-        let filter: SCContentFilter
-        if let name = opts.appName {
-            let matches = content.applications.filter {
-                $0.applicationName.caseInsensitiveCompare(name) == .orderedSame ||
-                $0.bundleIdentifier.caseInsensitiveCompare(name) == .orderedSame ||
-                $0.applicationName.range(of: name, options: .caseInsensitive) != nil
-            }
-            guard !matches.isEmpty else { err("no running app matches \"\(name)\" — try --list") }
-            filter = SCContentFilter(display: display, including: matches, exceptingWindows: [])
-        } else if opts.systemAudio {
-            filter = SCContentFilter(display: display, excludingWindows: [])
-        } else {
+        guard opts.systemAudio || opts.appName != nil else {
             err("choose --app <name> (single-app audio) or --system-audio (all audio)")
         }
+        guard let filter = makeFilter(display, content) else {
+            err("no running app matches \"\(opts.appName ?? "")\" — try --list")
+        }
+        self.contentFilter = filter
 
         // Resolution: use the display's pixel dimensions for a crisp capture.
-        let scale = NSScreen.screens.first { $0.deviceDescription[.init("NSScreenNumber")] as? CGDirectDisplayID == display.displayID }?.backingScaleFactor ?? 2.0
-        let px = { (pts: Int) in Int(Double(pts) * Double(scale)) }
+        let (pw, ph) = pixelSize(of: display)
 
         let cfg = SCStreamConfiguration()
-        cfg.width = px(display.width)
-        cfg.height = px(display.height)
+        cfg.width = pw
+        cfg.height = ph
         cfg.minimumFrameInterval = CMTime(value: 1, timescale: CMTimeScale(opts.fps))
         cfg.showsCursor = true
         cfg.queueDepth = 6
@@ -423,6 +427,9 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         // The mic ALWAYS gets its own track + stream output, even if it starts muted,
         // so a live SIGUSR1 toggle can turn it on later without rebuilding the writer.
         if opts.clicks { clickCounter = ClickCounter(seed: opts.clicksSeed) }
+        // Remembered so a reconnect can refuse to append differently-sized frames to a writer
+        // that is already committed to these dimensions.
+        writerWidth = cfg.width; writerHeight = cfg.height
         setupWriter(width: cfg.width, height: cfg.height)
         if opts.pip { _ = setupCamera() }
 
@@ -453,6 +460,31 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
 
         installSignalHandler()
         installQuitWatcher()
+    }
+
+    /// The display's dimensions in real pixels. Factored out because a reconnect has to
+    /// compute it again against a freshly-fetched SCDisplay and compare.
+    func pixelSize(of display: SCDisplay) -> (Int, Int) {
+        let scale = NSScreen.screens.first {
+            $0.deviceDescription[.init("NSScreenNumber")] as? CGDirectDisplayID == display.displayID
+        }?.backingScaleFactor ?? 2.0
+        return (Int(Double(display.width) * Double(scale)), Int(Double(display.height) * Double(scale)))
+    }
+
+    /// Build the content filter — app-scoped (screen + that app's audio) or whole-display.
+    /// Returns nil only when a named app is no longer running, which on a RECONNECT is a
+    /// real possibility (the app being recorded quit) and not a programming error.
+    func makeFilter(_ display: SCDisplay, _ content: SCShareableContent) -> SCContentFilter? {
+        guard let name = opts.appName else {
+            return SCContentFilter(display: display, excludingWindows: [])
+        }
+        let matches = content.applications.filter {
+            $0.applicationName.caseInsensitiveCompare(name) == .orderedSame ||
+            $0.bundleIdentifier.caseInsensitiveCompare(name) == .orderedSame ||
+            $0.applicationName.range(of: name, options: .caseInsensitive) != nil
+        }
+        guard !matches.isEmpty else { return nil }
+        return SCContentFilter(display: display, including: matches, exceptingWindows: [])
     }
 
     func setupWriter(width: Int, height: Int) {
@@ -727,7 +759,135 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {
-        FileHandle.standardError.write("stream stopped: \(error.localizedDescription)\n".data(using: .utf8)!)
+        DispatchQueue.main.async { [weak self] in self?.handleStreamFailure(error) }
+    }
+
+    // MARK: - Surviving ScreenCaptureKit
+    //
+    // SCK ends the stream on its own — "application connection being interrupted" is the one
+    // seen in the wild, and it usually means replayd restarted underneath us, not that
+    // anything is actually wrong. The old behaviour was to finalize on the first such error,
+    // so a blip in a system daemon silently ended a take that was still being performed, and
+    // then quietly ran twenty minutes of flatten + whisper + burn on the truncated result.
+    //
+    // A recording should not end because of something the person recording did not do. So:
+    // rebuild the stream and keep writing into the SAME file. Sample-buffer PTS are mach-time
+    // based and monotonic, so the timeline simply continues; the gap shows up as the last
+    // frame held for as long as the outage lasted, which is a far better outcome than losing
+    // everything after it.
+    //
+    // Two things are deliberately NOT retried through: the app being recorded quitting, and
+    // the display resolution changing. Both mean the recording that was asked for no longer
+    // exists, and pretending otherwise would produce a file that is worse than an honest stop.
+    func handleStreamFailure(_ error: Error) {
+        lock.lock(); let stopping = finishing; lock.unlock()
+        if stopping { return }                       // our own stopCapture, or already leaving
+
+        if streamDownSince == nil {
+            streamDownSince = Date()
+            interruptionCount += 1
+            let msg = "\n⚠︎ ScreenCaptureKit ended the stream — this was NOT you\n"
+                    + "   \(error.localizedDescription)\n"
+                    + "   the recording so far is safe; reconnecting…\n"
+            FileHandle.standardError.write(msg.data(using: .utf8)!)
+        }
+        reconnectAttempt = 0
+        tryReconnect()
+    }
+
+    func scheduleRetry(_ why: String) {
+        let down = Date().timeIntervalSince(streamDownSince ?? Date())
+        if down >= maxDowntimeSeconds {
+            giveUp("could not restart the capture within \(Int(maxDowntimeSeconds))s — \(why)")
+            return
+        }
+        // 0.5s, 1s, 2s, 4s, then every 5s. Fast enough that a replayd blip costs a fraction of
+        // a second of frozen picture, slow enough that a genuinely dead capture is not a spin.
+        let delay = min(0.5 * pow(2.0, Double(reconnectAttempt - 1)), 5.0)
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in self?.tryReconnect() }
+    }
+
+    func tryReconnect() {
+        lock.lock(); let stopping = finishing; lock.unlock()
+        if stopping { return }
+        reconnectAttempt += 1
+
+        SCShareableContent.getExcludingDesktopWindows(false, onScreenWindowsOnly: false) { [weak self] content, error in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                guard let content else {
+                    self.scheduleRetry("shareable content unavailable: \(error?.localizedDescription ?? "unknown")")
+                    return
+                }
+                // Re-fetch the display rather than reusing the stale SCDisplay: after a
+                // replayd restart the old object can be attached to a session that no
+                // longer exists.
+                guard self.opts.displayIndex < content.displays.count else {
+                    self.giveUp("the display being recorded is gone")
+                    return
+                }
+                let display = content.displays[self.opts.displayIndex]
+                let (pw, ph) = self.pixelSize(of: display)
+                guard pw == self.writerWidth, ph == self.writerHeight else {
+                    self.giveUp("the display resolution changed mid-recording "
+                                + "(\(self.writerWidth)x\(self.writerHeight) → \(pw)x\(ph)) — "
+                                + "the file already committed to the old size")
+                    return
+                }
+                guard let filter = self.makeFilter(display, content) else {
+                    self.giveUp("\"\(self.opts.appName ?? "")\" is no longer running")
+                    return
+                }
+                self.contentFilter = filter
+
+                let s = SCStream(filter: filter, configuration: self.cfg, delegate: self)
+                do {
+                    try s.addStreamOutput(self, type: .screen, sampleHandlerQueue: self.sampleQueue)
+                    try s.addStreamOutput(self, type: .audio, sampleHandlerQueue: self.sampleQueue)
+                    try s.addStreamOutput(self, type: .microphone, sampleHandlerQueue: self.sampleQueue)
+                } catch {
+                    self.scheduleRetry("addStreamOutput: \(error.localizedDescription)")
+                    return
+                }
+                s.startCapture { [weak self] err in
+                    DispatchQueue.main.async {
+                        guard let self else { return }
+                        if let err {
+                            self.scheduleRetry("startCapture: \(err.localizedDescription)")
+                            return
+                        }
+                        self.stream = s
+                        let gap = Date().timeIntervalSince(self.streamDownSince ?? Date())
+                        self.totalFrozenSeconds += gap
+                        self.streamDownSince = nil
+                        self.reconnectAttempt = 0
+                        FileHandle.standardError.write(String(
+                            format: "✓ reconnected after %.1fs — still recording (the picture was frozen for that long)\n",
+                            gap).data(using: .utf8)!)
+                    }
+                }
+            }
+        }
+    }
+
+    /// Reconnection is not going to happen. Say so unmistakably, then finalize what exists —
+    /// the captured file is never thrown away.
+    func giveUp(_ reason: String) {
+        lock.lock(); let already = finishing; lock.unlock()
+        if already { return }
+        cutShort = true
+        cutShortReason = reason
+        if let since = streamDownSince { totalFrozenSeconds += Date().timeIntervalSince(since) }
+        streamDownSince = nil
+        let banner = "\n"
+            + "╭─ RECORDING CUT SHORT ───────────────────────────────────────────────\n"
+            + "│  ScreenCaptureKit ended the capture and it could not be restarted.\n"
+            + "│  \(reason)\n"
+            + "│\n"
+            + "│  THIS WAS NOT YOU — nothing you pressed ended this take.\n"
+            + "│  Everything captured up to that point is saved and playable.\n"
+            + "╰─────────────────────────────────────────────────────────────────────\n"
+        FileHandle.standardError.write(banner.data(using: .utf8)!)
         finish()
     }
 
@@ -748,6 +908,17 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     // One press is never destructive and two presses always get the shell back. Ctrl-C is
     // not overloaded into "throw the recording away" — the raw capture is always kept,
     // because it is the one artifact that cannot be produced again.
+    // Surviving a ScreenCaptureKit failure — see handleStreamFailure().
+    var contentFilter: SCContentFilter?
+    var writerWidth = 0, writerHeight = 0
+    var reconnectAttempt = 0
+    var interruptionCount = 0
+    var totalFrozenSeconds = 0.0
+    var streamDownSince: Date?
+    var cutShort = false
+    var cutShortReason: String?
+    let maxDowntimeSeconds = 60.0
+
     var abortRequested = false
     var runningChild: Process?         // the post-stop step currently blocking (flatten / burn)
     var partialOutputs: [String] = []  // what that step is mid-way through writing
@@ -1018,7 +1189,12 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         FileHandle.standardError.write("\n■ stopping…\n".data(using: .utf8)!)
         // Say it at the exact moment it becomes true, not in --help where nobody is looking.
         if opts.burn || (opts.autoFlatten && micEverOn) {
-            FileHandle.standardError.write("  (Ctrl-C again to abandon the rest — the recording itself is already safe)\n".data(using: .utf8)!)
+            // On a cut-short take this matters more, not less: nobody asked for this render,
+            // and it is the twenty minutes the abort was built to give back.
+            let hint = cutShort
+                ? "  (this take was cut short — Ctrl-C NOW to skip the render of it)\n"
+                : "  (Ctrl-C again to abandon the rest — the recording itself is already safe)\n"
+            FileHandle.standardError.write(hint.data(using: .utf8)!)
         }
         captureSession?.stopRunning()
         healthTimer?.cancel(); healthTimer = nil
@@ -1032,8 +1208,15 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                     let ok = self.writer.status == .completed
                     if ok {
                         let secs = self.firstPTS != nil ? CMTimeGetSeconds(self.lastPTS - self.firstPTS!) : 0
-                        let micNote = self.micEverOn ? " · mic recorded" : ""
-                        print("✓ saved \(self.opts.outPath)  ·  length \(formatDuration(secs))\(micNote)")
+                        var note = self.micEverOn ? " · mic recorded" : ""
+                        if self.interruptionCount > 0 {
+                            note += String(format: " · survived %d interruption%@ (%.1fs frozen)",
+                                           self.interruptionCount,
+                                           self.interruptionCount == 1 ? "" : "s",
+                                           self.totalFrozenSeconds)
+                        }
+                        if self.cutShort { note += " · CUT SHORT" }
+                        print("✓ saved \(self.opts.outPath)  ·  length \(formatDuration(secs))\(note)")
                         // If asked, and the mic was actually used, also produce a YouTube-ready
                         // single-mixed-track copy (YouTube/QuickTime play only the FIRST audio
                         // track, so a 2-track file would lose the voice). Reveal that one.
@@ -1055,7 +1238,11 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                         self.writeManifest(RecBurnManifest(
                             base: self.opts.outPath, flat: flatOut, subtitled: subOut, srt: srtOut,
                             final: revealTarget, lengthSeconds: secs, micRecorded: self.micEverOn,
-                            aborted: self.isAborting() ? true : nil))
+                            aborted: self.isAborting() ? true : nil,
+                            cutShort: self.cutShort ? true : nil,
+                            cutShortReason: self.cutShortReason,
+                            interruptions: self.interruptionCount > 0 ? self.interruptionCount : nil,
+                            frozenSeconds: self.totalFrozenSeconds > 0 ? self.totalFrozenSeconds : nil))
                         // Don't throw a Finder window at someone who just asked to be left
                         // alone — an abort means "give me my shell back", not "show me this".
                         if self.opts.reveal && !self.isAborting() {
