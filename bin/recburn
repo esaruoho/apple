@@ -1,6 +1,11 @@
 #!/bin/bash
 # recburn — the full screencast in one word: screen + system audio + microphone +
 # webcam circle, then on stop flatten (YouTube-ready) + transcribe + burn subtitles.
+#
+# Ctrl-C stops the recording. Ctrl-C AGAIN abandons the flatten/transcribe/burn that
+# follows and hands the shell straight back — a botched take costs the take, not the
+# twenty minutes of rendering it. Everything already finished is kept (including a
+# completed .srt); half-written files are removed.
 # Extra args pass straight through, e.g. `recburn --out ~/demo.mov` or `recburn --burn-model medium.en`.
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 exec "$DIR/rec" --mic --pip --burn "$@"

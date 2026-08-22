@@ -2,7 +2,8 @@
 # rec — one-word screen + system-audio recorder.
 #
 # Starts recording the whole screen + ALL system audio immediately, saving to
-# ./yyyy-MM-dd-HH-mm-ss.mov IN THE CURRENT FOLDER. Press Ctrl-C to stop and finalize.
+# ./yyyy-MM-dd-HH-mm-ss.mov IN THE CURRENT FOLDER. Press Ctrl-C to stop and finalize;
+# press Ctrl-C AGAIN to abandon any post-processing still running and get the shell back.
 # No microphone, no BlackHole/Loopback — audio comes off the system audio engine
 # via ScreenCaptureKit (bin/screen-audio-record).
 #

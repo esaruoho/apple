@@ -101,6 +101,10 @@ struct RecBurnManifest: Codable {
     var final: String         // the artifact to reveal / hand off (subtitled ?? flat ?? base)
     var lengthSeconds: Double
     var micRecorded: Bool
+    // Set when Ctrl-C was pressed a second time: the files listed above are real, but the
+    // pipeline did NOT run to the end. A consumer must not present `final` as the finished
+    // article when this is true.
+    var aborted: Bool?
 }
 
 func parseArgs() -> Options {
@@ -157,6 +161,10 @@ func printUsage() {
       --display <n>          display index from --list (default 0 = main)
       --no-normalize         leave the flattened audio at its recorded level (default is
                              to lift it to a normal listening loudness, peak-safe)
+      Ctrl-C stops the recording; Ctrl-C AGAIN abandons whatever post-processing is
+      still running (flatten / transcribe / burn) and returns the shell straight away.
+      Everything already written is kept, half-written files are removed.
+
       --no-mic / --no-pip / --no-burn / --no-clicks
                              turn one off again — for subtracting from a chained wrapper
                              (recburnclick → recburn → rec each ADD flags; these remove)
@@ -723,13 +731,129 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         finish()
     }
 
-    // Ctrl-C → clean stop + finalize.  SIGUSR1 → toggle mic on/off live.
+    // MARK: - Getting out
+    //
+    // Stopping a recording is not the same act as abandoning one, and for a long time only
+    // the first was possible. Ctrl-C stopped the capture and then the process sat there for
+    // as long as flatten + whisper + burn took — twenty minutes on an hour of video — with
+    // no way out, because SIGINT is SIG_IGN'd and the handler below had already run. A
+    // botched take therefore cost the full render before it could be re-shot.
+    //
+    // So the SAME key means both things, by count:
+    //
+    //   Ctrl-C ①  while recording      → stop and finalize (the long-standing behaviour)
+    //   Ctrl-C ②  during post-work     → abandon it; keep whatever finished, exit 130
+    //   Ctrl-C ③  if that somehow hangs → _exit immediately, no cleanup
+    //
+    // One press is never destructive and two presses always get the shell back. Ctrl-C is
+    // not overloaded into "throw the recording away" — the raw capture is always kept,
+    // because it is the one artifact that cannot be produced again.
+    var abortRequested = false
+    var runningChild: Process?         // the post-stop step currently blocking (flatten / burn)
+    var partialOutputs: [String] = []  // what that step is mid-way through writing
+
+    func isAborting() -> Bool { lock.lock(); defer { lock.unlock() }; return abortRequested }
+
+    /// Every process descended from `root`, root included.
+    ///
+    /// Killing the child's process GROUP is not enough. Foundation's `Process` gives each
+    /// spawn its own group, so rec-subtitle sits in one group and the `bash -lc whisper …`
+    /// it spawns sits in another — signal the first and whisper keeps eating a core. The
+    /// only structure that survives those boundaries is parentage, so walk that instead.
+    func descendants(of root: pid_t) -> [pid_t] {
+        let p = Process()
+        p.launchPath = "/bin/ps"
+        p.arguments = ["-axo", "pid=,ppid="]
+        let pipe = Pipe()
+        p.standardOutput = pipe
+        do { try p.run() } catch { return [root] }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        p.waitUntilExit()
+
+        var kids: [pid_t: [pid_t]] = [:]
+        for line in String(decoding: data, as: UTF8.self).split(separator: "\n") {
+            let f = line.split(separator: " ", omittingEmptySubsequences: true)
+            guard f.count >= 2, let pid = pid_t(f[0]), let ppid = pid_t(f[1]) else { continue }
+            kids[ppid, default: []].append(pid)
+        }
+        var out: [pid_t] = [], queue: [pid_t] = [root]
+        while let cur = queue.popLast() {
+            out.append(cur)
+            queue.append(contentsOf: kids[cur] ?? [])
+        }
+        return out
+    }
+
+    /// TERM the whole tree, then KILL whatever is still standing. Re-enumerated between the
+    /// two passes because a dying parent can spawn once more on the way out, and the union
+    /// of both passes covers anything that reparented to launchd in between.
+    func killTree(_ root: pid_t) {
+        var seen = Set<pid_t>()
+        for pass in 0..<2 {
+            for pid in descendants(of: root) where pid > 1 { seen.insert(pid) }
+            for pid in seen { kill(pid, pass == 0 ? SIGTERM : SIGKILL) }
+            if pass == 0 { usleep(350_000) }
+        }
+    }
+
+    /// Delete what the abandoned step had half-written. A truncated -flat.mov or
+    /// -subtitled.mov is not a partial result, it is a file that looks like a result and
+    /// is not playable. A `.srt` is deliberately NOT in this list: whisper writes it whole
+    /// at the end, so if one exists the transcription genuinely finished, and throwing that
+    /// away would discard the most expensive minutes of the run.
+    func cleanupPartials() {
+        lock.lock(); let files = partialOutputs; partialOutputs = []; lock.unlock()
+        for f in files where FileManager.default.fileExists(atPath: f) {
+            try? FileManager.default.removeItem(atPath: f)
+            FileHandle.standardError.write("  removed half-written \((f as NSString).lastPathComponent)\n".data(using: .utf8)!)
+        }
+    }
+
+    /// One Ctrl-C handler for all three presses.
+    func handleInterrupt() {
+        lock.lock(); let stopping = finishing, aborting = abortRequested; lock.unlock()
+        if !stopping { finish(); return }
+        if !aborting { abortNow(); return }
+        FileHandle.standardError.write("… forcing exit\n".data(using: .utf8)!)
+        if let c = runningChild, c.isRunning { killTree(c.processIdentifier) }
+        _exit(130)
+    }
+
+    func abortNow() {
+        lock.lock(); abortRequested = true; let child = runningChild; lock.unlock()
+        FileHandle.standardError.write(
+            "\n⨯ aborting — the recording is kept, the rest of the pipeline is cancelled\n"
+            .data(using: .utf8)!)
+        if let child, child.isRunning { killTree(child.processIdentifier) }
+        // If nothing is running yet the writer is still finalizing the .mov, and killing
+        // ourselves mid-finishWriting produces an unplayable file — so let it land, and
+        // let the normal path see abortRequested and skip every remaining step. The
+        // watchdog is only for the case where finishWriting itself never returns: the
+        // promise is that two presses get the shell back, and a promise with an exception
+        // in it is not one.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8) { [weak self] in
+            guard let self else { _exit(130) }
+            FileHandle.standardError.write("… still finalizing after 8s — leaving anyway\n".data(using: .utf8)!)
+            self.cleanupPartials()
+            _exit(130)
+        }
+    }
+
+    // Ctrl-C → clean stop + finalize, then abandon.  SIGUSR1 → toggle mic on/off live.
     func installSignalHandler() {
         signal(SIGINT, SIG_IGN)
         let intSrc = DispatchSource.makeSignalSource(signal: SIGINT, queue: .main)
-        intSrc.setEventHandler { [weak self] in self?.finish() }
+        intSrc.setEventHandler { [weak self] in self?.handleInterrupt() }
         intSrc.resume()
         objc_setAssociatedObject(self, "sigint", intSrc, .OBJC_ASSOCIATION_RETAIN)
+
+        // Same ladder for SIGTERM, so `kill <pid>` behaves like Ctrl-C rather than dropping
+        // the capture on the floor mid-write.
+        signal(SIGTERM, SIG_IGN)
+        let termSrc = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+        termSrc.setEventHandler { [weak self] in self?.handleInterrupt() }
+        termSrc.resume()
+        objc_setAssociatedObject(self, "sigterm", termSrc, .OBJC_ASSOCIATION_RETAIN)
 
         signal(SIGUSR1, SIG_IGN)
         let micSrc = DispatchSource.makeSignalSource(signal: SIGUSR1, queue: .main)
@@ -819,7 +943,10 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
             FileHandle.standardError.write("auto-flatten failed to launch: \(error.localizedDescription)\n".data(using: .utf8)!)
             return nil
         }
+        lock.lock(); runningChild = p; partialOutputs = [flatPath]; lock.unlock()
         p.waitUntilExit()
+        lock.lock(); runningChild = nil; if !abortRequested { partialOutputs = [] }; lock.unlock()
+        if isAborting() { cleanupPartials(); return nil }
         if p.terminationStatus == 0 {
             print("✓ YouTube version: \(flatPath)")
             return flatPath
@@ -850,8 +977,18 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
             FileHandle.standardError.write("--burn failed to launch rec-subtitle: \(error.localizedDescription)\n".data(using: .utf8)!)
             return nil
         }
-        p.waitUntilExit()
         let subbed = (inPath as NSString).deletingPathExtension + "-subtitled.mov"
+        lock.lock(); runningChild = p; partialOutputs = [subbed]; lock.unlock()
+        p.waitUntilExit()
+        lock.lock(); runningChild = nil; if !abortRequested { partialOutputs = [] }; lock.unlock()
+        if isAborting() {
+            cleanupPartials()
+            let srt = (inPath as NSString).deletingPathExtension + ".srt"
+            if FileManager.default.fileExists(atPath: srt) {
+                print("• transcription had finished — kept \((srt as NSString).lastPathComponent)")
+            }
+            return nil
+        }
         if p.terminationStatus == 0 && FileManager.default.fileExists(atPath: subbed) {
             print("✓ subtitled: \(subbed)")
             return subbed
@@ -879,6 +1016,10 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
     func finish() {
         lock.lock(); if finishing { lock.unlock(); return }; finishing = true; lock.unlock()
         FileHandle.standardError.write("\n■ stopping…\n".data(using: .utf8)!)
+        // Say it at the exact moment it becomes true, not in --help where nobody is looking.
+        if opts.burn || (opts.autoFlatten && micEverOn) {
+            FileHandle.standardError.write("  (Ctrl-C again to abandon the rest — the recording itself is already safe)\n".data(using: .utf8)!)
+        }
         captureSession?.stopRunning()
         healthTimer?.cancel(); healthTimer = nil
         stream?.stopCapture { [weak self] _ in
@@ -898,11 +1039,11 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                         // track, so a 2-track file would lose the voice). Reveal that one.
                         var revealTarget = self.opts.outPath
                         var flatOut: String?, subOut: String?, srtOut: String?
-                        if self.opts.autoFlatten && self.micEverOn,
+                        if self.opts.autoFlatten && self.micEverOn, !self.isAborting(),
                            let flat = self.makeYouTubeVersion(self.opts.outPath) {
                             revealTarget = flat; flatOut = flat
                         }
-                        if self.opts.burn {
+                        if self.opts.burn, !self.isAborting() {
                             let subInput = revealTarget   // rec-subtitle names the .srt off THIS stem
                             if let subbed = self.makeSubtitledVersion(subInput) {
                                 subOut = subbed; revealTarget = subbed
@@ -913,8 +1054,11 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                         // Emit the typed handoff so consumers never parse the prose above.
                         self.writeManifest(RecBurnManifest(
                             base: self.opts.outPath, flat: flatOut, subtitled: subOut, srt: srtOut,
-                            final: revealTarget, lengthSeconds: secs, micRecorded: self.micEverOn))
-                        if self.opts.reveal {
+                            final: revealTarget, lengthSeconds: secs, micRecorded: self.micEverOn,
+                            aborted: self.isAborting() ? true : nil))
+                        // Don't throw a Finder window at someone who just asked to be left
+                        // alone — an abort means "give me my shell back", not "show me this".
+                        if self.opts.reveal && !self.isAborting() {
                             let p = Process()
                             p.launchPath = "/usr/bin/open"
                             p.arguments = ["-R", revealTarget]
@@ -924,7 +1068,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
                     } else {
                         FileHandle.standardError.write("write failed: \(self.writer.error?.localizedDescription ?? "unknown")\n".data(using: .utf8)!)
                     }
-                    exit(ok ? 0 : 1)
+                    exit(self.isAborting() ? 130 : (ok ? 0 : 1))
                 }
             }
         }

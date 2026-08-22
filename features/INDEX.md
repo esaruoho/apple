@@ -476,6 +476,19 @@ Subtitle a screen recording (.srt sidecar + burn-in)  —  8 scenarios   (featur
   triad: .session✗  transcript✗  RESULT✓
   honesty: 8/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Two presses of the same key always get the shell back  —  9 scenarios   (features/recburn-abort.feature)
+  - [@hw-verified] the second Ctrl-C abandons transcription and exits at once  (mea
+  - [@hw-verified] killing the child is not enough — the tree has to go  (measured 
+  - [@hw-verified] what is kept and what is deleted  (measured 2026-08-22)
+  - [@hw-verified] the escape hatch is announced when it becomes true  (2026-08-22)
+  - [@hw-verified] the watchdog fires when finishWriting never returns  (observed 2
+  - [@built] an abort must never corrupt the .mov it is abandoning
+  - [@built] SIGTERM climbs the same ladder
+  - [(no grade)] one press is never destructive
+  - [(no grade)] the manifest says so
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 7/9 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Trigger recburn from anywhere through one seam, and hand off a typed result  —  14 scenarios   (features/recburn-automation-surfaces.feature)
   - [@hw-verified] the engine emits a typed manifest that round-trips into the app'
   - [@built] on stop the engine writes <stem>.recburn.json and prints its pat

@@ -12,6 +12,7 @@
 #
 # Usage:
 #   recburnclick                        # the full screencast + click counter
+#   (Ctrl-C stops; Ctrl-C again abandons the post-processing and returns the shell)
 #   recburnclick --clicks-corner br     # move the badge (tl default | tr | bl | br)
 #   recburnclick --clicks-label TAPS    # relabel it
 #   recburnclick --no-pip               # drop the webcam, keep mic + subtitles + clicks
