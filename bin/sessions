@@ -666,7 +666,7 @@ def new_argv(provider):
 # skill profile, press Enter, and the session's whole transcript is handed over with
 # that domain's skills + project rules attached — because the transcript travels and
 # the standing rules do not.
-SWINDLE_AGENTS = ["copilot", "codex"]
+SWINDLE_FALLBACK_AGENTS = ["copilot", "codex", "claude", "gemini", "converse"]
 SWINDLE_FALLBACK_PROFILES = ["free-energy", "apple", "paketti", "convey"]
 
 
@@ -674,18 +674,26 @@ def convey_bin():
     return find_bin("convey", (f"{HOME}/work/apple/bin/convey",))
 
 
-def load_profiles():
-    """The skill whitelist, asked of convey rather than hardcoded here — one source of
-    truth, so adding a profile there shows up here without an edit."""
+def _ask_convey(flag, fallback):
+    """Ask convey for a list rather than hardcoding it here — one source of truth, so a
+    new agent or profile shows up in this picker without an edit to the TUI."""
     try:
-        out = subprocess.run([convey_bin(), "resume", "--list-profiles"],
+        out = subprocess.run([convey_bin(), "resume", flag],
                              capture_output=True, text=True, timeout=20)
         names = [ln.strip() for ln in (out.stdout or "").splitlines() if ln.strip()]
         if names:
             return names
     except Exception:
         pass
-    return list(SWINDLE_FALLBACK_PROFILES)
+    return list(fallback)
+
+
+def load_profiles():
+    return _ask_convey("--list-profiles", SWINDLE_FALLBACK_PROFILES)
+
+
+def load_agents():
+    return _ask_convey("--list-agents", SWINDLE_FALLBACK_AGENTS)
 
 
 def draw_swindle(stdscr, row, agents, profiles, a_sel, p_sel, col):
@@ -750,7 +758,7 @@ def run_picker(stdscr, folder):
     top = 0
     last_refresh = time.time()
     mode = "list"                 # "list" | "swindle"
-    sw_agents = SWINDLE_AGENTS
+    sw_agents = load_agents()
     sw_profiles = load_profiles()
     sw_a = sw_p = sw_col = 0
 
