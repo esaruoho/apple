@@ -1131,7 +1131,13 @@ def find_session(query):
 def render_session(row):
     """Return the full conversation as plain text, chronologically."""
     out = []
-    out.append(f"# {row.provider} session  {row.uuid}")
+    # The NAME belongs in the header. A uuid identifies a session; it does not tell you
+    # what it was. Anything reading a transcript back (convey resume's banner, a human
+    # scrolling) should see "titled ..." without having to go look it up.
+    head = f"# {row.provider} session  {row.uuid}"
+    if row.title:
+        head += f'  titled "{row.title}"'
+    out.append(head)
     if row.cwd and row.cwd != "(global)":
         out.append(f"# cwd: {row.cwd}")
     out.append(f"# mtime: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(row.mtime))}")
@@ -1261,6 +1267,7 @@ def cmd_cat(args):
     r = find_session(args[0])
     if r is None:
         print(f"sessions: not found: {args[0]}", file=sys.stderr); sys.exit(1)
+    ensure_meta_for(r)          # the title is loaded lazily; the header needs it
     print(render_session(r))
 
 
