@@ -203,7 +203,7 @@ def load_copilot_meta(row):
         row.snippet = "(empty)"
         return
     try:
-        con = sqlite3.connect(f"file:{COPILOT_DB}?mode=ro&immutable=1", uri=True)
+        con = sqlite3.connect(f"file:{COPILOT_DB}?mode=ro", uri=True)
         cols = {r[1] for r in con.execute("PRAGMA table_info(turns)")}
         if "user_message" in cols:
             row.turns = con.execute(
@@ -659,6 +659,73 @@ def new_argv(provider):
 
 # ─────────────────────────── TUI ─────────────────────────────────────
 
+# ---------------------------------------------------------------- swindle view
+# "I am in a session, I want to swindle it to a different place."
+#
+# Right on a row opens this view; Left returns to the list. Pick a target agent and a
+# skill profile, press Enter, and the session's whole transcript is handed over with
+# that domain's skills + project rules attached — because the transcript travels and
+# the standing rules do not.
+SWINDLE_AGENTS = ["copilot", "codex"]
+SWINDLE_FALLBACK_PROFILES = ["free-energy", "apple", "paketti", "convey"]
+
+
+def convey_bin():
+    return find_bin("convey", (f"{HOME}/work/apple/bin/convey",))
+
+
+def load_profiles():
+    """The skill whitelist, asked of convey rather than hardcoded here — one source of
+    truth, so adding a profile there shows up here without an edit."""
+    try:
+        out = subprocess.run([convey_bin(), "resume", "--list-profiles"],
+                             capture_output=True, text=True, timeout=20)
+        names = [ln.strip() for ln in (out.stdout or "").splitlines() if ln.strip()]
+        if names:
+            return names
+    except Exception:
+        pass
+    return list(SWINDLE_FALLBACK_PROFILES)
+
+
+def draw_swindle(stdscr, row, agents, profiles, a_sel, p_sel, col):
+    h, w = stdscr.getmaxyx()
+    stdscr.erase()
+    bold = curses.A_BOLD
+    dim = curses.A_DIM
+    hl = curses.A_REVERSE
+
+    def put(y, x, text, attr=0):
+        if 0 <= y < h:
+            try:
+                stdscr.addnstr(y, x, text, max(0, w - x - 1), attr)
+            except curses.error:
+                pass
+
+    put(0, 0, " SWINDLE THIS SESSION ELSEWHERE ".ljust(w - 1), hl | bold)
+    title = (row.title or row.snippet or "").strip().replace("\n", " ")
+    put(2, 2, f"{row.provider}  {row.uuid[:8]}", bold)
+    put(3, 2, title[: w - 6], dim)
+
+    put(5, 2, "SEND TO", bold if col == 0 else dim)
+    for i, a in enumerate(agents):
+        put(6 + i, 4, ("> " if i == a_sel else "  ") + a,
+            hl if (col == 0 and i == a_sel) else 0)
+
+    px = max(24, w // 3)
+    put(5, px, "WITH SKILLS", bold if col == 1 else dim)
+    for i, pr in enumerate(profiles):
+        put(6 + i, px + 2, ("> " if i == p_sel else "  ") + pr,
+            hl if (col == 1 and i == p_sel) else 0)
+
+    foot = max(6 + max(len(agents), len(profiles)) + 1, h - 3)
+    put(foot, 2, "The transcript travels; the standing rules do not — the profile carries", dim)
+    put(foot + 1, 2, "the skills, the project rules, and the directory the work lives in.", dim)
+    put(h - 1, 0, " ←/Esc back   ↑↓ choose   Tab/→ switch column   Enter swindle ".ljust(w - 1),
+        hl)
+    stdscr.refresh()
+
+
 def run_picker(stdscr, folder):
     try:
         curses.curs_set(0)  # some terminals can't hide the cursor; Python 3.14 raises on ERR
@@ -682,6 +749,10 @@ def run_picker(stdscr, folder):
     sel = 0
     top = 0
     last_refresh = time.time()
+    mode = "list"                 # "list" | "swindle"
+    sw_agents = SWINDLE_AGENTS
+    sw_profiles = load_profiles()
+    sw_a = sw_p = sw_col = 0
 
     def ensure_meta(i):
         r = rows[i]
@@ -782,6 +853,41 @@ def run_picker(stdscr, folder):
                     pass
 
         stdscr.refresh()
+
+        if mode == "swindle":
+            if not (rows and 0 <= sel < len(rows)):
+                mode = "list"
+                continue
+            r = rows[sel]
+            draw_swindle(stdscr, r, sw_agents, sw_profiles, sw_a, sw_p, sw_col)
+            try:
+                k = stdscr.getch()
+            except KeyboardInterrupt:
+                return ("quit", None, None, None)
+            if k == -1:
+                continue
+            if k in (27, ord('q'), ord('Q')):
+                mode = "list"
+                continue
+            if k in (curses.KEY_LEFT, ord('h')):
+                # Left steps back a column, and out to the list from the first one.
+                if sw_col > 0:
+                    sw_col -= 1
+                else:
+                    mode = "list"
+                continue
+            if k in (curses.KEY_RIGHT, ord('\t'), ord('l')):
+                sw_col = 1
+            elif k in (curses.KEY_UP, ord('k')):
+                if sw_col == 0: sw_a = (sw_a - 1) % len(sw_agents)
+                else: sw_p = (sw_p - 1) % len(sw_profiles)
+            elif k in (curses.KEY_DOWN, ord('j')):
+                if sw_col == 0: sw_a = (sw_a + 1) % len(sw_agents)
+                else: sw_p = (sw_p + 1) % len(sw_profiles)
+            elif k in (curses.KEY_ENTER, 10, 13):
+                return ("swindle", sw_agents[sw_a], r.uuid, sw_profiles[sw_p])
+            continue
+
         try:
             k = stdscr.getch()
         except KeyboardInterrupt:
@@ -823,6 +929,11 @@ def run_picker(stdscr, folder):
             if rows:
                 r = rows[sel]
                 return ("resume", r.provider, r.uuid, r.path)
+        elif k in (curses.KEY_RIGHT, ord('l')):
+            if rows and 0 <= sel < len(rows):
+                ensure_meta(sel)
+                sw_a = sw_p = sw_col = 0
+                mode = "swindle"
         elif k in (ord('n'), ord('N')):
             return ("new", "claude", None, None)
         elif k in (ord('c'), ord('C')):
@@ -872,7 +983,12 @@ def all_rows_global():
         pass
     if os.path.isfile(COPILOT_DB):
         try:
-            con = sqlite3.connect(f"file:{COPILOT_DB}?mode=ro&immutable=1", uri=True)
+            # NEVER add immutable=1 here. It promises SQLite the file cannot change, so
+            # SQLite skips the -wal — and copilot keeps its newest sessions there. With
+            # immutable=1 this DB reported 9 sessions, newest 2026-07-08, while the real
+            # count was 16, newest that same day. The listing looked healthy; it was just
+            # three months stale.
+            con = sqlite3.connect(f"file:{COPILOT_DB}?mode=ro", uri=True)
             cols = {r[1] for r in con.execute("PRAGMA table_info(sessions)")}
             cwd_col = "cwd" if "cwd" in cols else "working_directory"
             title_col = "summary" if "summary" in cols else ("name" if "name" in cols else "''")
@@ -1044,7 +1160,7 @@ def render_session(row):
                     if not role or not content: continue
                     out.append(f"\n## {role.upper()}\n{str(content).strip()}")
         elif row.provider == "copilot":
-            con = sqlite3.connect(f"file:{COPILOT_DB}?mode=ro&immutable=1", uri=True)
+            con = sqlite3.connect(f"file:{COPILOT_DB}?mode=ro", uri=True)
             cols = {r[1] for r in con.execute("PRAGMA table_info(turns)")}
             if {"role", "content"}.issubset(cols):
                 for role, content in con.execute(
@@ -1959,6 +2075,10 @@ def main():
         sys.exit(0)
 
     os.chdir(folder)
+    if action == "swindle":
+        # provider = target agent, path = profile (the tuple is reused, not reshaped)
+        argv = [convey_bin(), "resume", uuid, "--to", provider, "--profile", path]
+        os.execvp(argv[0], argv)
     argv = resume_argv(provider, uuid, path) if action == "resume" else new_argv(provider)
     os.execvp(argv[0], argv)
 
