@@ -600,6 +600,12 @@ def augment_prompt(prompt: str, query: str, terms=None) -> str:
         head.append(f"RELEVANT KNOWLEDGE (from {src} — use when relevant; each passage is "
                     "prefixed with its [path:line], so CITE THAT LOCATOR when you use a "
                     "passage. Absence here is not a refusal rule):\n" + ctx)
+        head.append(
+            "ANSWER TASK: Answer the final user question, not the retrieval process. Lead with "
+            "the definition or conclusion and explain what the passages actually say. Cite a "
+            "locator only as a brief source note after the answer; never respond merely by "
+            "listing paths, saying a file contains material, or reporting which terms were found."
+        )
     if not head:
         return prompt
     return "\n\n".join(head) + "\n\n" + prompt

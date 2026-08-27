@@ -332,6 +332,32 @@ def looks_non_answer(text: str) -> bool:
     )
 
 
+_RETRIEVAL_LOCATOR_LEAD = re.compile(
+    r"^\s*\[[^\]\n]+:\d+\]\s+(?:states?|says|mentions|contains)\b", re.IGNORECASE)
+_RETRIEVAL_INVENTORY_PHRASES = (
+    "contains material",
+    "the term appears across",
+    "exact definition isn't explicitly",
+    "exact definition is not explicitly",
+    "the conceptual structure is documented",
+)
+_RETRIEVAL_ANSWER_RETRY = (
+    "Answer-quality correction: the preceding reply merely described retrieved files instead "
+    "of answering the user. Answer the latest question directly now. Lead with the definition "
+    "or conclusion, explain what the retrieved passage says in 2-5 sentences, and distinguish "
+    "established facts from speculative claims. A brief source note may follow, but do not merely "
+    "list paths, say a file contains material, or discuss what was or was not retrieved."
+)
+
+
+def looks_retrieval_inventory(text: str) -> bool:
+    """Detect a source pointer that omitted the answer those sources support."""
+    s = (text or "").strip().lower()
+    if _RETRIEVAL_LOCATOR_LEAD.match(text or ""):
+        return True
+    return ".md" in s and any(phrase in s for phrase in _RETRIEVAL_INVENTORY_PHRASES)
+
+
 def looks_repeated_answer(text: str, history) -> bool:
     """Reject an exact substantial assistant replay as a failed generation."""
     normalized = " ".join((text or "").lower().split())
@@ -398,6 +424,7 @@ def ask_with_context_recovery(prompt: str, line: str, system: str, history=None,
         res is not None
         and res.get("ok")
         and (looks_non_answer(res.get("out", ""))
+             or looks_retrieval_inventory(res.get("out", ""))
              or looks_repeated_answer(res.get("out", ""), history or []))
     )
     if overflow:
@@ -408,7 +435,9 @@ def ask_with_context_recovery(prompt: str, line: str, system: str, history=None,
         if armer is not None:
             retry = armer.augment_prompt(retry, line)
         retry_system = system
-        if looks_repeated_answer(res.get("out", ""), history or []):
+        if looks_retrieval_inventory(res.get("out", "")):
+            retry_system = (system + "\n" + _RETRIEVAL_ANSWER_RETRY).strip()
+        elif looks_repeated_answer(res.get("out", ""), history or []):
             retry_system = (system + "\nAnswer the latest user question directly. Do not repeat any earlier answer; "
                             "if the question is uncertain, say what is uncertain and ask a precise clarification.").strip()
         res, rt = ask_fn(retry, retry_system)
@@ -942,7 +971,8 @@ def main() -> int:
         # the model may echo a leading "Assistant:" from the cue — strip it
         if answer.lower().startswith("assistant:"):
             answer = answer.split(":", 1)[1].strip()
-        if looks_non_answer(answer) or looks_repeated_answer(answer, history):
+        if (looks_non_answer(answer) or looks_retrieval_inventory(answer)
+                or looks_repeated_answer(answer, history)):
             print(f"{YELLOW}  ⚠ model returned a non-answer; not saving this turn{RESET}\n")
             continue
         # ONE shared call: rich-markdown render + speak (karaoke/voice). present()

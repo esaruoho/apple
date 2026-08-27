@@ -32,19 +32,19 @@ class FMChatPromptTests(unittest.TestCase):
     def test_resume_command_includes_session_id(self):
         self.assertEqual(
             fm_chat.resume_command("abc123"),
-            "fm-chat --resume abc123",
+            "fm-chat --resume abc123 --no-arm",
         )
 
     def test_resume_command_preserves_mlx_quiet_and_voice(self):
         self.assertEqual(
             fm_chat.resume_command("abc123", use_mlx=True, quiet=True, voice="Alex Compact"),
-            "fm-chat --resume abc123 --mlx --quiet --voice 'Alex Compact'",
+            "fm-chat --resume abc123 --mlx --quiet --voice 'Alex Compact' --no-arm",
         )
 
     def test_resume_command_preserves_apple_arming(self):
         self.assertEqual(
             fm_chat.resume_command("abc123", arm_apple=True),
-            "fm-chat --resume abc123 --apple",
+            "fm-chat --resume abc123",
         )
 
     def test_exit_commands_accept_slash_and_plain_words(self):
@@ -193,6 +193,41 @@ class FMChatPromptTests(unittest.TestCase):
         old = "A detailed answer about reactive power and historical motor research " * 2
         self.assertTrue(fm_chat.looks_repeated_answer(old, [("assistant", old)]))
         self.assertFalse(fm_chat.looks_repeated_answer("yes", [("assistant", "yes")]))
+
+    def test_retrieval_inventory_detection_rejects_source_pointers(self):
+        self.assertTrue(fm_chat.looks_retrieval_inventory(
+            "[articles/bloch-wall.md:194] states that sources/ch35.md contains Bloch wall material."
+        ))
+        self.assertTrue(fm_chat.looks_retrieval_inventory(
+            "The term appears across wiki/concepts/bloch-wall.md. "
+            "The exact definition isn't explicitly extracted here."
+        ))
+        self.assertFalse(fm_chat.looks_retrieval_inventory(
+            "A Bloch wall is a nanometre-scale region where magnetization rotates between domains."
+        ))
+
+    def test_ask_with_context_recovery_retries_retrieval_inventory_as_direct_answer(self):
+        calls = []
+
+        def fake_ask(prompt, system):
+            calls.append((prompt, system))
+            if len(calls) == 1:
+                return {
+                    "ok": True,
+                    "out": "[articles/bloch-wall.md:194] states that sources/ch35.md "
+                           "contains Bloch wall material.",
+                }, 1.0
+            return {"ok": True, "out": "A Bloch wall is a domain-transition region."}, 2.0
+
+        res, rt, reason = fm_chat.ask_with_context_recovery(
+            "RELEVANT KNOWLEDGE: source passage\nUser: what is the Bloch wall\nAssistant:",
+            "what is the Bloch wall", "archive system", history=[], ask_fn=fake_ask,
+        )
+
+        self.assertEqual(reason, "generic")
+        self.assertEqual(res["out"], "A Bloch wall is a domain-transition region.")
+        self.assertEqual(rt, 2.0)
+        self.assertIn("Answer-quality correction", calls[1][1])
 
     def test_ask_with_context_recovery_retries_repeated_answer(self):
         calls = []
