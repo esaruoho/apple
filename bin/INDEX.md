@@ -1,4 +1,4 @@
-# CLI Tools Index — 334 tools in bin/
+# CLI Tools Index — 335 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -121,6 +121,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `fm-agent-service` — (no description) — `bin/fm-agent-service`
 `fm-agent-submit` — (no description) — `bin/fm-agent-submit`
 `fm-chat` — (no description) — `bin/fm-chat`
+`fm-chat-graph` — (no description) — `bin/fm-chat-graph`
 `fm-converse` — (no description) — `bin/fm-converse`
 `fm-free` — ask the FreeLLMAPI aggregator (free-tier LLM providers) over Tailscale. — `bin/fm-free`
 `fm-mlx` — ask the CloudcityMacMini's MLX server over Tailscale. — `bin/fm-mlx`

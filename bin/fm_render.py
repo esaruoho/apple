@@ -23,6 +23,7 @@ import os
 import re
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -98,15 +99,88 @@ def emit_reply(text: str, file=None):
 _GREEN, _RESET = "\033[32m", "\033[0m"
 
 
+def terminal_width(default=88) -> int:
+    env_cols = os.environ.get("COLUMNS")
+    if env_cols and env_cols.isdigit():
+        return max(40, int(env_cols))
+    try:
+        return max(40, os.get_terminal_size().columns)
+    except OSError:
+        return default
+
+
+def wrap_markdown(text: str, width: int, *, first_width: int | None = None,
+                  continuation_indent: str = "") -> str:
+    """Word-wrap markdown prose before ANSI is added, preserving preformatted blocks."""
+    out = []
+    in_fence = False
+    current_first_width = first_width or width
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            in_fence = not in_fence
+            out.append(line)
+            current_first_width = width
+            continue
+        if in_fence or not stripped or stripped.startswith("|"):
+            out.append(line)
+            current_first_width = width
+            continue
+
+        match = re.match(r"^(\s*(?:[-*+]\s+|\d+\.\s+)?)", line)
+        prefix = match.group(1) if match else ""
+        content = line[len(prefix):].strip()
+        if not content:
+            out.append(line)
+            current_first_width = width
+            continue
+
+        available = max(20, current_first_width - len(prefix))
+        subsequent = continuation_indent if current_first_width != width else prefix
+        subsequent += " " * len(prefix)
+        wrapped = textwrap.wrap(
+            content,
+            width=available,
+            break_long_words=False,
+            break_on_hyphens=False,
+        )
+        if not wrapped:
+            out.append(line)
+        else:
+            out.append(prefix + wrapped[0])
+            cont_width = max(20, width - len(subsequent))
+            for part in textwrap.wrap(
+                " ".join(wrapped[1:]),
+                width=cont_width,
+                break_long_words=False,
+                break_on_hyphens=False,
+            ):
+                out.append(subsequent + part)
+        current_first_width = width
+    return "\n".join(out)
+
+
 def format_reply(answer: str, *, host=None, model=None, model_ms=None,
-                 round_trip=None, tty=None, label="fm") -> str:
+                 round_trip=None, tty=None, label="fm", width=None, gap="  ") -> str:
     """Frame a reply exactly like fm-chat: a green `fm  ›` label, the body rendered
     as Markdown (ANSI on a TTY, plain when piped), and a dim `[host · model · round-trip]`
     stats line built from whatever metadata is supplied. One formatter, every fm-* tool."""
     if tty is None:
         tty = sys.stdout.isatty()
-    body = md_to_ansi(answer) if tty else answer
-    head = f"{_GREEN}{_B}{label}  ›{_R} " if tty else f"{label}  › "
+    plain_head = f"{label}{gap}› "
+    head = f"{_GREEN}{_B}{plain_head}{_R}" if tty else plain_head
+    head_visible = len(plain_head)
+    if tty:
+        wrap_width = width or terminal_width()
+        wrapped = wrap_markdown(
+            answer,
+            wrap_width,
+            first_width=wrap_width - head_visible,
+            continuation_indent=" " * head_visible,
+        )
+        body = md_to_ansi(wrapped)
+    else:
+        body = answer
     out = head + body
     bits = []
     if host:
@@ -152,13 +226,13 @@ def speak(text: str, voice: str = None, backend: str = None):
 
 
 def present(answer: str, *, host=None, model=None, model_ms=None, round_trip=None,
-            label="fm", speak_aloud=True, voice=None, backend=None, tty=None):
+            label="fm", speak_aloud=True, voice=None, backend=None, tty=None, width=None):
     """THE one call to SHOW a model reply: rich-markdown render to the terminal AND
     speak it aloud (karaoke voice). Every reply-emitting tool uses this so rich
     markdown + karaoke + voice are never re-rolled or forgotten. Ctrl-C during
     speech stops playback and returns cleanly (prints '(speech stopped)')."""
     print(format_reply(answer, host=host, model=model, model_ms=model_ms,
-                       round_trip=round_trip, label=label, tty=tty))
+                       round_trip=round_trip, label=label, tty=tty, width=width))
     if speak_aloud:
         try:
             speak(answer, voice=voice, backend=backend)

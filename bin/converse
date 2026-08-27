@@ -5,14 +5,14 @@ MLX brain, armed with the skill that GOVERNS the folder you're standing in.
 This OPENS THE GUI. To talk to the same MLX brain in your TERMINAL instead (no
 app, no ⌘3), use `mlx` (a.k.a. mlx-here).
 
-    cd ~/work/apple && converse          # open Converse, Apple skill armed
-    cd ~/work/impulse-tracker && converse # open Converse, impulse-tracker skill armed
+    cd ~/work/apple && converse          # open a Converse window, Apple skill armed
+    cd ~/work/impulse-tracker && converse # open a Converse window, impulse-tracker skill armed
     converse midi-sync                    # NAMED discussion 'midi-sync' (resume by reusing the name)
     converse --list                       # list discussions started in this folder
     converse --fm                         # use the FoundationModels brain instead of MLX
     converse --cwd DIR [name]             # arm the skill governing DIR (not the shell cwd)
-    converse --autoarm [on|off]           # make OPENING Converse.app + ⌘3 self-arm to this
-                                          # folder's skill — no terminal needed. `off` → plain MLX.
+    converse --autoarm [on|off]           # set this folder as the default AND launch a
+                                          # grounded session now. `off` → plain MLX, no launch.
 
 Running `converse` (or `converse <name>`) also sets this folder as the boot default,
 so simply opening Converse.app and pressing ⌘3 keeps arming to your last context.
@@ -194,8 +194,10 @@ def seed_fm_state(session_name: str, arm_cwd: str):
             state = json.loads(p.read_text())
         except Exception:
             pass
+        if state.get("arm_cwd") != arm_cwd:
+            state["system"] = ""                     # force fm-converse to rebuild the right skill identity
         state["arm_cwd"] = arm_cwd
-        state.setdefault("cwd", arm_cwd)
+        state["cwd"] = arm_cwd
     p.write_text(json.dumps(state, ensure_ascii=False))
 
 
@@ -278,9 +280,10 @@ def list_for(cwd: str):
 
 def launch(dirpath: Path):
     """`open -a <app> <dir>` → Converse's applicationOpenFiles → resumeSession(dir).
-    Prefer the built app bundle; fall back to a registered 'Converse'."""
+    `-n` gives each launched discussion its own process/window instead of reusing
+    one global app instance and replacing the current situation."""
     app = "/Applications/Converse.app" if os.path.exists("/Applications/Converse.app") else "Converse"  # boot the INSTALLED bundle, not build/
-    subprocess.run(["open", "-a", app, str(dirpath)], check=False)
+    subprocess.run(["open", "-n", "-a", app, str(dirpath)], check=False)
 
 
 def main():
@@ -338,17 +341,18 @@ def main():
         list_for(cwd)
         return 0
 
-    # --autoarm: configure whether OPENING Converse + ⌘3 self-arms (no launch).
+    # --autoarm: configure whether opening Converse self-arms. `on` also launches
+    # a grounded session now, because this command is the front door; `off` is just
+    # a settings change back to plain MLX.
     if autoarm is not None:
         if autoarm == "off":
             set_brain(use_mlx, arm_cwd="")
             print("converse: boot-time self-arm OFF — opening Converse + ⌘3 is plain MLX.")
+            return 0
         else:
             skill = arm_apple.detect_skill(cwd); arm_apple._ACTIVE = skill
             set_brain(True, arm_cwd=cwd)
-            print(f"converse: boot-time self-arm ON → {arm_apple.active_label()} ({cwd}).")
-            print("     Now just open Converse.app and press ⌘3 — it arms automatically.")
-        return 0
+            use_mlx = True
 
     skill = arm_apple.detect_skill(cwd)
     arm_apple._ACTIVE = skill
@@ -385,7 +389,8 @@ def main():
     verb = "resuming" if resuming else "new"
     print(f"converse: {verb} discussion '{stamp[4:]}'  ·  {label} armed  ·  brain: {brain}")
     print(f"     session: {dirpath}")
-    print(f"     in Converse: type, press {'⌘3' if use_mlx else '⌘1'} to send · ⌘C copies a reply · ⌘O reopens · ⌘S saves")
+    mode_hint = "Enter sends via MLX/⌘3" if use_mlx else "Enter sends via FoundationModels/⌘1"
+    print(f"     in Converse: type, press Enter · {mode_hint} · ⌘C copies a reply · ⌘O reopens · ⌘S saves")
     return 0
 
 

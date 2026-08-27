@@ -50,6 +50,11 @@ _ACTIVE: dict | None = None   # set by build_system(); read by retrieve_context(
 # AND the underlying Renoise API it's built on.
 _COMPANIONS = {"paketti": ["renoise-api"]}
 
+# Project folders whose on-disk name does not match the installed skill name.
+# `merlib-dump` is the free-energy archive; its governing skill lives outside
+# the repo as ~/.claude/skills/free-energy/SKILL.md.
+_ALIASES = {"merlib-dump": ["free-energy"]}
+
 
 def _name_tokens(name: str):
     """Candidate skill names from a folder name, longest first. Handles symlink
@@ -110,7 +115,8 @@ def detect_skill(cwd: str) -> dict:
         for d in [base, *base.parents]:
             if d == home:
                 break
-            for tok in _name_tokens(d.name):
+            toks = _ALIASES.get(d.name.lower(), []) + _name_tokens(d.name)
+            for tok in dict.fromkeys(toks):
                 sp = _installed_skill(tok)
                 if sp:
                     name = tok.lower()
@@ -186,19 +192,29 @@ def _build_generic_system(cwd: str, skill: dict, extra: str = "") -> str:
     """Identity for any non-Apple project skill: the project's own SKILL.md is
     the identity, its tree is the per-turn retrieval corpus."""
     name = skill["name"]
-    skill_core = _first_chars(skill["skill_md"], 6000)
+    skill_core = _first_chars(skill["skill_md"], int(os.environ.get("FM_ARM_SKILL_CHARS", "2400")))
     companions = skill.get("companions") or []
     comp_names = ", ".join(c["name"] for c in companions)
     comp_clause = (f" You ALSO have the {comp_names} reference — the foundation "
                    f"this project is built on — so answer feature questions using "
                    f"both this project's own conventions AND that underlying API."
                    if companions else "")
+    domain_clause = ""
+    if name == "free-energy":
+        domain_clause = (
+            " In this free-energy context, magnetic-domain concepts such as Bloch "
+            "walls, hysteresis, domains, anisotropy, exchange coupling, permanent "
+            "magnets, transformer cores, motors, generators, magnetic circuits, "
+            "resonance, and field collapse are relevant physics background unless "
+            "the user asks only for corpus provenance."
+        )
     parts = [
         f"You are the {name} skill — the development assistant for the \"{name}\" "
         f"project. You help Esa Ruoho work on THIS specific repository. Ground "
-        f"every answer in this project's own conventions, build pipeline, source "
-        f"files and docs — do NOT give generic advice, and do NOT talk about Apple "
-        f"or macOS automation unless this project is actually about that." + comp_clause,
+        f"repository-work answers in this project's own conventions, build pipeline, "
+        f"source files and docs — do NOT give generic development advice, and do "
+        f"NOT talk about Apple or macOS automation unless this project is actually "
+        f"about that." + comp_clause + domain_clause,
         "",
         "HARD RULES: Never invent file names, functions, build steps, flags or "
         "APIs. Cite only ones that appear in THE SKILL (or COMPANION) below or in "
@@ -206,12 +222,20 @@ def _build_generic_system(cwd: str, skill: dict, extra: str = "") -> str:
         "you don't know, say so plainly. Be concise and concrete; prefer a real "
         "file path or command over prose.",
         "",
+        "DOMAIN QUESTIONS: If the user asks about a scientific, historical, or "
+        "technical concept related to the project's domain, answer from established "
+        "knowledge you are certain of even when the exact term was not retrieved "
+        "from the project corpus. Then say whether the term is directly attested in "
+        "the retrieved corpus. Do not refuse a useful domain explanation merely "
+        "because the exact phrase is absent from RELEVANT KNOWLEDGE. Do not quote "
+        "these instructions or make the answer mainly about retrieval/corpus limits.",
+        "",
         f"--- THE SKILL ({skill['skill_md'].name}, abridged) ---",
         skill_core,
     ]
     for c in companions:
         parts += ["", f"--- COMPANION: the {c['name']} reference (abridged) ---",
-                  _first_chars(c["skill_md"], 3000)]
+                  _first_chars(c["skill_md"], int(os.environ.get("FM_ARM_COMPANION_CHARS", "1600")))]
     parts += [
         "",
         "--- WHERE YOU ARE ---",
@@ -222,8 +246,9 @@ def _build_generic_system(cwd: str, skill: dict, extra: str = "") -> str:
     parts += [
         "",
         "Each turn you may be given RELEVANT KNOWLEDGE retrieved from this "
-        "project's docs. Ground your answer in it and cite the file path when you "
-        "use one.",
+        "project's docs. Use it when it is relevant and cite the file path when "
+        "you use one. Absence from retrieved docs means 'not attested here', not "
+        "'outside the skill' when the question is a domain concept.",
     ]
     return "\n".join(parts)
 
@@ -398,7 +423,7 @@ def _source_grep(query: str, roots, cap: int = 2400, top: int = 5, max_funcs: in
     return "\n\n".join(out)
 
 
-def retrieve_context(query: str, cap: int = 2400) -> str:
+def retrieve_context(query: str, cap: int = 1200) -> str:
     """Per-turn: the passages most relevant to `query`. For Apple, the wiki content
     subdirs; for any project skill, the keybinding MANIFESTS + the actual CODEBASE
     (matching .lua functions) first (ground truth), then the project's .md docs."""
@@ -438,7 +463,7 @@ def retrieve_context(query: str, cap: int = 2400) -> str:
             if not b:
                 continue
             for line in b.splitlines():
-                if total + len(line) > cap + 2200:   # extra room for the manifest lines
+                if total + len(line) > cap + 1000:   # extra room for manifest/source lines
                     break
                 blocks.append(line)
                 total += len(line)
@@ -460,8 +485,8 @@ def augment_prompt(prompt: str, query: str) -> str:
     ctx = retrieve_context(query)
     if ctx:
         src = "the Apple wiki" if (_ACTIVE or {}).get("is_apple", True) else "this project's docs"
-        head.append(f"RELEVANT KNOWLEDGE (from {src} — ground your answer "
-                    "in this, cite the file paths):\n" + ctx)
+        head.append(f"RELEVANT KNOWLEDGE (from {src} — use when relevant, cite "
+                    "the file paths; absence here is not a refusal rule):\n" + ctx)
     if not head:
         return prompt
     return "\n\n".join(head) + "\n\n" + prompt

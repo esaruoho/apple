@@ -130,12 +130,49 @@ def build_replay(turns: list, new_user: str) -> str:
 # ── MLX brain port (the Mini's mlx_lm.server, OpenAI-compatible, over Tailscale) ──
 # Unlike fm-submit (one flat prompt to FoundationModels), the MLX server takes a real
 # messages[] array — so multi-turn is native: we just hand it the whole dialogue.
-MLX_HOST = os.environ.get("FM_MLX_HOST", "http://cloudcitymacmini:8080")
-MLX_BUDGET = 20000        # chars of prior dialogue to send (Qwen3-4B has the room)
+MLX_HOST = os.environ.get("FM_MLX_HOST", "http://cloudcitymacmini.taild55c11.ts.net:8080")
+MLX_MODEL = os.environ.get("FM_MLX_MODEL", "mlx-community/Qwen3-4B-Instruct-2507-8bit")
+MLX_RESOLVE_IP = os.environ.get("FM_MLX_RESOLVE_IP", "100.117.30.102")
+MLX_SSH_HOST = os.environ.get("FM_MLX_SSH_HOST", "100.117.30.102")
+MLX_PREFER_SSH = os.environ.get("FM_MLX_PREFER_SSH", "1") != "0"
+MLX_BUDGET = int(os.environ.get("FM_MLX_BUDGET", "4000"))
+
+
+def _parse_mlx_response(raw: str):
+    d = json.loads(raw)
+    return d["choices"][0]["message"]["content"].strip()
+
+
+def _call_mlx_via_ssh(body: bytes, timeout_s: float):
+    if not MLX_SSH_HOST:
+        return "", "SSH fallback disabled (FM_MLX_SSH_HOST is empty)"
+    script = r'''
+import sys, urllib.request
+body = sys.stdin.buffer.read()
+req = urllib.request.Request("http://127.0.0.1:8080/v1/chat/completions",
+    data=body, headers={"Content-Type": "application/json"}, method="POST")
+with urllib.request.urlopen(req, timeout=float(sys.argv[1])) as r:
+    sys.stdout.buffer.write(r.read())
+'''
+    try:
+        proc = subprocess.run(["ssh", MLX_SSH_HOST, "python3", "-c", script, str(timeout_s)],
+                              input=body, capture_output=True, timeout=timeout_s + 10)
+    except subprocess.TimeoutExpired:
+        return "", f"MLX SSH fallback timed out after {timeout_s + 10:.0f}s (ssh host {MLX_SSH_HOST})"
+    if proc.returncode != 0:
+        err = proc.stderr.decode(errors="replace").strip()
+        return "", f"MLX SSH fallback failed rc={proc.returncode}: {err or 'no stderr'}"
+    raw = proc.stdout.decode(errors="replace")
+    try:
+        return _parse_mlx_response(raw), None
+    except Exception as e:
+        return "", f"MLX SSH fallback returned an unreadable response: {e}; body={raw[:500]}"
 
 
 def call_mlx(turns, system, user_turn, timeout):
     """POST the conversation to the Mini's MLX server; return (reply, error_message)."""
+    import socket
+    from urllib.parse import urlparse
     import urllib.request, urllib.error
     msgs = []
     if system:
@@ -147,24 +184,53 @@ def call_mlx(turns, system, user_turn, timeout):
             break
         kept.append({"role": role, "content": text})
     msgs.extend(reversed(kept))
+    if os.environ.get("FM_MLX_NO_THINK", "1") != "0" and "/no_think" not in user_turn:
+        user_turn = user_turn.rstrip() + "\n/no_think"
     msgs.append({"role": "user", "content": user_turn})
     # The MLX server (mlx_lm.server) defaults to max_tokens=512 → long answers get
     # chopped MID-WORD (finish_reason "length"). Raise it so a full structured reply
     # comes back. Override with FM_MLX_MAX_TOKENS.
-    max_tokens = int(os.environ.get("FM_MLX_MAX_TOKENS", "4096"))
-    body = json.dumps({"messages": msgs, "max_tokens": max_tokens}).encode()
+    max_tokens = int(os.environ.get("FM_MLX_MAX_TOKENS", "512"))
+    body = json.dumps({
+        "model": MLX_MODEL,
+        "messages": msgs,
+        "max_tokens": max_tokens,
+    }).encode()
     # The MLX server runs single-concurrency, so a request that arrives while it's
     # busy (or mid-restart) returns 502/503. Retry transient failures with backoff
     # rather than failing the turn. Genuine "server down" still surfaces after retries.
     import time as _t
     last = "unknown"
+    timeout_s = float(timeout)
+    started = _t.time()
+    parsed = urlparse(MLX_HOST)
+    resolve_host = parsed.hostname or ""
+    original_getaddrinfo = socket.getaddrinfo
+
+    if MLX_PREFER_SSH:
+        reply, ssh_err = _call_mlx_via_ssh(body, timeout_s)
+        if reply:
+            return reply, None
+        last = f"SSH preferred path failed: {ssh_err}"
+
+    def getaddrinfo(host, port, *args, **kwargs):
+        if MLX_RESOLVE_IP and host == resolve_host:
+            return original_getaddrinfo(MLX_RESOLVE_IP, port, *args, **kwargs)
+        return original_getaddrinfo(host, port, *args, **kwargs)
+
     for attempt in range(4):
         req = urllib.request.Request(MLX_HOST + "/v1/chat/completions", data=body,
                                      headers={"Content-Type": "application/json"}, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=float(timeout)) as r:
-                d = json.loads(r.read().decode())
-            return d["choices"][0]["message"]["content"].strip(), None
+            if MLX_RESOLVE_IP:
+                socket.getaddrinfo = getaddrinfo
+            with urllib.request.urlopen(req, timeout=timeout_s) as r:
+                return _parse_mlx_response(r.read().decode()), None
+        except (TimeoutError, socket.timeout) as e:
+            elapsed = _t.time() - started
+            return "", (f"MLX request timed out after {elapsed:.0f}s "
+                        f"(per-request timeout {timeout_s:.0f}s, attempt {attempt + 1}/4, "
+                        f"host {MLX_HOST}). The Mini accepted no complete reply before the deadline.")
         except urllib.error.HTTPError as e:
             last = f"HTTP {e.code}"
             if e.code in (429, 500, 502, 503, 504) and attempt < 3:
@@ -173,12 +239,24 @@ def call_mlx(turns, system, user_turn, timeout):
             return "", f"MLX server error ({last}) — is mlx_lm.server up on the Mini? try `fm-mlx hello`"
         except urllib.error.URLError as e:
             last = str(getattr(e, "reason", e))
+            if isinstance(getattr(e, "reason", None), socket.timeout):
+                elapsed = _t.time() - started
+                return "", (f"MLX request timed out after {elapsed:.0f}s "
+                            f"(per-request timeout {timeout_s:.0f}s, attempt {attempt + 1}/4, "
+                            f"host {MLX_HOST}). The Mini accepted no complete reply before the deadline.")
+            if attempt == 0:
+                reply, ssh_err = _call_mlx_via_ssh(body, timeout_s)
+                if reply:
+                    return reply, None
+                last = f"{last}; SSH fallback: {ssh_err}"
             if attempt < 3:
                 _t.sleep(2 + 3 * attempt)
                 continue
             return "", f"MLX server unreachable ({last}) — is mlx_lm.server up on the Mini? try `fm-mlx hello`"
         except Exception as e:
             return "", f"MLX error: {e}"
+        finally:
+            socket.getaddrinfo = original_getaddrinfo
     return "", f"MLX server unreachable after retries ({last})"
 
 
@@ -241,6 +319,12 @@ def main() -> int:
     arm_cwd_final = None
     if arm_skill:
         arm_cwd_final = arm_cwd or state.get("arm_cwd") or state.get("cwd") or os.getcwd()
+        previous_arm_cwd = state.get("arm_cwd") or ""
+        if previous_arm_cwd and os.path.realpath(previous_arm_cwd) == os.path.realpath(arm_cwd_final):
+            pass
+        else:
+            state["system"] = ""
+            state["turns"] = []
         state["arm_cwd"] = arm_cwd_final
     elif state.get("arm_cwd"):
         arm_cwd_final = state["arm_cwd"]

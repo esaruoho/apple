@@ -1,0 +1,195 @@
+#!/usr/bin/env python3
+"""Render an fm-chat session as a self-contained, clickable conversation graph."""
+import html
+import importlib.machinery
+import importlib.util
+import json
+import os
+import subprocess
+import sys
+import tempfile
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
+
+SESS_DIR = Path.home() / ".fm-chat" / "sessions"
+FMCHAT_PATH = Path(__file__).resolve().parent / "fm-chat"
+_loader = importlib.machinery.SourceFileLoader("fm_chat_graph_backend", str(FMCHAT_PATH))
+_spec = importlib.util.spec_from_loader(_loader.name, _loader)
+FMCHAT = importlib.util.module_from_spec(_spec)
+_loader.exec_module(FMCHAT)
+
+
+def read_session(uid):
+    path = SESS_DIR / f"{uid}.jsonl"
+    if not path.exists():
+        raise SystemExit(f"fm-chat-graph: no session {uid}")
+    meta, nodes = {}, []
+    previous = None
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        try:
+            item = json.loads(line)
+        except Exception:
+            continue
+        if item.get("type") == "session_meta":
+            meta = item
+        elif item.get("type") == "message":
+            prior = [(n["role"], n["content"]) for n in nodes]
+            if item.get("role") == "assistant" and (FMCHAT.looks_non_answer(item.get("content", ""))
+                    or FMCHAT.looks_repeated_answer(item.get("content", ""), prior)):
+                if nodes and nodes[-1].get("id") == item.get("parent_id", previous):
+                    nodes.pop()
+                previous = nodes[-1]["id"] if nodes else None
+                continue
+            node_id = item.get("id") or f"legacy-{len(nodes) + 1:06d}"
+            nodes.append({
+                "id": node_id,
+                "parent_id": item.get("parent_id", previous),
+                "role": item.get("role", "assistant"),
+                "content": item.get("content", ""),
+                "ts": item.get("ts", 0),
+            })
+            previous = node_id
+    return meta, nodes
+
+
+def node_path(nodes, node_id):
+    by_id = {n["id"]: n for n in nodes}
+    path, seen = [], set()
+    while node_id and node_id in by_id and node_id not in seen:
+        node = by_id[node_id]
+        path.append(node)
+        seen.add(node_id)
+        node_id = node.get("parent_id")
+    return list(reversed(path))
+
+
+def page(uid, meta, nodes):
+    payload = json.dumps({"uid": uid, "meta": meta, "nodes": nodes}, ensure_ascii=False)
+    title = html.escape(uid)
+    return f'''<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>fm-chat graph {title}</title>
+<style>
+* {{ box-sizing:border-box }} body {{ margin:0; height:100vh; overflow:hidden; background:#101419; color:#e8edf2; font:14px -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif }}
+header {{ height:52px; display:flex; align-items:center; gap:18px; padding:0 18px; border-bottom:1px solid #2a323b; background:#171d23 }}
+h1 {{ margin:0; font-size:15px; font-weight:600 }} .muted {{ color:#8995a2 }} main {{ height:calc(100vh - 108px); display:grid; grid-template-columns:minmax(0,1fr) 360px }}
+#graph {{ min-width:0; overflow:auto; padding:28px 34px 80px; background:#101419 }} #tree {{ width:min(900px,100%); padding-bottom:20px }}
+.exchange {{ width:100%; margin:0 0 28px }}
+.node-card {{ width:100%; margin:0 0 18px; padding:16px 18px; border:1px solid #34414d; border-radius:18px; background:#171e25; cursor:pointer; box-shadow:0 5px 14px #0002 }}
+.node-card.question {{ border-color:#378d70; background:#18241f; border-bottom-left-radius:5px }} .node-card.answer {{ width:calc(100% - 38px); margin-left:38px; border-color:#466b99; background:#171e25; border-top-right-radius:5px }} .node-card:hover,.node-card.selected {{ border-color:#f4c95d; box-shadow:0 0 0 1px #f4c95d55,0 8px 20px #0003 }}
+.node-label {{ color:#54d6a5; font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:7px }} .answer .node-label {{ color:#78a9e8 }} .node-text {{ line-height:1.55; color:#e8edf2; overflow-wrap:anywhere }} .node-text p {{ margin:0 0 12px }} .node-text p:last-child {{ margin-bottom:0 }} .node-text h1,.node-text h2,.node-text h3,.node-text h4 {{ margin:18px 0 9px; color:#fff }} .node-text h1 {{ font-size:22px }} .node-text h2 {{ font-size:19px }} .node-text h3,.node-text h4 {{ font-size:16px }} .node-text strong {{ color:#fff }} .node-text code {{ color:#f4c95d; background:#0b0f13; padding:2px 4px; border-radius:3px }} .node-text pre {{ white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; margin:8px 0 14px; background:#0b0f13; border-radius:5px }} .code-lang {{ color:#8995a2; font-size:11px; margin-bottom:4px; text-transform:uppercase }} .node-text ul,.node-text ol {{ margin:4px 0 12px; padding-left:24px }} .node-text li {{ margin:4px 0 }} .node-text table {{ width:100%; border-collapse:collapse; margin:10px 0 16px; font-size:13px }} .node-text th,.node-text td {{ border:1px solid #3b4854; padding:8px 10px; text-align:left; vertical-align:top }} .node-text th {{ color:#fff; background:#25313b }} .node-text td {{ background:#141a20 }}
+aside {{ border-left:1px solid #2a323b; padding:20px; overflow:auto; background:#141a20 }} aside h2 {{ margin:0 0 14px; font-size:15px }} #empty {{ color:#8995a2; line-height:1.5 }}
+.pair-label {{ color:#8995a2; font-size:11px; text-transform:uppercase; letter-spacing:.08em; margin-top:18px }} .pair-text {{ white-space:pre-wrap; line-height:1.5; margin-top:6px }} .branch-list {{ border-left:2px solid #34414d; padding-left:12px; margin-top:8px }} .branch-item {{ padding:8px 0; border-bottom:1px solid #27313a; white-space:pre-wrap; line-height:1.4 }}
+button {{ border:1px solid #3b4854; background:#202a33; color:#e8edf2; padding:8px 10px; border-radius:5px; cursor:pointer }} button:hover {{ background:#2a3843 }}
+form {{ height:56px; display:flex; gap:10px; padding:10px 18px; border-top:1px solid #2a323b; background:#171d23 }} textarea {{ flex:1; resize:none; min-width:0; border:1px solid #3b4854; border-radius:5px; background:#0f1419; color:#e8edf2; padding:9px 11px; font:14px inherit }} form button {{ flex:0 0 132px; background:#378d70; border-color:#54d6a5; color:#07110d; font-weight:700 }} #status {{ flex:0 0 290px; align-self:center; overflow:hidden; color:#8995a2; white-space:nowrap; text-overflow:ellipsis }}
+@media(max-width:800px) {{ main {{ display:flex; flex-direction:column }} #graph {{ flex:1; min-height:45vh }} aside {{ flex:1; min-height:30vh; border-left:0; border-top:1px solid #2a323b }} #status {{ display:none }} form button {{ flex-basis:100px }} }}
+</style></head><body><header><h1>fm-chat conversation graph</h1><span class="muted">{title} · {len(nodes)} nodes</span></header>
+<main><section id="graph"><div id="tree"></div></section><aside><div id="empty">Select a question or answer. The selected question and its complete downstream conversation appear here.</div><div id="detail" hidden>
+<h2 id="nodeid"></h2><div class="pair-label">Question</div><div id="question" class="pair-text"></div><div class="pair-label">Answer</div><div id="answer" class="pair-text"></div><div class="pair-label">Downstream branches</div><div id="subtree" class="branch-list"></div><button id="branch">Copy branch command</button><p class="muted" id="hint"></p></div></aside></main>
+<form id="composer"><textarea id="prompt" rows="1" placeholder="Ask from the selected node..."></textarea><div id="status">Ready</div><button type="submit">Send</button></form>
+<script>
+let DATA={payload}, selected=null, children=new Map();
+const tree=document.querySelector('#tree'),detail=document.querySelector('#detail'),empty=document.querySelector('#empty'),nodeid=document.querySelector('#nodeid'),question=document.querySelector('#question'),answer=document.querySelector('#answer'),subtree=document.querySelector('#subtree'),hint=document.querySelector('#hint'),status=document.querySelector('#status');
+function rebuild(){{children=new Map();DATA.nodes.forEach(n=>{{if(!children.has(n.parent_id))children.set(n.parent_id,[]);children.get(n.parent_id).push(n)}})}}
+function pairFor(n){{let by=new Map(DATA.nodes.map(x=>[x.id,x])),q=n.role==='user'?n:by.get(n.parent_id),a=n.role==='assistant'?n:(children.get(n.id)||[]).find(x=>x.role==='assistant');return {{q:q||n,a:a||null}}}}
+function inline(s){{let x=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');x=x.replace(/`([^`]+)`/g,'<code>$1</code>');x=x.replace(/\\*\\*([^*]+)\\*\\*/g,'<strong>$1</strong>').replace(/\\*([^*]+)\\*/g,'<em>$1</em>');return x}}
+function tableRow(line,tag){{let cells=line.trim().replace(/^\\|/,'').replace(/\\|$/,'').split('|');return '<tr>'+cells.map(c=>'<'+tag+'>'+inline(c.trim())+'</'+tag+'>').join('')+'</tr>'}}
+function isSeparator(line){{return /^\\s*\\|?\\s*:?-+:?\\s*(\\|\\s*:?-+:?\\s*)+\\|?\\s*$/.test(line)}}
+function markdown(s){{let lines=s.replace(/\\r/g,'').split('\\n'),out=[],para=[],list=[],listTag=null,inFence=false,fence=[],lang='';function flushPara(){{if(para.length){{out.push('<p>'+para.map(inline).join('<br>')+'</p>');para=[]}}}}function flushList(){{if(list.length){{out.push('<'+listTag+'>'+list.map(x=>'<li>'+inline(x)+'</li>').join('')+'</'+listTag+'>');list=[];listTag=null}}}}for(let i=0;i<lines.length;i++){{let line=lines[i],trim=line.trim();if(trim.startsWith('```')){{if(inFence){{out.push('<div class="code-lang">'+inline(lang||'code')+'</div><pre>'+fence.map(x=>x.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('\\n')+'</pre>');inFence=false;fence=[];lang=''}}else{{flushPara();flushList();inFence=true;lang=trim.slice(3).trim()}}continue}}if(inFence){{fence.push(line);continue}}if(!trim){{flushPara();flushList();continue}}let heading=line.match(/^\\s*(#{{1,6}})\\s+(.+)$/);if(heading){{flushPara();flushList();let n=heading[1].length;out.push('<h'+n+'>'+inline(heading[2])+'</h'+n+'>');continue}}if(line.includes('|')&&i+1<lines.length&&isSeparator(lines[i+1])){{flushPara();flushList();let rows=[tableRow(line,'th')];i+=2;while(i<lines.length&&lines[i].includes('|')&&lines[i].trim()){{rows.push(tableRow(lines[i],'td'));i++}}i--;out.push('<table><thead>'+rows[0]+'</thead><tbody>'+rows.slice(1).join('')+'</tbody></table>');continue}}let bullet=line.match(/^\\s*[-*+]\\s+(.+)$/),number=line.match(/^\\s*\\d+[.)]\\s+(.+)$/);if(bullet||number){{flushPara();let tag=number?'ol':'ul';if(listTag&&listTag!==tag)flushList();listTag=tag;list.push((bullet||number)[1]);continue}}flushList();para.push(line)}}if(inFence)out.push('<pre>'+fence.map(x=>x.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('\\n')+'</pre>');flushPara();flushList();return out.join('')}}
+function makeBubble(n,labelText){{let bubble=document.createElement('div');bubble.className='node-card '+(n.role==='user'?'question':'answer');bubble.dataset.id=n.id;let label=document.createElement('div');label.className='node-label';label.textContent=labelText+' · '+n.id;let body=document.createElement('div');body.className='node-text';body.innerHTML=markdown(n.content);bubble.append(label,body);bubble.onclick=()=>show(n);return bubble}}
+function render(){{let users=DATA.nodes.filter(n=>n.role==='user'),by=new Map(DATA.nodes.map(n=>[n.id,n])),childrenOf=new Map();users.forEach(n=>{{let p=by.get(n.parent_id);let key=p&&p.role==='assistant'?p.parent_id:null;if(!childrenOf.has(key))childrenOf.set(key,[]);childrenOf.get(key).push(n)}});let labels=new Map(),top=0;users.forEach(n=>{{let siblings=childrenOf.get((by.get(n.parent_id)||{{}}).parent_id)||[];if(siblings.length>1){{let parent=labels.get((by.get(n.parent_id)||{{}}).parent_id)||'';labels.set(n.id,(parent?parent+'.':'')+(siblings.indexOf(n)+1))}}else labels.set(n.id,String(++top))}});tree.replaceChildren(...users.map(n=>{{let wrap=document.createElement('div');wrap.className='exchange';let answerNode=(children.get(n.id)||[]).find(x=>x.role==='assistant');wrap.append(makeBubble(n,labels.get(n.id)+' · Question'));if(answerNode)wrap.append(makeBubble(answerNode,labels.get(n.id)+' · Answer'));return wrap}}));if(!selected&&DATA.nodes.length)show(DATA.nodes[0]);}}
+function addBranchItem(n){{let item=document.createElement('div');item.className='branch-item';item.innerHTML='<strong>'+(n.role==='user'?'Question':'Answer')+'</strong><br>'+markdown(n.content);subtree.append(item);(children.get(n.id)||[]).forEach(addBranchItem)}}
+function show(n){{selected=n.id;let pair=pairFor(n);empty.hidden=true;detail.hidden=false;nodeid.textContent=(n.role==='user'?'Question':'Answer')+' · '+n.id;question.innerHTML=markdown(pair.q.content);answer.innerHTML=pair.a?markdown(pair.a.content):'(answer not yet present)';subtree.replaceChildren();(children.get(pair.a?pair.a.id:pair.q.id)||[]).forEach(addBranchItem);document.querySelectorAll('.node-card').forEach(x=>x.classList.toggle('selected',x.dataset.id===selected));hint.textContent='Branching uses this '+(n.role==='user'?'question':'answer')+' and its ancestry.'}}
+document.querySelector('#branch').onclick=()=>{{let command=`fm-chat --resume ${{DATA.uid}} --branch ${{selected}}`;navigator.clipboard?.writeText(command);hint.textContent=command+' (copied)'}};
+document.querySelector('#composer').onsubmit=async e=>{{e.preventDefault();let box=document.querySelector('#prompt'),message=box.value.trim();if(!message)return;let button=e.target.querySelector('button');button.disabled=true;button.textContent='Thinking...';status.textContent='Waiting for fm-worker...';try{{let r=await fetch('/ask',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{message:message,parent_id:selected}})}});let result=await r.json();if(!r.ok||!result.ok){{status.textContent=result.error||'The model did not return an answer.';return}}DATA=result;rebuild();render();show(DATA.nodes[DATA.nodes.length-1]);box.value='';status.textContent='Answer saved'}}catch(err){{status.textContent='Graph server connection failed: '+err.message}}finally{{button.disabled=false;button.textContent='Send'}}}};
+document.querySelector('#prompt').addEventListener('keydown',e=>{{if(e.key==='Enter'&&!e.shiftKey){{e.preventDefault();document.querySelector('#composer').requestSubmit()}}}});
+async function refresh(){{if(location.protocol!=='http:')return;try{{let r=await fetch('/data?ts='+Date.now());let next=await r.json();let keep=selected;DATA=next;rebuild();tree.replaceChildren(...(children.get(null)||[]).map(makeNode));selected=keep&&DATA.nodes.some(n=>n.id===keep)?keep:null;if(selected)show(DATA.nodes.find(n=>n.id===selected));else if(DATA.nodes.length)show(DATA.nodes[0])}}catch(e){{}}}}
+rebuild();render();setInterval(refresh,2000);
+</script></body></html>'''
+
+
+def main():
+    args = sys.argv[1:]
+    no_open = "--no-open" in args
+    serve = "--serve" in args
+    args = [a for a in args if a not in ("--no-open", "--serve")]
+    if not args:
+        paths = sorted(SESS_DIR.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
+        if not paths:
+            raise SystemExit("fm-chat-graph: no sessions")
+        uid = paths[0].stem
+    else:
+        uid = args[0]
+    if serve:
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                meta, nodes = read_session(uid)
+                if self.path.startswith("/data"):
+                    body = json.dumps({"uid": uid, "meta": meta, "nodes": nodes}, ensure_ascii=False).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                else:
+                    body = page(uid, meta, nodes).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_POST(self):
+                if self.path != "/ask":
+                    self.send_error(404)
+                    return
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                    request = json.loads(self.rfile.read(length))
+                    message = str(request.get("message", "")).strip()
+                    if not message:
+                        raise ValueError("empty question")
+                    meta, nodes = read_session(uid)
+                    parent_id = request.get("parent_id") or (nodes[-1]["id"] if nodes else None)
+                    ancestry = node_path(nodes, parent_id)
+                    history = [(n["role"], n["content"]) for n in ancestry]
+                    prompt = FMCHAT.render(history, message, FMCHAT.REPLAY_BUDGET)
+                    result, _, _ = FMCHAT.ask_with_context_recovery(
+                        prompt, message, meta.get("system", ""), history=history
+                    )
+                    if not result or not result.get("ok"):
+                        raise RuntimeError(FMCHAT.humanize_err((result or {}).get("err", "no reply")))
+                    answer = result.get("out", "").strip()
+                    if FMCHAT.looks_non_answer(answer) or FMCHAT.looks_repeated_answer(answer, history):
+                        raise RuntimeError("model returned a non-answer or duplicate answer; nothing was saved")
+                    user_id = FMCHAT.append_node(meta, "user", message, parent_id)
+                    answer_id = FMCHAT.append_node(meta, "assistant", answer, user_id)
+                    meta["current_node"] = answer_id
+                    body = json.dumps({"uid": uid, "meta": meta, "nodes": read_session(uid)[1]}, ensure_ascii=False).encode()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                except Exception as e:
+                    body = json.dumps({"ok": False, "error": str(e)}).encode()
+                    self.send_response(400)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *_):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        url = f"http://127.0.0.1:{server.server_port}/"
+        print(url)
+        if not no_open:
+            subprocess.run(["open", "-a", "Safari", url], check=False)
+        server.serve_forever()
+    meta, nodes = read_session(uid)
+    out = Path(tempfile.gettempdir()) / f"fm-chat-graph-{uid}.html"
+    out.write_text(page(uid, meta, nodes), encoding="utf-8")
+    print(out)
+    if not no_open:
+        subprocess.run(["open", str(out)], check=False)
+
+
+if __name__ == "__main__":
+    main()

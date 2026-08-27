@@ -26,9 +26,11 @@
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
-HOST="${FM_MLX_HOST:-http://cloudcitymacmini:8080}"
-MODEL_ID="${FM_MLX_MODEL:-Qwen/Qwen3-14B-MLX-4bit}"
-MODEL_LABEL="${FM_MLX_MODEL_LABEL:-MLX/Qwen3-14B-4bit}"
+HOST="${FM_MLX_HOST:-http://cloudcitymacmini.taild55c11.ts.net:8080}"
+RESOLVE_IP="${FM_MLX_RESOLVE_IP:-100.117.30.102}"
+SSH_HOST="${FM_MLX_SSH_HOST:-100.117.30.102}"
+MODEL_ID="${FM_MLX_MODEL:-mlx-community/Qwen3-4B-Instruct-2507-8bit}"
+MODEL_LABEL="${FM_MLX_MODEL_LABEL:-MLX/Qwen3-4B-8bit}"
 
 say="auto"                      # auto = talk on an interactive terminal; --say forces, --quiet disables
 raw=0                           # --raw = reply text ONLY (no fm-chat framing, no speech) — the brain interface
@@ -53,16 +55,32 @@ if [ -z "$prompt" ]; then
   echo "usage: fm-mlx [--quiet] [--voice NAME] \"your prompt\"   (or pipe text in)" >&2
   exit 1
 fi
+if [ -z "$system" ]; then
+  system="Answer directly and concisely. Do not include reasoning or chain-of-thought."
+fi
 
 body=$(python3 -c 'import json,sys,os
 model, sysmsg, user = sys.argv[1], sys.argv[2], sys.argv[3]
 msgs = ([{"role":"system","content":sysmsg}] if sysmsg else []) + [{"role":"user","content":user}]
-print(json.dumps({"model": model, "messages": msgs, "max_tokens": int(os.environ.get("FM_MLX_MAX_TOKENS","4096"))}))' "$MODEL_ID" "$system" "$prompt")
+print(json.dumps({"model": model, "messages": msgs, "max_tokens": int(os.environ.get("FM_MLX_MAX_TOKENS","1024"))}))' "$MODEL_ID" "$system" "$prompt")
 
 t0=$(python3 -c 'import time; print(time.time())')
-reply=$(curl -s -m 180 -X POST "$HOST/v1/chat/completions" \
-  -H "Content-Type: application/json" -d "$body" \
-| FM_THINK_QUESTION="$prompt" FM_BIN="$HERE" python3 -c '
+curl_resolve=()
+if [ -n "$RESOLVE_IP" ]; then
+  hostport="${HOST#*://}"
+  hostport="${hostport%%/*}"
+  curl_resolve=(--resolve "$hostport:$RESOLVE_IP")
+fi
+
+raw_reply=$(curl -sS -m 180 "${curl_resolve[@]}" -X POST "$HOST/v1/chat/completions" \
+  -H "Content-Type: application/json" -d "$body")
+curl_rc=$?
+if [ "$curl_rc" -ne 0 ] || [ -z "$raw_reply" ]; then
+  raw_reply=$(printf '%s' "$body" | ssh "$SSH_HOST" \
+    "curl -sS -m 180 -X POST http://127.0.0.1:8080/v1/chat/completions -H 'Content-Type: application/json' --data-binary @-")
+fi
+
+reply=$(printf '%s' "$raw_reply" | FM_THINK_QUESTION="$prompt" FM_BIN="$HERE" python3 -c '
 # The ANSWER goes to stdout; the model THINKING is filed, never printed (fm_think.split).
 # Qwen3 via mlx_lm.server returns its chain-of-thought in message.reasoning with NO content key
 # until </think> closes — chaining `content or reasoning` published the raw trace. Do not.

@@ -38,6 +38,27 @@ enum MarkdownTests {
             check(f.fontDescriptor.symbolicTraits.contains(.monoSpace), "code span is monospaced")
         }
 
+        let math = MarkdownAttributed.render(#"($ \mathcal{E} = -N \frac{d\Phi}{dt} $)"#)
+        let ms = math.string
+        check(ms.contains("ℰ = -N dΦ/dt"), "inline LaTeX renders to math text")
+        check(!ms.contains(#"\mathcal"#) && !ms.contains(#"\frac"#) && !ms.contains("$"),
+              "inline LaTeX markers are hidden")
+
+        let block = MarkdownAttributed.render(#"""
+        Mathematical Foundation
+        Faraday's Law of Induction gives the magnitude of the induced electromotive force (EMF):  
+        $$
+        \mathcal{E} = -N \frac{d\Phi}{dt}
+        $$  
+        Where:
+        """#)
+        let bs = block.string
+        check(bs.contains("Mathematical Foundation"), "display math keeps surrounding text before")
+        check(bs.contains("ℰ = -N dΦ/dt"), "multi-line display LaTeX renders to math text")
+        check(bs.contains("Where:"), "display math keeps surrounding text after")
+        check(!bs.contains(#"\mathcal"#) && !bs.contains(#"\frac"#) && !bs.contains("$$"),
+              "multi-line display LaTeX delimiters are hidden")
+
         print(failed ? "SOME TESTS FAILED" : "ALL PASS")
         exit(failed ? 1 : 0)
     }

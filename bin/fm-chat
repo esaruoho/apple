@@ -9,16 +9,31 @@ Conversation context is kept on THIS side: each turn replays the dialogue so far
 to the (otherwise stateless) worker, so the model remembers what you said. Short
 test chats stay well inside the model's ~65k-token window.
 
-    fm-chat                      start chatting (FoundationModels brain)
+    fm-chat                      start chatting (FoundationModels brain). ARMED BY DEFAULT:
+                                  the skill governing the folder you launched from becomes the
+                                  identity, and the passages of THIS folder most relevant to
+                                  each question are retrieved and handed over per turn. From
+                                  ~/work/merlib-dump that is the free-energy archive.
+    fm-chat --no-arm              plain model, no identity, NO FILE ACCESS (weights only)
+    fm-chat --apple               force-arm even where auto-detection would decline
     fm-chat --mlx                 chat with the Mini's MLX brain (Qwen3-4B) — speaks each
                                   reply aloud (karaoke); --quiet to mute, --voice NAME to pick
     fm-chat --system "..."        open with a system instruction (a persona/role)
 
+The banner tells you which you got. If you do NOT see a line reading "… armed — <folder>
+context loaded · retrieval ON", the brain is answering out of its weights and has read
+nothing from disk — treat every file-specific claim it makes as invented.
+
 In-chat commands:
     /reset        forget the conversation so far
     /system TEXT  set/replace the system instruction
-    /history      print the running transcript
-    /exit /quit   leave (Ctrl-D also works)
+    /history      print the current path transcript
+    /graph        print the conversation tree and node ids
+    /branch [ID]  fork a new chat from a node (default: current node)
+    fm-chat --resume ID --branch NODE  start a fork directly
+    /memory       show raw transcript + distill/promote commands
+    /help help    show commands
+    /exit exit    leave (also /quit, quit, q, bye, Ctrl-D)
 
 Apple-native: python3 stdlib only.
 """
@@ -26,6 +41,7 @@ Apple-native: python3 stdlib only.
 import hashlib
 import json
 import os
+import shlex
 import socket
 import subprocess
 import sys
@@ -35,7 +51,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from fm_render import present, md_to_ansi  # noqa: E402  (shared reply call + markdown→richtext)
+from fm_render import format_reply, md_to_ansi, present, terminal_width, wrap_markdown  # noqa: E402
 QUEUE = Path.home() / "work" / "comms" / "queue"
 INBOX = QUEUE / "fm-inbox"
 OUTBOX = QUEUE / "fm-outbox"
@@ -43,6 +59,13 @@ HEARTBEAT = QUEUE / "fm-worker-heartbeat.json"
 
 # Persisted sessions so the `sessions` TUI can list + resume an fm-chat.
 SESS_DIR = Path.home() / ".fm-chat" / "sessions"
+
+# FoundationModels has a small effective input window. Keep recent dialogue only,
+# leaving room for the current turn, any armed retrieval, and the answer.
+REPLAY_BUDGET = 6000
+MLX_REPLAY_BUDGET = 20000
+MAX_FM_INPUT_CHARS = 9000
+RECOVERY_CONTEXT_BUDGET = 2500
 
 
 def _spath(uid):
@@ -77,6 +100,42 @@ def load_session(uid):
     return meta, history
 
 
+def load_graph(uid):
+    """Load a session as nodes while accepting the original flat JSONL format."""
+    meta, nodes = None, []
+    previous = None
+    try:
+        for line in _spath(uid).read_text(encoding="utf-8", errors="replace").splitlines():
+            try:
+                d = json.loads(line)
+            except Exception:
+                continue
+            if d.get("type") == "session_meta":
+                meta = d
+            elif d.get("type") == "message":
+                if d.get("role") == "assistant" and (looks_non_answer(d.get("content", ""))
+                        or looks_repeated_answer(d.get("content", ""), nodes)):
+                    # Do not let a model-identity/fallback reply poison a resumed path.
+                    bad_parent = d.get("parent_id", previous)
+                    if nodes and nodes[-1].get("id") == bad_parent:
+                        nodes.pop()
+                    previous = nodes[-1]["id"] if nodes else None
+                    continue
+                node_id = d.get("id") or f"legacy-{len(nodes) + 1:06d}"
+                parent_id = d.get("parent_id", previous)
+                node = {"id": node_id, "parent_id": parent_id,
+                        "role": d.get("role", "assistant"),
+                        "content": d.get("content", ""),
+                        "ts": d.get("ts", 0)}
+                nodes.append(node)
+                previous = node_id
+    except FileNotFoundError:
+        sys.exit(f"fm-chat: no session {uid}")
+    if not meta:
+        sys.exit(f"fm-chat: {uid} missing session_meta")
+    return meta, nodes
+
+
 def append_turn(meta, role, content):
     uid = meta["uuid"]
     path = _spath(uid)
@@ -86,6 +145,81 @@ def append_turn(meta, role, content):
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"type": "message", "role": role,
                             "content": content, "ts": time.time()}) + "\n")
+
+
+def append_node(meta, role, content, parent_id=None):
+    """Persist one graph node and return its stable id."""
+    uid = meta["uuid"]
+    path = _spath(uid)
+    if not path.exists():
+        SESS_DIR.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(meta) + "\n")
+    node_id = uuidlib.uuid4().hex[:12]
+    node = {"type": "message", "id": node_id, "parent_id": parent_id,
+            "role": role, "content": content, "ts": time.time()}
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(node, ensure_ascii=False) + "\n")
+    return node_id
+
+
+def node_path(nodes, node_id=None):
+    """Return root-to-node nodes, or the full legacy path when no id is given."""
+    by_id = {n["id"]: n for n in nodes}
+    if node_id is None:
+        node_id = nodes[-1]["id"] if nodes else None
+    path, seen = [], set()
+    while node_id and node_id in by_id and node_id not in seen:
+        node = by_id[node_id]
+        path.append(node)
+        seen.add(node_id)
+        node_id = node.get("parent_id")
+    path.reverse()
+    return path
+
+
+def graph_lines(nodes, current_id=None):
+    children = {}
+    for node in nodes:
+        children.setdefault(node.get("parent_id"), []).append(node)
+    lines = []
+
+    def visit(node, depth):
+        marker = " *" if node["id"] == current_id else ""
+        preview = " ".join(node["content"].split()).replace("\n", " ")[:90]
+        lines.append(f"{'  ' * depth}{node['id']} [{node['role']}] {preview}{marker}")
+        for child in children.get(node["id"], []):
+            visit(child, depth + 1)
+
+    for root in children.get(None, []):
+        visit(root, 0)
+    return lines
+
+
+def create_branch(meta, nodes, node_id):
+    selected = node_path(nodes, node_id)
+    if not selected:
+        raise ValueError(f"unknown node: {node_id}")
+    uid = uuidlib.uuid4().hex[:16]
+    branch_meta = dict(meta)
+    branch_meta.update({"type": "session_meta", "uuid": uid, "created": time.time(),
+                        "parent_session": meta["uuid"], "parent_node": selected[-1]["id"]})
+    path = SESS_DIR / f"{uid}.jsonl"
+    SESS_DIR.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        f.write(json.dumps(branch_meta, ensure_ascii=False) + "\n")
+        for node in selected:
+            copy = dict(node)
+            copy["type"] = "message"
+            copy["origin_session"] = meta["uuid"]
+            f.write(json.dumps(copy, ensure_ascii=False) + "\n")
+    return uid, branch_meta, selected
+
+
+def ensure_session_file(meta):
+    path = _spath(meta["uuid"])
+    if not path.exists():
+        SESS_DIR.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(meta) + "\n")
 
 
 def list_sessions(folder):
@@ -111,13 +245,24 @@ BOLD = "\033[1m"; DIM = "\033[2m"; CYAN = "\033[36m"; GREEN = "\033[32m"
 YELLOW = "\033[33m"; RESET = "\033[0m"
 
 
-def _echo_turn(role: str, text: str) -> str:
-    """One history/transcript line. The assistant's text is Markdown → render it
-    as richtext (the same rule present() follows); the user's line stays plain."""
+def _echo_turn(role: str, text: str, tty: bool | None = None, width: int | None = None) -> str:
+    """One history/transcript line, wrapped before the terminal can split words."""
+    if tty is None:
+        tty = sys.stdout.isatty()
     if role == "user":
-        return f"{CYAN}you{RESET} › {text}"
-    body = md_to_ansi(text) if sys.stdout.isatty() else text
-    return f"{GREEN}fm{RESET} › {body}"
+        plain_head = "you › "
+        head = f"{CYAN}you{RESET} › " if tty else plain_head
+        if not tty:
+            return plain_head + text
+        width = width or terminal_width()
+        body = wrap_markdown(
+            text,
+            width,
+            first_width=width - len(plain_head),
+            continuation_indent=" " * len(plain_head),
+        )
+        return head + body
+    return format_reply(text, tty=tty, label="fm", gap=" ", width=width)
 
 
 def nudge(path: Path):
@@ -128,16 +273,77 @@ def nudge(path: Path):
         pass
 
 
-def render(history, user_line: str) -> str:
+def render(history, user_line: str, budget: int | None = None) -> str:
     """Replay the dialogue so far as a single prompt ending with the new turn.
     The system instruction is sent separately (the worker passes it to fm --system)."""
+    kept = []
+    if budget is None:
+        kept = list(history)
+    else:
+        total = 0
+        for role, text in reversed(history):
+            tag = "User" if role == "user" else "Assistant"
+            chunk_len = len(f"{tag}: {text}")
+            if total + chunk_len > budget:
+                break
+            kept.append((role, text))
+            total += chunk_len
+        kept.reverse()
+
     parts = []
-    for role, text in history:
+    for role, text in kept:
         tag = "User" if role == "user" else "Assistant"
         parts.append(f"{tag}: {text}")
     parts.append(f"User: {user_line}")
     parts.append("Assistant:")
     return "\n".join(parts)
+
+
+def context_overflow(err: str) -> bool:
+    s = (err or "").lower()
+    return (
+        "exceededcontextwindowsize" in s
+        or "context window" in s
+        or "exceeds the maximum" in s
+        or "context size" in s
+    )
+
+
+def looks_non_answer(text: str) -> bool:
+    s = (text or "").strip().lower()
+    return (
+        (
+            "i'm here to help answer questions" in s
+            and "what specific topic or question" in s
+        )
+        or s in (
+            "unable to work with that request.",
+            "unable to work with that request",
+        )
+        or "large language model developed by apple" in s
+        or "large language model created by apple" in s
+        or "foundation model developed by apple" in s
+        or "foundation model created by apple" in s
+    )
+
+
+def looks_repeated_answer(text: str, history) -> bool:
+    """Reject an exact substantial assistant replay as a failed generation."""
+    normalized = " ".join((text or "").lower().split())
+    if len(normalized) < 80:
+        return False
+    for item in history:
+        if isinstance(item, dict):
+            role, old = item.get("role"), item.get("content", "")
+        else:
+            role, old = item
+        if role == "assistant" and normalized == " ".join((old or "").lower().split()):
+            return True
+    return False
+
+
+def recovery_prompt(history, line: str, budget: int = RECOVERY_CONTEXT_BUDGET) -> str:
+    return render(history, line, budget)
 
 
 def ask(prompt: str, system: str, timeout: float = 180.0):
@@ -173,6 +379,36 @@ def ask(prompt: str, system: str, timeout: float = 180.0):
         time.sleep(0.8)
     sys.stdout.write("\r" + " " * 40 + "\r")
     return None, time.time() - t0
+
+
+def ask_with_context_recovery(prompt: str, line: str, system: str, history=None,
+                              armer=None, ask_fn=ask):
+    """Ask FoundationModels, retrying overflow fresh and generic non-answers with compact context."""
+    res, rt = ask_fn(prompt, system)
+    fresh = render([], line)
+    if armer is not None:
+        fresh = armer.augment_prompt(fresh, line)
+    overflow = res is not None and not res.get("ok") and context_overflow(res.get("err", ""))
+    generic = (
+        res is not None
+        and res.get("ok")
+        and (looks_non_answer(res.get("out", ""))
+             or looks_repeated_answer(res.get("out", ""), history or []))
+    )
+    if overflow:
+        res, rt = ask_fn(fresh, system)
+        return res, rt, "overflow"
+    if generic:
+        retry = recovery_prompt(history or [], line)
+        if armer is not None:
+            retry = armer.augment_prompt(retry, line)
+        retry_system = system
+        if looks_repeated_answer(res.get("out", ""), history or []):
+            retry_system = (system + "\nAnswer the latest user question directly. Do not repeat any earlier answer; "
+                            "if the question is uncertain, say what is uncertain and ask a precise clarification.").strip()
+        res, rt = ask_fn(retry, retry_system)
+        return res, rt, "generic"
+    return res, rt, ""
 
 
 def ask_mlx(prompt: str, system: str, timeout: float = 180.0):
@@ -229,6 +465,77 @@ def _pop(args, flag):
     return None
 
 
+def resume_command(uid: str, use_mlx: bool = False, arm_apple: bool = False,
+                   quiet: bool = False, voice: str | None = None) -> str:
+    parts = ["fm-chat", "--resume", uid]
+    if use_mlx:
+        parts.append("--mlx")
+        if quiet:
+            parts.append("--quiet")
+        default_voice = os.environ.get("FM_MLX_VOICE", "Zoe (Premium)")
+        if voice and voice != default_voice:
+            parts.extend(["--voice", voice])
+    if not arm_apple:
+        parts.append("--no-arm")      # arming is the default; only opting OUT needs a flag
+    return " ".join(shlex.quote(p) for p in parts)
+
+
+def is_exit_command(line: str) -> bool:
+    return line.lstrip("/").strip().lower() in ("exit", "quit", "q", "bye")
+
+
+def is_help_command(line: str) -> bool:
+    return line.lstrip("/").strip().lower() in ("help", "?")
+
+
+def is_memory_command(line: str) -> bool:
+    return line.lstrip("/").strip().lower() in ("memory", "mem")
+
+
+def is_graph_command(line: str) -> bool:
+    return line.lstrip("/").strip().lower() == "graph"
+
+
+def branch_node_id(line: str) -> str | None:
+    parts = line.lstrip("/").split(maxsplit=1)
+    return parts[1].strip() if len(parts) == 2 and parts[1].strip() else None
+
+
+def memory_text(uid: str) -> str:
+    return "\n".join([
+        "memory:",
+        f"  raw transcript: {_spath(uid)}",
+        f"  distill: sessions distill {uid}",
+        f"  promote: sessions promote {uid} --topic fm-chat",
+        "  status: raw only until you run distill/promote",
+    ])
+
+
+def help_text(uid: str, use_mlx: bool = False, arm_apple: bool = False,
+              quiet: bool = False, voice: str | None = None) -> str:
+    return "\n".join([
+        "commands:",
+        "  /help, help       show this help",
+        "  /history          print the running transcript",
+        "  /graph            print the conversation tree and node ids",
+        "  /armed            is this brain reading the folder, or just its weights?",
+        "  /branch [ID]      fork a new chat from a node (default: current)",
+        "  --branch NODE     start a fork directly with --resume SESSION",
+        "  /memory, memory   show raw transcript + distill/promote commands",
+        "  /system TEXT      set/replace the system instruction",
+        "  /reset            forget the conversation so far",
+        "  /exit, exit       leave and print the resume command",
+        "  /quit, quit, q    same as exit",
+        f"resume: {resume_command(uid, use_mlx, arm_apple, quiet, voice)}",
+    ])
+
+
+def print_goodbye(uid: str, use_mlx: bool = False, arm_apple: bool = False,
+                  quiet: bool = False, voice: str | None = None):
+    print("bye.")
+    print(f"resume: {resume_command(uid, use_mlx, arm_apple, quiet, voice)}")
+
+
 def main() -> int:
     args = sys.argv[1:]
     if args and args[0] in ("-h", "--help"):
@@ -240,15 +547,25 @@ def main() -> int:
     use_mlx = "--mlx" in args
     if use_mlx:
         args.remove("--mlx")
-    arm_apple = "--apple" in args
-    if arm_apple:
+    # Arming is now the DEFAULT whenever the folder you launched from has a governing skill.
+    # Standing in ~/work/merlib-dump and asking an archive question must reach the archive
+    # without remembering a flag — the 2026-08-27 lesson, where a bare `fm-chat` answered a
+    # Bloch-wall question out of the model's weights (three wrong namesakes) because nothing
+    # was ever read from disk. `--apple` is kept as an explicit force; `--no-arm` opts out.
+    force_arm = "--apple" in args
+    while "--apple" in args:
         args.remove("--apple")
+    no_arm = "--no-arm" in args
+    while "--no-arm" in args:
+        args.remove("--no-arm")
+    arm_apple = force_arm or not no_arm
     quiet = "--quiet" in args or "--no-speak" in args
     for f in ("--quiet", "--no-speak"):
         while f in args:
             args.remove(f)
     voice = _pop(args, "--voice") or os.environ.get("FM_MLX_VOICE", "Zoe (Premium)")
     resume = _pop(args, "--resume")
+    branch_from = _pop(args, "--branch")
     cwd = _pop(args, "--cwd") or os.getcwd()
     system = _pop(args, "--system") or ""
     # --mlx speaks each reply by default (the live "keeps printing and saying" REPL);
@@ -260,12 +577,28 @@ def main() -> int:
 
     if resume:
         uid, meta = resume, None
-        meta, history = load_session(resume)
+        meta, nodes = load_graph(resume)
+        current_id = meta.get("current_node") or (nodes[-1]["id"] if nodes else None)
+        history = [(n["role"], n["content"]) for n in node_path(nodes, current_id)]
         system = meta.get("system", "")
         cwd = meta.get("cwd", cwd)
     else:
         uid, meta = new_session(cwd, system)
+        meta["graph_version"] = 1
+        nodes = []
+        current_id = None
         history = []
+
+    if branch_from:
+        if not resume:
+            sys.exit("fm-chat: --branch requires --resume SESSION")
+        try:
+            uid, meta, nodes = create_branch(meta, nodes, branch_from)
+        except ValueError as e:
+            sys.exit(f"fm-chat: {e}")
+        current_id = nodes[-1]["id"]
+        history = [(n["role"], n["content"]) for n in nodes]
+        print(f"{GREEN}branch created: {uid}{RESET}")
 
     # --apple: arm the Apple skill. The identity (skill.md + this folder) becomes
     # the system instruction; relevant wiki passages are retrieved per turn.
@@ -275,6 +608,8 @@ def main() -> int:
             import arm_apple as armer  # bin/arm_apple.py (sys.path has HERE)
         except Exception as e:
             print(f"{YELLOW}  ⚠ could not arm skill: {e}{RESET}")
+            print(f"{YELLOW}    → this brain has NO file access; answers come from its "
+                  f"weights alone. Do not ask it about this repo's contents.{RESET}")
             armer = None
         if armer is not None:
             system = armer.build_system(cwd, extra=system)
@@ -291,9 +626,11 @@ def main() -> int:
         icon = "🍎" if label == "Apple skill" else "🧠"
         retr = "retrieval ON" if armer.available() else "identity only (convey not found → no retrieval)"
         print(f"{GREEN}  {icon} {label} armed{RESET} {DIM}— {os.path.basename(cwd)} context loaded · {retr}{RESET}")
+    resume_later = resume_command(uid, use_mlx, arm_apple, quiet, voice)
     print(f"{DIM}session {uid} · {os.path.basename(cwd)} · "
-          f"resume later: fm-chat --resume {uid}{RESET}")
-    print(f"{DIM}commands: /reset  /system TEXT  /history  /exit{RESET}")
+          f"resume later: {resume_later}{RESET}")
+    print(f"{DIM}commands: /help  /armed  /memory  /graph  /branch  /reset  /system TEXT  "
+          f"/history  /exit{RESET}")
     # The armed system prompt is Markdown (skill.md + folder context). Per the rule
     # "if you show Markdown, it must be rich Markdown" — render it through the shared
     # renderer, not dumped raw in dark grey. Plain when piped.
@@ -313,15 +650,77 @@ def main() -> int:
         try:
             line = input(f"{CYAN}{BOLD}you ›{RESET} ").strip()
         except (EOFError, KeyboardInterrupt):
-            print("\nbye.")
+            print()
+            ensure_session_file(meta)
+            print_goodbye(uid, use_mlx, arm_apple, quiet, voice)
             return 0
         if not line:
             continue
-        if line in ("/exit", "/quit"):
-            print("bye.")
+        if is_exit_command(line):
+            ensure_session_file(meta)
+            print_goodbye(uid, use_mlx, arm_apple, quiet, voice)
             return 0
+        if is_help_command(line):
+            print(help_text(uid, use_mlx, arm_apple, quiet, voice))
+            continue
+        if is_memory_command(line):
+            ensure_session_file(meta)
+            print(memory_text(uid))
+            continue
+        if is_graph_command(line):
+            print("conversation graph:")
+            lines = graph_lines(nodes, current_id)
+            print("\n".join(lines) if lines else "  (empty)")
+            continue
+        if line.lstrip("/").strip().lower().startswith("branch"):
+            requested = branch_node_id(line)
+            target = requested or current_id
+            if target is None:
+                print(f"{YELLOW}  no node to branch from yet{RESET}")
+                continue
+            try:
+                new_uid, new_meta, selected = create_branch(meta, nodes, target)
+            except ValueError as e:
+                print(f"{YELLOW}  {e}{RESET}")
+                continue
+            uid, meta, nodes = new_uid, new_meta, selected
+            current_id = nodes[-1]["id"]
+            history = [(n["role"], n["content"]) for n in nodes]
+            system = meta.get("system", "")
+            print(f"{GREEN}  branch created: {uid}{RESET}")
+            print(f"  resume: {resume_command(uid, use_mlx, arm_apple, quiet, voice)}")
+            print(f"  context: {len(nodes)} nodes copied from {meta.get('parent_session')}")
+            continue
+        if line.lstrip("/").strip().lower() in ("armed", "arm"):
+            # "Is it actually reading the files, or making it up?" — answerable in one command
+            # instead of a forensic session. Shows the identity AND what THIS folder returns
+            # for the last thing you asked, so a silent-empty retrieval is visible as empty.
+            if armer is None:
+                print(f"{YELLOW}  ✗ NOT armed — no identity, no retrieval.{RESET}")
+                print(f"{DIM}    This brain has read nothing from {os.path.basename(cwd)}. "
+                      f"Every file-specific claim it makes is invented.{RESET}")
+            else:
+                label = armer.active_label() if hasattr(armer, "active_label") else "skill"
+                print(f"{GREEN}  ✓ armed as: {label}{RESET}  {DIM}(cwd {cwd}){RESET}")
+                print(f"  per-turn retrieval: "
+                      f"{'ON' if armer.available() else 'OFF (convey not importable)'}")
+                probe = next((h for r, h in reversed(history) if r == "user"), None) or "overview"
+                try:
+                    ctx = armer.retrieve_context(probe)
+                except Exception as e:
+                    ctx = ""
+                    print(f"{YELLOW}  retrieval raised: {e}{RESET}")
+                print(f"{DIM}  probe «{probe[:60]}» → {len(ctx)} chars{RESET}")
+                if ctx:
+                    for ln in ctx.splitlines()[:6]:
+                        print(f"{DIM}    {ln[:150]}{RESET}")
+                else:
+                    print(f"{YELLOW}    nothing retrieved — answers are coming from the "
+                          f"model's weights, not from this folder.{RESET}")
+            continue
         if line == "/reset":
             history = []
+            current_id = None
             print(f"{DIM}— conversation cleared —{RESET}")
             continue
         if line == "/history":
@@ -333,16 +732,36 @@ def main() -> int:
             print(f"{DIM}— system set: {system or '(cleared)'} —{RESET}")
             continue
 
-        prompt = render(history, line)
+        replay_budget = MLX_REPLAY_BUDGET if use_mlx else REPLAY_BUDGET
+        prompt = render(history, line, replay_budget)
         if armer is not None:
             prompt = armer.augment_prompt(prompt, line)
-        try:
-            res, rt = (ask_mlx if use_mlx else ask)(prompt, system)
-        except KeyboardInterrupt:
-            # Ctrl-C while waiting on the Mini → drop this turn, back to the prompt.
-            sys.stdout.write("\r" + " " * 40 + "\r")
-            print(f"{DIM}  (cancelled — back to the prompt; Ctrl-C again or /exit to quit){RESET}")
-            continue
+        if not use_mlx and len(prompt) > MAX_FM_INPUT_CHARS:
+            prompt = render([], line)
+            if armer is not None:
+                prompt = armer.augment_prompt(prompt, line)
+        if use_mlx:
+            try:
+                res, rt = ask_mlx(prompt, system)
+            except KeyboardInterrupt:
+                sys.stdout.write("\r" + " " * 40 + "\r")
+                print(f"{DIM}  (cancelled — back to the prompt; Ctrl-C again or /exit to quit){RESET}")
+                continue
+        else:
+            try:
+                res, rt, retry_reason = ask_with_context_recovery(
+                    prompt, line, system, history, armer
+                )
+            except KeyboardInterrupt:
+                # Ctrl-C while waiting on the Mini → drop this turn, back to the prompt.
+                sys.stdout.write("\r" + " " * 40 + "\r")
+                print(f"{DIM}  (cancelled — back to the prompt; Ctrl-C again or /exit to quit){RESET}")
+                continue
+            if retry_reason:
+                if retry_reason == "overflow":
+                    print(f"{YELLOW}  ⚠ context window filled — retried this message without history{RESET}")
+                else:
+                    print(f"{YELLOW}  ⚠ generic non-answer — retried this message with compact context{RESET}")
         if res is None:
             print(f"{YELLOW}  (timed out after {rt:.0f}s — is fm-worker running on the Mini? "
                   f"`fm-submit --status`){RESET}")
@@ -356,16 +775,25 @@ def main() -> int:
         # the model may echo a leading "Assistant:" from the cue — strip it
         if answer.lower().startswith("assistant:"):
             answer = answer.split(":", 1)[1].strip()
+        if looks_non_answer(answer) or looks_repeated_answer(answer, history):
+            print(f"{YELLOW}  ⚠ model returned a non-answer; not saving this turn{RESET}\n")
+            continue
         # ONE shared call: rich-markdown render + speak (karaoke/voice). present()
         # is the family contract (bin/fm_render.py) — fm-chat does not re-roll either.
         present(answer, host=res.get("host", "?"),
                 model_ms=res.get("model_ms", 0), round_trip=rt,
                 speak_aloud=speak, voice=voice)
         print()
+        user_id = append_node(meta, "user", line, current_id)
+        assistant_id = append_node(meta, "assistant", answer, user_id)
+        nodes.extend([
+            {"id": user_id, "parent_id": current_id, "role": "user", "content": line},
+            {"id": assistant_id, "parent_id": user_id, "role": "assistant", "content": answer},
+        ])
+        current_id = assistant_id
+        meta["current_node"] = current_id
         history.append(("user", line))
         history.append(("assistant", answer))
-        append_turn(meta, "user", line)           # persist → resumable in `sessions`
-        append_turn(meta, "assistant", answer)
 
 
 if __name__ == "__main__":
