@@ -188,12 +188,20 @@ func correctText(_ text: String, _ v: Vocabulary) -> (String, [String: Int]) {
     var hits: [String: Int] = [:]
 
     // 1. Listed mishearings. Longest first so "pucketty bot" wins over "pucketty".
+    //    Deduped by LETTER SEQUENCE, because matching is space-insensitive: "pocket to" and
+    //    "pocketto" are now the same rule, and running both would fix the line once and
+    //    report it twice. A tool that overstates what it did is not worth reading.
+    var seenLetters = Set<String>()
     let listed = v.corrections.flatMap { canon, aliases in aliases.map { (canon, $0) } }
         .sorted { $0.1.count > $1.1.count }
+        .filter { seenLetters.insert($0.0 + "\u{0}" + $0.1.lowercased().filter { $0 != " " && $0 != "-" }).inserted }
     for (canon, alias) in listed {
-        // \b…\b, but the alias may contain spaces/hyphens, so allow either between its words.
-        let body = alias.split(whereSeparator: { $0 == " " || $0 == "-" })
-            .map { regexEscape(String($0)) }.joined(separator: "[ -]+")
+        // \b…\b, with an OPTIONAL separator allowed between every letter. Whisper's single
+        // most common way of mangling a name is inserting a space into it — "packetti" comes
+        // back as "packet he", "pocketti" as "pocket ti" — so one entry has to cover every
+        // spacing, or the list becomes an endless enumeration of the same word.
+        let letters = alias.filter { $0 != " " && $0 != "-" }
+        let body = letters.map { regexEscape(String($0)) }.joined(separator: "[ -]?")
         guard let re = try? NSRegularExpression(pattern: "\\b" + body + "\\b", options: [.caseInsensitive]) else { continue }
         let ms = re.matches(in: out, range: NSRange(out.startIndex..., in: out))
         guard !ms.isEmpty else { continue }
@@ -218,6 +226,56 @@ func correctText(_ text: String, _ v: Vocabulary) -> (String, [String: Int]) {
     // 2. Sound-alikes nobody listed yet — the whole point being that you should not have to
     //    enumerate every way Whisper can mangle a name before it gets spelled right.
     guard v.fuzzy else { return (out, hits) }
+
+    // 2a. …including the ones Whisper split into SEVERAL REAL ENGLISH WORDS.
+    //
+    // This is the blind spot the single-word pass below cannot see. When Whisper meets a
+    // name it does not know, it substitutes the nearest thing in its own vocabulary — and
+    // that is very often ordinary words: "Paketti" came back as "Pocket to". The nonsense
+    // spellings ("Pucketty") are the EASY case; the real-word case is the common one, and
+    // both guards below reject it — it is two tokens, and each is a real English word.
+    //
+    // What makes it safe to fix anyway is a signal Whisper hands over for free: it
+    // CAPITALISED "Pocket" in the middle of a sentence. Whisper capitalises mid-sentence
+    // when it believes it is writing a proper noun. Genuine speech about a pocket does not
+    // arrive capitalised. So a span is only considered when Whisper itself claimed it was a
+    // name, which is why "reached into my pocket to grab it" is never touched.
+    if let tok = try? NSRegularExpression(pattern: "[A-Za-z][A-Za-z'’-]*") {
+        let toks = tok.matches(in: out, range: NSRange(out.startIndex..., in: out))
+            .compactMap { Range($0.range, in: out) }
+        let termCodes = v.terms.map { (term: $0, letters: $0.filter { $0.isLetter },
+                                       code: soundex(String($0.filter { $0.isLetter }))) }
+        var claimed: [Range<String.Index>] = []
+        for i in toks.indices.reversed() {
+            // Whisper must have capitalised it, and NOT merely because a sentence began.
+            guard let f = out[toks[i]].first, f.isUppercase else { continue }
+            let before = out[out.startIndex..<toks[i].lowerBound]
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let last = before.last, !".!?…:\"'\u{201C}\u{2018}".contains(last) else { continue }
+            for n in [3, 2] where i + n <= toks.count {
+                let span = toks[i..<(i + n)]
+                // Adjacent, separated by nothing but a space or a hyphen.
+                var contiguous = true
+                for j in i..<(i + n - 1) {
+                    let gap = out[toks[j].upperBound..<toks[j + 1].lowerBound]
+                    if gap.isEmpty || gap.count > 2 || !gap.allSatisfy({ $0 == " " || $0 == "-" }) { contiguous = false; break }
+                }
+                guard contiguous else { continue }
+                let range = span.first!.lowerBound..<span.last!.upperBound
+                guard !claimed.contains(where: { $0.overlaps(range) }) else { continue }
+                let joined = span.map { out[$0] }.joined().lowercased().filter { $0.isLetter }
+                guard joined.count >= 5, !englishWords.contains(joined) else { continue }
+                let code = soundex(joined)
+                guard let hit = termCodes.first(where: { $0.code == code && abs($0.letters.count - joined.count) <= 3 })
+                else { continue }
+                guard String(out[range]) != hit.term else { continue }
+                claimed.append(range)
+                hits[hit.term, default: 0] += 1
+                out.replaceSubrange(range, with: hit.term)
+                break
+            }
+        }
+    }
     let singles = v.terms.filter { !$0.contains(" ") && $0.count >= 5 }
     guard !singles.isEmpty,
           let tok = try? NSRegularExpression(pattern: "[A-Za-z][A-Za-z'’-]*") else { return (out, hits) }
@@ -282,6 +340,12 @@ func vocabularySelfTest() -> Never {
         if got == want { print("  ok   \(why)") }
         else { failed += 1; print("  FAIL \(why)\n       input: \(input)\n       want:  \(want)\n       got:   \(got)") }
     }
+    /// The reported count is user-facing output, so it is asserted like anything else.
+    func checkCount(_ input: String, _ want: Int, _ why: String) {
+        let n = correctText(input, v).1.values.reduce(0, +)
+        if n == want { print("  ok   \(why)") }
+        else { failed += 1; print("  FAIL \(why)\n       input: \(input)\n       want:  \(want) fix(es)\n       got:   \(n)") }
+    }
     print("rec-subtitle vocabulary self-test")
     check("So I opened Pucketty in Reno.", "So I opened Paketti in Renoise.", "listed mishearings")
     check("pocketty is a Renoise tool", "Paketti is a Renoise tool", "listed, sentence-initial + already-correct term untouched")
@@ -292,7 +356,24 @@ func vocabularySelfTest() -> Never {
     check("Paketti in Renoise", "Paketti in Renoise", "idempotent — correct text unchanged")
     check("a lackluster performance today", "a Lackluster performance today", "canonical casing applied")
     check("I put the packet in the tracker", "I put the packet in the tracker", "real English words are never rewritten")
+    // The 2026-08-27 miss: Whisper split the name into two REAL English words, so both the
+    // single-word Soundex pass and the dictionary veto let it through untouched.
+    check("modifications I made to the Pocket to Single Cycle Waveform Rider",
+          "modifications I made to the Paketti Single Cycle Waveform Rider",
+          "name split into real English words, caught by Whisper's own capitalisation")
+    check("I reached into my pocket to grab it", "I reached into my pocket to grab it",
+          "…and the SAME words uncapitalised are ordinary speech, left alone")
+    check("Pocket to is what I use", "Pocket to is what I use",
+          "sentence-initial capital is not Whisper claiming a proper noun")
+    check("He opened Lack Luster last night", "He opened Lackluster last night",
+          "two capitalised words rejoined")
+    check("the pocket ty build", "the Paketti build",
+          "one listed alias ('pocketty') covers every spacing Whisper inserts")
     check("rendered a nice noise floor", "rendered a nice noise floor", "ordinary speech untouched")
+    // Space-insensitive matching makes some list entries duplicates of each other; fixing a
+    // line once and reporting it twice is the bug that introduced this check.
+    v.corrections["Paketti"] = ["pocketto", "pocket to", "pucketty"]
+    checkCount("the Pocket to build", 1, "duplicate aliases are one rule, counted once")
     print(failed == 0 ? "✓ vocabulary self-test passed" : "✗ \(failed) failure(s)")
     exit(failed == 0 ? 0 : 1)
 }

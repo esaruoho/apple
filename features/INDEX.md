@@ -464,7 +464,7 @@ Post-process a screen recording's audio (split / flatten)  —  4 scenarios   (f
   triad: .session✗  transcript✗  RESULT✓
   honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-Subtitle a screen recording (.srt sidecar + burn-in)  —  14 scenarios   (features/rec-subtitle.feature)
+Subtitle a screen recording (.srt sidecar + burn-in)  —  18 scenarios   (features/rec-subtitle.feature)
   - [@hw-verified] transcribe → .srt sidecar via whisp (Whisper)  (ran live)
   - [@hw-verified] --burn hard-paints the subtitles into the video  (ran live)
   - [@hw-verified] version-safe burn export (Ventura+)  (ran live)
@@ -479,8 +479,12 @@ Subtitle a screen recording (.srt sidecar + burn-in)  —  14 scenarios   (featu
   - [@built] the same vocabulary biases Whisper before it decodes
   - [@hw-verified] the vocabulary is a file, editable without a rebuild  (ran live)
   - [@hw-verified] the rules are checked headlessly, so a regression fails the buil
+  - [@hw-verified] "Paketti" came back as "Pocket to" and every guard let it throug
+  - [@hw-verified] Whisper's own capitalisation is what makes the fix safe  (2026-0
+  - [@hw-verified] list the letters, never the spacings  (2026-08-27)
+  - [@hw-verified] fixing a line once and reporting it twice  (caught + fixed 2026-
   triad: .session✓  transcript✗  RESULT✓
-  honesty: 14/14 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  honesty: 18/18 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 Two presses of the same key always get the shell back  —  9 scenarios   (features/recburn-abort.feature)
   - [@hw-verified] the second Ctrl-C abandons transcription and exits at once  (mea

@@ -159,8 +159,63 @@ Feature: Subtitle a screen recording (.srt sidecar + burn-in)
   @hw-verified
   Scenario: the rules are checked headlessly, so a regression fails the build  (ran live)
     Given `rec-subtitle --self-test`
-    Then it runs 10 assertions (listed + unlisted + possessive + casing + idempotence + the
-      English-word veto) with no audio, no video and no Whisper, and exits non-zero on failure
+    Then it runs 16 assertions (listed + unlisted + possessive + casing + idempotence + the
+      English-word veto + the split-name cases + the report tally) with no audio, no video and
+      no Whisper, and exits non-zero on failure
     And build.sh runs it right after compiling — you find out at build time, not mid-screencast
     # cite: vocabularySelfTest(); apple-rec/build.sh "▸ checking the vocabulary rules…"
-    # verified: 10/10 ok in the build output
+    # verified: 16/16 ok in the build output
+
+  # ==========================================================================
+  # 2026-08-27 — the sweep's blind spot: a name misheard as REAL ENGLISH WORDS
+  # ==========================================================================
+
+  @hw-verified
+  Scenario: "Paketti" came back as "Pocket to" and every guard let it through  (2026-08-27)
+    Given Esa's Renoise walkthrough, where he says "Paketti" once
+    Then the delivered subtitle read "…modifications I made to the Pocket to Single Cycle
+      Waveform Rider" — with his own product's name replaced by two ordinary words
+    And the listed-alias sweep missed it, because that spelling was not listed
+    And the Soundex sweep missed it, because it only ever examined ONE token at a time
+    And the dictionary veto would have rejected it anyway, because "pocket" is real English
+    # innards: correctText() — the three passes, none of which could see a multi-token span
+    # WHY THIS IS THE COMMON CASE, not an edge case: when Whisper meets a name it does not
+    #   know, it substitutes the nearest thing in ITS OWN vocabulary — which is very often
+    #   ordinary words. The nonsense spellings ("Pucketty") are the easy half. The English-word
+    #   veto that protects ordinary speech is exactly what blinds the tool to the hard half.
+
+  @hw-verified
+  Scenario: Whisper's own capitalisation is what makes the fix safe  (2026-08-27)
+    Given Whisper wrote "Pocket to" with a capital P in the MIDDLE of a sentence
+    Then that is Whisper declaring it believes it is writing a proper noun
+    When a 2–3 token span is considered only if its first token is capitalised mid-sentence,
+      its concatenation is not itself an English word, its Soundex matches a vocabulary term
+      and its length is within 3 characters of that term
+    Then "…made to the Pocket to Single Cycle…" becomes "…made to the Paketti Single Cycle…"
+    And "I reached into my pocket to grab it" is left completely alone
+    And "Pocket to is what I use" is left alone, because a sentence-initial capital is not a claim
+    # innards: correctText() pass 2a
+    # WHY NOT just fuzzy-match every multi-word span: "pocket to" is a real English phrase, and
+    #   rewriting it unconditionally would corrupt ordinary speech. The capitalisation gate is
+    #   what separates "Whisper thinks this is a name" from "someone mentioned a pocket".
+
+  @hw-verified
+  Scenario: list the letters, never the spacings  (2026-08-27)
+    Given Whisper's single most common mangling is inserting a space into a name
+    And the alias list had grown entries like "pack etty", "pa ketti", "packet he", "packet e"
+    When aliases are matched with an optional separator allowed between EVERY letter
+    Then one entry, "pocketty", also catches "pocket ty" and "pock-etty"
+    And the shipped list shrank from 66 aliases to 56 with strictly more coverage
+    # innards: correctText() pass 1 — `letters.map{…}.joined(separator: "[ -]?")`
+
+  @hw-verified
+  Scenario: fixing a line once and reporting it twice  (caught + fixed 2026-08-27)
+    Given space-insensitive matching makes "pocket to" and "pocketto" the SAME rule
+    When both were listed, the line was corrected once and the run reported "Paketti ×2"
+    When aliases are deduped by letter sequence
+    Then the same line reports "corrected 1 word — Paketti ×1"
+    # innards: correctText() — `seenLetters` filter over the sorted alias list
+    # HOW CAUGHT: by reading the tool's own output on the real recording and not believing it.
+    #   The TEXT was right the whole time; only the claim about it was wrong. A tool that
+    #   overstates what it did is not worth reading, so the count is now asserted too.
+    # innards: vocabularySelfTest() — `checkCount`
