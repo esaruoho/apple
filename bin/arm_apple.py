@@ -19,6 +19,7 @@ FEATURE-CARD >> features/arm-apple-skill.feature
 """
 from __future__ import annotations
 
+import math
 import os
 import re
 import sys
@@ -423,16 +424,121 @@ def _source_grep(query: str, roots, cap: int = 2400, top: int = 5, max_funcs: in
     return "\n\n".join(out)
 
 
-def retrieve_context(query: str, cap: int = 1200) -> str:
+# ── the corpus's OWN vocabulary (concept index) ───────────────────────────────
+# A person asks in their own words; a corpus is filed under its own. "is there a zero-pull
+# null at the centre of a permanent magnet" is a question about the Bloch wall and the
+# Davis-Rawls pin-pull test and contains neither phrase, so a grep on the asker's wording
+# finds index boilerplate.
+#
+# Asking a small on-device model to guess the right keywords does NOT fix this — measured
+# 2026-08-27, it proposed "archival, objects, magnetic, energy" because it has never seen
+# the corpus. But the corpus already ships its own index: ontology/*.yaml maps a slug to a
+# description. Matching the QUESTION against those DESCRIPTIONS recovers the slug, and the
+# slug is exactly the term worth grepping. Deterministic, no round-trip, no model.
+_CONCEPT_CACHE: dict = {}
+_ENTRY_RE = re.compile(r"^([a-z0-9][a-z0-9\-]{2,}):\s*$", re.M)
+_DESC_RE = re.compile(r"^\s+(?:description|one_liner|also_known_as|aka):\s*(.+)$", re.M)
+_STOP = {"what", "does", "this", "that", "with", "from", "about", "there", "have", "when",
+         "which", "would", "could", "into", "they", "them", "then", "than", "were", "been",
+         "being", "your", "yours", "will", "shall", "said", "says", "tell", "show", "give"}
+
+
+def _concept_index(root: Path):
+    """{slug: bag-of-words} from every ontology/*.yaml under `root`. Regex, not a YAML parse:
+    the merlib concepts file alone is ~2.1 MB and we only need keys and their prose."""
+    files = sorted((root / "ontology").glob("*.yaml")) if (root / "ontology").is_dir() else []
+    files = [f for f in files if ".bak" not in f.name]
+    if not files:
+        return {}
+    try:
+        key = tuple((str(f), f.stat().st_mtime_ns) for f in files)
+    except Exception:
+        return {}
+    if key in _CONCEPT_CACHE:
+        return _CONCEPT_CACHE[key]
+    idx: dict = {}
+    for f in files:
+        try:
+            txt = f.read_text(encoding="utf-8", errors="replace")
+        except Exception:
+            continue
+        entries = [(m.group(1), m.start()) for m in _ENTRY_RE.finditer(txt)]
+        for i, (slug, pos) in enumerate(entries):
+            end = entries[i + 1][1] if i + 1 < len(entries) else len(txt)
+            body = txt[pos:end][:1500]
+            words = set(slug.split("-"))
+            for d in _DESC_RE.findall(body):
+                words |= {w for w in re.split(r"[^a-z0-9]+", d.lower()) if len(w) > 3}
+            idx.setdefault(slug, set()).update(words - _STOP)
+    if len(_CONCEPT_CACHE) > 2:
+        _CONCEPT_CACHE.pop(next(iter(_CONCEPT_CACHE)))
+    _CONCEPT_CACHE[key] = idx
+    return idx
+
+
+def concept_terms(query: str, roots, top: int = 3) -> list:
+    """Extra grep terms recovered from the corpus's own concept index. [] when there is no
+    ontology/ to consult, so this is purely additive."""
+    q = {w for w in re.split(r"[^a-z0-9]+", (query or "").lower())
+         if len(w) > 3 and w not in _STOP}
+    if not q:
+        return []
+    idx = {}
+    for r in roots:
+        idx.update(_concept_index(Path(r)))
+    if not idx:
+        return []
+    n = len(idx)
+    df = {w: 0 for w in q}
+    for bag in idx.values():
+        for w in q & bag:
+            df[w] += 1
+    scored = []
+    for slug, bag in idx.items():
+        hit = q & bag
+        if len(hit) < 2:                 # one shared common word is noise, not a match
+            continue
+        s = sum(math.log(1 + n / (1 + df[w])) for w in hit)
+        scored.append((s, slug))
+    scored.sort(key=lambda x: -x[0])
+    out = []
+    for _s, slug in scored[:top]:
+        out.append(slug.replace("-", " "))
+    return out
+
+
+def retrieve_context(query: str, cap: int = 1200, terms=None) -> str:
     """Per-turn: the passages most relevant to `query`. For Apple, the wiki content
     subdirs; for any project skill, the keybinding MANIFESTS + the actual CODEBASE
-    (matching .lua functions) first (ground truth), then the project's .md docs."""
+    (matching .lua functions) first (ground truth), then the project's .md docs.
+
+    `terms`, when given, REPLACES the terms mechanically split out of the user's wording.
+    That is the hook for model-chosen search terms. It matters because the words a person
+    asks with are often not the words the corpus is filed under: "is there a zero-pull null
+    at the centre of a permanent magnet" is a question about the Bloch wall and the
+    Davis-Rawls pin-pull test, and contains neither phrase."""
     skill = _ACTIVE or detect_skill(os.getcwd())
     blocks, total = [], 0
+    _roots = skill.get("corpus") or [skill.get("root", os.getcwd())]
+    # Always widen the search with the corpus's OWN filing vocabulary. Free (regex over a
+    # cached ontology index), additive, and it is what recovers "biomagnetic-bloch-wall"
+    # from a question that never says "bloch".
+    extra = concept_terms(query, _roots)
+    if extra:
+        base = list(terms) if terms else None
+        if base is None:
+            base = [w for w in re.split(r"[^a-z0-9]+", (query or "").lower())
+                    if len(w) > 3 and w not in _STOP]
+        seen, merged = set(), []
+        for w in [x for e in extra for x in e.split()] + base:
+            if w and w not in seen:
+                seen.add(w)
+                merged.append(w)
+        terms = merged
 
     # Project skills: lead with authoritative keybindings AND the real code.
     if not skill.get("is_apple", True):
-        roots = skill.get("corpus") or [skill["root"]]
+        roots = _roots
         feat = _feature_lines(query, roots)
         if feat:
             blocks.append("EXACT FEATURES / KEYBINDINGS (authoritative — answer FROM "
@@ -457,7 +563,13 @@ def retrieve_context(query: str, cap: int = 1200) -> str:
             if not Path(d).is_dir():
                 continue
             try:
-                b = _retrieve(str(d), query, k=k, cap=cap)
+                b = _retrieve(str(d), query, k=k, cap=cap,
+                              with_locator=True, terms=terms)
+            except TypeError:      # older convey.knows without the new kwargs
+                try:
+                    b = _retrieve(str(d), query, k=k, cap=cap)
+                except Exception:
+                    b = ""
             except Exception:
                 b = ""
             if not b:
@@ -470,7 +582,7 @@ def retrieve_context(query: str, cap: int = 1200) -> str:
     return "\n".join(blocks)
 
 
-def augment_prompt(prompt: str, query: str) -> str:
+def augment_prompt(prompt: str, query: str, terms=None) -> str:
     """Prepend LIVE DATA (real sensor/state readings) and retrieved knowledge to a
     turn's prompt. Live data goes first — it's the answer to 'how hot is the Mini'
     questions a stateless model can't otherwise know."""
@@ -482,11 +594,12 @@ def augment_prompt(prompt: str, query: str) -> str:
             head.append(live)
     except Exception:
         pass
-    ctx = retrieve_context(query)
+    ctx = retrieve_context(query, terms=terms)
     if ctx:
         src = "the Apple wiki" if (_ACTIVE or {}).get("is_apple", True) else "this project's docs"
-        head.append(f"RELEVANT KNOWLEDGE (from {src} — use when relevant, cite "
-                    "the file paths; absence here is not a refusal rule):\n" + ctx)
+        head.append(f"RELEVANT KNOWLEDGE (from {src} — use when relevant; each passage is "
+                    "prefixed with its [path:line], so CITE THAT LOCATOR when you use a "
+                    "passage. Absence here is not a refusal rule):\n" + ctx)
     if not head:
         return prompt
     return "\n\n".join(head) + "\n\n" + prompt

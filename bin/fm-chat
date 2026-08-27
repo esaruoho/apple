@@ -15,6 +15,9 @@ test chats stay well inside the model's ~65k-token window.
                                   each question are retrieved and handed over per turn. From
                                   ~/work/merlib-dump that is the free-energy archive.
     fm-chat --no-arm              plain model, no identity, NO FILE ACCESS (weights only)
+    fm-chat --search              ALSO ask the model what to grep for (extra round-trip;
+                                  usually unnecessary — the corpus's own ontology index
+                                  already widens the search for free, and does it better)
     fm-chat --apple               force-arm even where auto-detection would decline
     fm-chat --mlx                 chat with the Mini's MLX brain (Qwen3-4B) — speaks each
                                   reply aloud (karaoke); --quiet to mute, --voice NAME to pick
@@ -41,7 +44,9 @@ Apple-native: python3 stdlib only.
 import hashlib
 import json
 import os
+import re
 import shlex
+import shutil
 import socket
 import subprocess
 import sys
@@ -519,6 +524,10 @@ def help_text(uid: str, use_mlx: bool = False, arm_apple: bool = False,
         "  /history          print the running transcript",
         "  /graph            print the conversation tree and node ids",
         "  /armed            is this brain reading the folder, or just its weights?",
+        "  /grep TERM        ripgrep this folder; hits (path:line) go into the conversation",
+        "  /open PATH[:LINE] read a file (or a window around a line) into the conversation",
+        "  /search on|off    ALSO let the model guess search terms (default off; the",
+        "                    corpus's own ontology index already widens every search)",
         "  /branch [ID]      fork a new chat from a node (default: current)",
         "  --branch NODE     start a fork directly with --resume SESSION",
         "  /memory, memory   show raw transcript + distill/promote commands",
@@ -534,6 +543,84 @@ def print_goodbye(uid: str, use_mlx: bool = False, arm_apple: bool = False,
                   quiet: bool = False, voice: str | None = None):
     print("bye.")
     print(f"resume: {resume_command(uid, use_mlx, arm_apple, quiet, voice)}")
+
+
+# ── search-first retrieval ────────────────────────────────────────────────────
+# The corpus is greped, not skimmed — but the terms were being split mechanically out of the
+# user's own wording, and a person does not ask using the words a corpus is filed under.
+# "is there a zero-pull null at the centre of a permanent magnet" is a question about the
+# Bloch wall and the Davis-Rawls pin-pull test and contains neither phrase, so the grep found
+# wiki/INDEX.md boilerplate. So: ask the model what to SEARCH FOR before asking it to answer.
+_TERMS_RE = re.compile(r"[A-Za-z][A-Za-z0-9'\-]{2,}")
+
+
+def propose_terms(line: str, ask_fn, system: str = "") -> list:
+    """One cheap round-trip: the model names the distinctive terms it would grep for.
+    Returns [] on any failure — retrieval then falls back to the user's own words, which is
+    exactly today's behaviour, so this can only add recall."""
+    q = ("List the 3-6 most distinctive search keywords to find material answering the "
+         "question below in a technical document archive. Prefer proper nouns, technical "
+         "terms and the names things are FILED under rather than the asker's phrasing. "
+         "Reply with ONLY the keywords, comma-separated, no other text.\n\n"
+         f"Question: {line}")
+    try:
+        res, _rt, _r = ask_fn(q, line, "", history=None)
+    except Exception:
+        return []
+    if not res or not res.get("ok"):
+        return []
+    txt = (res.get("out") or "").strip().splitlines()   # the worker's key is "out"
+    txt = " ".join(txt[:3])
+    out, seen = [], set()
+    for w in _TERMS_RE.findall(txt.lower()):
+        if len(w) > 3 and w not in seen and w not in ("keywords", "search", "question", "term"):
+            seen.add(w)
+            out.append(w)
+    return out[:6]
+
+
+def grep_repo(root: str, pattern: str, max_hits: int = 12) -> list:
+    """(path, lineno, text) for a FIXED-STRING match. -F is mandatory: it disables the regex
+    engine outright, so no user phrase can ever trigger catastrophic backtracking."""
+    rg = shutil.which("rg")
+    if not rg:
+        return []
+    cmd = [rg, "-F", "-i", "-n", "--no-messages", "-m", "3", "-g", "*.md"]
+    for j in ("node_modules", ".git", ".stversions", ".venv", "__pycache__"):
+        cmd += ["-g", f"!**/{j}/**"]
+    cmd += ["-e", pattern, root]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    except Exception:
+        return []
+    hits = []
+    for ln in r.stdout.splitlines()[: max_hits * 3]:
+        path, _, rest = ln.partition(":")
+        num, _, text = rest.partition(":")
+        if not num.isdigit():
+            continue
+        hits.append((os.path.relpath(path, root), int(num), text.strip()[:200]))
+        if len(hits) >= max_hits:
+            break
+    return hits
+
+
+def read_window(root: str, spec: str, span: int = 40) -> str:
+    """`path` or `path:line` -> that file, or a window around that line, with line numbers."""
+    path, _, num = spec.partition(":")
+    f = Path(path) if os.path.isabs(path) else Path(root) / path
+    if not f.is_file():
+        return ""
+    try:
+        lines = f.read_text(encoding="utf-8", errors="replace").splitlines()
+    except Exception:
+        return ""
+    if num.isdigit():
+        n = int(num)
+        lo, hi = max(0, n - span // 2), min(len(lines), n + span // 2)
+    else:
+        lo, hi = 0, min(len(lines), span * 2)
+    return "\n".join(f"{i+1}: {lines[i]}" for i in range(lo, hi))
 
 
 def main() -> int:
@@ -559,6 +646,17 @@ def main() -> int:
     while "--no-arm" in args:
         args.remove("--no-arm")
     arm_apple = force_arm or not no_arm
+    # OFF by default, and that is a measured decision, not caution. Asking the on-device
+    # model "what would you grep for?" costs a round-trip and, measured 2026-08-27, returned
+    # "archival, objects, magnetic, energy" for an archive question — it has never seen the
+    # corpus, so it cannot know its filing vocabulary. The corpus's OWN ontology index does
+    # that job for free (arm_apple.concept_terms) and is always on. `/search on` if you want
+    # the model's guess layered on top anyway.
+    search_first = "--search" in args
+    while "--search" in args:
+        args.remove("--search")
+    while "--no-search" in args:
+        args.remove("--no-search")
     quiet = "--quiet" in args or "--no-speak" in args
     for f in ("--quiet", "--no-speak"):
         while f in args:
@@ -629,8 +727,8 @@ def main() -> int:
     resume_later = resume_command(uid, use_mlx, arm_apple, quiet, voice)
     print(f"{DIM}session {uid} · {os.path.basename(cwd)} · "
           f"resume later: {resume_later}{RESET}")
-    print(f"{DIM}commands: /help  /armed  /memory  /graph  /branch  /reset  /system TEXT  "
-          f"/history  /exit{RESET}")
+    print(f"{DIM}commands: /help  /armed  /grep  /open  /search  /memory  /graph  /branch  "
+          f"/reset  /system TEXT  /history  /exit{RESET}")
     # The armed system prompt is Markdown (skill.md + folder context). Per the rule
     # "if you show Markdown, it must be rich Markdown" — render it through the shared
     # renderer, not dumped raw in dark grey. Plain when piped.
@@ -718,6 +816,41 @@ def main() -> int:
                     print(f"{YELLOW}    nothing retrieved — answers are coming from the "
                           f"model's weights, not from this folder.{RESET}")
             continue
+        if line.lstrip("/").strip().lower().startswith(("grep ", "grep\t")):
+            pat = line.split(None, 1)[1].strip() if len(line.split(None, 1)) > 1 else ""
+            hits = grep_repo(cwd, pat)
+            if not hits:
+                print(f"{YELLOW}  no matches for «{pat}» under {os.path.basename(cwd)}{RESET}")
+                continue
+            print(f"{GREEN}  {len(hits)} hit(s) for «{pat}»{RESET}")
+            body = []
+            for rel, num, text in hits:
+                print(f"{DIM}    {rel}:{num}{RESET}  {text[:110]}")
+                body.append(f"[{rel}:{num}] {text}")
+            # Put the hits in the conversation so the NEXT question is answered from them.
+            history.append(("user", f"Search results for «{pat}» in this repo:\n"
+                                    + "\n".join(body)))
+            history.append(("assistant", "Noted — I will answer from those lines and cite them."))
+            print(f"{DIM}  (added to context — ask your question now){RESET}")
+            continue
+        if line.lstrip("/").strip().lower().startswith(("open ", "open\t")):
+            spec = line.split(None, 1)[1].strip() if len(line.split(None, 1)) > 1 else ""
+            body = read_window(cwd, spec)
+            if not body:
+                print(f"{YELLOW}  cannot read «{spec}» (path is relative to {cwd}){RESET}")
+                continue
+            print(f"{GREEN}  {spec} — {len(body.splitlines())} lines into context{RESET}")
+            print(f"{DIM}" + "\n".join(body.splitlines()[:8]) + f"{RESET}")
+            history.append(("user", f"Contents of {spec}:\n{body}"))
+            history.append(("assistant", "Noted — I will answer from that file and cite it."))
+            continue
+        if line.lstrip("/").strip().lower().startswith("search"):
+            arg = line.split(None, 1)[1].strip().lower() if len(line.split(None, 1)) > 1 else ""
+            if arg in ("on", "off"):
+                search_first = (arg == "on")
+            print(f"  search-first term selection: {'ON' if search_first else 'OFF'}"
+                  f"{'' if arg in ('on', 'off') else '  (/search on|off to change)'}")
+            continue
         if line == "/reset":
             history = []
             current_id = None
@@ -734,12 +867,21 @@ def main() -> int:
 
         replay_budget = MLX_REPLAY_BUDGET if use_mlx else REPLAY_BUDGET
         prompt = render(history, line, replay_budget)
+        # SEARCH FIRST. One extra round-trip in which the model says what it would grep for,
+        # then the corpus is searched on THOSE terms instead of the user's phrasing. Costs a
+        # few seconds; buys the difference between finding the Davis-Rawls deep-read and
+        # finding wiki/INDEX.md. `/search off` disables it.
+        turn_terms = None
+        if armer is not None and search_first and not use_mlx:
+            turn_terms = propose_terms(line, ask_with_context_recovery, system)
+            if turn_terms:
+                print(f"{DIM}  🔎 searching: {', '.join(turn_terms)}{RESET}")
         if armer is not None:
-            prompt = armer.augment_prompt(prompt, line)
+            prompt = armer.augment_prompt(prompt, line, terms=turn_terms)
         if not use_mlx and len(prompt) > MAX_FM_INPUT_CHARS:
             prompt = render([], line)
             if armer is not None:
-                prompt = armer.augment_prompt(prompt, line)
+                prompt = armer.augment_prompt(prompt, line, terms=turn_terms)
         if use_mlx:
             try:
                 res, rt = ask_mlx(prompt, system)
