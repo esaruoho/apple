@@ -571,6 +571,20 @@ The only thing that ends a take is the person making it  —  8 scenarios   (fea
   triad: .session✓  transcript✗  RESULT✓
   honesty: 6/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Lift the voice against the app audio, measured not guessed  —  10 scenarios   (features/recburn-voice-balance.feature)
+  - [@hw-verified] normalisation cannot fix this, and the delivered file proved it 
+  - [@hw-verified] the two audio tracks do not start at the same instant  (measured
+  - [@hw-verified] the mic gain is whatever it takes, not a number someone typed  (
+  - [@hw-verified] it does not distort, which is the whole constraint  (re-measured
+  - [@hw-verified] the measure pass and the write pass run the identical chain  (20
+  - [@hw-verified] --no-rebalance is bit-exact with the old behaviour  (2026-08-27)
+  - [@hw-verified] one audio track, or a mic that was never used, is left alone  (2
+  - [(no grade)] the balance decision refuses the three ways it could be harmful
+  - [(no grade)] the ducker ducks on its attack and recovers on its release
+  - [(no grade)] what the reported ducking percentage does and does not mean
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 7/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Burn a live click counter into a screen recording  —  13 scenarios   (features/recburnclick.feature)
   - [@hw-verified] counting clicks needs NO event tap and NO Accessibility prompt  
   - [@hw-verified] the number is really in the pixels  (ran live 2026-07-29)

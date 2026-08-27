@@ -51,6 +51,7 @@ struct Options {
     var clicksSeed = 0        // start the counter at n (demo / headless verification)
     var clicksLabel = "CLICKS"
     var normalizeAudio = true   // flatten step lifts the mix to a normal listening level
+    var rebalanceAudio = true   // flatten step lifts the VOICE against the app audio
 }
 
 // MARK: - Click counting without an event tap
@@ -138,6 +139,7 @@ func parseArgs() -> Options {
         case "--no-burn":      o.burn = false
         case "--no-clicks":    o.clicks = false
         case "--no-normalize", "--no-normalise": o.normalizeAudio = false
+        case "--no-rebalance": o.rebalanceAudio = false
         case "--fps":          o.fps = Int(it.next() ?? "60") ?? 60
         case "--out", "-o":    o.outPath = (it.next() as NSString?)?.expandingTildeInPath ?? ""
         case "--reveal":       o.reveal = true
@@ -173,6 +175,10 @@ func printUsage() {
       --display <n>          display index from --list (default 0 = main)
       --no-normalize         leave the flattened audio at its recorded level (default is
                              to lift it to a normal listening loudness, peak-safe)
+      --no-rebalance         sum mic and app audio exactly as recorded (default is to lift
+                             the VOICE to sit above the app audio, which ducks while you
+                             speak — a mic a metre away is ~25 dB under mastered app audio,
+                             and one overall gain moves both, so it cannot fix that)
       Dropped frames NEVER stop a recording — they are reported and nothing else. If
       ScreenCaptureKit itself ends the stream, the capture is rebuilt and writing
       continues into the same file; only if that fails for 60s is the take finalized,
@@ -1117,6 +1123,7 @@ final class Recorder: NSObject, SCStreamOutput, SCStreamDelegate, AVCaptureVideo
         // AND subtitled) is already at a normal listening level.
         var flatArgs = ["flatten", inPath, "-o", flatPath]
         if !opts.normalizeAudio { flatArgs.append("--no-normalize") }
+        if !opts.rebalanceAudio { flatArgs.append("--no-rebalance") }
         p.arguments = flatArgs
         do { try p.run() } catch {
             FileHandle.standardError.write("auto-flatten failed to launch: \(error.localizedDescription)\n".data(using: .utf8)!)
