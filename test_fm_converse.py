@@ -26,14 +26,17 @@ class FMConverseArmingTests(unittest.TestCase):
         self.assertEqual(active["name"], "free-energy")
         self.assertIn("merlib-dump", str(active["corpus"][0]))
 
-    def test_free_energy_identity_does_not_require_unsolicited_debunking(self):
+    def test_free_energy_identity_makes_skepticism_an_open_system_analysis(self):
         system = arm_apple.build_system("/Users/esaruoho/work/merlib-dump")
 
         self.assertIn("Do not automatically pivot to mainstream validation", system)
         self.assertIn("technical accounts on their own terms", system)
+        self.assertIn("claimed system boundary", system)
+        self.assertIn("Conservation of energy applies to open systems too", system)
+        self.assertIn("what measurement, control, or energy balance", system)
 
     def test_arm_identity_version_invalidates_cached_instructions(self):
-        self.assertGreater(fm_converse.ARM_IDENTITY_VERSION, 1)
+        self.assertGreater(fm_converse.ARM_IDENTITY_VERSION, 2)
 
 
 if __name__ == "__main__":

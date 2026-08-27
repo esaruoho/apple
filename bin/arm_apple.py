@@ -219,7 +219,15 @@ def _build_generic_system(cwd: str, skill: dict, extra: str = "") -> str:
             "pivot to mainstream validation, pseudoscience, energy conservation, or "
             "generic safety disclaimers. Discuss evidentiary status or competing "
             "explanations only when the user asks for a critical assessment; then use "
-            "the archive's specific evidence and grades, not boilerplate debunking."
+            "the archive's specific evidence and grades, not boilerplate debunking. "
+            "Make skepticism useful: first identify the claimed system boundary, "
+            "inputs (including environmental, electromagnetic, mechanical, thermal, "
+            "chemical, and measurement inputs), stored energy, outputs, and timing. "
+            "Conservation of energy applies to open systems too, but a boundary that "
+            "omits an input cannot establish that output lacks a source. Do not treat "
+            "a closed-system argument as dispositive until the boundary and all energy "
+            "flows are specified. State what measurement, control, or energy balance "
+            "would discriminate the archive's account from conventional alternatives."
         )
     parts = [
         f"You are the {name} skill — the development assistant for the \"{name}\" "

@@ -50,7 +50,7 @@ STORE = Path.home() / ".cache" / "fm-converse"
 REPLAY_BUDGET = 6000      # chars of prior dialogue to replay (~1.5k tokens)
 FILE_CAP = 5000           # chars of an attachment to keep per turn
 MAX_INPUT_CHARS = 9000    # hard ceiling on the assembled prompt sent to fm-submit
-ARM_IDENTITY_VERSION = 2  # bump when the generated skill instructions change
+ARM_IDENTITY_VERSION = 3  # bump when the generated skill instructions change
 
 
 def current_session_key() -> str:
