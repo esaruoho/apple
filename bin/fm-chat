@@ -524,6 +524,7 @@ def help_text(uid: str, use_mlx: bool = False, arm_apple: bool = False,
         "  /history          print the running transcript",
         "  /graph            print the conversation tree and node ids",
         "  /armed            is this brain reading the folder, or just its weights?",
+        "  /system show      print the full system instruction (the armed skill identity)",
         "  /grep TERM        ripgrep this folder; hits (path:line) go into the conversation",
         "  /open PATH[:LINE] read a file (or a window around a line) into the conversation",
         "  /search on|off    ALSO let the model guess search terms (default off; the",
@@ -701,6 +702,8 @@ def main() -> int:
     # --apple: arm the Apple skill. The identity (skill.md + this folder) becomes
     # the system instruction; relevant wiki passages are retrieved per turn.
     armer = None
+    armed_system = False      # was the system prompt machine-built (skill identity) or typed?
+    user_system = system
     if arm_apple:
         try:
             import arm_apple as armer  # bin/arm_apple.py (sys.path has HERE)
@@ -710,7 +713,9 @@ def main() -> int:
                   f"weights alone. Do not ask it about this repo's contents.{RESET}")
             armer = None
         if armer is not None:
+            user_system = system          # whatever the human actually typed via --system
             system = armer.build_system(cwd, extra=system)
+            armed_system = True
             meta["system"] = system
 
     if use_mlx:
@@ -733,7 +738,17 @@ def main() -> int:
     # "if you show Markdown, it must be rich Markdown" — render it through the shared
     # renderer, not dumped raw in dark grey. Plain when piped.
     if system:
-        if sys.stdout.isatty():
+        if armed_system:
+            # The armed identity is thousands of lines of SKILL.md + CLAUDE.md + folder
+            # context. It is the machine's business, not a thing to read at every boot —
+            # dumping it buries the prompt and hides the session line. One line, and a
+            # command to read it in full if you actually want to.
+            label = armer.active_label() if hasattr(armer, "active_label") else "skill"
+            print(f"{DIM}system ▾ {label} identity · {len(system):,} chars · "
+                  f"/system show to read it{RESET}")
+            if user_system:
+                print(f"{DIM}  + yours: {user_system[:160]}{RESET}")
+        elif sys.stdout.isatty():
             print(f"{DIM}system ▾{RESET}")
             print(md_to_ansi(system))
         else:
@@ -861,8 +876,18 @@ def main() -> int:
                 print(_echo_turn(role, text))
             continue
         if line.startswith("/system"):
-            system = line[len("/system"):].strip()
-            print(f"{DIM}— system set: {system or '(cleared)'} —{RESET}")
+            arg = line[len("/system"):].strip()
+            if arg.lower() in ("show", "?", "print"):
+                if not system:
+                    print(f"{DIM}  (no system instruction){RESET}")
+                elif sys.stdout.isatty():
+                    print(md_to_ansi(system))
+                else:
+                    print(system)
+                continue
+            system = arg
+            armed_system = False          # a hand-typed instruction replaced the identity
+            print(f"{DIM}— system set: {system or '(cleared — skill identity dropped)'} —{RESET}")
             continue
 
         replay_budget = MLX_REPLAY_BUDGET if use_mlx else REPLAY_BUDGET
