@@ -139,6 +139,10 @@ what it did is not worth reading.
 - `rec-subtitle --self-test`: **16/16**, gated by `build.sh`
 - on the real transcript: `corrected 1 word — Paketti ×1`, line 3 now reads
   "…modifications I made to the **Paketti** Single Cycle Waveform Rider."
-- the video was re-burned from the (already audio-fixed) `-flat.mov`, then the burned video
-  was remuxed against that file's audio **stream-copied**, so the corrected-audio track has
-  exactly one generation of encoding, not two.
+- the video was re-burned from the (already audio-fixed) `-flat.mov` in 3:15. A remux was
+  planned to protect the audio from a second AAC generation, and turned out to be
+  unnecessary: the burn passes the audio track through untouched. Verified rather than
+  assumed — `-map a:0 -c copy -f md5` gives the same digest for both files.
+- and the burned frame at t=4s was read back: "…modifications I made to the **Paketti**
+  Single Cycle Waveform Rider." Renoise's own status bar in the same frame reads
+  "Reloading scripting tool 'org.lackluster.Paketti'", which is a pleasing second opinion.
