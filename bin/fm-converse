@@ -50,6 +50,7 @@ STORE = Path.home() / ".cache" / "fm-converse"
 REPLAY_BUDGET = 6000      # chars of prior dialogue to replay (~1.5k tokens)
 FILE_CAP = 5000           # chars of an attachment to keep per turn
 MAX_INPUT_CHARS = 9000    # hard ceiling on the assembled prompt sent to fm-submit
+ARM_IDENTITY_VERSION = 2  # bump when the generated skill instructions change
 
 
 def current_session_key() -> str:
@@ -81,6 +82,11 @@ def load(key: str) -> dict:
 
 def save(key: str, state: dict):
     store_path(key).write_text(json.dumps(state, ensure_ascii=False))
+
+
+def activate_armed_skill(armer, cwd: str):
+    """Keep per-turn retrieval in the session's selected corpus after system caching."""
+    return armer.activate_skill(cwd)
 
 
 def maybe_file_to_text(prompt: str) -> tuple[str, str | None]:
@@ -336,13 +342,20 @@ def main() -> int:
             sys.stderr.write(f"fm-converse: could not arm skill: {e}\n")
             armer = None
         if armer is not None:
+            # `system` is cached, so build_system() may not run on this turn. Activation
+            # must still happen before augment_prompt(), whose retrieval corpus comes
+            # from arm_apple._ACTIVE rather than the cached system text.
+            activate_armed_skill(armer, arm_cwd_final)
             # Build the (heavy) grounded system ONCE and CACHE it. Rebuilding the
             # full archive-retrieval system on every turn is what made armed personas
             # take 35s+ and time out. The cached identity stays armed; per-turn live
             # retrieval still happens below via armer.augment_prompt. Force a rebuild
             # with FM_REARM=1 (or --reset).
-            if not state.get("system") or os.environ.get("FM_REARM") == "1":
+            if (not state.get("system")
+                    or state.get("arm_identity_version") != ARM_IDENTITY_VERSION
+                    or os.environ.get("FM_REARM") == "1"):
                 state["system"] = armer.build_system(arm_cwd_final, extra=system_override or "")
+                state["arm_identity_version"] = ARM_IDENTITY_VERSION
                 save(key, state)
     elif system_override is not None:
         state["system"] = system_override

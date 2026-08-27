@@ -189,6 +189,13 @@ def build_system(cwd: str | None = None, extra: str = "") -> str:
     return _build_generic_system(cwd, _ACTIVE, extra)
 
 
+def activate_skill(cwd: str | None = None) -> dict:
+    """Select the governing skill for a later retrieval without rebuilding its identity."""
+    global _ACTIVE
+    _ACTIVE = detect_skill(cwd or os.getcwd())
+    return _ACTIVE
+
+
 def _build_generic_system(cwd: str, skill: dict, extra: str = "") -> str:
     """Identity for any non-Apple project skill: the project's own SKILL.md is
     the identity, its tree is the per-turn retrieval corpus."""
@@ -207,7 +214,12 @@ def _build_generic_system(cwd: str, skill: dict, extra: str = "") -> str:
             "walls, hysteresis, domains, anisotropy, exchange coupling, permanent "
             "magnets, transformer cores, motors, generators, magnetic circuits, "
             "resonance, and field collapse are relevant physics background unless "
-            "the user asks only for corpus provenance."
+            "the user asks only for corpus provenance. Explain archive concepts and "
+            "researchers' technical accounts on their own terms. Do not automatically "
+            "pivot to mainstream validation, pseudoscience, energy conservation, or "
+            "generic safety disclaimers. Discuss evidentiary status or competing "
+            "explanations only when the user asks for a critical assessment; then use "
+            "the archive's specific evidence and grades, not boilerplate debunking."
         )
     parts = [
         f"You are the {name} skill — the development assistant for the \"{name}\" "
