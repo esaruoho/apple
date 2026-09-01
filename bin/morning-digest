@@ -3,13 +3,16 @@
 
 Gathers what changed since yesterday — new Readings in the catalog (the Mini's MLX
 wrote them), overnight commits, the nightly read-batch log — hands the facts to the
-Mini's Qwen3-4B to write a warm briefing, then SAVES it, SPEAKS it, and prints it.
+Mini's Qwen3-4B to write a warm briefing, then SAVES it into today's folder as a
+markdown + a spoken .wav and OPENS that folder. It does NOT talk at you: 7:30am is
+not the hour to wake the family. Press play on the wav when you're ready.
 
 DRY: the brain is fm-mlx (--raw), the readings come from the convey catalog, the voice
 is `say`. Run it any morning, or schedule it ~7:30am after the 3am nightly read-batch.
 
-    morning-digest            # build + speak + print today's digest
-    morning-digest --quiet    # don't speak
+    morning-digest            # build the folder (md + wav) and open it — silent
+    morning-digest --speak    # also say it out loud, now
+    morning-digest --no-open  # don't open the Finder window
 """
 import json
 import os
@@ -21,7 +24,6 @@ from pathlib import Path
 HOME = Path.home()
 ANALYSES = HOME / "work" / "convey" / "analyses"
 FM_MLX = HOME / "work" / "apple" / "bin" / "fm-mlx"
-quiet = "--quiet" in sys.argv or "-q" in sys.argv
 
 today = date.today().isoformat()
 recent = {today, (date.today() - timedelta(days=1)).isoformat()}
@@ -88,24 +90,41 @@ if not briefing:
     briefing = ("Good morning, Esa. I couldn't reach my own brain this time — the MLX server may be "
                 "down (try `fm-mlx hello`). Here's the raw overnight tally instead:\n" + blob)
 
-# 5) Save, print, speak.
-out = ANALYSES / f"morning-digest-{today}.md"
-out.write_text(f"# ☕ Morning digest — {today}\n\n{briefing}\n\n---\n\n{blob}\n", encoding="utf-8")
-print("\n☕ " + briefing + "\n")
-print(f"   (saved → {out})")
-if not quiet:
-    voice = os.environ.get("MORNING_VOICE", "Zoe (Premium)")   # the good local voice (NOT Eddy)
-    spoke = False
-    if "--voicebox" in sys.argv:                               # the Mini's AI voice studio, if you want it
+# 5) Save into today's folder (markdown + spoken wav), print, then OPEN the folder.
+#     Silent by default — 7:30am is not the hour to wake the whole family. The wav is
+#     there to press play on when you're ready. Use --speak to hear it out loud.
+folder = ANALYSES / "morning-digest" / today
+folder.mkdir(parents=True, exist_ok=True)
+md = folder / f"morning-digest-{today}.md"
+md.write_text(f"# \u2615 Morning digest \u2014 {today}\n\n{briefing}\n\n---\n\n{blob}\n", encoding="utf-8")
+
+voice = os.environ.get("MORNING_VOICE", "Zoe (Premium)")   # the good local voice (NOT Eddy)
+wav = folder / f"morning-digest-{today}.wav"
+try:                                                       # render to file, don't play it
+    subprocess.run(["say", "-v", voice, "-o", str(wav),
+                    "--data-format=LEI16@22050", "--", briefing], timeout=300)
+except Exception:
+    pass
+
+print("\n\u2615 " + briefing + "\n")
+print(f"   (saved \u2192 {folder})")
+
+if "--speak" in sys.argv:                                  # opt-in: actually talk out loud
+    if "--voicebox" in sys.argv:                           # the Mini's AI voice studio, if you want it
         try:
-            r = subprocess.run([str(HOME / "work/apple/bin/voicebox-submit"),
-                                "--id", f"morning-{today}", "--text", briefing, "--wait", f"morning-{today}"],
-                               timeout=240)
-            spoke = (r.returncode == 0)
-        except Exception:
-            spoke = False
-    if not spoke:
-        try:
-            subprocess.run(["say", "-v", voice, briefing], timeout=180)
+            subprocess.run([str(HOME / "work/apple/bin/voicebox-submit"),
+                            "--id", f"morning-{today}", "--text", briefing,
+                            "--wait", f"morning-{today}"], timeout=240)
         except Exception:
             pass
+    else:
+        try:
+            subprocess.run(["say", "-v", voice, "--", briefing], timeout=180)
+        except Exception:
+            pass
+
+if "--no-open" not in sys.argv:                            # the folder IS the interface
+    try:
+        subprocess.run(["open", str(folder)], timeout=20)
+    except Exception:
+        pass
