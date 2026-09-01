@@ -10,9 +10,10 @@ The markdown is the point. It must explain ITSELF: what a "reading" is, what pro
 it, whether anything is genuinely new, and what you can actually DO about it. A bare
 count ("96 new readings") is not information.
 
-DRY: the brain is fm-mlx (--raw), the readings come from analyses/readings-index.jsonl
-(written by `convey graph read-batch`, scheduled 3am by com.esa.readings-nightly), the
-voice is `say`.
+Truth comes from `analyses/read-batch-last-run.json` — the record `convey graph
+read-batch` writes about what it DECIDED (skip / append / rebuild, per lens). Before
+that record existed the nightly re-read the whole corpus, so counts meant nothing; the
+readings-index heuristic below is the fallback for days predating it.
 
     morning-digest            # build the folder (md + wav) and open it — silent
     morning-digest --speak    # also say it out loud, now
@@ -31,12 +32,21 @@ FM_MLX = HOME / "work" / "apple" / "bin" / "fm-mlx"
 
 today = date.today().isoformat()
 recent = {today, (date.today() - timedelta(days=1)).isoformat()}
+facts = []
 
-# ── 1) The Readings pass: what did the 3am job actually read, and was ANY of it new? ──
+# ── 1) The Readings pass. What did it decide, and did anything actually change? ────────
 # A "reading" = one source markdown under ~/work/merlib-dump handed to the Mini's MLX,
 # which extracts entities + concepts into that lens's DreamGraph. Nothing is downloaded.
-# read-batch wipes each lens dir and re-reads the whole corpus, so the raw count tracks
-# CORPUS SIZE, not novelty. The only interesting number is first-time-ever reads.
+run = None
+runp = ANALYSES / "read-batch-last-run.json"
+if runp.exists():
+    try:
+        run = json.loads(runp.read_text(encoding="utf-8"))
+    except Exception:
+        run = None
+ran_last_night = bool(run) and run.get("date") in recent
+
+# Concepts for anything actually read, pulled from the append-only journal.
 idx = ANALYSES / "readings-index.jsonl"
 rows = []
 if idx.exists():
@@ -47,30 +57,41 @@ if idx.exists():
             except Exception:
                 pass
 seen_before = {(r.get("realm"), r.get("source")) for r in rows if (r.get("date") or "") < min(recent)}
-new = [r for r in rows if r.get("date") in recent]
-first_ever = [r for r in new if (r.get("realm"), r.get("source")) not in seen_before]
+new_rows = [r for r in rows if r.get("date") in recent]
+first_ever = [r for r in new_rows if (r.get("realm"), r.get("source")) not in seen_before]
+pass_date = max((r.get("date") or "") for r in new_rows) if new_rows else ""
 
-by_realm = {}
-for r in new:
-    by_realm.setdefault(r.get("realm") or "?", []).append(r)
-
-facts = []
-pass_date = max((r.get("date") or "") for r in new) if new else ""
-stale = bool(new) and pass_date != today          # nothing logged today = last night skipped
-if new:
-    when = f"on {pass_date}" + (" (NOT last night — last night's 3am run logged nothing)" if stale else " (last night)")
-    facts.append(f"the Readings pass {when} re-read {len(new)} source documents across "
-                 f"{len(by_realm)} lenses; {len(first_ever)} of them had never been read before")
-    for realm, rs in by_realm.items():
-        concepts = []
-        for r in rs:
-            concepts += (r.get("concepts") or [])
-        top = list(dict.fromkeys(concepts))[:8]
-        facts.append(f"lens '{realm}': {len(rs)} documents re-read; recurring concepts: {', '.join(top) or '—'}")
+lenses = (run or {}).get("lenses", [])
+read_n = sum(l.get("read", 0) for l in lenses)
+if ran_last_night:
+    checked = sum(l.get("total", 0) for l in lenses)
+    left = [l["realm"] for l in lenses if l.get("action") == "skip"]
+    if read_n:
+        bits = []
+        for l in lenses:
+            if l.get("read"):
+                bits.append(f"lens '{l['realm']}' ({l['action']}): {l['read']} document(s) read — "
+                            f"{l.get('added', 0)} added, {l.get('changed', 0)} changed, "
+                            f"{l.get('removed', 0)} removed")
+        facts.append(f"the 3am Readings pass checked {checked} sources across {len(lenses)} lenses "
+                     f"and read {read_n} of them because those files actually changed")
+        facts += bits
+        for l in lenses:
+            for nm in (l.get("added_files") or [])[:6]:
+                facts.append(f"newly added source in '{l['realm']}': {nm}")
+    else:
+        facts.append(f"the 3am Readings pass checked {checked} sources across {len(lenses)} lenses and "
+                     f"found NOTHING changed, so it read nothing and left every graph untouched — "
+                     f"this is the healthy quiet outcome, not a failure")
+    if left:
+        facts.append("lenses left untouched because their sources are unchanged: " + ", ".join(left))
+elif new_rows:
+    facts.append(f"no run record for last night; the most recent Readings pass was {pass_date}, when "
+                 f"{len(new_rows)} documents were re-read and {len(first_ever)} were new")
 else:
-    facts.append("the 3am Readings pass did not run (or logged nothing)")
+    facts.append("the 3am Readings pass logged nothing and left no run record")
 
-# ── 2) Overnight commits across the working repos. ──
+# ── 2) Overnight commits across the working repos. ────────────────────────────────────
 commits = {}
 for repo in ("convey", "comms", "apple", "converse"):
     g = HOME / "work" / repo
@@ -84,7 +105,7 @@ for repo in ("convey", "comms", "apple", "converse"):
         except Exception:
             pass
 
-# ── 3) Nightly read-batch log tail (did it run at all?). ──
+# ── 3) Nightly read-batch log tail (did it run at all?). ──────────────────────────────
 log = ANALYSES / "read-batch-nightly.log"
 log_tail = []
 if log.exists():
@@ -92,17 +113,15 @@ if log.exists():
     if log_tail:
         facts.append("nightly read-batch log: " + " / ".join(log_tail[-2:]))
 
-if not new and not commits:
-    facts.append("A quiet night — nothing new in the catalog or repos since yesterday.")
-
 blob = "Facts about what happened overnight:\n" + "\n".join(f"- {f}" for f in facts)
 
-# ── 4) The Mini's Qwen3-4B writes the spoken briefing (its own voice — it did the work). ──
+# ── 4) The Mini's Qwen3-4B writes the spoken briefing (its own voice — it did the work).
 system = ("You are the Cloudcity Mac Mini — a warm, capable overnight assistant. Esa just woke up. "
           "In 4-6 short spoken sentences, greet him by name and tell him what you did overnight, "
-          "based ONLY on the facts below. Be precise about what is genuinely NEW versus merely "
-          "re-read — never imply documents were downloaded or discovered when they were only "
-          "re-analysed. Warm and brief. No markdown, no lists, no headers — just speech.")
+          "based ONLY on the facts below. Be precise about what actually CHANGED — never imply "
+          "documents were downloaded, discovered, or newly read when they were not. If nothing "
+          "changed, say so plainly and without apology; a quiet night is a good outcome. "
+          "Warm and brief. No markdown, no lists, no headers — just speech.")
 try:
     briefing = subprocess.run([str(FM_MLX), "--raw", "--system", system, blob],
                               capture_output=True, text=True, timeout=180).stdout.strip()
@@ -112,46 +131,57 @@ if not briefing:
     briefing = ("Good morning, Esa. I couldn't reach my own brain this time — the MLX server may be "
                 "down (try `fm-mlx hello`). Here's the raw overnight tally instead:\n" + blob)
 
-# ── 5) Build the markdown that EXPLAINS ITSELF. ──
+# ── 5) The markdown that EXPLAINS ITSELF. ─────────────────────────────────────────────
 L = [f"# ☕ Morning digest — {today}", "",
      "> Spoken version: the `.wav` beside this file. Press play whenever.", "",
      briefing, "", "---", "", "## What a “reading” is", "",
      "At **3am** `com.esa.readings-nightly` runs `~/work/convey/bin/nightly-readings.sh`,",
      "which calls **`convey graph read-batch`**. For each lens in `analyses/topics.json` it",
-     "picks source markdown files already sitting in **`~/work/merlib-dump`**, hands each one",
-     "to the Mini's MLX brain, and extracts entities + concepts into that lens's **DreamGraph**",
+     "takes source markdown already sitting in **`~/work/merlib-dump`**, hands each file to the",
+     "Mini's MLX brain, and extracts entities + concepts into that lens's **DreamGraph**",
      "(`analyses/<lens>/dream_graph.json` → `analysis.md` + `entities/*.md`).", "",
-     "**Nothing is downloaded.** No papers are fetched, no new sources appear. A “reading” is",
-     "*re-analysis of a document you already have*. To actually acquire new material you want",
-     "`convey book`, `convey cite`, or `convey scihub` — different belts entirely.", ""]
+     "**Nothing is downloaded.** No papers are fetched, no sources discovered. A “reading” is",
+     "*analysis of a document you already have*. To acquire new material you want `convey book`,",
+     "`convey cite`, or `convey scihub` — different belts entirely.", "",
+     "Since 2026-09-01 the pass is **incremental**: it sha1s every source and reads only what",
+     "changed. Unchanged lens → skipped. Files added → those read, appended. Files changed or",
+     "removed → that lens rebuilt, so stale nodes can't linger. **A zero here is an answer,",
+     "not an absence.**", ""]
 
-if new:
-    L += [f"## The Readings pass of {pass_date}" + (" — *not last night*" if stale else ""), ""]
-    if stale:
-        L += ["> Last night's 3am run logged no readings (see the log tail below — the MLX",
-              "> server was likely unreachable). What follows is the most recent pass that did run.", ""]
-    L += [
-          "| lens | documents read | first time ever | nodes | edges | report |",
-          "|---|---|---|---|---|---|"]
-    for realm, rs in sorted(by_realm.items()):
-        fe = len([r for r in rs if (r.get("realm"), r.get("source")) not in seen_before])
-        nodes = max([r.get("nodes") or 0 for r in rs] or [0])
-        edges = max([r.get("edges") or 0 for r in rs] or [0])
-        rep = rs[0].get("report") or ""
-        L.append(f"| {realm} | {len(rs)} | **{fe}** | {nodes} | {edges} | [`analysis.md`]({rep}) |")
-    L += ["", f"**{len(first_ever)} of {len(new)} documents were genuinely new.**", ""]
-    if not first_ever:
-        L += ["`read-batch` deletes each lens folder and re-reads the whole corpus every night,",
-              "so the document count tracks **how big the corpus is**, not what arrived. Last night",
-              "added no material — it rebuilt the same graphs from the same files.", "",
-              "*Side effect worth knowing:* that nightly wipe is why `git status` in convey shows",
-              "hundreds of deleted/untracked `analyses/**/entities/*.md`. It's churn, not loss.", ""]
+if ran_last_night:
+    L += ["## Last night's pass", "",
+          "| lens | sources | added | changed | removed | what it did | read |",
+          "|---|---|---|---|---|---|---|"]
+    for l in lenses:
+        L.append(f"| {l.get('realm')} | {l.get('total', 0)} | {l.get('added', 0)} | "
+                 f"{l.get('changed', 0)} | {l.get('removed', 0)} | **{l.get('action')}** | {l.get('read', 0)} |")
+    L.append("")
+    if read_n:
+        L += [f"**{read_n} document(s) were actually read**, because those files changed on disk.", ""]
+        conc = {(r.get("realm"), r.get("source")): (r.get("concepts") or []) for r in new_rows}
+        for l in lenses:
+            names = (l.get("added_files") or []) + (l.get("changed_files") or [])
+            if names:
+                L.append(f"### {l.get('realm')} — what came in")
+                for nm in names:
+                    cs = ", ".join(conc.get((l.get("realm"), nm), [])[:6])
+                    L.append(f"- **{nm}**" + (f" · {cs}" if cs else ""))
+                L.append("")
+            if l.get("removed_files"):
+                L += [f"*Gone from {l.get('realm')}:* " + ", ".join(l["removed_files"]), ""]
     else:
-        L += ["### Genuinely new sources — the only list worth your attention", ""]
-        for r in first_ever:
-            cs = ", ".join((r.get("concepts") or [])[:6])
-            L.append(f"- **{r.get('source')}** — *{r.get('realm')}* · {cs}")
-        L.append("")
+        L += ["**Nothing changed, so nothing was read.** Every lens's sources hash identically to",
+              "the last time they were read; the graphs already reflect them. No MLX time spent,",
+              "no files churned.", ""]
+elif new_rows:
+    L += [f"## The Readings pass of {pass_date} — *not last night*", "",
+          "> Last night's run left no record (see the log tail below). This was the last pass that ran,",
+          "> under the old behaviour that re-read the whole corpus every night.", "",
+          f"{len(new_rows)} documents re-read across "
+          f"{len({r.get('realm') for r in new_rows})} lenses · **{len(first_ever)} genuinely new**.", ""]
+else:
+    L += ["## Last night's pass", "", "No readings logged and no run record — the pass did not run.",
+          "Check the log tail below; the usual cause is the Mini's MLX server being unreachable.", ""]
 
 if commits:
     L += ["## Overnight commits", ""]
@@ -167,21 +197,21 @@ if log_tail:
 
 # The actionable close — every digest ends with things you can DO, not things to admire.
 L += ["## What you can actually do about this", ""]
-if first_ever:
-    L += [f"- **Read the {len(first_ever)} new source(s) above** — they're the only material that",
-          "  changed the graph. Open the lens report and see where they attached.",
-          "  `convey graph open \"<lens>\"`"]
+if ran_last_night and read_n:
+    L += ["- **Read the sources listed above** — they're the only material that moved the graph.",
+          "  `open ~/work/convey/analyses/<lens>/analysis.md`"]
+elif ran_last_night:
+    L += ["- **Nothing here needs you.** The corpus is unchanged and the graphs already match it.",
+          "  To give the pass something to chew on, feed the corpus:",
+          "  `convey book <title>` · `convey cite <pdf>` · `convey scihub <doi>`",
+          "- Or widen the reach: raise `max` / add `discover` terms in",
+          "  `~/work/convey/analyses/topics.json` so lenses see files they currently ignore."]
 else:
-    L += ["- **Nothing here needs you.** No new material arrived; last night was a rebuild.",
-          "  If you want new material *into* the lenses, feed the corpus first:",
-          "  `convey book <title>` · `convey cite <pdf>` · `convey scihub <doi>` — then the",
-          "  3am pass will pick it up.",
-          "- **If the nightly count never changes, that's the signal**: `read-batch` is re-reading",
-          "  a static corpus. Either add sources, or widen the `discover` terms / raise `max` in",
-          "  `~/work/convey/analyses/topics.json` so it reaches files it currently ignores."]
-L += ["- Browse a lens: `open ~/work/convey/analyses/<lens>/analysis.md`",
-      "- See the whole catalog: `convey ledger` · re-run a single lens now:",
-      "  `convey graph read-batch --only \"<lens>\"`", ""]
+    L += ["- **The pass didn't run.** Check the Mini's MLX server (`fm-mlx hello`), then run it by",
+          "  hand: `convey graph read-batch`"]
+L += ["- See the plan without doing any work: `convey graph read-batch --dry-run`",
+      "- Force a full re-read of a lens: `convey graph read-batch --only \"<lens>\" --force`",
+      "- Query the catalog: `convey graph readings --realm \"<lens>\"`", ""]
 L += ["---", "", "## Raw facts handed to the briefing model", "", "```", blob, "```", ""]
 
 folder = ANALYSES / "morning-digest" / today
