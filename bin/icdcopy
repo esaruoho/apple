@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# REPORT-CARD >> features/icdcopy.feature
+set -u
+set -o pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  icdcopy SOURCE DESTINATION_FOLDER
+
+Copies an iCloud Drive file or folder to DESTINATION_FOLDER with resumable rsync,
+then verifies the copied tree with a checksum dry-run.
+
+Examples:
+  icdcopy "082_HLER itis 2022-07-09 Project" "/Volumes/T9/iCloudDrive AbletonCloud"
+  icdcopy "/path/to/file.wav" "/Volumes/T9/iCloudDrive AbletonCloud"
+
+Notes:
+  - This never deletes the source.
+  - If iCloud or the disk stalls, rerun the same command.
+  - A clean verification prints "VERIFY OK".
+USAGE
+}
+
+die() {
+  printf 'icdcopy: %s\n' "$*" >&2
+  exit 1
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+[[ $# -eq 2 ]] || {
+  usage >&2
+  exit 64
+}
+
+src=${1%/}
+dest_root=${2%/}
+
+[[ -e "$src" ]] || die "source does not exist: $src"
+
+rsync_bin="/opt/homebrew/bin/rsync"
+if [[ ! -x "$rsync_bin" ]]; then
+  rsync_bin=$(command -v rsync 2>/dev/null || true)
+fi
+[[ -n "${rsync_bin:-}" && -x "$rsync_bin" ]] || die "rsync not found"
+
+rsync_version=$("$rsync_bin" --version | sed -n '1p')
+if ! printf '%s\n' "$rsync_version" | grep -Eq 'version 3\.'; then
+  die "rsync 3.x is required; found: $rsync_version"
+fi
+
+mkdir -p "$dest_root" || die "could not create destination folder: $dest_root"
+
+src_abs=$(cd "$(dirname "$src")" && pwd -P)/$(basename "$src")
+src_name=$(basename "$src")
+target="$dest_root/$src_name"
+verify_log=$(mktemp "${TMPDIR:-/tmp}/icdcopy-verify.XXXXXX") || die "mktemp failed"
+trap 'rm -f "$verify_log"' EXIT
+
+printf 'icdcopy source:      %s\n' "$src_abs"
+printf 'icdcopy destination: %s\n' "$target"
+printf 'icdcopy rsync:       %s\n' "$rsync_bin"
+
+if [[ -d "$src" ]]; then
+  logical_size=$(find "$src" -type f -print0 | xargs -0 stat -f '%z' 2>/dev/null | awk '{s+=$1} END {printf "%.2f GiB", s/1024/1024/1024}')
+  local_size=$(du -sh "$src" 2>/dev/null | awk '{print $1}')
+  printf 'icdcopy logical:     %s\n' "${logical_size:-unknown}"
+  printf 'icdcopy local now:   %s\n' "${local_size:-unknown}"
+fi
+
+printf '\n== Copying. If interrupted, rerun the same command. ==\n'
+"$rsync_bin" \
+  -aAXN \
+  --fileflags \
+  --crtimes \
+  --partial \
+  --append-verify \
+  --human-readable \
+  --info=progress2 \
+  "$src" "$dest_root/"
+copy_status=$?
+
+if [[ $copy_status -ne 0 ]]; then
+  printf '\nicdcopy: COPY INCOMPLETE (rsync exit %d). Rerun the same command to resume.\n' "$copy_status" >&2
+  exit "$copy_status"
+fi
+
+printf '\n== Verifying checksums. This can take a while on large projects. ==\n'
+if [[ -d "$src" ]]; then
+  "$rsync_bin" \
+    -aAXN \
+    --fileflags \
+    --crtimes \
+    --checksum \
+    --dry-run \
+    --delete \
+    --itemize-changes \
+    "$src/" "$target/" >"$verify_log"
+else
+  "$rsync_bin" \
+    -aAXN \
+    --fileflags \
+    --crtimes \
+    --checksum \
+    --dry-run \
+    --itemize-changes \
+    "$src" "$dest_root/" >"$verify_log"
+fi
+verify_status=$?
+
+if [[ $verify_status -ne 0 ]]; then
+  printf 'icdcopy: VERIFY FAILED (rsync exit %d). Rerun the same command.\n' "$verify_status" >&2
+  cat "$verify_log" >&2
+  exit "$verify_status"
+fi
+
+if [[ -s "$verify_log" ]]; then
+  printf 'icdcopy: VERIFY FOUND DIFFERENCES. Rerun the same command.\n' >&2
+  cat "$verify_log" >&2
+  exit 2
+fi
+
+printf 'icdcopy: VERIFY OK — copied and checksum-matched.\n'
+printf 'icdcopy: Source was not deleted: %s\n' "$src_abs"

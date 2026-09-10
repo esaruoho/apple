@@ -1,0 +1,184 @@
+#!/usr/bin/env python3
+"""icdsize — the N largest files in iCloud Drive (or any folder), instantly.
+
+Spotlight-backed, so it answers in well under a second instead of the ~20+ minutes
+a `find` + `stat` traversal of iCloud Drive takes. That traversal is slow because every
+stat() on a dataless (not-yet-downloaded) iCloud file round-trips through the CloudDocs
+daemon; Spotlight has already indexed the logical sizes, so we just read the index.
+
+STRICTLY READ-ONLY. It never deletes, moves, or writes anything. It only prints.
+
+Usage:
+  icdsize                     # 50 largest files in iCloud Drive
+  icdsize -n 100              # 100 largest
+  icdsize --folders           # roll the big files up by folder (what's actually eating space)
+  icdsize ~/Downloads         # any folder, not just iCloud
+  icdsize --min 1G            # only consider files >= 1G (auto-lowers if too few hits)
+  icdsize --tsv               # machine-readable: bytes<TAB>path
+  icdsize --full              # print absolute paths instead of root-relative
+
+Stale-index safety: Spotlight can briefly still list a file you just deleted. Every hit is
+re-checked on disk; vanished entries are dropped and reported as a "stale index" count.
+
+Dependency-free: python3 + mdfind, both stock macOS. No Homebrew, no pip.
+
+FEATURE-CARD >> ~/work/apple/features/icdsize.feature
+"""
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+
+ICLOUD = os.path.expanduser("~/Library/Mobile Documents/com~apple~CloudDocs")
+ATTR_RE = re.compile(r"^(.*?)\s+kMDItemFSSize = (\S+)$")
+# Spotlight prefilter ladder, in bytes. We walk DOWN this until we have enough hits.
+LADDER = [4 << 30, 1 << 30, 300 << 20, 100 << 20, 30 << 20, 10 << 20, 1 << 20, 0]
+
+
+def parse_size(text):
+    """'300M' / '1.5G' / '500k' / '1048576' -> bytes."""
+    t = text.strip().upper().rstrip("B")
+    mult = 1
+    if t and t[-1] in "KMGT":
+        mult = {"K": 1 << 10, "M": 1 << 20, "G": 1 << 30, "T": 1 << 40}[t[-1]]
+        t = t[:-1]
+    try:
+        return int(float(t) * mult)
+    except ValueError:
+        sys.exit(f"icdsize: cannot parse size {text!r} (try 500M, 1.5G, 800000)")
+
+
+def human(n):
+    if n >= 1 << 30:
+        return f"{n / (1 << 30):.2f} GB"
+    if n >= 1 << 20:
+        return f"{n / (1 << 20):.0f} MB"
+    if n >= 1 << 10:
+        return f"{n / (1 << 10):.0f} KB"
+    return f"{n} B"
+
+
+def spotlight(root, threshold):
+    """Ask Spotlight for every indexed item under root at or above threshold bytes."""
+    try:
+        out = subprocess.run(
+            ["mdfind", "-onlyin", root, "-attr", "kMDItemFSSize",
+             f"kMDItemFSSize >= {threshold}"],
+            capture_output=True, text=True, timeout=120,
+        ).stdout
+    except FileNotFoundError:
+        sys.exit("icdsize: mdfind not found — this script needs macOS Spotlight.")
+    except subprocess.TimeoutExpired:
+        sys.exit("icdsize: mdfind timed out. Is Spotlight indexing? Check `mdutil -s /`.")
+
+    rows = []
+    for line in out.splitlines():
+        m = ATTR_RE.match(line)
+        if not m or m.group(2) == "(null)":
+            continue
+        rows.append((int(m.group(2)), m.group(1)))
+    return rows
+
+
+def collect(root, want, floor):
+    """Walk the ladder down until we have `want` live files, or run out of rungs."""
+    tried = None
+    for threshold in LADDER:
+        if floor is not None and threshold > floor:
+            continue
+        if floor is not None and threshold < floor:
+            threshold = floor
+        tried = threshold
+        hits = spotlight(root, threshold)
+        live, stale, pkgs = [], 0, 0
+        for size, path in hits:
+            if os.path.isdir(path):          # .logicx / .band / .app bundles index as items
+                pkgs += 1
+                continue
+            if not os.path.exists(path):     # deleted since last index pass
+                stale += 1
+                continue
+            live.append((size, path))
+        if len(live) >= want or threshold == 0 or floor is not None:
+            live.sort(reverse=True)
+            return live, stale, pkgs, tried
+    return [], 0, 0, tried
+
+
+def main():
+    ap = argparse.ArgumentParser(add_help=False)
+    ap.add_argument("root", nargs="?", default=ICLOUD)
+    ap.add_argument("-n", "--count", type=int, default=50)
+    ap.add_argument("--min", dest="minsize", default=None,
+                    help="only consider files >= this size (e.g. 1G)")
+    ap.add_argument("--folders", action="store_true",
+                    help="roll up by folder instead of listing files")
+    ap.add_argument("--depth", type=int, default=2, help="folder depth for --folders")
+    ap.add_argument("--tsv", action="store_true")
+    ap.add_argument("--full", action="store_true", help="absolute paths")
+    ap.add_argument("-h", "--help", action="store_true")
+    args = ap.parse_args()
+
+    if args.help:
+        print(__doc__)
+        return
+
+    root = os.path.realpath(os.path.expanduser(args.root))
+    if not os.path.isdir(root):
+        sys.exit(f"icdsize: not a directory: {args.root}")
+
+    floor = parse_size(args.minsize) if args.minsize else None
+    want = max(args.count, 200 if args.folders else args.count)
+    files, stale, pkgs, threshold = collect(root, want, floor)
+
+    if not files:
+        print(f"icdsize: nothing indexed under {root}"
+              + (f" at or above {human(floor)}" if floor else "")
+              + ".\n  If that looks wrong, Spotlight may not index this volume: mdutil -s /")
+        return
+
+    rel = (lambda p: p) if args.full else (lambda p: os.path.relpath(p, root))
+
+    if args.folders:
+        totals, counts = {}, {}
+        for size, path in files:
+            parts = os.path.relpath(os.path.dirname(path), root).split(os.sep)
+            key = os.sep.join(parts[:args.depth]) if parts[0] != "." else "(root)"
+            totals[key] = totals.get(key, 0) + size
+            counts[key] = counts.get(key, 0) + 1
+        ranked = sorted(totals.items(), key=lambda kv: -kv[1])[:args.count]
+        if args.tsv:
+            for name, tot in ranked:
+                print(f"{tot}\t{counts[name]}\t{name}")
+            return
+        print(f"Top {len(ranked)} folders under {root}")
+        print(f"(summing only files >= {human(threshold)}, depth {args.depth})\n")
+        for i, (name, tot) in enumerate(ranked, 1):
+            print(f"{i:3d}. {human(tot):>9}  {counts[name]:4d} files  {name}")
+        print(f"\nsum shown: {human(sum(t for _, t in ranked))}")
+        return
+
+    top = files[:args.count]
+    if args.tsv:
+        for size, path in top:
+            print(f"{size}\t{rel(path)}")
+        return
+
+    print(f"{len(top)} largest files under {root}")
+    print(f"(Spotlight, files >= {human(threshold)}; {len(files)} candidates)\n")
+    for i, (size, path) in enumerate(top, 1):
+        print(f"{i:3d}. {human(size):>9}  {rel(path)}")
+    print(f"\nsum of these {len(top)}: {human(sum(s for s, _ in top))}")
+    notes = []
+    if stale:
+        notes.append(f"{stale} stale index entries skipped (deleted but not yet reindexed)")
+    if pkgs:
+        notes.append(f"{pkgs} bundles/packages skipped (use --folders to see them)")
+    if notes:
+        print("note: " + "; ".join(notes))
+
+
+if __name__ == "__main__":
+    main()

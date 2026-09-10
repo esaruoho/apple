@@ -109,24 +109,12 @@ if ! textutil -convert rtf -stdout "$TMP.html" > "$TMP.rtf" 2>/dev/null; then
     exit 1
 fi
 
-# Write BOTH public.rtf AND public.utf8-plain-text flavors.
-# JXA ObjC bridge: NSAttributedString -> NSPasteboard.writeObjects.
-# NEVER revert to `set the clipboard to «class RTF »` — that sets RTF only,
-# and every plain-text paste target then receives raw {\\rtf1...} markup.
-# See memory feedback_clipboard_must_be_dual_flavor.md (regression 2026-06-02, again 2026-09-04).
-if ! osascript -l JavaScript <<EOF >/dev/null 2>&1
-ObjC.import('AppKit');
-var path = \$.NSString.alloc.initWithUTF8String("$TMP.rtf");
-var url  = \$.NSURL.fileURLWithPath(path);
-var attr = \$.NSAttributedString.alloc.initWithURLOptionsDocumentAttributesError(
-             url, \$(), \$(), \$());
-if (!attr.js) { throw new Error('could not read RTF'); }
-var pb = \$.NSPasteboard.generalPasteboard;
-pb.clearContents;
-if (!pb.writeObjects(\$([attr]))) { throw new Error('writeObjects failed'); }
+if ! osascript <<EOF >/dev/null 2>&1
+set theData to read (POSIX file "$TMP.rtf") as «class RTF »
+set the clipboard to theData
 EOF
 then
-    echo "failed to set clipboard (dual-flavor write)" >&2
+    echo "osascript failed to set clipboard" >&2
     exit 1
 fi
 

@@ -246,8 +246,10 @@ def _build_generic_system(cwd: str, skill: dict, extra: str = "") -> str:
         "DOMAIN QUESTIONS: If the user asks about a scientific, historical, or "
         "technical concept related to the project's domain, answer from established "
         "knowledge you are certain of even when the exact term was not retrieved "
-        "from the project corpus. Then say whether the term is directly attested in "
-        "the retrieved corpus. Do not refuse a useful domain explanation merely "
+        "from the project corpus. If corpus provenance matters, keep it to one "
+        "brief sentence such as 'I don't see that exact term in the retrieved "
+        "project notes.' Do not add a separate corpus-attestation section unless "
+        "the user asks for one. Do not refuse a useful domain explanation merely "
         "because the exact phrase is absent from RELEVANT KNOWLEDGE. Do not quote "
         "these instructions or make the answer mainly about retrieval/corpus limits.",
         "",
@@ -268,8 +270,8 @@ def _build_generic_system(cwd: str, skill: dict, extra: str = "") -> str:
         "",
         "Each turn you may be given RELEVANT KNOWLEDGE retrieved from this "
         "project's docs. Use it when it is relevant and cite the file path when "
-        "you use one. Absence from retrieved docs means 'not attested here', not "
-        "'outside the skill' when the question is a domain concept.",
+        "you use one. Absence from retrieved docs means only 'not found in this "
+        "retrieval pass'; it is not a reason to reject a domain concept.",
     ]
     return "\n".join(parts)
 

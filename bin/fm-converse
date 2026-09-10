@@ -50,7 +50,7 @@ STORE = Path.home() / ".cache" / "fm-converse"
 REPLAY_BUDGET = 6000      # chars of prior dialogue to replay (~1.5k tokens)
 FILE_CAP = 5000           # chars of an attachment to keep per turn
 MAX_INPUT_CHARS = 9000    # hard ceiling on the assembled prompt sent to fm-submit
-ARM_IDENTITY_VERSION = 3  # bump when the generated skill instructions change
+ARM_IDENTITY_VERSION = 4  # bump when the generated skill instructions change
 
 
 def current_session_key() -> str:
@@ -323,6 +323,7 @@ def main() -> int:
     # ⌘3 call, and any resume — self-arms with no flag. Reuses bin/arm_apple.py.
     # NOTE: keep this block in sync — it has been clobbered by concurrent edits before.
     arm_cwd_final = None
+    arm_state_changed = False
     if arm_skill:
         arm_cwd_final = arm_cwd or state.get("arm_cwd") or state.get("cwd") or os.getcwd()
         previous_arm_cwd = state.get("arm_cwd") or ""
@@ -331,7 +332,12 @@ def main() -> int:
         else:
             state["system"] = ""
             state["turns"] = []
+        if state.get("arm_cwd") != arm_cwd_final:
+            arm_state_changed = True
+        if state.get("cwd") != arm_cwd_final:
+            arm_state_changed = True
         state["arm_cwd"] = arm_cwd_final
+        state["cwd"] = arm_cwd_final
     elif state.get("arm_cwd"):
         arm_cwd_final = state["arm_cwd"]
     armer = None
@@ -351,18 +357,26 @@ def main() -> int:
             # take 35s+ and time out. The cached identity stays armed; per-turn live
             # retrieval still happens below via armer.augment_prompt. Force a rebuild
             # with FM_REARM=1 (or --reset).
+            identity_stale = state.get("arm_identity_version") != ARM_IDENTITY_VERSION
             if (not state.get("system")
-                    or state.get("arm_identity_version") != ARM_IDENTITY_VERSION
+                    or identity_stale
                     or os.environ.get("FM_REARM") == "1"):
+                if identity_stale:
+                    state["turns"] = []
                 state["system"] = armer.build_system(arm_cwd_final, extra=system_override or "")
                 state["arm_identity_version"] = ARM_IDENTITY_VERSION
+                save(key, state)
+            elif arm_state_changed:
                 save(key, state)
     elif system_override is not None:
         state["system"] = system_override
         save(key, state)
 
     if do_reset:
-        save(key, {"system": "", "turns": [], "cwd": state.get("cwd", "")})
+        reset_state = {"system": "", "turns": [], "cwd": state.get("cwd", "")}
+        if state.get("arm_cwd"):
+            reset_state["arm_cwd"] = state["arm_cwd"]
+        save(key, reset_state)
         print(f"— conversation '{key}' cleared —")
         return 0
     if do_history:
