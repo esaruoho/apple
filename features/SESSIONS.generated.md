@@ -8,43 +8,13 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**12 card conversations** plugged in:
+**8 card conversations** plugged in:
 
 ### `00cf1a54-2fe3-4be0-ac2a-5ffd17bd5630`  (2026-07-29 → 2026-08-22)
 - Resume: `claude --resume 00cf1a54-2fe3-4be0-ac2a-5ffd17bd5630`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/00cf1a54-2fe3-4be0-ac2a-5ffd17bd5630.jsonl
 - Tooling touched: INDEX.md, STATUS.md
 - Cards touched (13): app-audio-record.feature, apple-energy.feature, dualcam.feature, freellmask-mail-anti-loop-and-video-gate.feature, mailfe-convey-belt.feature, recburn-abort.feature, recburn-automation-surfaces.feature, recburn-loudness.feature, recburn-redact.feature, recburn-stream-recovery.feature, recburnclick.feature, screen-audio-record.feature, secret-scan.feature
-
-### `1a8d0e2c-9341-4f50-8f11-0fd1fb035d55`  (2026-08-08 → 2026-08-14)
-- Resume: `claude --resume 1a8d0e2c-9341-4f50-8f11-0fd1fb035d55`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/1a8d0e2c-9341-4f50-8f11-0fd1fb035d55.jsonl
-
-### `3e92c228-3254-4396-9b54-d9ee14b5fc28`  (2026-08-11 → 2026-08-13)
-- Resume: `claude --resume 3e92c228-3254-4396-9b54-d9ee14b5fc28`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/3e92c228-3254-4396-9b54-d9ee14b5fc28.jsonl
-- Tooling touched: INDEX.md
-
-### `6bc64467-d449-4b20-b39c-f250e0d7a0c5`  (2026-08-12)
-- Resume: `claude --resume 6bc64467-d449-4b20-b39c-f250e0d7a0c5`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/6bc64467-d449-4b20-b39c-f250e0d7a0c5.jsonl
-- Tooling touched: INDEX.md
-
-### `073b5e48-353f-4ad0-bd38-3084e8e05f8e`  (2026-08-13)
-- Resume: `claude --resume 073b5e48-353f-4ad0-bd38-3084e8e05f8e`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/073b5e48-353f-4ad0-bd38-3084e8e05f8e.jsonl
-- Tooling touched: INDEX.md
-
-### `007debc3-10fe-47e2-b440-62f2a7bd9973`  (2026-08-14)
-- Resume: `claude --resume 007debc3-10fe-47e2-b440-62f2a7bd9973`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/007debc3-10fe-47e2-b440-62f2a7bd9973.jsonl
-- Tooling touched: INDEX.md
-
-### `d20eb49b-5ec9-41a8-a4fa-958a31dfd873`  (2026-08-14)
-- Resume: `claude --resume d20eb49b-5ec9-41a8-a4fa-958a31dfd873`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/d20eb49b-5ec9-41a8-a4fa-958a31dfd873.jsonl
-- Tooling touched: INDEX.md
-- Cards touched (5): app-audio-record.feature, apple-energy.feature, applebar-karaoke.feature, iphonemirror-rotated-live-mirror.feature, screen-audio-record.feature
 
 ### `3a93bc0d-7694-4e32-a2b0-5cbdc3dfbc0e`  (2026-08-22)
 - Resume: `claude --resume 3a93bc0d-7694-4e32-a2b0-5cbdc3dfbc0e`
@@ -72,3 +42,15 @@
 - Resume: `claude --resume ed8f440f-1e52-4d18-ab41-dbb7c7da50ef`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/ed8f440f-1e52-4d18-ab41-dbb7c7da50ef.jsonl
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+
+### `48373aca-9f6c-4d98-9149-7be79a27a542`  (2026-09-16)
+- Resume: `claude --resume 48373aca-9f6c-4d98-9149-7be79a27a542`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/48373aca-9f6c-4d98-9149-7be79a27a542.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (1): icdcopy.feature
+
+### `68a0a909-ede4-4c46-af47-40b0fc1edc3d`  (2026-09-16)
+- Resume: `claude --resume 68a0a909-ede4-4c46-af47-40b0fc1edc3d`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/68a0a909-ede4-4c46-af47-40b0fc1edc3d.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (1): icdcopy.feature

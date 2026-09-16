@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# icdmat — materialize (force-download) iCloud Drive files and WAIT until done.
+# Thin wrapper over bin/icloud-materialize.swift. Defaults to the current dir.
+#
+# Usage:
+#   icdmat                      # materialize the current folder (recursive)
+#   icdmat PATH [PATH...]       # materialize the given folder(s)/file(s)
+#   icdmat --verbose            # per-file progress
+#   icdmat --max-wait SECONDS   # abort after N seconds (diagnostics only)
+#
+# Blocks until every file reports downloaded/current — so when it prints
+# "ready", the folder is fully local and safe for apps (e.g. Renoise) to read.
+set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+tool="$here/icloud-materialize.swift"
+
+# Split args into flags (start with -) vs paths.
+flags=()
+paths=()
+for a in "$@"; do
+  case "$a" in
+    -*) flags+=("$a") ;;
+    *)  paths+=("$a") ;;
+  esac
+done
+
+# No path given → materialize the current working directory.
+if [ "${#paths[@]}" -eq 0 ]; then
+  paths=("$PWD")
+fi
+
+# Compile once to a cached native binary so startup is instant on later runs.
+# Rebuild only when the source is newer than the cached binary.
+cache_dir="$HOME/.cache/icdcopy"
+bin_out="$cache_dir/icloud-materialize"
+mkdir -p "$cache_dir"
+if [ ! -x "$bin_out" ] || [ "$tool" -nt "$bin_out" ]; then
+  echo "icdmat: compiling helper (first run only) …" >&2
+  swiftc -O "$tool" -o "$bin_out" || exec swift "$tool" "${flags[@]+"${flags[@]}"}" "${paths[@]}"
+fi
+
+echo "icdmat: materializing ${paths[*]} …" >&2
+exec "$bin_out" "${flags[@]+"${flags[@]}"}" "${paths[@]}"

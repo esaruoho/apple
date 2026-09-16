@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+# REPORT-CARD >> features/icdcopy.feature
+# icdcheck — audit iCloud Drive folders and confirm every file is fully
+# downloaded and RESIDENT on disk (not a dataless placeholder). Read-only:
+# never triggers a download. Thin wrapper over bin/icloud-materialize.swift
+# (--check mode), so it reuses the same status/residency logic as icdmat.
+#
+# Usage:
+#   icdcheck                     # audit the current folder (recursive)
+#   icdcheck PATH [PATH...]      # audit the given folder(s)/file(s)
+#   icdcheck --verbose           # list every file with its status
+#   icdcheck --json              # machine-readable summary + issue list
+#
+# Exit status:
+#   0  every file is downloaded and resident ("PERFECT")
+#   1  one or more files are not fully local (fix with: icdmat <path>)
+#
+# Status labels:
+#   OK              local/current/downloaded AND bytes present on disk
+#   NOT-DOWNLOADED  ubiquitous placeholder, no local copy (dataless)
+#   DOWNLOADING     iCloud download in progress
+#   SUSPECT         claims downloaded but on-disk bytes are missing
+set -euo pipefail
+
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+tool="$here/icloud-materialize.swift"
+
+# Split args into flags (start with -) vs paths.
+flags=("--check")
+paths=()
+for a in "$@"; do
+  case "$a" in
+    -h|--help) sed -n '2,26p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -*) flags+=("$a") ;;
+    *)  paths+=("$a") ;;
+  esac
+done
+
+# No path given → audit the current working directory.
+if [ "${#paths[@]}" -eq 0 ]; then
+  paths=("$PWD")
+fi
+
+# Compile once to a cached native binary (shared with icdmat).
+cache_dir="$HOME/.cache/icdcopy"
+bin_out="$cache_dir/icloud-materialize"
+mkdir -p "$cache_dir"
+if [ ! -x "$bin_out" ] || [ "$tool" -nt "$bin_out" ]; then
+  echo "icdcheck: compiling helper (first run only) …" >&2
+  swiftc -O "$tool" -o "$bin_out" || exec swift "$tool" "${flags[@]}" "${paths[@]}"
+fi
+
+exec "$bin_out" "${flags[@]}" "${paths[@]}"

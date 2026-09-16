@@ -31,7 +31,7 @@
 | freellmask-mail-anti-loop-and-video-gate | 9 | ✗ | — | — | @built @untested @verified-against-live-inbox @verified-on-mini |
 | hey-sal-fold | 7 | ✗ | — | — | @built @note @verified |
 | homepod-live-climate | 7 | ✗ | ~ partial | — | @built @runtime-untested @runtime-verified |
-| icdcopy | 4 | ✗ | — | — | @built |
+| icdcopy | 26 | ✗ | — | — | @built @sim-verified |
 | image-playground | 16 | ✗ | — | — | @built @caveat @untested @verified-live |
 | iphone-clip | 4 | ✗ | — | — | @built @verified |
 | iphonemirror-rotated-live-mirror | 33 | ✗ | — | ✓ | @built @hw-verified @todo @untested |

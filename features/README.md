@@ -525,16 +525,38 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/icdcopy.feature` · [session](icdcopy.session.md)
 
-**Behaviour (4 scenarios):**
+**Behaviour (26 scenarios):**
 
+- latest folder ranking can be copied by number — `@built`
+- folder ranking rows are actual folders — `@built`
+- folder ranking defaults to useful iCloud scope and reports scan progress — `@built`
+- folder ranking table has stable aligned numeric columns — `@built`
+- AbletonCloud can be ranked without typing the long iCloud path — `@built`
 - command has the one-and-done shape Esa asked for — `@built`
 - copy is resumable after iCloud or disk interruption — `@built`
 - verification is checksum-based before success is claimed — `@built`
+- Finder metadata does not make a verified copy fail — `@built`
+- verification differences are repaired automatically — `@built`
+- iCloud files are explicitly materialized before rsync copy — `@built`
+- Apple FileProvider enums are hidden in normal use — `@built`
+- stalled download progress says elapsed time and timeout remaining — `@built`
+- interrupted iCloud download phase exits cleanly — `@built`
+- a stuck iCloud download fails with the exact file instead of hanging — `@built`
+- slow iCloud completion is allowed to finish in one command — `@built`
+- resident bytes count as ready even if FileProvider status is stale — `@built`
+- zero visible progress is reported but not treated as failure — `@built`
+- wrapper script stays parse-clean after shell edits — `@built`
 - source data is never deleted by the wrapper — `@built`
+- quoted Terminal-escaped paths are accepted — `@built`
+- icdcheck confirms a fully-local folder is PERFECT — `@built @sim-verified`
+- icdcheck flags dataless placeholders and in-flight downloads — `@built @sim-verified`
+- icdcheck never triggers a download (read-only audit) — `@built`
+- icdcheck emits machine-readable JSON for tooling — `@built`
+- icdcheck reuses the materializer engine rather than re-rolling status logic — `@built`
 
 **How it does it:** **Key procs:** `icdcopy`
 
-**Grade:** @built ×4
+**Grade:** @built ×26 · @sim-verified ×2
 
 
 <a id="image-playground"></a>
