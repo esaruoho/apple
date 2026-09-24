@@ -1,0 +1,211 @@
+#!/usr/bin/env python3
+"""icdsizefolder — rank folders by logical file size and save numbered copy targets.
+
+Usage:
+  icdsizefolder                       # rank folders in iCloud Drive
+                                      # or current subtree if already inside iCloud Drive
+  icdsizefolder ableton               # rank folders inside iCloud Drive/AbletonCloud
+  icdsizefolder ~/Library/...         # rank folders in another directory
+  icdsizefolder -n 30                 # show 30 folders
+  icdsizefolder --depth 1             # immediate child folders (default)
+  icdsizefolder --depth 2             # two-level rollup
+
+After running this, `icdcopy 5` resolves to row 5 from the latest list and copies it
+to the current directory.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+ICLOUD = Path.home() / "Library" / "Mobile Documents" / "com~apple~CloudDocs"
+PRESETS = {
+    "icloud": ICLOUD,
+    "ableton": ICLOUD / "AbletonCloud",
+    "abletoncloud": ICLOUD / "AbletonCloud",
+}
+STATE_DIR = Path.home() / ".cache" / "icdcopy"
+MANIFEST = STATE_DIR / "last-folders.json"
+
+
+def die(message: str, code: int = 1) -> None:
+    print(f"icdsizefolder: {message}", file=sys.stderr)
+    sys.exit(code)
+
+
+def human(n: int) -> str:
+    units = ["B", "KB", "MB", "GB", "TB"]
+    value = float(n)
+    idx = 0
+    while value >= 1024 and idx < len(units) - 1:
+        value /= 1024
+        idx += 1
+    if idx == 0:
+        return f"{int(value)} B"
+    return f"{value:.2f} {units[idx]}"
+
+
+def logical_file_size(path: Path) -> int:
+    try:
+        return path.stat().st_size
+    except OSError:
+        return 0
+
+
+def immediate_dirs(root: Path) -> list[Path]:
+    try:
+        return sorted([p for p in root.iterdir() if p.is_dir()], key=lambda p: p.name.lower())
+    except OSError as e:
+        die(f"cannot list {root}: {e}")
+
+
+def folder_key(root: Path, file_path: Path, depth: int) -> Path | None:
+    try:
+        rel_parent = file_path.parent.relative_to(root)
+    except ValueError:
+        return None
+    parts = rel_parent.parts
+    if not parts:
+        return None
+    return root.joinpath(*parts[:depth])
+
+
+def scan(root: Path, depth: int, quiet: bool = False) -> dict[Path, tuple[int, int]]:
+    totals: dict[Path, int] = {}
+    counts: dict[Path, int] = {}
+    dirs_seen = 0
+    files_seen = 0
+    started = time.monotonic()
+    last_report = started
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in {".git", ".Trash"}]
+        dirs_seen += 1
+        files_seen += len(filenames)
+        now = time.monotonic()
+        if not quiet and now - last_report >= 3:
+            elapsed = int(now - started)
+            print(
+                f"\ricdsizefolder: scanning... {dirs_seen} dirs, {files_seen} files, "
+                f"{len(totals)} folders ranked, {elapsed}s",
+                file=sys.stderr,
+                end="",
+                flush=True,
+            )
+            last_report = now
+        base = Path(dirpath)
+        for name in filenames:
+            path = base / name
+            key = folder_key(root, path, depth)
+            if key is None:
+                continue
+            totals[key] = totals.get(key, 0) + logical_file_size(path)
+            counts[key] = counts.get(key, 0) + 1
+    return {p: (totals[p], counts[p]) for p in totals}
+
+
+def resident_size(path: Path) -> str:
+    try:
+        out = subprocess.run(["du", "-sh", str(path)], capture_output=True, text=True, timeout=60)
+    except Exception:
+        return "?"
+    if out.returncode != 0 or not out.stdout.strip():
+        return "?"
+    return out.stdout.split()[0]
+
+
+def write_manifest(root: Path, rows: list[tuple[Path, int, int]]) -> None:
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "version": 1,
+        "created_at": time.strftime("%Y-%m-%d %H:%M:%S %z"),
+        "root": str(root),
+        "entries": [
+            {
+                "index": idx,
+                "path": str(path),
+                "name": path.name,
+                "logical_bytes": total,
+                "file_count": count,
+            }
+            for idx, (path, total, count) in enumerate(rows, 1)
+        ],
+    }
+    tmp = MANIFEST.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(payload, indent=2) + "\n")
+    tmp.replace(MANIFEST)
+
+
+def default_root() -> Path:
+    cwd = Path.cwd().resolve()
+    try:
+        cwd.relative_to(ICLOUD)
+        return cwd
+    except ValueError:
+        return ICLOUD
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="Rank folders by logical file size.")
+    ap.add_argument(
+        "root",
+        nargs="?",
+        default=None,
+        help="folder to scan; default current directory if inside iCloud Drive, else iCloud Drive",
+    )
+    ap.add_argument("-n", "--count", type=int, default=30)
+    ap.add_argument("--depth", type=int, default=1, help="rollup depth under root; default 1")
+    ap.add_argument("--no-resident", action="store_true", help="skip resident-size column")
+    ap.add_argument("--quiet", action="store_true", help="suppress scan progress heartbeat")
+    args = ap.parse_args()
+
+    if args.root is None:
+        root_arg = default_root()
+    else:
+        root_arg = PRESETS.get(args.root.lower(), Path(os.path.expanduser(args.root)))
+    root = root_arg.resolve()
+    if not root.is_dir():
+        die(f"not a directory: {root}")
+    if args.depth < 1:
+        die("--depth must be >= 1", 64)
+
+    print(f"icdsizefolder: scanning {root}", flush=True)
+    rows = [(path, total, count) for path, (total, count) in scan(root, args.depth, args.quiet).items()]
+    if not args.quiet:
+        print("", file=sys.stderr, flush=True)
+
+    rows.sort(key=lambda row: (-row[1], str(row[0]).lower()))
+    rows = rows[: args.count]
+
+    if not rows:
+        die(f"no files found under {root}")
+
+    write_manifest(root, rows)
+
+    width = max(2, len(str(len(rows))))
+    files_width = max(5, max(len(str(count)) for _, _, count in rows))
+    print(f"icdsizefolder: saved mapping for icdcopy 1..{len(rows)} -> {MANIFEST}\n")
+    print(f"{'#':>{width}}  {'logical':>10}  {'local':>8}  {'files':>{files_width}}  folder")
+    print(f"{'-' * width}  {'-' * 10}  {'-' * 8}  {'-' * files_width}  ------")
+    for idx, (path, total, count) in enumerate(rows, 1):
+        local = "-" if args.no_resident else resident_size(path)
+        try:
+            label = str(path.relative_to(root))
+        except ValueError:
+            label = str(path)
+        print(f"{idx:0{width}d}  {human(total):>10}  {local:>8}  {count:{files_width}d}  {label}")
+
+    print("\nNext: cd to the destination folder, then run `icdcopy N`.")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except KeyboardInterrupt:
+        print("\nicdsizefolder: stopped", file=sys.stderr)
+        raise SystemExit(130)
