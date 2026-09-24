@@ -7,17 +7,22 @@ usage() {
   cat <<'USAGE'
 Usage:
   icdcopy SOURCE DESTINATION_FOLDER
+  icdcopy N
 
 Copies an iCloud Drive file or folder to DESTINATION_FOLDER with resumable rsync,
 then verifies the copied tree with a checksum dry-run.
+If SOURCE is a number, it resolves to that row from the latest `icdsizefolder` list
+and copies it to the current directory.
 
 Examples:
   icdcopy "082_HLER itis 2022-07-09 Project" "/Volumes/T9/iCloudDrive AbletonCloud"
   icdcopy "/path/to/file.wav" "/Volumes/T9/iCloudDrive AbletonCloud"
+  cd "/Volumes/T9/iCloudDrive AbletonCloud" && icdcopy 5
 
 Notes:
   - This never deletes the source.
-  - If iCloud or the disk stalls, rerun the same command.
+  - iCloud downloads wait without a timeout; use Ctrl-C if you want to stop.
+  - If copy is interrupted, rerun the same command to resume.
   - A clean verification prints "VERIFY OK".
 USAGE
 }
@@ -27,18 +32,78 @@ die() {
   exit 1
 }
 
+normalize_path_arg() {
+  local path=$1
+  local candidate
+
+  [[ -e "$path" ]] && {
+    printf '%s\n' "$path"
+    return
+  }
+
+  candidate=$path
+  candidate=${candidate//\\ / }
+  candidate=${candidate//\\\~/\~}
+  candidate=${candidate//\\(/(}
+  candidate=${candidate//\\)/)}
+  candidate=${candidate//\\[/[}
+  candidate=${candidate//\\]/]}
+  candidate=${candidate//\\&/&}
+  candidate=${candidate//\\;/;}
+
+  if [[ -e "$candidate" || "$candidate" != "$path" ]]; then
+    printf '%s\n' "$candidate"
+    return
+  fi
+
+  printf '%s\n' "$path"
+}
+
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   usage
   exit 0
 fi
 
-[[ $# -eq 2 ]] || {
-  usage >&2
-  exit 64
+resolve_manifest_index() {
+  local idx=$1
+  local manifest="${HOME}/.cache/icdcopy/last-folders.json"
+  [[ -f "$manifest" ]] || die "no icdsizefolder mapping found. Run icdsizefolder first."
+  python3 - "$manifest" "$idx" <<'PY'
+import json
+import sys
+
+manifest, raw_idx = sys.argv[1], sys.argv[2]
+try:
+    idx = int(raw_idx)
+except ValueError:
+    sys.exit(f"icdcopy: not a numeric icdsizefolder index: {raw_idx}")
+
+with open(manifest, "r", encoding="utf-8") as f:
+    data = json.load(f)
+
+for entry in data.get("entries", []):
+    if entry.get("index") == idx:
+        print(entry["path"])
+        sys.exit(0)
+
+count = len(data.get("entries", []))
+sys.exit(f"icdcopy: index {idx} not in latest icdsizefolder mapping (1..{count})")
+PY
 }
 
-src=${1%/}
-dest_root=${2%/}
+if [[ $# -eq 1 && "${1:-}" =~ ^[0-9]+$ ]]; then
+  src=$(resolve_manifest_index "$1")
+  dest_root=$(pwd -P)
+elif [[ $# -eq 2 && "${1:-}" =~ ^[0-9]+$ ]]; then
+  src=$(resolve_manifest_index "$1")
+  dest_root=$(normalize_path_arg "${2%/}")
+elif [[ $# -eq 2 ]]; then
+  src=$(normalize_path_arg "${1%/}")
+  dest_root=$(normalize_path_arg "${2%/}")
+else
+  usage >&2
+  exit 64
+fi
 
 [[ -e "$src" ]] || die "source does not exist: $src"
 
@@ -60,23 +125,65 @@ src_name=$(basename "$src")
 target="$dest_root/$src_name"
 verify_log=$(mktemp "${TMPDIR:-/tmp}/icdcopy-verify.XXXXXX") || die "mktemp failed"
 trap 'rm -f "$verify_log"' EXIT
+materialize_needed=1
+rsync_common=(
+  -aAXN
+  --fileflags
+  --crtimes
+  --exclude=.DS_Store
+  --exclude='._*'
+)
 
 printf 'icdcopy source:      %s\n' "$src_abs"
 printf 'icdcopy destination: %s\n' "$target"
-printf 'icdcopy rsync:       %s\n' "$rsync_bin"
 
 if [[ -d "$src" ]]; then
-  logical_size=$(find "$src" -type f -print0 | xargs -0 stat -f '%z' 2>/dev/null | awk '{s+=$1} END {printf "%.2f GiB", s/1024/1024/1024}')
+  logical_bytes=$(find "$src" -type f -print0 | xargs -0 stat -f '%z' 2>/dev/null | awk '{s+=$1} END {printf "%.0f", s}')
+  local_kbytes=$(du -sk "$src" 2>/dev/null | awk '{print $1}')
+  logical_size=$(awk -v s="${logical_bytes:-0}" 'BEGIN {printf "%.2f GiB", s/1024/1024/1024}')
   local_size=$(du -sh "$src" 2>/dev/null | awk '{print $1}')
   printf 'icdcopy logical:     %s\n' "${logical_size:-unknown}"
   printf 'icdcopy local now:   %s\n' "${local_size:-unknown}"
+  if [[ "${logical_bytes:-0}" -gt 0 && "${local_kbytes:-0}" -gt 0 ]]; then
+    local_bytes=$((local_kbytes * 1024))
+    if [[ "$local_bytes" -ge $((logical_bytes * 95 / 100)) ]]; then
+      materialize_needed=0
+      printf 'icdcopy iCloud:      already local; skipping download request\n'
+    fi
+  fi
+elif [[ -f "$src" ]]; then
+  logical_bytes=$(stat -f '%z' "$src" 2>/dev/null || printf '0')
+  local_kbytes=$(du -sk "$src" 2>/dev/null | awk '{print $1}')
+  if [[ "${logical_bytes:-0}" -gt 0 && "${local_kbytes:-0}" -gt 0 ]]; then
+    local_bytes=$((local_kbytes * 1024))
+    if [[ "$local_bytes" -ge $((logical_bytes * 95 / 100)) ]]; then
+      materialize_needed=0
+    fi
+  fi
+fi
+
+materialize_bin="/Users/esaruoho/work/apple/bin/icloud-materialize.swift"
+if [[ "$materialize_needed" -eq 1 && -x "$materialize_bin" ]]; then
+  printf '\n== Asking iCloud to download source files first. ==\n'
+  materialize_status=0
+  for materialize_attempt in 1 2; do
+    "$materialize_bin" --max-wait 0 "$src"
+    materialize_status=$?
+    if [[ $materialize_status -eq 0 ]]; then
+      break
+    fi
+    if [[ $materialize_status -eq 130 || $materialize_status -eq 143 ]]; then
+      printf 'icdcopy: stopped during iCloud download phase. Rerun the same command to continue.\n' >&2
+      exit "$materialize_status"
+    fi
+    printf 'icdcopy: ICLOUD DOWNLOAD INCOMPLETE (exit %d). iCloud did not make the source fully local.\n' "$materialize_status" >&2
+    exit "$materialize_status"
+  done
 fi
 
 printf '\n== Copying. If interrupted, rerun the same command. ==\n'
 "$rsync_bin" \
-  -aAXN \
-  --fileflags \
-  --crtimes \
+  "${rsync_common[@]}" \
   --partial \
   --append-verify \
   --human-readable \
@@ -90,27 +197,41 @@ if [[ $copy_status -ne 0 ]]; then
 fi
 
 printf '\n== Verifying checksums. This can take a while on large projects. ==\n'
-if [[ -d "$src" ]]; then
-  "$rsync_bin" \
-    -aAXN \
-    --fileflags \
-    --crtimes \
-    --checksum \
-    --dry-run \
-    --delete \
-    --itemize-changes \
-    "$src/" "$target/" >"$verify_log"
-else
-  "$rsync_bin" \
-    -aAXN \
-    --fileflags \
-    --crtimes \
-    --checksum \
-    --dry-run \
-    --itemize-changes \
-    "$src" "$dest_root/" >"$verify_log"
-fi
-verify_status=$?
+for attempt in 1 2 3; do
+  : >"$verify_log"
+  if [[ -d "$src" ]]; then
+    "$rsync_bin" \
+      "${rsync_common[@]}" \
+      --checksum \
+      --dry-run \
+      --delete \
+      --itemize-changes \
+      "$src/" "$target/" >"$verify_log"
+  else
+    "$rsync_bin" \
+      "${rsync_common[@]}" \
+      --checksum \
+      --dry-run \
+      --itemize-changes \
+      "$src" "$dest_root/" >"$verify_log"
+  fi
+  verify_status=$?
+
+  if [[ $verify_status -ne 0 || ! -s "$verify_log" ]]; then
+    break
+  fi
+
+  if [[ $attempt -lt 3 ]]; then
+    printf 'icdcopy: verification found differences; repairing automatically (%d/2).\n' "$attempt" >&2
+    "$rsync_bin" \
+      "${rsync_common[@]}" \
+      --partial \
+      --append-verify \
+      --human-readable \
+      "$src" "$dest_root/"
+    continue
+  fi
+done
 
 if [[ $verify_status -ne 0 ]]; then
   printf 'icdcopy: VERIFY FAILED (rsync exit %d). Rerun the same command.\n' "$verify_status" >&2
@@ -119,7 +240,7 @@ if [[ $verify_status -ne 0 ]]; then
 fi
 
 if [[ -s "$verify_log" ]]; then
-  printf 'icdcopy: VERIFY FOUND DIFFERENCES. Rerun the same command.\n' >&2
+  printf 'icdcopy: VERIFY FOUND DIFFERENCES after automatic repair attempts.\n' >&2
   cat "$verify_log" >&2
   exit 2
 fi
