@@ -399,15 +399,52 @@ func diskRead() -> String {
     return "\(freeStr) free of \(totalStr)  ·  \(pct)% full"
 }
 
+// The Wi-Fi hardware port is usually en0 but not guaranteed — resolve it once.
+// (`networksetup -listallhardwareports` prints "Hardware Port: Wi-Fi\nDevice: enN".)
+func wifiInterface() -> String {
+    let out = run("/usr/sbin/networksetup", ["-listallhardwareports"])
+    let lines = out.components(separatedBy: "\n")
+    for (i, line) in lines.enumerated() where line.contains("Wi-Fi") {
+        if i + 1 < lines.count, let r = lines[i + 1].range(of: "Device: ") {
+            return String(lines[i + 1][r.upperBound...]).trimmingCharacters(in: .whitespaces)
+        }
+    }
+    return "en0"
+}
+
+// Authoritative current SSID name, read from system_profiler. `ipconfig getsummary`
+// redacts the SSID unless the caller holds Location permission, but system_profiler
+// prints the real network name (the line right after "Current Network Information:").
+func wifiSSIDName(_ iface: String) -> String? {
+    let out = run("/usr/sbin/system_profiler", ["SPAirPortDataType"])
+    let lines = out.components(separatedBy: "\n")
+    for (i, line) in lines.enumerated() where line.contains("Current Network Information:") {
+        if i + 1 < lines.count {
+            let name = lines[i + 1].trimmingCharacters(in: .whitespaces)
+                .trimmingCharacters(in: CharacterSet(charactersIn: ":"))
+            return name.isEmpty ? nil : name
+        }
+    }
+    return nil
+}
+
 func wifiRead() -> String {
-    let out = run("/usr/sbin/networksetup", ["-getairportnetwork", "en0"])
-    if out.contains("not associated") || out.contains("Wi-Fi power is currently off") {
-        return out.contains("off") ? "off" : "disconnected"
+    let iface = wifiInterface()
+    // Power off? (networksetup -getairportpower still works on Sequoia.)
+    let power = run("/usr/sbin/networksetup", ["-getairportpower", iface])
+    if power.contains(": Off") { return "off" }
+    // NOTE: `networksetup -getairportnetwork` is deprecated on Sequoia and falsely
+    // reports "not associated" even when connected. Use ipconfig's link status.
+    let summary = run("/usr/sbin/ipconfig", ["getsummary", iface])
+    guard summary.contains("LinkStatusActive : TRUE") else { return "disconnected" }
+    // Connected. Prefer the ipconfig SSID if it isn't redacted, else system_profiler.
+    if let r = summary.range(of: "SSID : ") {
+        let ssid = String(summary[r.upperBound...])
+            .components(separatedBy: "\n").first?
+            .trimmingCharacters(in: .whitespaces) ?? ""
+        if !ssid.isEmpty && ssid != "<redacted>" { return ssid }
     }
-    if let r = out.range(of: ": ") {
-        return String(out[r.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    return out.trimmingCharacters(in: .whitespacesAndNewlines)
+    return wifiSSIDName(iface) ?? "connected"
 }
 
 func trashSummary() -> (label: String, isEmpty: Bool) {
