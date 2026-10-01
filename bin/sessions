@@ -50,11 +50,44 @@ import subprocess
 import sys
 import tempfile
 import time
+import unicodedata
 from shlex import quote as sh_quote
 
 
 HOME = os.path.expanduser("~")
 REFRESH_MS = 1500
+
+
+def display_safe(s):
+    """Coerce a string so every character occupies exactly one terminal cell.
+
+    curses assumes one code point == one column. Emoji, CJK and other
+    wide/fullwidth characters actually render two columns wide; zero-width
+    combining marks render zero. Either kind desyncs curses' internal cursor
+    column from the real terminal, which smears later cells into garbage
+    (stray black boxes, a hash column that drifts off the right edge). We
+    render in mostly-English session snippets, so dropping the wide/zero-width
+    offenders and flattening controls keeps the layout exact and trustworthy.
+    """
+    if not s:
+        return s
+    out = []
+    for ch in s:
+        cat = unicodedata.category(ch)
+        if cat[0] == "C":                       # control / format / surrogate
+            if ch in ("​", "‌", "‍", "﻿"):
+                continue                        # zero-width: drop silently
+            out.append(" ")                     # other controls → space
+            continue
+        if unicodedata.combining(ch):           # zero-width combining mark
+            continue
+        if unicodedata.east_asian_width(ch) in ("W", "F"):  # emoji / CJK (2 cells)
+            out.append("·")                     # one-cell placeholder, keeps width honest
+            continue
+        out.append(ch)
+    # No stripping/collapsing: the width is already honest, and intentional
+    # spacing (e.g. the "[title] " separator) must be preserved verbatim.
+    return "".join(out)
 
 
 # ─────────────────────────── shared types ────────────────────────────
@@ -791,19 +824,23 @@ def run_picker(stdscr, folder):
         gn = sum(1 for r in rows if r.provider == "gemini")
         fn = sum(1 for r in rows if r.provider == "fm-chat")
         vn = sum(1 for r in rows if r.provider == "converse")
+        # Never draw into the last column: writing the final cell puts
+        # auto-wrap terminals (iTerm2) into a "pending wrap" state that smears
+        # the next line — the stacked duplicate rows and right-edge black boxes.
+        W = max(1, w - 1)
         disp = folder.replace(HOME, "~", 1) if folder.startswith(HOME) else folder
-        header = f" sessions · {disp}   C:{cn} P:{pn} X:{xn} G:{gn} F:{fn} V:{vn}"
+        header = display_safe(f" sessions · {disp}   C:{cn} P:{pn} X:{xn} G:{gn} F:{fn} V:{vn}")
         footer = " ↑/↓ select · ⏎ resume · n claude · c copilot · x codex · m gemini · f fm-chat · v converse · q quit · auto-refresh"
         try:
-            stdscr.addnstr(0, 0, header.ljust(w), w, curses.color_pair(2) | curses.A_BOLD)
-            stdscr.addnstr(h - 1, 0, footer.ljust(w), w - 1, curses.color_pair(3))
+            stdscr.addnstr(0, 0, header.ljust(W), W, curses.color_pair(2) | curses.A_BOLD)
+            stdscr.addnstr(h - 1, 0, footer.ljust(W), W, curses.color_pair(3))
         except curses.error:
             pass
 
         if not rows:
             msg = "No sessions for this folder. n=claude  c=copilot  x=codex  m=gemini  f=fm-chat  v=converse  q=quit"
             try:
-                stdscr.addnstr(h // 2, max(0, (w - len(msg)) // 2), msg, w)
+                stdscr.addnstr(h // 2, max(0, (w - len(msg)) // 2), msg, W)
             except curses.error:
                 pass
         else:
@@ -819,7 +856,7 @@ def run_picker(stdscr, folder):
                 turns = f"{r.turns:>4}t"
                 size = human_size(r.size).rjust(5) if r.size else "    ·"
                 glyph = PROVIDER_GLYPH[r.provider]
-                snippet = r.snippet or ""
+                snippet = display_safe(r.snippet or "")
                 short_id = r.uuid[:6]
                 selected = (i == sel)
                 base = curses.color_pair(1) | curses.A_BOLD if selected else curses.A_NORMAL
@@ -831,19 +868,20 @@ def run_picker(stdscr, folder):
                     if where.startswith(HOME):
                         where = "~" + where[len(HOME):]
                     tag = os.path.basename(where.rstrip("/")) if where else "?"
-                    snippet = f"⟨{tag}⟩ {snippet}"
+                    snippet = display_safe(f"<{tag}> {snippet}")
                 dim = base if selected else curses.color_pair(3)
                 title_attr = base if selected else (curses.color_pair(4) | curses.A_BOLD)
                 # Single-line, mixed attrs: prominent timestamp, dimmed hash trailer.
+                # Everything is bounded by W (= w-1) so the last column stays blank.
                 row_y = 1 + i - top
                 try:
                     stdscr.move(row_y, 0)
-                    stdscr.addnstr(f" {glyph} {when}  {age}  {turns}  {size}  ", w, base)
-                    remaining = w - stdscr.getyx()[1]
+                    stdscr.addnstr(f" {glyph} {when}  {age}  {turns}  {size}  ", W, base)
+                    remaining = W - stdscr.getyx()[1]
                     if remaining > 10:
                         snip_w = remaining - 8  # leave 6 for hash + 2 spaces
                         if r.title:
-                            tag = f"[{r.title}] "
+                            tag = display_safe(f"[{r.title}] ")
                             tag = tag[:max(0, snip_w - 4)]
                             stdscr.addnstr(tag, len(tag), title_attr)
                             used = len(tag)
@@ -853,10 +891,11 @@ def run_picker(stdscr, folder):
                         stdscr.addnstr("  " + short_id, 8, dim)
                     elif remaining > 0:
                         stdscr.addnstr(snippet, remaining, base)
-                    # Pad rest of line so selection highlight fills the row.
+                    # Pad rest of line so selection highlight fills the row (never
+                    # the last column — see W above).
                     cur_x = stdscr.getyx()[1]
-                    if cur_x < w:
-                        stdscr.addnstr(" " * (w - cur_x), w - cur_x, base)
+                    if cur_x < W:
+                        stdscr.addnstr(" " * (W - cur_x), W - cur_x, base)
                 except curses.error:
                     pass
 
