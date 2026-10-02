@@ -3,7 +3,8 @@
 # Thinkspace: recburn-whisper-deps.session.md; analysis/recburn-numpy-repair.md.
 # Areaspace: Whisper dependency installation/checking; does not alter capture or mixing.
 # SESSION: recburn-whisper-deps.session.md
-# RESULT: Working tree update; delivery commits pending. No PR created.
+# RESULT: Code and card shipped directly to main, no PR: apple e6666c44; apple-rec 8028689.
+# Files: installer, subtitle command docs, repair notes, card/session and generated views.
 # WATCH: resolve_python check_whisper
 # RESULT-LOG >>
 #   2026-10-02  direct-commit  touched: resolve_python check_whisper
