@@ -8,35 +8,7 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**8 card conversations** plugged in:
-
-### `00cf1a54-2fe3-4be0-ac2a-5ffd17bd5630`  (2026-07-29 → 2026-08-22)
-- Resume: `claude --resume 00cf1a54-2fe3-4be0-ac2a-5ffd17bd5630`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/00cf1a54-2fe3-4be0-ac2a-5ffd17bd5630.jsonl
-- Tooling touched: INDEX.md, STATUS.md
-- Cards touched (13): app-audio-record.feature, apple-energy.feature, dualcam.feature, freellmask-mail-anti-loop-and-video-gate.feature, mailfe-convey-belt.feature, recburn-abort.feature, recburn-automation-surfaces.feature, recburn-loudness.feature, recburn-redact.feature, recburn-stream-recovery.feature, recburnclick.feature, screen-audio-record.feature, secret-scan.feature
-
-### `3a93bc0d-7694-4e32-a2b0-5cbdc3dfbc0e`  (2026-08-22)
-- Resume: `claude --resume 3a93bc0d-7694-4e32-a2b0-5cbdc3dfbc0e`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/3a93bc0d-7694-4e32-a2b0-5cbdc3dfbc0e.jsonl
-- Tooling touched: INDEX.md, report-card-stamp.sh
-
-### `83395bda-acce-4e8c-b9dd-bdca7412bf4e`  (2026-08-22)
-- Resume: `claude --resume 83395bda-acce-4e8c-b9dd-bdca7412bf4e`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/83395bda-acce-4e8c-b9dd-bdca7412bf4e.jsonl
-- Tooling touched: INDEX.md
-- Cards touched (2): app-audio-record.feature, rec-subtitle.feature
-
-### `f6b36e8e-f9ea-4a77-af51-f4674a93172e`  (2026-08-27)
-- Resume: `claude --resume f6b36e8e-f9ea-4a77-af51-f4674a93172e`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/f6b36e8e-f9ea-4a77-af51-f4674a93172e.jsonl
-- Tooling touched: INDEX.md
-- Cards touched (6): rec-subtitle.feature, recburn-abort.feature, recburn-automation-surfaces.feature, recburn-loudness.feature, recburn-redact.feature, recburn-voice-balance.feature
-
-### `11fa5d5d-11f8-4372-aa6b-167e7b5e9410`  (2026-09-01)
-- Resume: `claude --resume 11fa5d5d-11f8-4372-aa6b-167e7b5e9410`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/11fa5d5d-11f8-4372-aa6b-167e7b5e9410.jsonl
-- Tooling touched: INDEX.md
+**11 card conversations** plugged in:
 
 ### `ed8f440f-1e52-4d18-ab41-dbb7c7da50ef`  (2026-09-10)
 - Resume: `claude --resume ed8f440f-1e52-4d18-ab41-dbb7c7da50ef`
@@ -54,3 +26,44 @@
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/68a0a909-ede4-4c46-af47-40b0fc1edc3d.jsonl
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
 - Cards touched (1): icdcopy.feature
+
+### `821d5218-3f50-46c6-9536-c0e14bb8db36`  (2026-09-17)
+- Resume: `claude --resume 821d5218-3f50-46c6-9536-c0e14bb8db36`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/821d5218-3f50-46c6-9536-c0e14bb8db36.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+
+### `ae495b84-77ee-4d66-9a93-0fb8591e52e9`  (2026-09-18)
+- Resume: `claude --resume ae495b84-77ee-4d66-9a93-0fb8591e52e9`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/ae495b84-77ee-4d66-9a93-0fb8591e52e9.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+
+### `b23dad4d-4b9e-4869-a243-8bc2f5584c74`  (2026-09-18)
+- Resume: `claude --resume b23dad4d-4b9e-4869-a243-8bc2f5584c74`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/b23dad4d-4b9e-4869-a243-8bc2f5584c74.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+
+### `f1774a04-48cd-4408-9641-5b4d3ea30e50`  (2026-09-20 → 2026-09-21)
+- Resume: `claude --resume f1774a04-48cd-4408-9641-5b4d3ea30e50`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/f1774a04-48cd-4408-9641-5b4d3ea30e50.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+
+### `5bb7b403-2577-4b45-9253-991f212b8087`  (2026-09-21 → 2026-09-22)
+- Resume: `claude --resume 5bb7b403-2577-4b45-9253-991f212b8087`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/5bb7b403-2577-4b45-9253-991f212b8087.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+
+### `0f186341-fc7e-45e0-813d-2b4efd1081da`  (2026-09-22)
+- Resume: `claude --resume 0f186341-fc7e-45e0-813d-2b4efd1081da`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/0f186341-fc7e-45e0-813d-2b4efd1081da.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+
+### `5e9d7d70-0c6b-4f64-b77f-6999c2e6de23`  (2026-09-22)
+- Resume: `claude --resume 5e9d7d70-0c6b-4f64-b77f-6999c2e6de23`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/5e9d7d70-0c6b-4f64-b77f-6999c2e6de23.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py, report-card-stamp.sh
+
+### `790216b4-ab37-4432-bf12-2b492c424964`  (2026-10-01)
+- Resume: `claude --resume 790216b4-ab37-4432-bf12-2b492c424964`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/790216b4-ab37-4432-bf12-2b492c424964.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (2): converse-to-obsidian.feature, fm-converse.feature

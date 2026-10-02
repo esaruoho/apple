@@ -12,6 +12,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [AppleBar — what the session accomplished](#applebar-session) — `applebar-session.feature`
 - [The architecture of any repository, whitelabeled](#archof) — `archof.feature`
 - [Arm the Apple skill into the Mini's on-device chat brain](#arm-apple-skill) — `arm-apple-skill.feature`
+- [converse-to-obsidian — linked Markdown views of Converse sessions](#converse-to-obsidian) — `converse-to-obsidian.feature`
 - [On-device dictation button](#dictation-button) — `dictation-button.feature`
 - [Directions home via Apple Maps](#directions-home) — `directions-home.feature`
 - [Front and rear iPhone cameras in one picture](#dualcam) — `dualcam.feature`
@@ -44,6 +45,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [Redact a region of a finished recburn video without re-rendering it](#recburn-redact) — `recburn-redact.feature`
 - [The only thing that ends a take is the person making it](#recburn-stream-recovery) — `recburn-stream-recovery.feature`
 - [Lift the voice against the app audio, measured not guessed](#recburn-voice-balance) — `recburn-voice-balance.feature`
+- [Install and verify compatible Whisper dependencies](#recburn-whisper-deps) — `recburn-whisper-deps.feature`
 - [Burn a live click counter into a screen recording](#recburnclick) — `recburnclick.feature`
 - [Record screen + system audio to one .mov with no loopback driver](#screen-audio-record) — `screen-audio-record.feature`
 - [Refuse to commit an account id, bank last-4, key or token](#secret-scan) — `secret-scan.feature`
@@ -207,6 +209,28 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 **Grade:** @built ×15 · @hw-verified ×11
 
 
+<a id="converse-to-obsidian"></a>
+## converse-to-obsidian — linked Markdown views of Converse sessions
+
+`features/converse-to-obsidian.feature` · [session](converse-to-obsidian.session.md)
+
+**What it does:** As someone discussing a repo with Converse and FM/MLX, I want the discussion rendered as linked Markdown notes, So that a repo such as scaff can benefit from the conversation in an Obsidian-style graph.
+
+**Behaviour (7 scenarios):**
+
+- A named Converse session exports to linked Markdown — `@built @runtime-verified`
+- Existing fm-converse memory is usable before livefile turn logging lands — `@built @runtime-verified`
+- Future livefile agent events take precedence over cache state — `@built @code-verified`
+- The shared publisher updates Scaff and the Obsidian vault from one livefile — `@built @runtime-verified`
+- Converse.app automatically calls the shared publisher after replies — `@built @build-verified`
+- fm-converse automatically calls the shared publisher after captured turns — `@built @runtime-verified`
+- Booting Converse.app automatically populates the vault after a model turn — `@built @runtime-verified`
+
+**How it does it:** **Key procs:** `converse-to-obsidian`, `resolve_session`, `turns_from_events`, `turns_from_cache`, `render_session_note`, `render_turn_note`, `converse-publish`, `publish_scaff`, `publish_vault` · **Source files:** `/Users/esaruoho/work/converse/main.swift`
+
+**Grade:** @build-verified ×1 · @built ×7 · @code-verified ×1 · @runtime-verified ×5
+
+
 <a id="dictation-button"></a>
 ## On-device dictation button
 
@@ -330,11 +354,11 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 <a id="fm-converse"></a>
 ## fm-converse — a remembering conversation with the on-device LLM
 
-`features/fm-converse.feature`
+`features/fm-converse.feature` · [session](fm-converse.session.md)
 
 **What it does:** As someone talking to Apple's FoundationModels model on the Mac Mini, I want each message to carry the prior dialogue and come back rendered, So that Converse's Cmd-1 is a real conversation, not unrelated one-shots.
 
-**Behaviour (8 scenarios):**
+**Behaviour (12 scenarios):**
 
 - A follow-up question keeps the prior context — `@built`
 - Replay stays inside the 4096-token FoundationModels window — `@built`
@@ -343,11 +367,15 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - A file path is read and summarised instead of sent literally — `@built @untested`
 - Context-overflow self-heal retries without history — `@built @untested`
 - The conversation is keyed to the newest Converse session dir — `@built`
-- Stored conversation is volatile and reportcard-less — `@built`
+- Stored conversation remains replay memory while the livefile is the durable artifact — `@built`
+- A terminal fm-converse turn becomes a Converse-shaped livefile — `@built`
+- Converse.app-owned turns are not duplicated by fm-converse — `@built`
+- Captured fm-converse turns are pushed to Scaff — `@built`
+- A flubuild turn uses the same replay memory and livefile transcript shape — `@built`
 
-**How it does it:** **Source files:** `bin/fm.swift`
+**How it does it:** **Source files:** `bin/fm.swift`, `test_fm_converse.py`
 
-**Grade:** @built ×8 · @untested ×2
+**Grade:** @built ×12 · @untested ×2
 
 
 <a id="fm-knowledgebank"></a>
@@ -954,6 +982,23 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - what the reported ducking percentage does and does not mean
 
 **Grade:** @hw-verified ×7
+
+
+<a id="recburn-whisper-deps"></a>
+## Install and verify compatible Whisper dependencies
+
+`features/recburn-whisper-deps.feature` · [session](recburn-whisper-deps.session.md)
+
+**Behaviour (4 scenarios):**
+
+- Check the actual Whisper runtime without installing packages — `@runtime-verified`
+- Install a compatible dependency family together — `@built`
+- Real recording transcribes after dependency repair — `@runtime-verified`
+- Subtitle burn-in exports the real recording — `@runtime-verified`
+
+**How it does it:** **Key procs:** `resolve_python`, `check_whisper` · **Source files:** `bin/rec-subtitle.swift`
+
+**Grade:** @built ×1 · @runtime-verified ×3
 
 
 <a id="recburnclick"></a>

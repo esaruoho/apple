@@ -20,7 +20,7 @@ Use Bash to execute (one call, then stop):
 - `--srt FILE` uses an existing/edited `.srt` instead of transcribing.
 - `--mic <stem>-mic.m4a` transcribes the **voice-only** track (from `rec-audio split`) for the
   cleanest transcript — best when the recording also has loud system audio.
-- `--model NAME` picks the Whisper model (default: whisp's own default).
+- `--model NAME` picks the Whisper model (default: `small.en` for English, `small` otherwise).
 - **Proper nouns are aligned automatically.** `bin/recburn-vocabulary.json` (or
   `~/.config/recburn/vocabulary.json`, or `.recburn-vocabulary.json` beside the recording)
   both biases Whisper (`--initial_prompt`) and sweeps the finished `.srt`, so Paketti /
@@ -30,5 +30,5 @@ Use Bash to execute (one call, then stop):
 - `--fix-srt <file.srt>` aligns a transcript you already have, in place (no video needed).
 - `--self-test` checks the vocabulary rules headlessly (no media, no Whisper).
 
-Transcription runs Whisper locally via `~/work/whisp/whisp`; burn-in is Apple-native
+Transcription runs the `whisper` CLI locally; burn-in is Apple-native
 AVFoundation (video re-encoded). After the command completes, report only the lines it printed.

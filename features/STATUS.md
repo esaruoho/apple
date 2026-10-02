@@ -16,13 +16,14 @@
 | applebar-session | 8 | ✗ | — | — | @built @leak-fixed @shipped @verified |
 | archof | 6 | ✗ | — | — | @built @stock @verified |
 | arm-apple-skill | 17 | ✗ | — | ✓ | @built @hw-verified @observed |
+| converse-to-obsidian | 7 | ✓ | ✓ | — | @build-verified @built @code-verified @runtime-verified |
 | dictation-button | 10 | ✗ | — | — | @built @note @todo @untested @verified |
 | directions-home | 6 | ✗ | — | — | @built @note @verified |
 | dualcam | 6 | ✗ | — | ✓ | @built @hw-verified @note |
 | find-my | 5 | ✗ | — | — | @note @verified |
 | finder-settings | 7 | ✗ | — | — | @built @note |
 | fleet-identity-and-view | 10 | ✓ | ✓ | — | @build-verified @ops-verified @runtime-verified |
-| fm-converse | 8 | ✗ | — | — | @built @caveat @self-test @untested @verified-live |
+| fm-converse | 12 | ✗ | — | — | @built @caveat @self-test @untested @verified-live |
 | fm-knowledgebank | 5 | ✗ | — | — | @built @note @verified |
 | fm-mlx-dry | 8 | ✗ | — | — | @self-test @verified-live |
 | fm-think-no-leak | 19 | ✗ | — | ✓ | @built @hw-verified @todo |
@@ -48,6 +49,7 @@
 | recburn-redact | 29 | ✗ | — | ✓ | @built @hw-verified @note |
 | recburn-stream-recovery | 8 | ✗ | — | ✓ | @built @hw-verified @note |
 | recburn-voice-balance | 10 | ✗ | — | ✓ | @hw-verified @note @self-test |
+| recburn-whisper-deps | 4 | ✗ | ✓ | — | @built @runtime-verified |
 | recburnclick | 13 | ✗ | — | ✓ | @built @hw-verified @note |
 | screen-audio-record | 20 | ✗ | — | ✓ | @built @hw-verified @note @untested |
 | secret-scan | 5 | ✗ | — | ✓ | @hw-verified @note |
@@ -60,8 +62,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 48
-- Build-verified: 1
-- Runtime-verified: 1 full + 1 partial
+- Cards: 50
+- Build-verified: 2
+- Runtime-verified: 3 full + 1 partial
 - **Hardware-verified: 20**  ·  hardware-untested: 0
 
