@@ -56,7 +56,7 @@
 | sesh | 11 | ✗ | — | ✓ | @built @hw-verified @todo @untested |
 | shell-toggles | 3 | ✗ | — | — | @built @verified |
 | spotlight-suggestions | 5 | ✗ | — | — | @built @note @verified |
-| transcript-vault-email-analysis | 4 | ✓ | ✗ | — | @code-verified @runtime-untested @stock |
+| transcript-vault-email-analysis | 4 | ✓ | ~ partial | — | @code-verified @runtime-untested @runtime-verified @stock |
 | usb-port-revive | 14 | ✗ | — | ✓ | @built @hw-verified @todo @untested |
 | voicebox-speak-toggle | 9 | ✗ | — | — | @built @note @verified |
 | voicebox-worker | 6 | ✗ | — | — | @built @caveat @self-test @verified-live |
@@ -65,6 +65,6 @@
 ## Tally (computed)
 - Cards: 51
 - Build-verified: 3
-- Runtime-verified: 3 full + 1 partial
+- Runtime-verified: 3 full + 2 partial
 - **Hardware-verified: 20**  ·  hardware-untested: 0
 

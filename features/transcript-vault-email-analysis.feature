@@ -6,13 +6,20 @@
 #   areaspace — OWNS: exact response persistence, text-only return and vault links
 #               MUST NOT TOUCH: source media, personal notes, deep-analysis grades
 # SESSION: transcript-vault-email-analysis.session.md
-# RESULT: implementation and automated checks complete; deployment pending; no feature commit yet.
+# RESULT: feature delivery apple 393be8290738, convey 1b98bc8371ae; direct-push to main, no PR.
+# Card-authoring commits: the same feature commits; runtime verification update in this commit.
+# Files: shared/email_analysis.py, bin/freellmask-mail, convey/cli.py, convey/ledger.py,
+#        convey/transcript_intake.py, convey/transcript_vault.py, convey/actions/video,
+#        sync/deployment tools, focused tests, report-card/session and generated views.
 # WATCH: prepare delivered compose_and_send cmd_email_transcript make_email_analysis collect _build
 # RESULT-LOG >>
+# Live verification: Cloudcity sent Thane Heins Part 4; provider message/thread IDs recorded.
+# The local canonical response matches the sent-body SHA-256 and is linked in Transcript Vault.
+# 29 local checks pass; 14 remote checks pass. Full URL-to-video rerun was not performed.
 
 Feature: A conveyed video yields a readable transcript and its analyses
 
-  @code-verified @runtime-untested
+  @code-verified @runtime-verified
   Scenario: Save the exact response before attempting mail delivery
     # cite: shared/email_analysis.py prepare delivered; bin/freellmask-mail compose_and_send
     Given Cloudcity has composed an answer over a transcript
@@ -20,7 +27,7 @@ Feature: A conveyed video yields a readable transcript and its analyses
     Then its exact Markdown body is already saved beside the canonical transcript
     And a separate receipt records pending, sent, or failed delivery and actual model attribution
 
-  @code-verified @runtime-untested
+  @code-verified @runtime-verified
   Scenario: Analyses arrive after the transcript through Syncthing
     # cite: convey/transcript_intake.py collect; convey/transcript_vault.py _build
     Given the transcript has already been collected into the archive

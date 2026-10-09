@@ -1140,14 +1140,14 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 **Behaviour (4 scenarios):**
 
-- Save the exact response before attempting mail delivery — `@code-verified @runtime-untested`
-- Analyses arrive after the transcript through Syncthing — `@code-verified @runtime-untested`
+- Save the exact response before attempting mail delivery — `@code-verified @runtime-verified`
+- Analyses arrive after the transcript through Syncthing — `@code-verified @runtime-verified`
 - Normal video completion includes saved analysis — `@code-verified @runtime-untested`
 - Machine output does not close the deep-analysis backlog — `@stock`
 
 **How it does it:** **Key procs:** `prepare`, `delivered`, `compose_and_send`, `cmd_email_transcript`, `make_email_analysis`, `collect`, `_build` · **Source files:** `shared/email_analysis.py`, `convey/transcript_intake.py`, `convey/transcript_vault.py`, `convey/cli.py`, `convey/ledger.py`
 
-**Grade:** @code-verified ×3 · @runtime-untested ×3 · @stock ×1
+**Grade:** @code-verified ×3 · @runtime-untested ×1 · @runtime-verified ×2 · @stock ×1
 
 
 <a id="usb-port-revive"></a>

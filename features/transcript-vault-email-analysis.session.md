@@ -27,3 +27,9 @@ Session start (verified transcript metadata): 2026-10-09T12:01:32.964Z
 29 local checks passed. Cloudcity's first deployment passed 13 mocked checks and enabled receipt sync. The laptop's automatic collector projected 279 existing analysis sidecars into nested vault notes. A later subprocess-level test caught an older bug: the mail CLI ignored main's return value, making a composition failure look successful to callers. The entry point was corrected to raise SystemExit(main()), and that test passed. The corrected remote release and a real analysis return check are recorded separately.
 
 The pre-commit hook contains a nohup DreamGraph launch. Commit-time report generators are run explicitly and the hook is bypassed for these commits to avoid launching that background process. Unrelated local Bandcamp CLI changes are excluded from the Convey commit and remote release. Raw session bundles remain local and ignored.
+
+## Verified result
+
+Cloudcity's corrected release passed 14 focused checks. A real `convey email-transcript --analyze` run over the existing Thane Heins Part 4 transcript sent the normal response to Esa and recorded the provider's message/thread IDs. The local archive response hash matches the outgoing body receipt, the response text is unchanged inside the vault analysis note, and the transcript links that child. This verifies the analysis station and return path; a fresh URL-to-video transcription run was not performed. The existing video default station is covered by its focused test.
+
+Feature commits: Apple `393be82907388324628686a6f2b4d606afec58b0` and Convey `1b98bc8371aeaf5dac2eac9ce3ab8abf1d837ec8`. Both are direct pushes to main, no PR. The Convey commit includes the previously uncommitted text-only intake that this feature needs; unrelated Bandcamp work remains unstaged.
