@@ -722,3 +722,5 @@ A Voice Memo tagged #audio becomes a .wav sample on disk  —  4 scenarios   (fe
 Indexed in atlas → /Users/esaruoho/work/apple/atlas/INDEX.md
 ```
 
+
+- [Transcript Vault automatic email analysis](transcript-vault-email-analysis.feature) — exact composed responses, linked analysis children, Syncthing return; [session](transcript-vault-email-analysis.session.md).

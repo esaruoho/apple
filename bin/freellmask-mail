@@ -2564,7 +2564,8 @@ def _fm_looks_garbage_local(t):
 
 
 def compose_and_send(to, subject, body_text, source="", label="", verbose=True, tries=4,
-                     legs_from="", attach="", chapters=False, chapter_chars=9000, space_hint=""):
+                     legs_from="", attach="", chapters=False, chapter_chars=9000, space_hint="",
+                     archive_source=""):
     """THE ONE ANSWER FORMAT, callable from outside the poll loop.
 
     Esa, 2026-08-10, holding three different-looking emails from the same system: "i have
@@ -2584,6 +2585,7 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
     body_text = (body_text or "").strip()
     if not body_text:
         return False, "nothing to answer"
+    analyzed_text = body_text
     question = (f"Read the material below and answer it as you would an email asking about it: what "
                 f"it says, what holds up, what is worth checking."
                 + (f"\n\nSOURCE: {source}" if source else ""))
@@ -2714,11 +2716,37 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
             if verbose: print(f"  attach error: {e}")
     if BCC and BCC.lower() != (to or "").lower():
         payload["bcc"] = [BCC]
+    # REPORT-CARD >> features/transcript-vault-email-analysis.feature
+    # Save exactly what is sent, before sending. --archive-source identifies the flat
+    # transcript even when --file is the speaker-attributed dialogue or a temp brief.
+    receipt = meta = None
+    record_source = archive_source or attach or legs_from
+    if record_source:
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "shared"))
+        from email_analysis import prepare, delivered
+        try:
+            receipt, meta = prepare(record_source, text, recipient=to, subject=subject,
+                                    model=used, analyzed_text=analyzed_text, origin=source)
+            if meta.get("delivery") == "sent":
+                return True, used
+        except Exception as e:
+            return False, f"analysis could not be saved; not sending: {e}"
     try:
-        http(f"{AM_BASE}/inboxes/{INBOX}/messages/send", k, "POST", payload)
-        return True, used
+        response = http(f"{AM_BASE}/inboxes/{INBOX}/messages/send", k, "POST", payload)
     except Exception as e:
+        if receipt:
+            try:
+                delivered(receipt, meta, error=str(e))
+            except Exception as save_error:
+                if verbose: print(f"  analysis receipt update failed: {save_error}")
         return False, f"send failed: {e}"
+    if receipt:
+        try:
+            delivered(receipt, meta, response=response)
+        except Exception as e:
+            # Send succeeded. Do not invite a duplicate send; pending means unconfirmed.
+            if verbose: print(f"  sent, but analysis receipt update failed: {e}")
+    return True, used
 
 
 # ── the belt ────────────────────────────────────────────────────────────────────────────────────
@@ -2941,6 +2969,8 @@ def main():
         ap.add_argument("--legs-from", dest="legs_from", default="",
                         help="run `convey soft` on this file and append both machine legs (fm-mlx + "
                              "freellmapi) as an appendix")
+        ap.add_argument("--archive-source", default="",
+                        help="canonical transcript beside which the exact emailed analysis is saved")
         ap.add_argument("--attach", default="", help="attach this file to the email")
         # --legs-from DEFAULTS to --file, so omitting it does not disable the legs. That surprised me
         # into thinking a send was legs-free when it was still blocked on them (2026-08-12): the
@@ -2966,7 +2996,7 @@ def main():
                                                (a.legs_from or (a.file if a.file else ""))),
                                     attach=(a.attach or (a.file if a.file else "")),
                                     chapters=a.chapters, chapter_chars=a.chapter_chars,
-                                    space_hint=a.space)
+                                    space_hint=a.space, archive_source=a.archive_source)
         print(("✅ sent (" + str(info) + ")") if ok else ("✗ " + str(info)))
         return 0 if ok else 1
     if cmd=="status":
@@ -2985,4 +3015,4 @@ def main():
     else:
         n=poll_once(); print(f"polled: answered {n} new email(s)")
 
-if __name__=="__main__": main()
+if __name__=="__main__": raise SystemExit(main())

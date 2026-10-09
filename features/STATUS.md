@@ -56,14 +56,15 @@
 | sesh | 11 | ✗ | — | ✓ | @built @hw-verified @todo @untested |
 | shell-toggles | 3 | ✗ | — | — | @built @verified |
 | spotlight-suggestions | 5 | ✗ | — | — | @built @note @verified |
+| transcript-vault-email-analysis | 4 | ✓ | ✗ | — | @code-verified @runtime-untested @stock |
 | usb-port-revive | 14 | ✗ | — | ✓ | @built @hw-verified @todo @untested |
 | voicebox-speak-toggle | 9 | ✗ | — | — | @built @note @verified |
 | voicebox-worker | 6 | ✗ | — | — | @built @caveat @self-test @verified-live |
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 50
-- Build-verified: 2
+- Cards: 51
+- Build-verified: 3
 - Runtime-verified: 3 full + 1 partial
 - **Hardware-verified: 20**  ·  hardware-untested: 0
 

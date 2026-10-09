@@ -52,6 +52,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [The master session list is bootable with one word](#sesh) — `sesh.feature`
 - [Desktop & Dock visibility from the command bar](#shell-toggles) — `shell-toggles.feature`
 - [Live Spotlight-style suggestions in AppleBar](#spotlight-suggestions) — `spotlight-suggestions.feature`
+- [A conveyed video yields a readable transcript and its analyses](#transcript-vault-email-analysis) — `transcript-vault-email-analysis.feature`
 - [Recover a wedged USB-C port without losing the work on the machine](#usb-port-revive) — `usb-port-revive.feature`
 - [One button for "Claude talks to me" (server + speech together)](#voicebox-speak-toggle) — `voicebox-speak-toggle.feature`
 - [voicebox-worker — a TTS queue that survives the worker dying mid-job](#voicebox-worker) — `voicebox-worker.feature`
@@ -1130,6 +1131,23 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 **How it does it:** **Source files:** `AppleBar.swift`
 
 **Grade:** @built ×1
+
+
+<a id="transcript-vault-email-analysis"></a>
+## A conveyed video yields a readable transcript and its analyses
+
+`features/transcript-vault-email-analysis.feature` · [session](transcript-vault-email-analysis.session.md)
+
+**Behaviour (4 scenarios):**
+
+- Save the exact response before attempting mail delivery — `@code-verified @runtime-untested`
+- Analyses arrive after the transcript through Syncthing — `@code-verified @runtime-untested`
+- Normal video completion includes saved analysis — `@code-verified @runtime-untested`
+- Machine output does not close the deep-analysis backlog — `@stock`
+
+**How it does it:** **Key procs:** `prepare`, `delivered`, `compose_and_send`, `cmd_email_transcript`, `make_email_analysis`, `collect`, `_build` · **Source files:** `shared/email_analysis.py`, `convey/transcript_intake.py`, `convey/transcript_vault.py`, `convey/cli.py`, `convey/ledger.py`
+
+**Grade:** @code-verified ×3 · @runtime-untested ×3 · @stock ×1
 
 
 <a id="usb-port-revive"></a>
