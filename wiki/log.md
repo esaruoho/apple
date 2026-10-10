@@ -70,3 +70,7 @@ PDFWorkshop produced 7 blank/corrupt `_ocr.pdf` (of 371). Root cause (read from 
 ## [2026-10-10] ingest | Finder Favorites read-only archive decoding
 
 Added `concepts/finder-sidebar-reading.md`: Foundation/ASObjC recipe verified against 35 saved Favorites on Sequoia 15.6.1, all bookmarks resolved without stale flags. Distinguished reading from the existing editing warning and corrected the Apple skill routing text. Public documentation omits personal Favorites URLs.
+
+## [2026-10-10] diagnose | Selected scan needs automatic Cloudcity OCR
+
+Added `concepts/pdf-analysis-ocr-fallback.md`: traced ScaffFinder’s empty extraction to a six-page image PDF, added an automatic Syncthing handoff, found repeated GLM output, and verified a bounded Cloudcity-native Vision fallback returning 25,999 characters without modifying the original. Implementation and report-card/session live in the FinderSearch workspace.
