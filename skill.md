@@ -56,7 +56,7 @@ Then read `analysis/sal/current-status.md` and report. **Do not run the refresh 
 
 For everything else, treat this file as a routing table: identify the topic, grep the matching wiki page, answer.
 
-**Tag pipeline + Dock manager (added 2026-05-21):** Two Apple-native control surfaces wired into the skill. When the user says "tag this", "needs-ocr", "send to OCR", "ocr-failed", "Smart Folder", "talkback" → see [`wiki/concepts/finder-tag-pipeline.md`](wiki/concepts/finder-tag-pipeline.md). When the user says "add to Dock", "pin to Dock", "Dock tile" → see [`wiki/concepts/dock-management.md`](wiki/concepts/dock-management.md). Sidebar Favorites is dead on Sequoia — [`wiki/concepts/finder-sidebar-locked.md`](wiki/concepts/finder-sidebar-locked.md) for why.
+**Tag pipeline + Dock manager (added 2026-05-21):** Two Apple-native control surfaces wired into the skill. When the user says "tag this", "needs-ocr", "send to OCR", "ocr-failed", "Smart Folder", "talkback" → see [`wiki/concepts/finder-tag-pipeline.md`](wiki/concepts/finder-tag-pipeline.md). When the user says "add to Dock", "pin to Dock", "Dock tile" → see [`wiki/concepts/dock-management.md`](wiki/concepts/dock-management.md). Sidebar Favorites **reading** works: [`wiki/concepts/finder-sidebar-reading.md`](wiki/concepts/finder-sidebar-reading.md) has the tested read-only recipe. **Editing** has separate constraints: [`wiki/concepts/finder-sidebar-locked.md`](wiki/concepts/finder-sidebar-locked.md).
 
 **Shipping an app: icon + About/Support/Help (added 2026-08-14):** Two pages that exist because
 both were got wrong in a shipped product first. When the user says "app icon", "icon is too large",

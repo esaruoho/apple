@@ -2,6 +2,10 @@
 
 Tested 2026-05-21 on macOS Sequoia. **Do not attempt to programmatically add items to Finder's sidebar Favorites via `LSSharedFileList`.** It is gone.
 
+## Reading still works
+
+The warning here concerns editing and the deprecated API. Direct read-only archive decoding was verified on Sequoia 15.6.1: see [Reading Finder Sidebar Favorites](finder-sidebar-reading.md) for the tested Foundation recipe and its limits.
+
 ## What used to work
 
 `LSSharedFileList` (CoreServices) — list / insert / remove sidebar Favorites. Deprecated by Apple in macOS 10.11 (2015) but functional through Big Sur and Monterey. Used by `mysides`, Alfred, LaunchBar, etc.

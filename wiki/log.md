@@ -66,3 +66,7 @@ The recurring "OMG the Mini is dead" was a misdiagnosis: stale heartbeats / file
 ## [2026-06-01] fix | Blank _ocr.pdf — pdf-lib copyPages corrupts CCITTFax; rebuilt 7, fixed upstream
 
 PDFWorkshop produced 7 blank/corrupt `_ocr.pdf` (of 371). Root cause (read from batch-ocr.mjs): `buildOcrPdf` used pdf-lib `copyPages`, which corrupts CCITTFax-G4 image streams on fax-scanned books — CoreGraphics AND MuPDF both fail to decode. The `.txt` text was always intact. Built `bin/ocr-pdf-rebuild` (clean scan + `.txt` → searchable PDF via PyMuPDF: preserves images, adds invisible text layer). Located all 7 originals in `merlib-dump/sources` + the Mini's uploads; rebuilt all 7 into proper searchable PDFs placed next to their sources as `_ocr.pdf`. Fixed the root cause upstream: PDFWorkshop `buildOcrPdf` now uses PyMuPDF (`build_ocr_pdf.py`), node-checked + live-tested, committed `1589f05`. Ledger: `wiki/operations/blank-ocr-pdfs.md` (RESOLVED).
+
+## [2026-10-10] ingest | Finder Favorites read-only archive decoding
+
+Added `concepts/finder-sidebar-reading.md`: Foundation/ASObjC recipe verified against 35 saved Favorites on Sequoia 15.6.1, all bookmarks resolved without stale flags. Distinguished reading from the existing editing warning and corrected the Apple skill routing text. Public documentation omits personal Favorites URLs.
