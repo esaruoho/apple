@@ -44,6 +44,12 @@ The adapter now rejects heavily repeated output and, after two minutes, enqueues
 
 The canonical GLM archive job may continue independently; analysis uses the first acceptable recognition result. Cancellation or timeout retains the durable requests. Native errors are reported without silently accepting repeated GLM text.
 
+## Verified email attachment path
+
+The [live Milewski proof](../../analysis/proofs/milewski-email-proof.md) establishes original-PDF receipt at `cloudcity-llm@agentmail.to`, a byte-for-byte downloaded attachment match, remote Apple Vision extraction, model analysis, and a matching reply in Gmail. This uses the actual received attachment rather than passing cached text to a compose command.
+
+It exposed an independent delivery bug: returning the original 5.4 MB PDF as base64 caused AgentMail to reject the reply with HTTP 413, after which the at-most-once ledger suppressed retries. `bin/freellmask-mail::send_inbox_reply` now retries explicit 413 rejection without attachments. The live recovery exercised that fallback successfully. The tested repair is pushed; the Mini’s existing modified files blocked normal deployment, so recovery used an isolated committed snapshot. The long-running inbox worker still needs the repair integrated and reloaded. The proof client included all six-page OCR text; default inbox small-context truncation remains a separate limit.
+
 ## Related
 
 - [AppleScriptObjective-C](asobjc.md)

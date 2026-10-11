@@ -74,3 +74,5 @@ Added `concepts/finder-sidebar-reading.md`: Foundation/ASObjC recipe verified ag
 ## [2026-10-10] diagnose | Selected scan needs automatic Cloudcity OCR
 
 Added `concepts/pdf-analysis-ocr-fallback.md`: traced ScaffFinder’s empty extraction to a six-page image PDF, added an automatic Syncthing handoff, found repeated GLM output, and verified a bounded Cloudcity-native Vision fallback returning 25,999 characters without modifying the original. Implementation and report-card/session live in the FinderSearch workspace.
+
+- 2026-10-11: Verified original Milewski PDF → cloudcity-llm attachment receipt (matching SHA256) → remote Vision extraction → gemini-3.1-flash-lite → actual Gmail reply. Found and tested explicit HTTP 413 attachment-free reply fallback. Proof: `analysis/proofs/milewski-email-proof.md`. Repair pushed; live worker deployment remains blocked by preserved Mini working-tree changes.
