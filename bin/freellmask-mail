@@ -125,6 +125,26 @@ def http(url, key, method="GET", body=None):
             if attempt<2: time.sleep(3); continue
             raise
 
+# REPORT-CARD >> features/mail-reply-attachment-fallback.feature
+def send_inbox_reply(key, mid, reply):
+    """Retry without attachments only after an explicit payload-size rejection.
+
+    A timeout or other ambiguous failure must retain the at-most-once guarantee.
+    The source attachments remain accessible in the original email thread.
+    """
+    url=f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply"
+    try:
+        return http(url, key, "POST", reply)
+    except urllib.error.HTTPError as error:
+        if error.code != 413 or not reply.get("attachments"):
+            raise
+    fallback={k: v for k, v in reply.items() if k != "attachments"}
+    note="Original attachments remain in your original email; the email service rejected their inclusion in this reply because of its size limit."
+    fallback["text"]=fallback.get("text", "")+"\n\n"+note
+    if "html" in fallback:
+        fallback["html"]+="<p>"+note+"</p>"
+    return http(url, key, "POST", fallback)
+
 # ── attachments: text/markdown read directly; PDF + images via on-Mini Apple Vision OCR ──
 def _att_bytes(k, mid, att_id):
     meta=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/attachments/{enc(att_id)}", k)
@@ -2202,7 +2222,7 @@ def poll_once(verbose=True):
                 if BCC and BCC.lower() not in (full.get("from") or "").lower():
                     reply["bcc"] = [BCC]
                 try:
-                    http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST", reply)
+                    send_inbox_reply(k, mid, reply)
                     print(f"  ✎ adjusted {len(adjustments)} area(s); {len(_rules_added)} rule(s) banked")
                 except Exception as e:
                     debug_log("adjust-send-error", mid, full.get("subject", ""), note=str(e))
@@ -2357,7 +2377,7 @@ def poll_once(verbose=True):
         replied_add(mid, m.get("thread_id"), full.get("subject",""))
         replied_mids.add(mid); replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
         try:
-            http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", k, "POST", reply)
+            send_inbox_reply(k, mid, reply)
         except Exception as e:
             debug_log("reply-send-error", mid, full.get("subject","(no subject)"),
                       question=question, answer=reply.get("text",""), note=str(e))
