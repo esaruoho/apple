@@ -756,6 +756,21 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     # Silence that self-heals beats a polite failure in the inbox (2026-08-12).
     return (REQUEUE_FAILED + "\x00" + " | ".join(why[-3:]) if why else REQUEUE_FAILED, used)
 
+# REPORT-CARD >> features/mail-material-editor-contract.feature
+def research_email_material(question, context, text, *, space, wiki_ctx="", lens="",
+                            tries=6, honour_tries=False, model_override=""):
+    """One document editor contract for inbound mail, compose and recovery clients."""
+    viewpoint=VIEWPOINT if space == "free-energy" else ""
+    answer, model=fm_research(question, context, text, tries=tries, wiki_ctx=wiki_ctx,
+                             viewpoint=viewpoint, lens=lens, honour_tries=honour_tries,
+                             model_override=model_override, material=True)
+    if viewpoint and lens_voices_enabled() and not _is_requeue(answer):
+        required=["Thought about it", "Answer"]+MATERIAL_HEADINGS+TONE_HEADINGS
+        missing=[h for h in required if not re.search(r"(?m)^## " + re.escape(h) + r"\s*$", answer)]
+        if missing:
+            return REQUEUE_NO_THINKING+"\x00missing document sections: "+", ".join(missing), model
+    return answer, model
+
 def _md_inline(t):
     t=(t.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;"))
     t=re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
@@ -2320,8 +2335,13 @@ def poll_once(verbose=True):
                               + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else "")
                               + (f" [+skill:{len(sslugs)}]" if sslugs else "") + (" [+lens]" if lens else ""))
             try:
-                answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp, lens=lens,
-                                           model_override=card.get("model",""))
+                if extra:
+                    answer, used = research_email_material(question, ctx, extra, space=space,
+                                                          wiki_ctx=wctx, lens=lens,
+                                                          model_override=card.get("model",""))
+                else:
+                    answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp, lens=lens,
+                                               model_override=card.get("model",""))
             except Exception as e:
                 print(f"  research failed for {mid}: {e}"); continue
             if _is_requeue(answer):
@@ -2659,9 +2679,8 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
     global TRY_FLOOR
     _floor, TRY_FLOOR = TRY_FLOOR, max(1, tries)          # bounded for the belt, restored after
     try:
-        answer, used = fm_research(question, "", body_text, wiki_ctx=wctx, viewpoint=vp, tries=tries,
-                                   honour_tries=True,
-                                   material=True)         # there is always material in a compose
+        answer, used = research_email_material(question, "", body_text, space=space,
+                                              wiki_ctx=wctx, tries=tries, honour_tries=True)         # there is always material in a compose
     finally:
         TRY_FLOOR = _floor
     if _is_requeue(answer):
