@@ -50,6 +50,12 @@ The [live Milewski proof](../../analysis/proofs/milewski-email-proof.md) establi
 
 It exposed an independent delivery bug: returning the original 5.4 MB PDF as base64 caused AgentMail to reject the reply with HTTP 413, after which the at-most-once ledger suppressed retries. `bin/freellmask-mail::send_inbox_reply` now retries explicit 413 rejection without attachments. The live recovery exercised that fallback successfully. The tested repair is pushed; the Mini’s existing modified files blocked normal deployment, so recovery used an isolated committed snapshot. The long-running inbox worker still needs the repair integrated and reloaded. The proof client included all six-page OCR text; default inbox small-context truncation remains a separate limit.
 
+## Preserve the editor, not just delivery
+
+The first recovery used a bare `fm_research` call without `viewpoint` or `material=True`. That delivered a generic answer while bypassing the required Russell, Bearden, Prigogine, Hilarion and skeptical-engineer sections. It was a transport proof, not a complete editorial proof. Inbound attachments also omitted material mode.
+
+`research_email_material` now provides the shared contract for inbound documents, compose and recovery: explicit routed space, document mode, existing substance/table checks, and a final check for every expected heading. The [corrected delivered analysis](../../analysis/proofs/milewski-corrected-analysis.md) contains all fourteen sections and was independently verified in Gmail. Eleven tests pass. This verifies editorial structure and delivery, not every model-generated scientific claim. Live worker integration remains pending because its unrelated uncommitted changes were preserved.
+
 ## Related
 
 - [AppleScriptObjective-C](asobjc.md)

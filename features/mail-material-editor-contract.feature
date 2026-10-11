@@ -4,7 +4,10 @@
 # Thinkspace: mail-material-editor-contract.session.md
 # Areaspace: OWNS document editor selection and section validation; preserve routing for other topics.
 # SESSION >> features/mail-material-editor-contract.session.md
-# RESULT: Pending commit; direct push, no PR. Corrected live reply pending.
+# RESULT: Feature/card 37422650; direct push to main, no PR.
+# Runtime: corrected reply 010001a12b3e9ef6-a3d1ca8d-1229-4f76-af5b-a0f2ae6fcf4a-000000 received in Gmail.
+# Evidence: analysis/proofs/milewski-corrected-receipt.json; milewski-corrected-analysis.md.
+# Deployment: isolated snapshot verified; existing long-running worker remains unchanged.
 # WATCH: research_email_material
 Feature: Free Energy documents retain the complete editorial format across entry points
   @built @sim-verified
@@ -30,7 +33,7 @@ Feature: Free Energy documents retain the complete editorial format across entry
     When the document editor is called
     Then do not inject the Free Energy viewpoint
 
-  @runtime-untested
+  @runtime-verified
   Scenario: Correct the incomplete Milewski email
     Given the earlier delivery proof omitted the required editorial voices
     When the corrected recovery runs on Cloudcity

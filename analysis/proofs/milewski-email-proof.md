@@ -1,4 +1,6 @@
-# Milewski PDF → Cloudcity → Gmail: verified proof
+# Milewski PDF → Cloudcity → Gmail: transport proof
+
+**Editorial correction:** this first reply proved transport but omitted the required Free Energy voices because the recovery bypassed viewpoint and material mode. It was not a successful test of the complete editor. The [corrected fourteen-section analysis](milewski-corrected-analysis.md) and [corrected receipt](milewski-corrected-receipt.json) supersede it for that purpose.
 
 The original `/Users/esaruoho/John-Milewski-Superlight.pdf` was sent from the configured Gmail account to `cloudcity-llm@agentmail.to`. AgentMail received the actual PDF attachment; its downloaded bytes exactly matched the selected file. A repaired, bounded client on Cloudcity then extracted the received PDF, generated its analysis, and delivered a reply that was independently found in Mail’s Gmail inbox.
 
