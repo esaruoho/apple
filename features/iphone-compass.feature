@@ -66,8 +66,12 @@ Feature: Read the iPhone Compass onto the Mac and point out East
     Then `devicectl device process launch com.apple.compass` opens Compass
     And it works even when screen-capture is unavailable (launch != capture)
 
-  @built @hw-untested
+  @built @wontfix
   Scenario: End-to-end live read from a tethered phone
+    # PARKED 2026-10-16: USB-C iPhone 16 Pro exposes only Continuity Camera +
+    # Desk View over CoreMediaIO, NO screen-capture device. Read leg is
+    # hardware-infeasible here without a custom iOS app. Esa chose to stop.
+    # The LAUNCH capability (compass --open / devicectl) is the kept deliverable.
     # cite: bin/compass read_once() — UNTESTED: no iPhone was connected in-session
     Given a tethered, unlocked, trusted iPhone with Compass open (large readout on)
     When the user runs `compass`

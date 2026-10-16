@@ -60,3 +60,14 @@ permission or access." Correct. Re-investigated:
 ## devicectl capability LOGGED
 - Wrote wiki/concepts/iphone-app-launch-devicectl.md (the reusable skill:
   launch/suspend/resume/signal ANY of 186 enumerable apps by bundle id).
+
+## Update 3 — READ leg abandoned by decision (2026-10-16)
+Confirmed via direct CMIO enumeration that the USB-C iPhone 16 Pro exposes only
+`esaiPhone16Pro Camera` + `esaiPhone16Pro Desk View Camera` — NO screen-capture
+device. So iphone-screen/iphonemirror cannot see the phone's own screen; this is
+a hardware/OS reality, not lock or TCC (Camera auth = authorized, Screen
+Recording TCC = true). iPhone Mirroring.app is the only real-screen path but
+needs the phone LOCKED and wouldn't stay open while the phone was in use.
+Offered iPhone Mirroring vs QuickTime vs stop; Esa chose STOP. The compass READ
+leg is parked as hardware-infeasible without a custom iOS app. The devicectl
+LAUNCH capability (`compass --open` + the wiki page) is the kept deliverable.

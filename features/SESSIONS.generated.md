@@ -73,4 +73,4 @@
 - Resume: `claude --resume 070edd2e-d868-47ea-a2ba-a8104dd6a979`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/070edd2e-d868-47ea-a2ba-a8104dd6a979.jsonl
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
-- Cards touched (6): app-audio-record.feature, apple-energy.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, iphone-compass.feature
+- Cards touched (7): app-audio-record.feature, apple-energy.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, iphone-compass.feature, iphonemirror-rotated-live-mirror.feature

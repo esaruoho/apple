@@ -651,11 +651,11 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Parse the heading from Compass OCR text — `@built @code-verified`
 - Compute the rotation to face East — `@built @code-verified`
 - Launch Compass on the phone from the Mac (no custom app) — `@built @hw-verified`
-- End-to-end live read from a tethered phone — `@built @hw-untested`
+- End-to-end live read from a tethered phone — `@built`
 
 **How it does it:** **Key procs:** `compass`, `turn_to_east`, `iphone-screen` · **Source files:** `bin/compass.py`
 
-**Grade:** @built ×4 · @code-verified ×2 · @hw-untested ×1 · @hw-verified ×1 · @runtime-verified ×1 · @stock ×1
+**Grade:** @built ×4 · @code-verified ×2 · @hw-verified ×1 · @runtime-verified ×1 · @stock ×1
 
 
 <a id="iphonemirror-rotated-live-mirror"></a>
