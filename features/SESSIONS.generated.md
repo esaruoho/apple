@@ -8,12 +8,7 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**11 card conversations** plugged in:
-
-### `ed8f440f-1e52-4d18-ab41-dbb7c7da50ef`  (2026-09-10)
-- Resume: `claude --resume ed8f440f-1e52-4d18-ab41-dbb7c7da50ef`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/ed8f440f-1e52-4d18-ab41-dbb7c7da50ef.jsonl
-- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+**12 card conversations** plugged in:
 
 ### `48373aca-9f6c-4d98-9149-7be79a27a542`  (2026-09-16)
 - Resume: `claude --resume 48373aca-9f6c-4d98-9149-7be79a27a542`
@@ -67,3 +62,15 @@
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/790216b4-ab37-4432-bf12-2b492c424964.jsonl
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
 - Cards touched (2): converse-to-obsidian.feature, fm-converse.feature
+
+### `74eca925-9055-4719-bcc9-f613827152ee`  (2026-10-06)
+- Resume: `claude --resume 74eca925-9055-4719-bcc9-f613827152ee`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/74eca925-9055-4719-bcc9-f613827152ee.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (2): converse-to-obsidian.feature, fm-converse.feature
+
+### `070edd2e-d868-47ea-a2ba-a8104dd6a979`  (2026-10-16)
+- Resume: `claude --resume 070edd2e-d868-47ea-a2ba-a8104dd6a979`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/070edd2e-d868-47ea-a2ba-a8104dd6a979.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (6): app-audio-record.feature, apple-energy.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, iphone-compass.feature

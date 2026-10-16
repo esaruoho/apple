@@ -126,6 +126,21 @@ Continuity on A12+** (clean feed, no chrome, no rotation) and never run orientat
 it. **Cropping Camera.app's chrome must be GEOMETRY, never luminance** — the subject can itself be
 black (a DOS CRT), which defeated four brightness-based attempts.
 
+**Command iPhone apps from the Mac — launch ANY app over USB (added 2026-10-16):** When the user
+says "open <app> on my phone", "launch an iPhone app from the Mac", "boot up <app> on the iPhone",
+"command the phone", "get the app to the right position", or "run compass on the phone" → use
+`xcrun devicectl` (Xcode CoreDevice), documented at
+[`wiki/concepts/iphone-app-launch-devicectl.md`](wiki/concepts/iphone-app-launch-devicectl.md). No
+jailbreak, no custom app, no URL scheme, **no per-launch permission prompt** (existing USB pairing
+suffices). `devicectl list devices` → UUID; `device info apps --include-all-apps` → 186 bundle ids
+incl. Apple system apps; `device process launch --device <id> <bundle-id>` foregrounds it;
+`process suspend/resume/signal/sendMemoryWarning` control it. **Honest limit:** `launch` reliably
+opens the app to its *launch state*; landing on an exact in-app screen ("right position") needs that
+app's URL scheme — argv/env are mostly ignored by iOS apps. `bin/compass --open` uses this to boot
+Compass. **Launch ≠ capture:** a successful launch does not make the screen readable — screen-OCR is
+the separate [`iphone-usb-capture-probe.md`](wiki/concepts/iphone-usb-capture-probe.md) path, and a
+live Continuity Camera suppresses the screen-mirror device (single-client).
+
 **AppKit multi-window traps (added 2026-08-14):** Before debugging "the window crashed / ignored my
 keystroke / is the wrong size" in any app here → see
 [`wiki/concepts/appkit-window-gotchas.md`](wiki/concepts/appkit-window-gotchas.md).

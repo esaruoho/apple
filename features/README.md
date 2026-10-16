@@ -31,7 +31,10 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [Copy iCloud Drive files and folders to external storage without Finder errors](#icdcopy) — `icdcopy.feature`
 - [image-playground — on-device pictures, locally, as the prose's twin](#image-playground) — `image-playground.feature`
 - [An iPhone photo, on the Mac clipboard, the way you took it](#iphone-clip) — `iphone-clip.feature`
+- [Read the iPhone Compass onto the Mac and point out East](#iphone-compass) — `iphone-compass.feature`
 - [iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen](#iphonemirror-rotated-live-mirror) — `iphonemirror-rotated-live-mirror.feature`
+- [Free Energy documents retain the complete editorial format across entry points](#mail-material-editor-contract) — `mail-material-editor-contract.feature`
+- [Deliver analysis when returned original attachments exceed the mail service limit](#mail-reply-attachment-fallback) — `mail-reply-attachment-fallback.feature`
 - [mailfe is a reusable Convey belt from source material to emailed analysis](#mailfe-convey-belt) — `mailfe-convey-belt.feature`
 - [AppleBar parses markdown in its result pane](#markdown-attributed) — `markdown-attributed.feature`
 - [Home address from the Contacts me-card](#me-address) — `me-address.feature`
@@ -359,7 +362,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 **What it does:** As someone talking to Apple's FoundationModels model on the Mac Mini, I want each message to carry the prior dialogue and come back rendered, So that Converse's Cmd-1 is a real conversation, not unrelated one-shots.
 
-**Behaviour (12 scenarios):**
+**Behaviour (13 scenarios):**
 
 - A follow-up question keeps the prior context — `@built`
 - Replay stays inside the 4096-token FoundationModels window — `@built`
@@ -373,10 +376,11 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Converse.app-owned turns are not duplicated by fm-converse — `@built`
 - Captured fm-converse turns are pushed to Scaff — `@built`
 - A flubuild turn uses the same replay memory and livefile transcript shape — `@built`
+- Flubuild budgets input with the server tokenizer and exposes HTTP failures — `@build-verified @runtime-verified`
 
-**How it does it:** **Source files:** `bin/fm.swift`, `test_fm_converse.py`
+**How it does it:** **Source files:** `bin/fm.swift`, `test_fm_converse.py`, `bin/flubuild-request.py`
 
-**Grade:** @built ×12 · @untested ×2
+**Grade:** @build-verified ×1 · @built ×12 · @runtime-verified ×1 · @untested ×2
 
 
 <a id="fm-knowledgebank"></a>
@@ -634,6 +638,26 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 **Grade:** @built ×1
 
 
+<a id="iphone-compass"></a>
+## Read the iPhone Compass onto the Mac and point out East
+
+`features/iphone-compass.feature` · [session](iphone-compass.session.md)
+
+**What it does:** As an automation user with a tethered iPhone, I want the phone's magnetic heading on my Mac terminal, So that I can tell which way is East without a magnetometer in the Mac and without writing a custom iOS app.
+
+**Behaviour (5 scenarios):**
+
+- The Mac cannot read iPhone heading via CoreLocation — `@stock @runtime-verified`
+- Parse the heading from Compass OCR text — `@built @code-verified`
+- Compute the rotation to face East — `@built @code-verified`
+- Launch Compass on the phone from the Mac (no custom app) — `@built @hw-verified`
+- End-to-end live read from a tethered phone — `@built @hw-untested`
+
+**How it does it:** **Key procs:** `compass`, `turn_to_east`, `iphone-screen` · **Source files:** `bin/compass.py`
+
+**Grade:** @built ×4 · @code-verified ×2 · @hw-untested ×1 · @hw-verified ×1 · @runtime-verified ×1 · @stock ×1
+
+
 <a id="iphonemirror-rotated-live-mirror"></a>
 ## iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen
 
@@ -678,6 +702,39 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - recburn can bake the phone feed in directly — `@todo`
 
 **Grade:** @built ×32 · @hw-verified ×29 · @todo ×1 · @untested ×3
+
+
+<a id="mail-material-editor-contract"></a>
+## Free Energy documents retain the complete editorial format across entry points
+
+`features/mail-material-editor-contract.feature` · [session](mail-material-editor-contract.session.md)
+
+**Behaviour (4 scenarios):**
+
+- Free Energy material invokes the same full editor — `@built @sim-verified`
+- Missing sections cannot pass as successful analysis — `@built @sim-verified`
+- Other topics retain their routed viewpoint — `@built @sim-verified`
+- Correct the incomplete Milewski email — `@runtime-verified`
+
+**How it does it:** **Key procs:** `research_email_material` · **Source files:** `test_mail_material_editor.py`
+
+**Grade:** @built ×3 · @runtime-verified ×1 · @sim-verified ×3
+
+
+<a id="mail-reply-attachment-fallback"></a>
+## Deliver analysis when returned original attachments exceed the mail service limit
+
+`features/mail-reply-attachment-fallback.feature` · [session](mail-reply-attachment-fallback.session.md)
+
+**Behaviour (3 scenarios):**
+
+- Explicit size rejection permits a smaller reply — `@built @sim-verified`
+- Ambiguous errors preserve the at-most-once contract — `@built @sim-verified`
+- Recover the actual Milewski PDF request — `@runtime-verified`
+
+**How it does it:** **Key procs:** `send_inbox_reply` · **Source files:** `test_mail_reply_attachment_fallback.py`
+
+**Grade:** @built ×2 · @runtime-verified ×1 · @sim-verified ×2
 
 
 <a id="mailfe-convey-belt"></a>

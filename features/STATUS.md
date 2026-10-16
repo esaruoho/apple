@@ -23,7 +23,7 @@
 | find-my | 5 | ✗ | — | — | @note @verified |
 | finder-settings | 7 | ✗ | — | — | @built @note |
 | fleet-identity-and-view | 10 | ✓ | ✓ | — | @build-verified @ops-verified @runtime-verified |
-| fm-converse | 12 | ✗ | — | — | @built @caveat @self-test @untested @verified-live |
+| fm-converse | 13 | ✓ | ✓ | — | @build-verified @built @caveat @runtime-verified @self-test @untested @verified-live |
 | fm-knowledgebank | 5 | ✗ | — | — | @built @note @verified |
 | fm-mlx-dry | 8 | ✗ | — | — | @self-test @verified-live |
 | fm-think-no-leak | 19 | ✗ | — | ✓ | @built @hw-verified @todo |
@@ -35,7 +35,10 @@
 | icdcopy | 26 | ✗ | — | — | @built @sim-verified |
 | image-playground | 16 | ✗ | — | — | @built @caveat @untested @verified-live |
 | iphone-clip | 4 | ✗ | — | — | @built @verified |
+| iphone-compass | 5 | ✓ | ✓ | ✓ | @built @code-verified @hw-untested @hw-verified @runtime-verified @stock |
 | iphonemirror-rotated-live-mirror | 33 | ✗ | — | ✓ | @built @hw-verified @todo @untested |
+| mail-material-editor-contract | 4 | ✗ | ✓ | — | @built @runtime-verified @sim-verified |
+| mail-reply-attachment-fallback | 3 | ✗ | ✓ | — | @built @runtime-verified @sim-verified |
 | mailfe-convey-belt | 14 | ✗ | — | — | @built @proved @todo |
 | markdown-attributed | 4 | ✗ | — | — | @built @note @verified |
 | me-address | 6 | ✗ | — | — | @built @note @verified |
@@ -63,8 +66,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 51
-- Build-verified: 3
-- Runtime-verified: 3 full + 2 partial
-- **Hardware-verified: 20**  ·  hardware-untested: 0
+- Cards: 54
+- Build-verified: 5
+- Runtime-verified: 7 full + 2 partial
+- **Hardware-verified: 21**  ·  hardware-untested: 0
 
