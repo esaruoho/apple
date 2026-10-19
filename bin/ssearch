@@ -1,0 +1,507 @@
+#!/usr/bin/env python3
+"""
+ssearch — content search across Claude Code, OpenAI Codex, Google Gemini,
+FoundationModels (fm-chat) and Converse session logs.
+
+The companion to `bin/sessions` (the TUI picker/resumer): `sessions` lists and
+RESUMES sessions for a folder; `ssearch` SEARCHES what was actually said inside
+them, across every project, and hands you the resume command for each hit.
+
+Why this exists: "find the chat where the agent said X" was an hour of
+hand-rolled jq/grep every time, and the words you remember usually live in the
+DIALOGUE while the same words also appear in injected rule-boilerplate and in
+TOOL-READS (files the agent quoted). ssearch separates those layers.
+
+Usage
+-----
+  ssearch "phase conjugate" "orthogonal port"   # AND: turns with ALL terms
+  ssearch --any valve "heat pump"               # OR:  turns with ANY term
+  ssearch --folder ~/work/merlib-dump VALVE     # only that project's sessions
+  ssearch --days 30 "phase conjugate"           # time window (default 14)
+  ssearch --role assistant "gating shield"      # assistant|user|any (default any)
+  ssearch --all "heat pump"                      # include tool-reads + reasoning
+  ssearch --context 400 valve                    # snippet half-width (default 240)
+  ssearch --files "phase conjugate"              # just rank sessions + resume cmds
+  ssearch --extract out.md "phase conjugate" orthogonal   # full turns → markdown
+
+Matching is FIXED-STRING and case-insensitive by default (safe: no regex
+backtracking). Pass --regex to opt into Python regexes.
+
+Providers & paths (mirrors bin/sessions):
+  Claude   ~/.claude/projects/<encoded-cwd>/<uuid>.jsonl   → claude --resume <uuid>
+  Codex    ~/.codex/sessions/YYYY/MM/DD/rollout-*-<uuid>.jsonl → codex resume <uuid>
+  Gemini   ~/.gemini/tmp/<project>/chats/session-*-<id>.jsonl → gemini --resume <sessionId>
+  fm-chat  ~/.fm-chat/sessions/<uuid>.jsonl                 → fm-chat --resume <uuid>
+  converse ~/.cache/fm-converse/<name>.json                → fm-converse --session <name>
+
+Apple-native: Python stdlib only. No Homebrew, no pip.
+"""
+import argparse
+import json
+import os
+import re
+import sys
+import time
+
+HOME = os.path.expanduser("~")
+
+# ── injected-boilerplate signatures (CLAUDE.md / AGENTS.md rule text that is NOT
+#    something the agent "said" — it is the same paragraphs pasted into context).
+BOILERPLATE = re.compile(
+    r"same shape as a waterwheel|waterwheel, a wind turbine|"
+    r"\[the ladder\]|ladder-proves-it|COP 3–4 & ERV|"
+    r"MANDATORY:|# Global Instructions|# AGENTS\.md instructions",
+    re.I,
+)
+
+
+# ───────────────────────────── per-provider turn decoders ─────────────────────
+# Each yields dicts: {ts, role, kind, text}
+#   role: "user" | "assistant" | "system"
+#   kind: "dialogue" | "tool" | "reasoning"
+
+def _blocks_text(content, types=None):
+    """Join text out of a list-of-blocks content field."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        out = []
+        for b in content:
+            if not isinstance(b, dict):
+                continue
+            if types and b.get("type") not in types:
+                # still accept bare {"text": ...}
+                if "text" not in b:
+                    continue
+            t = b.get("text")
+            if isinstance(t, str):
+                out.append(t)
+        return "".join(out)
+    return ""
+
+
+def turns_claude(path):
+    for ln in _lines(path):
+        o = _loads(ln)
+        if o is None:
+            continue
+        ts = o.get("timestamp", "")
+        m = o.get("message")
+        if not isinstance(m, dict):
+            continue
+        role = m.get("role")
+        if role not in ("user", "assistant"):
+            continue
+        c = m.get("content")
+        # tool_result / tool_use blocks → tool layer
+        if isinstance(c, list):
+            dlg = _blocks_text(c, {"text"})
+            tool = "".join(
+                json.dumps(b.get("content", b), ensure_ascii=False)
+                for b in c
+                if isinstance(b, dict) and b.get("type") in ("tool_result", "tool_use")
+            )
+            if dlg.strip():
+                yield {"ts": ts, "role": role, "kind": "dialogue", "text": dlg}
+            if tool.strip():
+                yield {"ts": ts, "role": role, "kind": "tool", "text": tool}
+        elif isinstance(c, str) and c.strip():
+            yield {"ts": ts, "role": role, "kind": "dialogue", "text": c}
+
+
+def turns_codex(path):
+    for ln in _lines(path):
+        o = _loads(ln)
+        if o is None:
+            continue
+        ts = o.get("timestamp", "")
+        top = o.get("type")
+        p = o.get("payload")
+        if not isinstance(p, dict):
+            continue
+        pt = p.get("type")
+        if pt == "message" and p.get("role") in ("user", "assistant", "developer"):
+            txt = _blocks_text(p.get("content"), {"text", "input_text", "output_text"})
+            if txt.strip():
+                role = "system" if p["role"] == "developer" else p["role"]
+                yield {"ts": ts, "role": role, "kind": "dialogue", "text": txt}
+        elif top == "event_msg" and pt == "agent_message":
+            m = p.get("message")
+            if isinstance(m, str) and m.strip():
+                yield {"ts": ts, "role": "assistant", "kind": "dialogue", "text": m}
+        elif pt == "reasoning":
+            s = p.get("summary") or p.get("content") or []
+            txt = "\n".join(x.get("text", "") for x in s if isinstance(x, dict)) if isinstance(s, list) else ""
+            if txt.strip():
+                yield {"ts": ts, "role": "assistant", "kind": "reasoning", "text": txt}
+        elif pt in ("custom_tool_call_output", "function_call_output"):
+            o2 = p.get("output")
+            if isinstance(o2, str) and o2.strip():
+                yield {"ts": ts, "role": "assistant", "kind": "tool", "text": o2}
+
+
+def turns_gemini(path):
+    for ln in _lines(path):
+        o = _loads(ln)
+        if o is None:
+            continue
+        ts = o.get("timestamp", "")
+        t = o.get("type")
+        if t == "user" and isinstance(o.get("content"), str) and o["content"].strip():
+            yield {"ts": ts, "role": "user", "kind": "dialogue", "text": o["content"]}
+        elif t == "gemini":
+            if isinstance(o.get("content"), str) and o["content"].strip():
+                yield {"ts": ts, "role": "assistant", "kind": "dialogue", "text": o["content"]}
+            tc = o.get("toolCalls")
+            if tc:
+                blob = json.dumps(tc, ensure_ascii=False)
+                yield {"ts": ts, "role": "assistant", "kind": "tool", "text": blob}
+
+
+def turns_fmchat(path):
+    for ln in _lines(path):
+        o = _loads(ln)
+        if o is None:
+            continue
+        role = o.get("role")
+        if role in ("user", "assistant") and isinstance(o.get("content"), str):
+            yield {"ts": o.get("ts", ""), "role": role, "kind": "dialogue", "text": o["content"]}
+
+
+def turns_converse(path):
+    o = _loads_file(path)
+    if not isinstance(o, dict):
+        return
+    for pair in o.get("turns", []):
+        if isinstance(pair, (list, tuple)) and len(pair) == 2:
+            role, text = pair
+            if isinstance(text, str) and text.strip():
+                r = "assistant" if role in ("assistant", "model", "ai") else "user"
+                yield {"ts": "", "role": r, "kind": "dialogue", "text": text}
+
+
+# ─────────────────────────────── discovery ───────────────────────────────────
+def encode_cwd(path):
+    return re.sub(r"[^A-Za-z0-9]", "-", os.path.realpath(path))
+
+
+def _codex_cwd(path):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            first = f.readline()
+        o = json.loads(first)
+        p = o.get("payload", o)
+        return p.get("cwd") or o.get("cwd")
+    except Exception:
+        return None
+
+
+def _gemini_cwd(project_dir):
+    try:
+        with open(os.path.join(project_dir, ".project_root"), encoding="utf-8", errors="replace") as f:
+            return f.read().strip()
+    except Exception:
+        return None
+
+
+def _gemini_session_id(path):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            o = json.loads(f.readline())
+        return o.get("sessionId")
+    except Exception:
+        return None
+
+
+def _meta_file(path, uid):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                o = json.loads(ln)
+                p = o.get("payload", o)
+                cwd = p.get("cwd") or o.get("cwd")
+                sid = p.get("id") or o.get("id") or uid
+                if cwd:
+                    return cwd, sid
+    except Exception:
+        pass
+    return None, uid
+
+
+def discover(folder=None, days=14):
+    """Yield (provider, path, uuid, cwd, decoder, resume_fn)."""
+    cutoff = time.time() - days * 86400 if days else 0
+    want = os.path.realpath(folder) if folder else None
+
+    def fresh(p):
+        try:
+            return os.path.getmtime(p) >= cutoff
+        except OSError:
+            return False
+
+    # Claude
+    proj_root = os.path.join(HOME, ".claude", "projects")
+    if os.path.isdir(proj_root):
+        dirs = [os.path.join(proj_root, encode_cwd(folder))] if want else \
+               [os.path.join(proj_root, d) for d in os.listdir(proj_root)]
+        for d in dirs:
+            if not os.path.isdir(d):
+                continue
+            for name in os.listdir(d):
+                if not name.endswith(".jsonl"):
+                    continue
+                path = os.path.join(d, name)
+                if not fresh(path):
+                    continue
+                uid = name[:-6]
+                yield ("claude", path, uid, want or d, turns_claude,
+                       lambda u=uid: f"claude --dangerously-skip-permissions --resume {u}")
+
+    # Codex
+    codex_root = os.path.join(HOME, ".codex", "sessions")
+    if os.path.isdir(codex_root):
+        for dp, _, files in os.walk(codex_root):
+            for name in files:
+                if not (name.startswith("rollout-") and name.endswith(".jsonl")):
+                    continue
+                path = os.path.join(dp, name)
+                if not fresh(path):
+                    continue
+                if want:
+                    cwd = _codex_cwd(path)
+                    if not cwd or os.path.realpath(cwd) != want:
+                        continue
+                else:
+                    cwd = None
+                m = re.search(r"([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})", name)
+                uid = m.group(1) if m else name
+                yield ("codex", path, uid, cwd, turns_codex,
+                       lambda u=uid: f"codex resume {u}")
+
+    # Gemini
+    gem_root = os.path.join(HOME, ".gemini", "tmp")
+    if os.path.isdir(gem_root):
+        for project in os.listdir(gem_root):
+            pdir = os.path.join(gem_root, project)
+            chats = os.path.join(pdir, "chats")
+            if not os.path.isdir(chats):
+                continue
+            cwd = _gemini_cwd(pdir)
+            if want and (not cwd or os.path.realpath(cwd) != want):
+                continue
+            for name in os.listdir(chats):
+                if not (name.startswith("session-") and name.endswith((".jsonl", ".json"))):
+                    continue
+                path = os.path.join(chats, name)
+                if not fresh(path):
+                    continue
+                sid = _gemini_session_id(path)
+                run = f"cd {cwd} && " if cwd else ""
+                yield ("gemini", path, sid or name, cwd, turns_gemini,
+                       lambda s=sid, r=run: f"{r}gemini --resume {s}" if s else f"{r}gemini  # (no sessionId)")
+
+    # fm-chat
+    fm_root = os.path.join(HOME, ".fm-chat", "sessions")
+    if os.path.isdir(fm_root):
+        for name in os.listdir(fm_root):
+            if not name.endswith(".jsonl"):
+                continue
+            path = os.path.join(fm_root, name)
+            if not fresh(path):
+                continue
+            cwd, uid = _meta_file(path, name[:-6])
+            if want and (not cwd or os.path.realpath(cwd) != want):
+                continue
+            yield ("fm-chat", path, uid, cwd, turns_fmchat,
+                   lambda u=uid: f"fm-chat --resume {u}")
+
+    # converse (global, not folder-scoped)
+    conv_root = os.path.join(HOME, ".cache", "fm-converse")
+    if os.path.isdir(conv_root) and not want:
+        for name in os.listdir(conv_root):
+            if not name.endswith(".json"):
+                continue
+            path = os.path.join(conv_root, name)
+            if not fresh(path):
+                continue
+            nm = name[:-5]
+            yield ("converse", path, nm, None, turns_converse,
+                   lambda n=nm: f"fm-converse --session {n}")
+
+
+# ─────────────────────────────── io helpers ──────────────────────────────────
+def _lines(path):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for ln in f:
+                ln = ln.strip()
+                if ln:
+                    yield ln
+    except OSError:
+        return
+
+
+def _loads(ln):
+    try:
+        return json.loads(ln)
+    except Exception:
+        return None
+
+
+def _loads_file(path):
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+# ─────────────────────────────── matching ────────────────────────────────────
+def make_matcher(terms, regex):
+    if regex:
+        pats = [re.compile(t, re.I) for t in terms]
+        return lambda s: [i for i, p in enumerate(pats) if p.search(s)], \
+               lambda s, i: [m.start() for m in pats[i].finditer(s)]
+    low = [t.lower() for t in terms]
+    def which(s):
+        sl = s.lower()
+        return [i for i, t in enumerate(low) if t in sl]
+    def spans(s, i):
+        sl = s.lower(); t = low[i]; out = []; k = sl.find(t)
+        while k >= 0:
+            out.append(k); k = sl.find(t, k + 1)
+        return out
+    return which, spans
+
+
+# ─────────────────────────────── main ────────────────────────────────────────
+def main():
+    ap = argparse.ArgumentParser(prog="ssearch", add_help=True,
+                                 description="Search inside Claude/Codex/Gemini/fm-chat/Converse sessions.")
+    ap.add_argument("terms", nargs="+", help="search terms (AND by default)")
+    ap.add_argument("--any", action="store_true", help="match turns containing ANY term (default: ALL)")
+    ap.add_argument("--regex", action="store_true", help="treat terms as regexes (default: fixed string)")
+    ap.add_argument("--folder", help="scope to sessions whose cwd == this folder")
+    ap.add_argument("--days", type=int, default=14, help="only sessions modified in the last N days (0 = all; default 14)")
+    ap.add_argument("--role", choices=["any", "assistant", "user"], default="any", help="restrict to a speaker")
+    ap.add_argument("--all", action="store_true", help="also search tool-reads + reasoning (default: dialogue only)")
+    ap.add_argument("--keep-boilerplate", action="store_true", help="don't drop injected rule-text matches")
+    ap.add_argument("--context", type=int, default=240, help="snippet half-width in chars (default 240)")
+    ap.add_argument("--max-snips", type=int, default=3, help="max snippets shown per session (default 3)")
+    ap.add_argument("--files", action="store_true", help="list matching sessions + resume cmds only (no snippets)")
+    ap.add_argument("--extract", metavar="OUT.md", help="write full matching turns to a markdown file")
+    args = ap.parse_args()
+
+    which, spans = make_matcher(args.terms, args.regex)
+
+    def turn_ok(t):
+        if args.role != "any" and t["role"] != args.role:
+            return None
+        if not args.all and t["kind"] != "dialogue":
+            return None
+        if not args.keep_boilerplate and BOILERPLATE.search(t["text"]):
+            # keep only if a matched term lands OUTSIDE the boilerplate span region;
+            # cheap heuristic: drop if the turn is mostly boilerplate
+            if len(t["text"]) < 4000:
+                return None
+        hits = which(t["text"])
+        if not hits:
+            return None
+        if not args.any and len(set(hits)) < len(args.terms):
+            return None
+        return hits
+
+    results = []  # (score, mtime, provider, path, resume, [ (ts,role,kind,text,hits) ])
+    for provider, path, uid, cwd, decoder, resume_fn in discover(args.folder, args.days):
+        matched = []
+        try:
+            for t in decoder(path):
+                hits = turn_ok(t)
+                if hits is not None:
+                    matched.append((t["ts"], t["role"], t["kind"], t["text"], hits))
+        except Exception:
+            continue
+        if not matched:
+            continue
+        distinct = set()
+        for *_r, hits in matched:
+            distinct.update(hits)
+        try:
+            mt = os.path.getmtime(path)
+        except OSError:
+            mt = 0
+        results.append((len(distinct), mt, provider, path, resume_fn(), matched))
+
+    results.sort(key=lambda r: (-r[0], -r[1]))
+
+    if not results:
+        print(f"No sessions matched {args.terms!r} "
+              f"({'any' if args.any else 'all'} terms, "
+              f"{'dialogue+tool+reasoning' if args.all else 'dialogue only'}, "
+              f"last {args.days or '∞'} days).", file=sys.stderr)
+        sys.exit(1)
+
+    if args.extract:
+        _write_extract(args, results)
+        return
+
+    for score, mt, provider, path, resume, matched in results:
+        when = time.strftime("%Y-%m-%d %H:%M", time.localtime(mt))
+        base = os.path.basename(path)
+        print(f"\n\033[1m{provider:8}\033[0m {when}  {score}/{len(args.terms)} terms  "
+              f"{len(matched)} turns  {base}")
+        print(f"   resume: {resume}")
+        if args.files:
+            continue
+        shown = 0
+        for ts, role, kind, text, hits in matched:
+            if shown >= args.max_snips:
+                print(f"   … (+{len(matched) - shown} more turns)")
+                break
+            k = min(spans(text, hits[0]) or [0])
+            a = max(0, k - args.context); b = min(len(text), k + args.context)
+            snip = re.sub(r"\s+", " ", text[a:b]).strip()
+            tag = {"dialogue": "", "tool": " [tool-read]", "reasoning": " [reasoning]"}[kind]
+            speaker = "🤖" if role == "assistant" else ("🧑" if role == "user" else "⚙️")
+            print(f"   {speaker}{tag} …{snip}…")
+            shown += 1
+
+
+def _write_extract(args, results):
+    import datetime
+    out = os.path.abspath(os.path.expanduser(args.extract))
+    strip_user = re.compile(
+        r"<INSTRUCTIONS>.*?</INSTRUCTIONS>|<environment_context>.*?</environment_context>"
+        r"|<system-reminder>.*?</system-reminder>|# Global Instructions.*?(?=\n#[^#]|\Z)"
+        r"|^# AGENTS\.md instructions.*?(?=\n\S|\Z)",
+        re.DOTALL | re.MULTILINE)
+    total = 0
+    with open(out, "w", encoding="utf-8") as fh:
+        fh.write(f"# Session search: {' + '.join(args.terms)}\n\n")
+        fh.write(f"_Extracted {datetime.date.today().isoformat()} by `ssearch` — "
+                 f"{'any' if args.any else 'all'} terms, "
+                 f"{'dialogue+tool+reasoning' if args.all else 'dialogue only'}, "
+                 f"last {args.days or '∞'} days._\n\n")
+        for score, mt, provider, path, resume, matched in results:
+            when = time.strftime("%Y-%m-%d %H:%M", time.localtime(mt))
+            fh.write(f"\n## {provider} · {when} · {score}/{len(args.terms)} terms\n\n")
+            fh.write(f"`{path}`  \n**resume:** `{resume}`\n\n---\n")
+            for ts, role, kind, text, hits in matched:
+                speaker = {"assistant": "🤖 Agent", "user": "🧑 User", "system": "⚙️ system"}[role]
+                tag = {"dialogue": "", "tool": " · tool-read", "reasoning": " · reasoning"}[kind]
+                body = strip_user.sub("", text).strip() if role in ("user", "system") else text.strip()
+                if not body:
+                    continue
+                if len(body) > 12000:
+                    body = body[:12000] + f"\n\n…[+{len(text) - 12000} chars truncated]…"
+                fh.write(f"\n### {speaker}{tag} · {ts}\n\n")
+                if kind == "tool":
+                    fh.write("```\n" + body[:4000] + "\n```\n")
+                else:
+                    fh.write(body + "\n")
+                total += 1
+    print(f"Wrote {out}  ({total} turns from {len(results)} sessions, {os.path.getsize(out)} bytes)")
+
+
+if __name__ == "__main__":
+    main()
