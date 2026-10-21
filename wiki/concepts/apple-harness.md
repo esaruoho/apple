@@ -174,6 +174,38 @@ A separate harness already exists at `~/work/harness` (built 2026-10-20). It is 
 
 **The synthesis:** they compose. The prior harness is good at *"watch my drop folders, run my existing pipelines, deploy to my site."* The Apple Harness is good at *"point at a pool, get a resumable, token-frugal, Obsidian-landed knowledge base anyone can run."* When **harken** (Layer 2) is built, it should **absorb the prior harness's listener pattern as its event-driven trigger** — listeners sense a drop, then hand the file to the Apple Harness engine for ledgered, majority-voted ingestion. Push (prior) feeds pull (new).
 
+## Reconciliation with the plain-text Oracle handover
+
+A third external handover (`ai_harness_handover.md`) describes the same paradigm
+and mostly **validates** this build: move control out of the LLM into rigid
+local scripts; aggressive de-tokenization (premium APIs as specialists); a
+Mac-Mini local inference worker; plain-text Markdown/YAML memory; a
+`needs_analysis` ledger; three decoupled layers (Harness / Memory / Prompt). We
+already do all of this (engine / vault+ledger / `reasoning.prompt`).
+
+Where it diverges it conflicts with Esa's OWN rules or repeats the mistake we
+just fixed — reject those:
+
+- **Local `docling`/`marker` for scanned PDFs + formulas** (its Phase 2) is the
+  *exact* local-whisp trap: heavy ML parsers that download models and pin the
+  workstation. Route heavy/scanned OCR to the Mini (`convey ocr`); the capability
+  model already forbids the local download. Formula → LaTeX has no Mini belt yet
+  → a genuine future belt, not a local install. See [[feedback_harness_heavy_extraction_routes_to_mini]].
+- **SSH transport** → use Syncthing belts (fm-submit / convey transcript /
+  whisp-inbox). Syncthing-default is doctrine; SSH is brittle.
+- **`pyyaml` dependency + YAML ledgers** → we use stdlib `plistlib` + JSONL to
+  stay zero-dep ("no Homebrew, no pip").
+- **A separate Qwen-2.5-MLX-over-SSH worker** → that is just another `reason`
+  fleet provider in our capability model (pluggable), not a parallel pipeline.
+  Today `reason` binds to `fmremote` (Apple FoundationModels on the Mini).
+
+**One genuinely new idea to adopt:** per-entity **oracle spaces** —
+`oracle_spaces/<entity>/namespace.yaml` + that entity's documents, a
+human-readable projection grouping Asset Notes by NER entity. We have per-asset
+notes + entities-in-frontmatter + embeds + DreamGraph, but not this entity-first
+folder view. Candidate harken post-pass (TODO): project the ledger into
+entity-centric Markdown spaces.
+
 ## What this doctrine deliberately does NOT claim
 
 - It does **not** claim harken exists. Layer 1 is built and runtime-verified; Layer 2 (harken, the private fleet instance) is a design. No completion-framing.
