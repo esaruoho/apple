@@ -12,6 +12,7 @@
 |------|----:|:-----:|:----------:|:--------:|----------------|
 | app-audio-record | 23 | ✗ | — | ✓ | @built @hw-verified @note |
 | apple-energy | 16 | ✗ | — | — | @built @note @parser-verified |
+| apple-harness | 8 | ✓ | ~ partial | — | @built @code-verified @designed @runtime-untested @runtime-verified |
 | applebar-karaoke | 5 | ✗ | — | — | @built @note @verified |
 | applebar-session | 8 | ✗ | — | — | @built @leak-fixed @shipped @verified |
 | archof | 6 | ✗ | — | — | @built @stock @verified |
@@ -66,8 +67,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 54
-- Build-verified: 5
-- Runtime-verified: 7 full + 2 partial
+- Cards: 55
+- Build-verified: 6
+- Runtime-verified: 7 full + 3 partial
 - **Hardware-verified: 21**  ·  hardware-untested: 0
 

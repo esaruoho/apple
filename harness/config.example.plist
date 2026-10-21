@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>vault</key>
+	<string>~/AppleHarnessVault</string>
+	<key>embeds</key>
+	<string>~/.apple-harness-embeds.jsonl</string>
+	<key>bin_dir</key>
+	<string></string>
+	<key>modalities</key>
+	<dict>
+		<key>.png</key>
+		<string>image</string>
+		<key>.jpg</key>
+		<string>image</string>
+		<key>.jpeg</key>
+		<string>image</string>
+		<key>.tiff</key>
+		<string>image</string>
+		<key>.tif</key>
+		<string>image</string>
+		<key>.gif</key>
+		<string>image</string>
+		<key>.bmp</key>
+		<string>image</string>
+		<key>.heic</key>
+		<string>image</string>
+		<key>.pdf</key>
+		<string>pdf</string>
+		<key>.mp3</key>
+		<string>audio</string>
+		<key>.m4a</key>
+		<string>audio</string>
+		<key>.wav</key>
+		<string>audio</string>
+		<key>.aiff</key>
+		<string>audio</string>
+		<key>.aif</key>
+		<string>audio</string>
+		<key>.flac</key>
+		<string>audio</string>
+		<key>.mp4</key>
+		<string>video</string>
+		<key>.mov</key>
+		<string>video</string>
+		<key>.m4v</key>
+		<string>video</string>
+		<key>.txt</key>
+		<string>text</string>
+		<key>.md</key>
+		<string>text</string>
+		<key>.markdown</key>
+		<string>text</string>
+		<key>.text</key>
+		<string>text</string>
+	</dict>
+	<key>organs</key>
+	<dict>
+		<key>image</key>
+		<string>vision-ocr {path}</string>
+		<key>pdf</key>
+		<string>vision-ocr {path}</string>
+		<key>audio</key>
+		<string>whisp {path}</string>
+		<key>video</key>
+		<string>whisp {path}</string>
+		<key>text</key>
+		<string></string>
+	</dict>
+	<key>ner</key>
+	<string>apple-ner</string>
+	<key>embed</key>
+	<string>apple-embed</string>
+	<key>reasoning</key>
+	<dict>
+		<key>enabled</key>
+		<true/>
+		<key>cmd</key>
+		<string>fm</string>
+		<key>votes</key>
+		<integer>3</integer>
+		<key>timeout</key>
+		<integer>120</integer>
+		<key>snippet_chars</key>
+		<integer>1000</integer>
+		<key>prompt</key>
+		<string>You are tagging one asset for a knowledge archive. Named entities found: {entities}. Excerpt (do not quote it back): {snippet}. Reply with 1-5 lowercase topical tags, comma-separated, nothing else.</string>
+	</dict>
+</dict>
+</plist>

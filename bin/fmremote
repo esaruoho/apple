@@ -1,0 +1,37 @@
+#!/bin/bash
+# fmremote — the remote Apple FoundationModels reasoning binding.
+#
+# Presents the SAME CLI contract as a local `fm` (prompt in → answer on stdout),
+# but routes to Apple's on-device LLM on the Mac Mini ("cloudcity") because
+# FoundationModels needs macOS 26 (Tahoe) and this machine does not have it.
+#
+# It is a THIN adapter over `fm-submit` (Syncthing fm-inbox → Mini fm-worker →
+# fm-outbox), NOT a new transport — reuse-before-rerolling. The value is a
+# stable name for "remote Apple FM" that the Apple Harness can bind to, so the
+# transport can change without touching the harness.
+#
+# Usage:
+#   fmremote "your prompt"            submit to the Mini and wait for the answer
+#   echo text | fmremote -            prompt from stdin
+#   fmremote --system "..." "prompt"  set a system instruction
+#   fmremote --timeout 60 "prompt"    how long to wait (default 120s)
+#   fmremote --status                 show Mini queue depth + worker heartbeat
+#   fmremote --status --json          machine-readable status (for tooling)
+#
+# Apple-native: delegates to fm-submit (python3 stdlib only), no local FM needed.
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+SUBMIT="$HERE/fm-submit"
+
+if [ ! -x "$SUBMIT" ]; then
+    echo "fmremote: fm-submit not found at $SUBMIT" >&2
+    exit 127
+fi
+
+if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+    sed -n '2,24p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0
+fi
+
+# Pass everything straight through to fm-submit — identical flag surface.
+exec "$SUBMIT" "$@"

@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""apple-harness — the Apple Harness ingest chassis.
+
+Zero-token-first local ingestion: scan a pool, extract each asset with native
+Apple organs (Vision OCR, NaturalLanguage NER, NLEmbedding) for zero LLM tokens,
+then spend tokens only at the end — on entities + a tiny snippet — via a bound
+reasoning organ (local `fm`, or `fmremote` to the Mini), majority-voted.
+
+Verbs:
+    apple-harness init                      write a config.plist you can edit
+    apple-harness ingest --pool DIR         scan + process new assets
+    apple-harness resume  --pool DIR        process interrupted rows (no rescan)
+    apple-harness status  --pool DIR        show the ledger state histogram
+
+Flags:
+    --config PATH   a config .plist (default: ./harness.plist if present, else
+                    the built-in LOCAL Apple-native defaults)
+    --recursive     walk subfolders when scanning
+    --quiet         only print the final summary
+
+Apple-native: Python stdlib only; all heavy lifting is Apple frameworks via the
+bound leaf organs. No Homebrew, no pip.
+"""
+from __future__ import annotations
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "harness" / "lib"))
+
+from harness.config import Config  # noqa: E402
+from harness.ledger import Ledger  # noqa: E402
+from harness import loop  # noqa: E402
+
+EXAMPLE_PLIST = HERE.parent / "harness" / "config.example.plist"
+
+
+def _resolve_config(arg: str | None) -> str | None:
+    if arg:
+        return arg
+    local = Path("harness.plist")
+    return str(local) if local.exists() else None
+
+
+def _scan(ledger: Ledger, cfg: Config, pool: str, recursive: bool) -> int:
+    seeded = 0
+    walker = os.walk(pool) if recursive else [(pool, [], os.listdir(pool))]
+    for root, _dirs, files in walker:
+        for name in files:
+            if name.startswith("."):
+                continue
+            fp = os.path.join(root, name)
+            if not os.path.isfile(fp):
+                continue
+            if os.path.abspath(fp) in ledger.rows:
+                continue
+            modality = cfg.modality_for(fp)
+            if not modality:
+                continue  # unknown extension: skip silently
+            ledger.seed(fp, modality)
+            seeded += 1
+    return seeded
+
+
+def _print_status(ledger: Ledger, pool: str) -> None:
+    c = ledger.counts()
+    total = sum(c.values())
+    print(f"Apple Harness — {pool}")
+    print(f"  ledger: {ledger.path}")
+    print(f"  assets: {total}")
+    for state, n in c.items():
+        if n:
+            print(f"    {state:16} {n}")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(prog="apple-harness", description="Apple Harness ingest chassis")
+    ap.add_argument("verb", choices=["init", "ingest", "resume", "status"])
+    ap.add_argument("--pool", help="target ingestion directory")
+    ap.add_argument("--config", help="config .plist")
+    ap.add_argument("--recursive", action="store_true")
+    ap.add_argument("--quiet", action="store_true")
+    args = ap.parse_args()
+
+    if args.verb == "init":
+        dest = Path(args.config) if args.config else Path("harness.plist")
+        if dest.exists():
+            print(f"refusing to overwrite existing {dest}", file=sys.stderr)
+            return 1
+        dest.write_bytes(EXAMPLE_PLIST.read_bytes())
+        print(f"wrote {dest} — edit it, then: apple-harness ingest --pool <dir>")
+        return 0
+
+    if not args.pool:
+        print("--pool is required", file=sys.stderr)
+        return 2
+    pool = os.path.abspath(os.path.expanduser(args.pool))
+    if not os.path.isdir(pool):
+        print(f"not a directory: {pool}", file=sys.stderr)
+        return 2
+
+    cfg = Config.load(_resolve_config(args.config))
+    ledger = Ledger(pool)
+    verbose = (lambda *_: None) if args.quiet else (lambda m="": print(m))
+
+    if args.verb == "status":
+        _print_status(ledger, pool)
+        return 0
+
+    if args.verb == "ingest":
+        n = _scan(ledger, cfg, pool, args.recursive)
+        verbose(f"seeded {n} new asset(s)")
+        queue = ledger.rerunnable()
+    else:  # resume
+        queue = ledger.pending()
+
+    verbose(f"processing {len(queue)} asset(s)…")
+    for row in queue:
+        loop.run_asset(cfg, ledger, row, verbose=verbose)
+
+    print()
+    _print_status(ledger, pool)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

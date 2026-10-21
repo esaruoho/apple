@@ -13,6 +13,7 @@
 #        sync/deployment tools, focused tests, report-card/session and generated views.
 # WATCH: prepare delivered compose_and_send cmd_email_transcript make_email_analysis collect _build
 # RESULT-LOG >>
+#   2026-10-21  direct-commit  touched: collect
 # Live verification: Cloudcity sent Thane Heins Part 4; provider message/thread IDs recorded.
 # The local canonical response matches the sent-body SHA-256 and is linked in Transcript Vault.
 # 29 local checks pass; 14 remote checks pass. Full URL-to-video rerun was not performed.
