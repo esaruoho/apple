@@ -33,6 +33,7 @@ apple-harness init                       # writes ./harness.plist to edit
 apple-harness ingest --pool ~/SomeFolder --recursive
 apple-harness status --pool ~/SomeFolder
 apple-harness resume --pool ~/SomeFolder # re-pick interrupted/errored rows
+apple-harness oracle --pool ~/SomeFolder # project analyzed assets into per-entity spaces
 ```
 
 With no `--config`, the engine runs on its built-in **local Apple-native**

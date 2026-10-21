@@ -201,10 +201,11 @@ just fixed — reject those:
 
 **One genuinely new idea to adopt:** per-entity **oracle spaces** —
 `oracle_spaces/<entity>/namespace.yaml` + that entity's documents, a
-human-readable projection grouping Asset Notes by NER entity. We have per-asset
-notes + entities-in-frontmatter + embeds + DreamGraph, but not this entity-first
-folder view. Candidate harken post-pass (TODO): project the ledger into
-entity-centric Markdown spaces.
+human-readable projection grouping Asset Notes by NER entity. **Built
+2026-10-21** as `apple-harness oracle` (`harness/lib/harness/oracle.py`): a
+post-pass over the ledger writing `oracle_spaces/<slug>/namespace.yaml` (identity
++ focus areas from aggregated tags + connections from co-occurring entities) and
+an Obsidian-navigable `index.md`. Idempotent, dependency-free (YAML hand-emitted).
 
 ## What this doctrine deliberately does NOT claim
 

@@ -12,7 +12,7 @@
 |------|----:|:-----:|:----------:|:--------:|----------------|
 | app-audio-record | 23 | ✗ | — | ✓ | @built @hw-verified @note |
 | apple-energy | 16 | ✗ | — | — | @built @note @parser-verified |
-| apple-harness | 10 | ✓ | ~ partial | — | @built @code-verified @runtime-untested @runtime-verified |
+| apple-harness | 11 | ✓ | ~ partial | — | @built @code-verified @runtime-untested @runtime-verified |
 | applebar-karaoke | 5 | ✗ | — | — | @built @note @verified |
 | applebar-session | 8 | ✗ | — | — | @built @leak-fixed @shipped @verified |
 | archof | 6 | ✗ | — | — | @built @stock @verified |

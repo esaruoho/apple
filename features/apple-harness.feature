@@ -34,6 +34,7 @@
 # WATCH: apple-harness fmremote Ledger seed commit run_asset extract tag_entities embed judge Config resolve describe CapabilityUnavailable local_preflight fleet_heartbeat
 #
 # RESULT-LOG >> (auto-maintained by the report-card hooks — newest below)
+#   2026-10-21  direct-commit  touched: apple-harness extract embed
 #   2026-10-21  direct-commit  touched: apple-harness fmremote extract embed describe
 #   2026-10-21  direct-commit  touched: apple-harness fmremote extract embed judge Config resolve describe CapabilityUnavailable local_preflight fleet_heartbeat
 #   2026-10-21  direct-commit  touched: apple-harness fmremote Ledger seed commit run_asset extract tag_entities embed judge Config
@@ -116,6 +117,14 @@ Feature: apple-harness — zero-token-first local ingestion engine
     Given no harness.plist in the working directory
     When apple-harness init runs
     Then it copies the whitelabeled example plist for the user to edit
+
+  @built @runtime-verified
+  Scenario: Oracle spaces project the ledger into per-entity folders
+    # cite: harness/lib/harness/oracle.py build; bin/apple-harness oracle
+    Given a pool whose analyzed assets carry NER entities
+    When apple-harness oracle runs
+    Then each entity gets oracle_spaces/<slug>/namespace.yaml with focus areas and connections
+    And an index.md linking that entity's Asset Notes with Obsidian wikilinks
 
   @built @runtime-verified
   Scenario: A private instance (harken) overrides bindings without touching the engine

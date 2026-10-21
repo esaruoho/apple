@@ -35,6 +35,7 @@ from harness.config import Config  # noqa: E402
 from harness.ledger import Ledger  # noqa: E402
 from harness import loop  # noqa: E402
 from harness import capabilities as caps  # noqa: E402
+from harness import oracle  # noqa: E402
 
 EXAMPLE_PLIST = HERE.parent / "harness" / "config.example.plist"
 
@@ -81,7 +82,7 @@ def _print_status(ledger: Ledger, pool: str) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(prog="apple-harness", description="Apple Harness ingest chassis")
-    ap.add_argument("verb", choices=["init", "ingest", "resume", "status", "capabilities"])
+    ap.add_argument("verb", choices=["init", "ingest", "resume", "status", "capabilities", "oracle"])
     ap.add_argument("--pool", help="target ingestion directory")
     ap.add_argument("--config", help="config .plist")
     ap.add_argument("--recursive", action="store_true")
@@ -123,6 +124,12 @@ def main() -> int:
 
     if args.verb == "status":
         _print_status(ledger, pool)
+        return 0
+
+    if args.verb == "oracle":
+        verbose("building oracle spaces from analyzed assets…")
+        n = oracle.build(cfg, ledger, verbose=verbose)
+        print(f"\nwrote {n} oracle space(s) under {cfg.vault / 'oracle_spaces'}")
         return 0
 
     if args.verb == "ingest":
