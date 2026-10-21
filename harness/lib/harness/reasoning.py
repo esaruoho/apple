@@ -40,12 +40,14 @@ def _normalise_tags(raw: str) -> tuple[str, ...]:
     return tuple(sorted(set(tags)))
 
 
-def judge(cfg_reasoning: dict, entities: list[dict], snippet: str) -> dict:
+def judge(reason_cmd: str, cfg_reasoning: dict, entities: list[dict], snippet: str) -> dict:
     """Run the reasoning step N times, take the majority.
 
-    Returns {"tags": [...], "vote": "k/N", "flip_flop": bool, "samples": [...]}.
+    `reason_cmd` is the provider command resolved from the 'reason' capability
+    (local `fm` or fleet `fmremote`). Returns
+    {"tags": [...], "vote": "k/N", "flip_flop": bool, "samples": [...]}.
     """
-    cmd = shlex.split(cfg_reasoning["cmd"])
+    cmd = shlex.split(reason_cmd)
     votes = int(cfg_reasoning.get("votes", 3))
     timeout = int(cfg_reasoning.get("timeout", 120))
     nchars = int(cfg_reasoning.get("snippet_chars", 1000))

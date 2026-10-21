@@ -48,6 +48,25 @@ the apple skills. The arc:
 - Reasoning via fmremote, votes=3: both assets reached a 2/3 majority tag-set.
 - Resume: 0 pending (idempotent).
 
+## 2026-10-21 (later) — the local-whisp mistake + the capability model
+- Built harken's audio organ to call **local** `whisp`, which loaded **large-v3
+  (1.2 GB, mlx-community/whisper-large-v3-mlx)** into `~/.cache/huggingface` and
+  pinned the GPU. Esa, rightly: *"cloudcitymacmini has a full convey whisp
+  transcripter, why are you installing whisp here??????????????"* Killed it,
+  showed him the download location, he deleted it + the old small.en.pt.
+- Root-cause fix, at Esa's prompting (*"how do we stop YOU from downloading a
+  large file just to run it locally… even though the Fleet specifies where the
+  availabilities are"*): replaced hardcoded organ commands with a **capability
+  model** (`capabilities.py`). Each capability resolves to local (only if a
+  read-only `local_preflight` proves it is ALREADY installed — never a download)
+  or fleet (only if a `fleet_heartbeat` is alive), else errors. whisp's
+  preflight = model-in-cache; fm's = macOS ≥ 26.
+- Verified live: whitelabel on this Mac → transcribe/reason UNAVAILABLE (no
+  download); harken → transcribe:fleet (Mini whisp), reason:fleet (fmremote);
+  full image+pdf+audio pool analyzed with **zero model downloads**; a transient
+  fm-heartbeat blip errored one asset and `resume` finished it.
+- Rule saved: `feedback_harness_heavy_extraction_routes_to_mini`.
+
 ## Known gaps / next
 - Build **harken** (`~/work/harken`) as the binding layer; it can absorb the prior
   `~/work/harness` listener idea (event-driven drop-folder ingestion) as its trigger.

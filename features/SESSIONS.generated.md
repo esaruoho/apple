@@ -58,4 +58,4 @@
 - Resume: `claude --resume ce16f90d-5886-4101-8d57-510226c39db9`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/ce16f90d-5886-4101-8d57-510226c39db9.jsonl
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
-- Cards touched (3): apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature
+- Cards touched (4): apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature, transcript-vault-email-analysis.feature

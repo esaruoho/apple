@@ -55,29 +55,81 @@
 		<key>.text</key>
 		<string>text</string>
 	</dict>
-	<key>organs</key>
+	<key>modality_capability</key>
 	<dict>
 		<key>image</key>
-		<string>vision-ocr {path}</string>
+		<string>ocr</string>
 		<key>pdf</key>
-		<string>vision-ocr {path}</string>
+		<string>ocr</string>
 		<key>audio</key>
-		<string>whisp {path}</string>
+		<string>transcribe</string>
 		<key>video</key>
-		<string>whisp {path}</string>
+		<string>transcribe</string>
 		<key>text</key>
 		<string></string>
 	</dict>
-	<key>ner</key>
-	<string>apple-ner</string>
-	<key>embed</key>
-	<string>apple-embed</string>
+	<key>capabilities</key>
+	<dict>
+		<key>ocr</key>
+		<dict>
+			<key>local_cmd</key>
+			<string>vision-ocr {path}</string>
+			<key>local_preflight</key>
+			<string></string>
+			<key>prefer</key>
+			<string>local</string>
+			<key>on_unavailable</key>
+			<string>error</string>
+		</dict>
+		<key>ner</key>
+		<dict>
+			<key>local_cmd</key>
+			<string>apple-ner</string>
+			<key>local_preflight</key>
+			<string></string>
+			<key>prefer</key>
+			<string>local</string>
+			<key>on_unavailable</key>
+			<string>error</string>
+		</dict>
+		<key>embed</key>
+		<dict>
+			<key>local_cmd</key>
+			<string>apple-embed</string>
+			<key>local_preflight</key>
+			<string></string>
+			<key>prefer</key>
+			<string>local</string>
+			<key>on_unavailable</key>
+			<string>error</string>
+		</dict>
+		<key>transcribe</key>
+		<dict>
+			<key>local_cmd</key>
+			<string>whisp {path}</string>
+			<key>local_preflight</key>
+			<string>test -d "$HOME/.cache/huggingface/hub/models--mlx-community--whisper-large-v3-mlx"</string>
+			<key>prefer</key>
+			<string>local</string>
+			<key>on_unavailable</key>
+			<string>error</string>
+		</dict>
+		<key>reason</key>
+		<dict>
+			<key>local_cmd</key>
+			<string>fm</string>
+			<key>local_preflight</key>
+			<string>[ "$(sw_vers -productVersion | cut -d. -f1)" -ge 26 ]</string>
+			<key>prefer</key>
+			<string>local</string>
+			<key>on_unavailable</key>
+			<string>error</string>
+		</dict>
+	</dict>
 	<key>reasoning</key>
 	<dict>
 		<key>enabled</key>
 		<true/>
-		<key>cmd</key>
-		<string>fm</string>
 		<key>votes</key>
 		<integer>3</integer>
 		<key>timeout</key>

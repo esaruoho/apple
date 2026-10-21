@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from . import organs, reasoning
+from . import capabilities, organs, reasoning
 
 
 def _write_asset_note(cfg, row: dict, text: str) -> str:
@@ -63,10 +63,11 @@ def run_asset(cfg, ledger, row: dict, *, verbose=lambda *_: None) -> None:
         row["status"] = "extracting"
         ledger.commit(row)
         verbose(f"  extract  {row['modality']:5}  {Path(row['path']).name}")
-        text = organs.extract(cfg, row)
+        text = organs.extract(cfg, row)  # resolves provider; never downloads
 
         row["status"] = "extracted"
         ledger.commit(row)
+        verbose(f"           via {row.get('extract_provider','?')}")
 
         # --- Observe: zero-token structuring ------------------------------
         row["entities"] = organs.tag_entities(cfg, text)
@@ -79,14 +80,16 @@ def run_asset(cfg, ledger, row: dict, *, verbose=lambda *_: None) -> None:
         verbose(f"           entities={len(row['entities'])} vector={'yes' if vector else 'no'}")
 
         # --- Think: the ONLY token spend ----------------------------------
-        r = cfg.reasoning
-        if r.get("enabled", True):
-            res = reasoning.judge(r, row["entities"], text)
+        rp = cfg.reasoning
+        if rp.get("enabled", True):
+            rr = capabilities.resolve("reason", cfg.capability("reason"))  # local fm or fleet fmremote
+            res = reasoning.judge(rr.cmd, rp, row["entities"], text)
+            row["reason_provider"] = f"reason:{rr.provider}"
             row["tags"] = res["tags"]
             row["vote"] = res["vote"]
             if res["flip_flop"]:
                 row["errors"].append(f"reasoning flip-flop at {res['vote']}")
-            verbose(f"           tags={row['tags']} vote={row['vote']}")
+            verbose(f"           reason via {rr.provider}: tags={row['tags']} vote={row['vote']}")
 
         # --- Stop: rewrite the note with the final status + tags ----------
         row["status"] = "analyzed"

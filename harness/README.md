@@ -28,6 +28,7 @@ Point it at a folder. For every asset it:
 
 ```sh
 # from anywhere; the tool finds its own lib
+apple-harness capabilities               # SHOW where each capability resolves now
 apple-harness init                       # writes ./harness.plist to edit
 apple-harness ingest --pool ~/SomeFolder --recursive
 apple-harness status --pool ~/SomeFolder
@@ -35,26 +36,47 @@ apple-harness resume --pool ~/SomeFolder # re-pick interrupted/errored rows
 ```
 
 With no `--config`, the engine runs on its built-in **local Apple-native**
-defaults (`vision-ocr`, `apple-ner`, `apple-embed`, local `fm`). On a machine
-without macOS 26, bind reasoning to `fmremote` (routes to a Mini) or disable it.
+defaults. On a bare machine those local providers that need something not
+present (whisp's model, macOS 26 for `fm`) resolve to **UNAVAILABLE** — the
+engine refuses to auto-download. Bind a fleet belt (see harken) to route that
+heavy work elsewhere.
+
+## Capabilities, not commands — the no-download guarantee
+
+The engine does not hardcode "run whisp". It resolves a **capability**
+(`ocr` / `transcribe` / `ner` / `embed` / `reason`) to a **provider**:
+
+- **local** — used only if its `local_preflight` (a cheap, read-only check)
+  proves it is *already installed*. whisp's preflight checks the model is
+  already in cache; `fm`'s checks `macOS ≥ 26`. If proving availability would
+  require a download, the preflight fails and local is skipped.
+- **fleet** — a belt on another machine (e.g. a Mini's whisp / fm workers),
+  used only if its `fleet_heartbeat` says the belt is alive.
+- neither available → **error**, never a silent install.
+
+`apple-harness capabilities` prints the live resolution table. This is the
+mechanism that stops "just run it locally" from pulling a multi-GB model onto a
+workstation that was never meant to host it.
 
 ## Configuration (`config.example.plist`)
 
-A property list — the Apple-native, stdlib-parseable format. Every binding is
-overridable. Keys:
+A property list — the Apple-native, stdlib-parseable format. Keys:
 
 | key | meaning | local default |
 |---|---|---|
 | `vault` | where Asset Notes are written | `~/AppleHarnessVault` |
 | `embeds` | the semantic-memory vector store (JSONL) | `~/.apple-harness-embeds.jsonl` |
 | `bin_dir` | prefix for organ commands (`""` = use `PATH`) | `""` |
+| `scan_ignore` | filename suffixes that are harness artifacts, never re-scanned | `.transcript.txt`, `.speakers.txt` |
 | `modalities` | extension → modality map | image/pdf/audio/video/text |
-| `organs` | modality → extraction command (`{path}`) | vision-ocr / whisp / read |
-| `ner` | stdin text → JSONL entities | `apple-ner` |
-| `embed` | stdin lines → JSONL `{"t","v":[512]}` | `apple-embed` |
-| `reasoning.cmd` | the reasoning organ | `fm` (override → `fmremote`) |
-| `reasoning.votes` | majority-vote sample count | `3` |
-| `reasoning.enabled` | spend tokens at all | `true` |
+| `modality_capability` | modality → capability | image/pdf→ocr, audio/video→transcribe, text→read |
+| `capabilities.<cap>` | provider spec: `local_cmd` + `local_preflight`, `fleet_cmd` + `fleet_heartbeat` + `fleet_collect`, `prefer`, `on_unavailable` | see below |
+| `reasoning.votes` / `.timeout` / `.prompt` / `.enabled` | how to majority-vote (provider comes from capability `reason`) | 3 / 120 / … / true |
+
+Each `capabilities.<cap>` entry: `local_cmd` (template, `{path}`),
+`local_preflight` (shell check, exit 0 = installed-without-download),
+`fleet_cmd` + `fleet_heartbeat` + `fleet_collect` (`{stem}` → a file the belt
+writes), `prefer` (`local`|`fleet`), `on_unavailable` (`error`).
 
 ## The ledger
 

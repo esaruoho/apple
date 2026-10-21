@@ -34,6 +34,7 @@ sys.path.insert(0, str(HERE.parent / "harness" / "lib"))
 from harness.config import Config  # noqa: E402
 from harness.ledger import Ledger  # noqa: E402
 from harness import loop  # noqa: E402
+from harness import capabilities as caps  # noqa: E402
 
 EXAMPLE_PLIST = HERE.parent / "harness" / "config.example.plist"
 
@@ -52,6 +53,8 @@ def _scan(ledger: Ledger, cfg: Config, pool: str, recursive: bool) -> int:
         for name in files:
             if name.startswith("."):
                 continue
+            if any(name.endswith(sfx) for sfx in cfg.scan_ignore):
+                continue  # harness-produced sidecar (e.g. a belt's transcript)
             fp = os.path.join(root, name)
             if not os.path.isfile(fp):
                 continue
@@ -78,12 +81,24 @@ def _print_status(ledger: Ledger, pool: str) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(prog="apple-harness", description="Apple Harness ingest chassis")
-    ap.add_argument("verb", choices=["init", "ingest", "resume", "status"])
+    ap.add_argument("verb", choices=["init", "ingest", "resume", "status", "capabilities"])
     ap.add_argument("--pool", help="target ingestion directory")
     ap.add_argument("--config", help="config .plist")
     ap.add_argument("--recursive", action="store_true")
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
+
+    if args.verb == "capabilities":
+        cfg = Config.load(_resolve_config(args.config))
+        print("Apple Harness — capability resolution (where each runs, right now):")
+        print("  (local is used only if its preflight proves it is installed — never downloads)\n")
+        for row in caps.describe(cfg.all_capabilities):
+            prov = row["provider"]
+            if prov == "UNAVAILABLE":
+                print(f"  {row['capability']:11} UNAVAILABLE — {row['cmd']}")
+            else:
+                print(f"  {row['capability']:11} {prov:6} {row['cmd']}")
+        return 0
 
     if args.verb == "init":
         dest = Path(args.config) if args.config else Path("harness.plist")

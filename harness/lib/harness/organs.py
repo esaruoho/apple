@@ -1,21 +1,19 @@
-"""Organ dispatch — the zero-token extraction + structuring layer.
+"""Organ dispatch — zero-token extraction + structuring, via capability resolution.
 
-Every organ is a leaf binary bound in config. The engine never knows what a
-leaf actually is; it only knows the contract:
-
-  - extraction organ:  (asset path) -> extracted text on stdout
-  - ner organ:         stdin text   -> JSONL entity rows {"text","type",...}
-  - embed organ:       stdin lines  -> JSONL {"t","v":[512]} per line
-
-The scaffold's reference bindings are all LOCAL and Apple-native:
-vision-ocr (VNRecognizeTextRequest), apple-ner (NaturalLanguage NLTagger),
-apple-embed (NLEmbedding). None spends an LLM token; none needs a network.
+Every extraction goes through `capabilities.resolve`, so the provider (local vs
+a fleet belt) is chosen by preflight/heartbeat, never by a silent download. A
+fleet provider may deliver its result in a file beside the source (`collect`,
+e.g. `convey transcript` writing `<stem>.txt`) rather than on stdout; local
+organs return text on stdout.
 """
 from __future__ import annotations
 
 import json
+import os
 import shlex
 import subprocess
+
+from . import capabilities
 
 
 class OrganError(RuntimeError):
@@ -24,13 +22,7 @@ class OrganError(RuntimeError):
 
 def _run(cmd: list[str], stdin: str | None = None, timeout: int = 600) -> str:
     try:
-        res = subprocess.run(
-            cmd,
-            input=stdin,
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
+        res = subprocess.run(cmd, input=stdin, capture_output=True, text=True, timeout=timeout)
     except FileNotFoundError:
         raise OrganError(f"organ not found: {cmd[0]}")
     except subprocess.TimeoutExpired:
@@ -40,56 +32,67 @@ def _run(cmd: list[str], stdin: str | None = None, timeout: int = 600) -> str:
     return res.stdout
 
 
-def extract(cfg, row: dict) -> str:
-    """Dispatch an asset to its modality's extraction organ. Zero tokens."""
-    modality = row["modality"]
-    path = row["path"]
-    template = cfg.organ_resolved(modality)
+def _fill(template: str, path: str) -> list[str]:
+    stem = os.path.splitext(path)[0]
+    return [p.format(path=path, stem=stem) for p in shlex.split(template)]
 
-    if not template:  # text modality: read the bytes directly, no subprocess
-        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+
+def extract(cfg, row: dict) -> str:
+    """Dispatch an asset to its modality's capability. Resolves provider first."""
+    modality = row["modality"]
+    cap_name = cfg.capability_for_modality(modality)
+
+    if not cap_name:  # text modality: read bytes directly, no organ, no tokens
+        row["extract_provider"] = "local:read"
+        with open(row["path"], "r", encoding="utf-8", errors="ignore") as f:
             return f.read()
 
-    cmd = [part.format(path=path) for part in shlex.split(template)]
+    spec = cfg.capability(cap_name)
+    r = capabilities.resolve(cap_name, spec)  # raises CapabilityUnavailable, never downloads
+    row["extract_provider"] = f"{cap_name}:{r.provider}"
+
+    path = row["path"]
+    cmd = _fill(r.cmd, path)
+    if r.collect:
+        # belt does the work and writes the result beside the source
+        _run(cmd, timeout=1800)
+        collect_path = r.collect.format(path=path, stem=os.path.splitext(path)[0])
+        if not os.path.exists(collect_path):
+            raise OrganError(f"{cap_name} belt produced no result at {collect_path}")
+        with open(collect_path, "r", encoding="utf-8", errors="ignore") as f:
+            return f.read()
     return _run(cmd, timeout=1800)
 
 
 def tag_entities(cfg, text: str) -> list[dict]:
-    """Named-entity recognition via the bound NER organ. Zero tokens."""
+    """NER via the 'ner' capability. Zero tokens."""
     if not text.strip():
         return []
-    out = _run(shlex.split(cfg.ner_cmd()), stdin=text)
-    entities = []
+    r = capabilities.resolve("ner", cfg.capability("ner"))
+    out = _run(shlex.split(r.cmd), stdin=text)
+    entities, seen = [], set()
     for line in out.splitlines():
         line = line.strip()
         if not line.startswith("{"):
-            continue  # skip the human summary header line
+            continue
         try:
             e = json.loads(line)
         except json.JSONDecodeError:
             continue
-        entities.append({"text": e.get("text", ""), "type": e.get("type", "")})
-    # De-dup, keep order.
-    seen, uniq = set(), []
-    for e in entities:
-        key = (e["text"], e["type"])
+        key = (e.get("text", ""), e.get("type", ""))
         if key not in seen:
             seen.add(key)
-            uniq.append(e)
-    return uniq
+            entities.append({"text": key[0], "type": key[1]})
+    return entities
 
 
 def embed(cfg, text: str) -> list[float] | None:
-    """One 512-dim NLEmbedding vector for the asset. Zero tokens.
-
-    NLEmbedding is a LIGHT model — weak on very short strings — so we embed a
-    bounded leading slice, not fragments. (Partition-then-cluster is a
-    downstream concern, not the per-asset embed.)
-    """
+    """One 512-dim vector via the 'embed' capability. Zero tokens."""
     snippet = " ".join(text.split())[:2000]
     if not snippet:
         return None
-    out = _run(shlex.split(cfg.embed_cmd()), stdin=snippet)
+    r = capabilities.resolve("embed", cfg.capability("embed"))
+    out = _run(shlex.split(r.cmd), stdin=snippet)
     for line in out.splitlines():
         line = line.strip()
         if not line.startswith("{"):
@@ -98,7 +101,6 @@ def embed(cfg, text: str) -> list[float] | None:
             rec = json.loads(line)
         except json.JSONDecodeError:
             continue
-        v = rec.get("v")
-        if isinstance(v, list):
-            return v
+        if isinstance(rec.get("v"), list):
+            return rec["v"]
     return None

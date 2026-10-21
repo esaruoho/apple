@@ -133,20 +133,22 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 **What it does:** As someone with a large, heterogeneous media pool, I want native Apple frameworks to extract and structure every asset for zero LLM tokens, So that the LLM is only ever handed entities and a tiny snippet, over a resumable ledger.
 
-**Behaviour (8 scenarios):**
+**Behaviour (10 scenarios):**
 
 - Zero-token extraction, NER and embedding land an Obsidian Asset Note — `@built @runtime-verified`
 - fmremote routes a prompt to the Mini and returns a clean answer — `@built @runtime-verified`
 - Reasoning is majority-voted, never a single call — `@built @runtime-verified`
 - Resume is idempotent — `@built @runtime-verified`
 - The ledger survives a crash mid-write — `@built @code-verified @runtime-untested`
-- Image, PDF and audio modalities extract via their native organs — `@built @runtime-untested`
+- Image, PDF and audio modalities extract via capability resolution — `@built @runtime-untested`
+- The harness never downloads a model to run locally — `@built @runtime-verified`
+- A down belt errors recoverably rather than falling back to local — `@built @runtime-verified`
 - init writes an editable config from the whitelabeled example — `@built @runtime-verified`
-- A private instance (harken) overrides bindings without touching the engine — `@designed`
+- A private instance (harken) overrides bindings without touching the engine — `@built @runtime-verified`
 
-**How it does it:** **Key procs:** `apple-harness`, `fmremote`, `Ledger`, `seed`, `commit`, `run_asset`, `extract`, `tag_entities`, `embed`, `judge`, `Config` · **Source files:** `harness/lib/harness/loop.py`, `organs.py`, `harness/lib/harness/reasoning.py`, `ledger.py`, `harness/lib/harness/ledger.py`, `harness/lib/harness/config.py`
+**How it does it:** **Key procs:** `apple-harness`, `fmremote`, `Ledger`, `seed`, `commit`, `run_asset`, `extract`, `tag_entities`, `embed`, `judge`, `Config`, `resolve`, `describe`, `CapabilityUnavailable`, `local_preflight`, `fleet_heartbeat` · **Source files:** `harness/lib/harness/loop.py`, `organs.py`, `harness/lib/harness/reasoning.py`, `ledger.py`, `harness/lib/harness/ledger.py`, `harness/lib/harness/capabilities.py`, `capabilities.py`, `harness/lib/harness/config.py`
 
-**Grade:** @built ×7 · @code-verified ×1 · @designed ×1 · @runtime-untested ×2 · @runtime-verified ×5
+**Grade:** @built ×10 · @code-verified ×1 · @runtime-untested ×2 · @runtime-verified ×8
 
 
 <a id="applebar-karaoke"></a>

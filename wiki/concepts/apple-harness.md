@@ -80,7 +80,9 @@ Likely form: `~/work/apple/harness/` (scaffold + `config.example.yaml`) with a t
 
 Naming is deliberate: **harness** = the generic whitelabeled scaffold (Layer 1, ships with apple); **harken** = Esa's private bound instance (Layer 2, never ships). Keeping the two words distinct removes the "which harness?" ambiguity.
 
-Just **config + overrides** that bind the scaffold to the real world: reasoning-backend = `fm-submit → Mini` (not local), organ bindings that route OCR through `convey ocr` (manifest, no orphans), vault = `~/work/cc/vault`, graph = convey DreamGraph, pool = the 5TB drive, execution = Cloudcity-Boot.app + `systems.yaml` (never nohup). Supplies bindings only; re-rolls no engine code. **convey is a *consumer* the private instance points at, not the harness's home.**
+Just **config + overrides** that bind the scaffold to the real world: reasoning → `fmremote` → Mini (not local), and — the load-bearing rule — **every HEAVY extraction organ routes to CloudcityMacMini, never the laptop.** Audio/video → `convey transcript` (Mini whisp belt, large-v3); scanned/image-only PDF → `convey ocr` (manifest, no orphans). Only LIGHT Apple-ANE organs run locally: `vision-ocr` on crisp images, `apple-ner`, `apple-embed`. Then vault, graph = convey DreamGraph, pool = the 5TB drive, execution = Cloudcity-Boot.app + `systems.yaml` (never nohup). Supplies bindings only; re-rolls no engine code. **convey is a *consumer* the private instance points at, not the harness's home.** See [[feedback_harness_heavy_extraction_routes_to_mini]].
+
+> Built 2026-10-21 at `~/work/harken/`: `harken.plist` + `harken` wrapper + `bin/transcribe-remote` (the Mini-transcription adapter). The local-whisp misstep that prompted this rule is recorded in that memory.
 
 This keeps DRY: the apple `bin/` organs are the leaf tools both layers dispatch to; the private layer adds no second extractor, only a binding table.
 
@@ -116,11 +118,43 @@ reasoning.votes   = 3        (majority-vote — the model flip-flops)
 reasoning.enabled = true
 ```
 
+## Capability-aware provider resolution (the no-download rule)
+
+Devices differ: some have local FoundationModels (macOS 26), some have the whisp
+model cached, most have neither. The harness must route to wherever a capability
+*actually lives* — and must **never** download a heavy model to "run it locally".
+
+So an organ is not a command; it is a **capability** (`ocr`, `transcribe`,
+`ner`, `embed`, `reason`) that resolves to a **provider** at run time
+(`harness/lib/harness/capabilities.py`):
+
+- **local** — used only if its `local_preflight` (a cheap, read-only shell
+  check) proves it is *already installed*. whisp → "is the large-v3 model in
+  cache?"; `fm` → "is this macOS ≥ 26?". **If proving availability would require
+  a download, the preflight fails and local is skipped.** This is the exact gate
+  that stops the 1.2 GB pull.
+- **fleet** — a belt on another machine, used only if its `fleet_heartbeat` says
+  the belt is alive (fm-worker / whisp-worker heartbeats — the Fleet is the
+  source of truth for where capabilities live). A fleet result may arrive in a
+  file beside the source (`fleet_collect`, e.g. `convey transcript` →
+  `<stem>.transcript.txt`) rather than on stdout.
+- neither available → **error** (recoverable on `resume`), never a silent install.
+
+`apple-harness capabilities` / `harken capabilities` prints the live table.
+The whitelabel defaults are honest for a stranger: on a non-Tahoe Mac with no
+model, `transcribe` and `reason` read **UNAVAILABLE** rather than downloading.
+harken binds the fleet providers (transcribe → Mini whisp, reason → `fmremote`)
+so the same engine routes heavy work to the Mini automatically. Verified
+2026-10-21: a full image+pdf+audio pool ran with ocr/ner/embed local,
+transcribe+reason on the Mini, and **zero model downloads**; a transient
+fm-heartbeat blip during heavy Mini load errored one asset, and `resume`
+completed it. See [[feedback_harness_heavy_extraction_routes_to_mini]].
+
 ## Build status (2026-10-21)
 
 - **Layer 1 (scaffold) is built and runtime-verified.** `bin/apple-harness` + `harness/lib/harness/` + `bin/fmremote` + `harness/config.example.plist`. The zero-token path (extract → NER → NLEmbedding → Asset Note → ledger → resume), the `fmremote` round-trip to the Mini, and 3-vote majority reasoning were all run live. Report card: [`../../features/apple-harness.feature`](../../features/apple-harness.feature).
 - **Honestly ungraded:** image/PDF/audio *through the loop* end-to-end, the `init` verb, and torn-ledger crash recovery are `@runtime-untested` — wired and code-verified, not yet exercised.
-- **Layer 2 (harken) is NOT built.** `~/work/harken` does not exist yet. No completion-framing: the engine runs, the private fleet instance is still a design.
+- **Layer 2 (harken) v0 is built** at `~/work/harken/` (harken.plist + wrapper + `bin/transcribe-remote`), binding reasoning → `fmremote` and audio/video → the Mini whisp belt. Still a design: the event-driven listener trigger layer, async-OCR substate, and Cloudcity-Boot supervision. No completion-framing.
 
 ## Comparison with the prior `~/work/harness` (the shell meta-harness)
 
