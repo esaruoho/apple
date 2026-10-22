@@ -7,11 +7,11 @@
 # Thinkspace: aimeat-email-pdf.session.md and bundled source transcript.
 # Areaspace: owner-email PDFs and explicit PDF URLs, durable source/analysis return,
 #            existing Mini mail pane and existing roundtable; no laptop inference.
-# RESULT: apple c86de4bf (PDF intake, transport, tests, documentation).
+# RESULT: apple c86de4bf, fda339dd, 5a8af07e (PDF intake, transport, tests, integration).
 #         convey b7862fb27 (black wordcloud canvas), delivered by cd02ac15d.
 #         Direct-push to main, no PR; newer Convey remote work preserved by merge.
 #         Card-authoring commit: c86de4bf; delivery bookkeeping follows in git.
-#         Mini activation verified; final private-workspace integration dfc71c558e8a859b.
+#         Mini activation/hash match verified for final payload dfc71c558e8a859b.
 #         Evidence: analysis/proofs/aimeat-email-pdf-verification.json (39 tests).
 #         Email transport is simulated in tests; no live test email sent.
 # Tests: test_aimeat_mail.py plus existing mail/editor/roundtable behavioral suites.
