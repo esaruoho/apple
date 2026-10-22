@@ -4,7 +4,7 @@
 
 **Intent:** As Esa I want the existing Mini roundtable to prepare board content for one selected folder So that I can review the Markdown before explicitly triggering Gemini whiteboard images.
 
-**Grades:** @designed × 2 · @runtime-verified × 2 · @stock × 1 · @untested × 3
+**Grades:** @built × 1 · @designed × 1 · @runtime-verified × 3 · @stock × 1 · @untested × 2
 
 **Scenarios: 6**
 
@@ -41,13 +41,15 @@
 
 ## 3. Verify the installed BBS and Free Energy Whiteboard route without image generation
 
-`@designed @untested`
+`@built @runtime-verified`
 
 
 - Given a reviewed preparation exists
 - When I run `aimeat-whiteboard yes-but-whiteboard <folder> --plan`
 - Then the BBS guidance, Free Energy frontmatter schema and installed Whiteboard skill entry point are checked
 - And the exact red-button command is printed with `--full` and `--guardrails`
+- And the guardrails are checked for open-system reservoir framing
+- And the guardrails are checked to prohibit “What We Know / What’s Missing” panels and generic evidence-gap checklists
 - And neither the generator nor Gemini is called
 
 <sub>cite: bin/aimeat-whiteboard skill_contract manufacture</sub>

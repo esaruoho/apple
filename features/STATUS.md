@@ -12,7 +12,7 @@
 |------|----:|:-----:|:----------:|:--------:|----------------|
 | aimeat-email-pdf | 5 | ✗ | ✓ | — | @built @runtime-verified @sim-verified @stock |
 | aimeat-roundtable | 10 | ✓ | ~ partial | — | @code-verified @runtime-untested @runtime-verified @stock |
-| aimeat-whiteboard | 6 | ✗ | ✓ | — | @designed @runtime-verified @stock @untested |
+| aimeat-whiteboard | 6 | ✗ | ✓ | — | @built @designed @runtime-verified @stock @untested |
 | app-audio-record | 23 | ✗ | — | ✓ | @built @hw-verified @note |
 | apple-energy | 16 | ✗ | — | — | @built @note @parser-verified |
 | apple-harness | 11 | ✓ | ~ partial | — | @built @code-verified @runtime-untested @runtime-verified |

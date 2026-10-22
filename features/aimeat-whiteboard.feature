@@ -28,13 +28,15 @@ Feature: One selected archive folder gets a reviewed preparation before paid whi
     Then `_whiteboard-preparation.md` is written inside the selected folder
     And an existing review file is preserved unless `--replace` is explicit
 
-  @designed @untested
+  @built @runtime-verified
   Scenario: Verify the installed BBS and Free Energy Whiteboard route without image generation
     # cite: bin/aimeat-whiteboard skill_contract manufacture
     Given a reviewed preparation exists
     When I run `aimeat-whiteboard yes-but-whiteboard <folder> --plan`
     Then the BBS guidance, Free Energy frontmatter schema and installed Whiteboard skill entry point are checked
     And the exact red-button command is printed with `--full` and `--guardrails`
+    And the guardrails are checked for open-system reservoir framing
+    And the guardrails are checked to prohibit “What We Know / What’s Missing” panels and generic evidence-gap checklists
     And neither the generator nor Gemini is called
 
   @designed @untested

@@ -121,14 +121,14 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 - Prepare one folder from its existing Markdown — `@runtime-verified`
 - Collect a completed Mini roundtable as an editable preparation — `@runtime-verified`
-- Verify the installed BBS and Free Energy Whiteboard route without image generation — `@designed @untested`
+- Verify the installed BBS and Free Energy Whiteboard route without image generation — `@built @runtime-verified`
 - Explicitly manufacture reviewed boards — `@designed @untested`
 - Image-only source is kept on the Cloudcity OCR path — `@untested`
 - Existing board outputs remain untouched — `@stock`
 
 **How it does it:** **Key procs:** `prepare`, `markdown_sources`, `collect`, `manufacture`, `board_folder`
 
-**Grade:** @designed ×2 · @runtime-verified ×2 · @stock ×1 · @untested ×3
+**Grade:** @built ×1 · @designed ×1 · @runtime-verified ×3 · @stock ×1 · @untested ×2
 
 
 <a id="app-audio-record"></a>
