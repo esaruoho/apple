@@ -310,6 +310,17 @@ def verify_panel(convey: Path, seats: str) -> None:
                 raise RuntimeError(f"{name}'s grounding corpus is missing: {corpus}")
 
 
+def source_instructions(source):
+    """Honor the article job's brief without modifying the preserved source text."""
+    default = "Discuss the supplied source passage specifically. Distinguish its claims from your interpretation. For energy devices, identify the reservoir and open-system coupling first; keep measurement questions specific to the device."
+    request = read_json(source.parent.parent / "email.json")
+    if not request.get("kind", "").startswith("aimeat-source-text/"):
+        return default
+    sys.path.insert(0, str(ROOT / "shared"))
+    from aimeat_mail import SOURCE_ANALYSIS_INSTRUCTIONS
+    return SOURCE_ANALYSIS_INSTRUCTIONS
+
+
 async def process(source: Path, *, convey: Path = DEFAULT_CONVEY, seats: str = SEATS,
                   turns: int = 0, timeout: float = 1500, retry: bool = False,
                   runner=stream_section, preflight=verify_panel) -> dict:
@@ -359,7 +370,7 @@ async def process(source: Path, *, convey: Path = DEFAULT_CONVEY, seats: str = S
             command = [str(convey), "roundtable", topic, "--roster", "aimeat-sages", "--brain", "mlx",
                        "--seat", seats, "--turns", str(turns), "--no-speak", "--jsonl",
                        "--board", str(board), "--context-budget", "18000",
-                       "--inject", "Discuss the supplied source passage specifically. Distinguish its claims from your interpretation. For energy devices, identify the reservoir and open-system coupling first; keep measurement questions specific to the device."]
+                       "--inject", source_instructions(source)]
             events = await runner(command, job / f"section-{index + 1:04}.jsonl", timeout,
                                   lambda: render(source, job, state))
             actual = [e for e in events if e.get("type") == "turn"]

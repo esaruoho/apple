@@ -29,6 +29,12 @@ class IntakeTests(unittest.TestCase):
         self.source = self.root / "input.txt"
         self.source.write_text("A supplied document with an explicit source claim.\n")
         self.seen = []
+        # This fixture must not collect real Syncthing mail returns on the host.
+        sys.path.insert(0, str(Path(__file__).parent / "shared"))
+        import aimeat_mail
+        isolated = patch.object(aimeat_mail, "RETURNS", self.root / "mail-returns")
+        isolated.start()
+        self.addCleanup(isolated.stop)
 
     async def runner(self, command, events, timeout, on_turn):
         board = Path(command[command.index("--board") + 1]).read_text()
@@ -228,3 +234,17 @@ class BootInstallTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SourceInstructionTests(unittest.TestCase):
+    def test_substack_brief_is_injected_without_changing_preserved_source(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "job/workspace/article.txt"
+            source.parent.mkdir(parents=True)
+            source.write_text("Unmodified source passage")
+            (root/"job/email.json").write_text(json.dumps({"kind": "aimeat-source-text/2"}))
+            instructions = bridge.source_instructions(source)
+            self.assertIn("label any reservoir you propose as a hypothesis", instructions)
+            self.assertIn("device-specific", instructions)
+            self.assertEqual(source.read_text(), "Unmodified source passage")

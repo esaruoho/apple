@@ -81,4 +81,16 @@ class SourceMailTests(unittest.TestCase):
         request=send.call_args.args[0]
         self.assertEqual(json.loads(request.data)['to'],['esa@example.org'])
 
+class StepDeadlineTests(unittest.TestCase):
+    def test_gateway_generic_retry_cannot_swallow_step_deadline(self):
+        with patch.object(m.signal, 'signal') as signal_handler, patch.object(m.signal, 'alarm'):
+            with self.assertRaises(m.SourceStepTimeout):
+                with m.bounded_source_step({'kind': m.TEXT_PIPELINE, 'status': 'synthesis'}):
+                    handler = signal_handler.call_args_list[0].args[1]
+                    try:
+                        handler(None, None)
+                    except Exception:
+                        self.fail('Gateway retry swallowed the step deadline')
+
+
 if __name__=='__main__':unittest.main()
