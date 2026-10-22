@@ -8,12 +8,7 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**10 card conversations** plugged in:
-
-### `5bb7b403-2577-4b45-9253-991f212b8087`  (2026-09-21 → 2026-09-22)
-- Resume: `claude --resume 5bb7b403-2577-4b45-9253-991f212b8087`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/5bb7b403-2577-4b45-9253-991f212b8087.jsonl
-- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+**9 card conversations** plugged in:
 
 ### `0f186341-fc7e-45e0-813d-2b4efd1081da`  (2026-09-22)
 - Resume: `claude --resume 0f186341-fc7e-45e0-813d-2b4efd1081da`

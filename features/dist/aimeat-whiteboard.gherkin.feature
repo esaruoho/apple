@@ -39,6 +39,7 @@ Feature: One selected archive folder gets a reviewed preparation before paid whi
     When I run `aimeat-whiteboard yes-but-whiteboard <folder>`
     Then the installed Whiteboard skill receives that Markdown and the selected board count
     And every generated companion Markdown receives Free Energy source-provenance frontmatter
+    And the result is accepted only when its manifest says `guardrails_active: true`
     And its dated output contains the skill's PNG, PDF, synopsis, companion Markdown and manifest
 
   @untested

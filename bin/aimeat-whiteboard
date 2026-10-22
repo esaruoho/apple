@@ -25,6 +25,7 @@ AIMEAT = Path.home() / "work/merlib-dump/aimeat"
 RETURN_ROOT = Path.home() / "work/comms/queue/aimeat-roundtable-results"
 WHITEBOARD_SKILL = Path.home() / ".agents/skills/whiteboard"
 WHITEBOARD = WHITEBOARD_SKILL / "bin/whiteboard-generate.sh"
+WHITEBOARD_GENERATOR = WHITEBOARD_SKILL / "scripts/generate-whiteboards.py"
 BBS_SKILL = Path.home() / ".agents/skills/bbs/SKILL.md"
 FREE_ENERGY_RULE = Path.home() / ".agents/skills/free-energy/rules/whiteboard-frontmatter.md"
 WHITEBOARD_SKILL_DOC = WHITEBOARD_SKILL / "SKILL.md"
@@ -216,15 +217,19 @@ def collect(job_id: str, *, replace: bool = False) -> Path:
 
 def skill_contract() -> list[Path]:
     """Fail closed if the installed BBS/Free Energy/Whiteboard contract is absent."""
-    required = [BBS_SKILL, FREE_ENERGY_RULE, WHITEBOARD_SKILL_DOC, WHITEBOARD]
+    required = [BBS_SKILL, FREE_ENERGY_RULE, WHITEBOARD_SKILL_DOC, WHITEBOARD, WHITEBOARD_GENERATOR]
     missing = [str(path) for path in required if not path.is_file()]
     if missing:
         raise FileNotFoundError("required Whiteboard skill contract missing: " + ", ".join(missing))
     docs = [path.read_text(encoding="utf-8") for path in required[:3]]
+    wrapper = WHITEBOARD.read_text(encoding="utf-8")
+    generator = WHITEBOARD_GENERATOR.read_text(encoding="utf-8")
     checks = [
         ("BBS whiteboard generator guidance", "generate-whiteboards.py" in docs[0]),
         ("Free Energy source-provenance frontmatter rule", "sources:" in docs[1] and "whiteboard-boards" in docs[1]),
         ("Whiteboard skill full-mode instructions", "--full" in docs[2] and "--guardrails" in docs[2]),
+        ("wrapper forwards forced guardrails", '"--guardrails"' in wrapper and 'CMD+=("$GUARDRAILS")' in wrapper),
+        ("generator activates guardrails when forced", 'parser.add_argument("--guardrails"' in generator and "use_guardrails = True" in generator),
     ]
     failed = [label for label, passed in checks if not passed]
     if failed:
@@ -259,6 +264,27 @@ def add_board_provenance(folder: Path, output: Path, count: int) -> None:
         board_md.write_text(frontmatter + body, encoding="utf-8")
 
 
+def verify_manufactured_output(output: Path, count: int) -> None:
+    """Refuse to call a result proper unless the skill confirms its required outputs."""
+    manifest_path = output / "manifest.json"
+    if not manifest_path.is_file():
+        raise RuntimeError(f"Whiteboard skill did not write its manifest: {manifest_path}")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("guardrails_active") is not True:
+        raise RuntimeError("Whiteboard manifest does not confirm Free Energy guardrails_active=true")
+    pngs = list(output.glob("*.png"))
+    pdfs = list(output.glob("*.pdf"))
+    companions = list((output / "_boards").glob("*.md"))
+    if len(pngs) != count:
+        raise RuntimeError(f"expected {count} board PNGs, found {len(pngs)}")
+    if not pdfs:
+        raise RuntimeError("Whiteboard skill did not produce a combined board PDF")
+    if len(companions) != count:
+        raise RuntimeError(f"expected {count} companion Markdown files, found {len(companions)}")
+    if any(not path.read_text(encoding="utf-8").startswith("---\n") for path in companions):
+        raise RuntimeError("one or more companion Markdown files lack the required provenance frontmatter")
+
+
 def manufacture(folder: Path, *, count: int | None = None, language: str = "English",
                 plan_only: bool = False) -> int:
     prep = folder / "_whiteboard-preparation.md"
@@ -290,6 +316,7 @@ def manufacture(folder: Path, *, count: int | None = None, language: str = "Engl
     result = subprocess.run(command, check=False)
     if result.returncode == 0:
         add_board_provenance(folder, output, count)
+        verify_manufactured_output(output, count)
     return result.returncode
 
 
