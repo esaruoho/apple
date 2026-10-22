@@ -4,7 +4,7 @@
 # areaspace: OWNS one-folder whiteboard preparation and explicit image trigger; reuses AIMEAT roundtable and user Whiteboard skill.
 # MUST NOT touch: unselected board folders, existing PNG/PDF outputs, local OCR, or Gemini image generation during preparation.
 # SESSION: aimeat-whiteboard.session.md
-# RESULT: Mini compatibility payload `0db66f90cebf956d` installed; Whittaker/Tesla pilot returned a hash-verified two-section, 36-turn draft at `_whiteboard-preparation.md`; implementation + initial card `d71a59c1` pushed to main, no PR; Gemini manufacture remains unrun pending human review.
+# RESULT: Mini compatibility payload `0db66f90cebf956d` installed; Whittaker/Tesla pilot returned a hash-verified two-section, 36-turn draft at `_whiteboard-preparation.md`; BBS/Free Energy/Whiteboard route now has a no-generation plan mode, forced guardrails, and companion Markdown provenance; Gemini manufacture remains unrun pending human review.
 # WATCH: prepare markdown_sources collect manufacture board_folder
 
 Feature: One selected archive folder gets a reviewed preparation before paid whiteboard generation
@@ -29,11 +29,21 @@ Feature: One selected archive folder gets a reviewed preparation before paid whi
     And an existing review file is preserved unless `--replace` is explicit
 
   @designed @untested
+  Scenario: Verify the installed BBS and Free Energy Whiteboard route without image generation
+    # cite: bin/aimeat-whiteboard skill_contract manufacture
+    Given a reviewed preparation exists
+    When I run `aimeat-whiteboard yes-but-whiteboard <folder> --plan`
+    Then the BBS guidance, Free Energy frontmatter schema and installed Whiteboard skill entry point are checked
+    And the exact red-button command is printed with `--full` and `--guardrails`
+    And neither the generator nor Gemini is called
+
+  @designed @untested
   Scenario: Explicitly manufacture reviewed boards
-    # cite: bin/aimeat-whiteboard manufacture ; ~/.agents/skills/whiteboard/bin/whiteboard-generate.sh
+    # cite: bin/aimeat-whiteboard manufacture skill_contract add_board_provenance ; ~/.agents/skills/whiteboard/bin/whiteboard-generate.sh
     Given I have reviewed and edited `_whiteboard-preparation.md`
     When I run `aimeat-whiteboard yes-but-whiteboard <folder>`
     Then the installed Whiteboard skill receives that Markdown and the selected board count
+    And every generated companion Markdown receives Free Energy source-provenance frontmatter
     And its dated output contains the skill's PNG, PDF, synopsis, companion Markdown and manifest
 
   @untested

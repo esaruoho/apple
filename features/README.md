@@ -8,6 +8,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 - [Owner emails deliver complete PDF material and analyses to AIMEAT](#aimeat-email-pdf) — `aimeat-email-pdf.feature`
 - [A text file in the AIMEAT folder receives a grounded MLX roundtable beside it](#aimeat-roundtable) — `aimeat-roundtable.feature`
+- [One selected archive folder gets a reviewed preparation before paid whiteboard generation](#aimeat-whiteboard) — `aimeat-whiteboard.feature`
 - [Capture one application's audio to a .wav without a loopback driver](#app-audio-record) — `app-audio-record.feature`
 - [Read macOS energy & power telemetry from the command line](#apple-energy) — `apple-energy.feature`
 - [apple-harness — zero-token-first local ingestion engine](#apple-harness) — `apple-harness.feature`
@@ -107,6 +108,27 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 **How it does it:** **Key procs:** `stream_section`, `verify_panel`, `candidates`, `collect`, `prepare_roster`, `FM_MLX_NO_SSH` · **Source files:** `roundtable/bridge.py`, `roundtable/install.py`, `test_aimeat_roundtable.py`
 
 **Grade:** @code-verified ×4 · @runtime-untested ×4 · @runtime-verified ×5 · @stock ×1
+
+
+<a id="aimeat-whiteboard"></a>
+## One selected archive folder gets a reviewed preparation before paid whiteboard generation
+
+`features/aimeat-whiteboard.feature` · [session](aimeat-whiteboard.session.md)
+
+**What it does:** As Esa I want the existing Mini roundtable to prepare board content for one selected folder So that I can review the Markdown before explicitly triggering Gemini whiteboard images.
+
+**Behaviour (6 scenarios):**
+
+- Prepare one folder from its existing Markdown — `@runtime-verified`
+- Collect a completed Mini roundtable as an editable preparation — `@runtime-verified`
+- Verify the installed BBS and Free Energy Whiteboard route without image generation — `@designed @untested`
+- Explicitly manufacture reviewed boards — `@designed @untested`
+- Image-only source is kept on the Cloudcity OCR path — `@untested`
+- Existing board outputs remain untouched — `@stock`
+
+**How it does it:** **Key procs:** `prepare`, `markdown_sources`, `collect`, `manufacture`, `board_folder`
+
+**Grade:** @designed ×2 · @runtime-verified ×2 · @stock ×1 · @untested ×3
 
 
 <a id="app-audio-record"></a>

@@ -12,6 +12,7 @@
 |------|----:|:-----:|:----------:|:--------:|----------------|
 | aimeat-email-pdf | 5 | ✗ | ✓ | — | @built @runtime-verified @sim-verified @stock |
 | aimeat-roundtable | 10 | ✓ | ~ partial | — | @code-verified @runtime-untested @runtime-verified @stock |
+| aimeat-whiteboard | 6 | ✗ | ✓ | — | @designed @runtime-verified @stock @untested |
 | app-audio-record | 23 | ✗ | — | ✓ | @built @hw-verified @note |
 | apple-energy | 16 | ✗ | — | — | @built @note @parser-verified |
 | apple-harness | 11 | ✓ | ~ partial | — | @built @code-verified @runtime-untested @runtime-verified |
@@ -70,8 +71,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 58
+- Cards: 59
 - Build-verified: 8
-- Runtime-verified: 9 full + 4 partial
+- Runtime-verified: 10 full + 4 partial
 - **Hardware-verified: 21**  ·  hardware-untested: 0
 

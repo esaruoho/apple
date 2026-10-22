@@ -16,13 +16,18 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import subprocess
 import sys
 
 BOARDS = Path.home() / "work/merlib-dump/articles/boards"
 AIMEAT = Path.home() / "work/merlib-dump/aimeat"
 RETURN_ROOT = Path.home() / "work/comms/queue/aimeat-roundtable-results"
-WHITEBOARD = Path.home() / ".agents/skills/whiteboard/bin/whiteboard-generate.sh"
+WHITEBOARD_SKILL = Path.home() / ".agents/skills/whiteboard"
+WHITEBOARD = WHITEBOARD_SKILL / "bin/whiteboard-generate.sh"
+BBS_SKILL = Path.home() / ".agents/skills/bbs/SKILL.md"
+FREE_ENERGY_RULE = Path.home() / ".agents/skills/free-energy/rules/whiteboard-frontmatter.md"
+WHITEBOARD_SKILL_DOC = WHITEBOARD_SKILL / "SKILL.md"
 SCHEMA = "aimeat-whiteboard/1"
 MAX_BYTES = 1024 * 1024
 EXCLUDED_PARTS = {"_boards", "_whiteboards", "reviewed", ".git"}
@@ -209,27 +214,83 @@ def collect(job_id: str, *, replace: bool = False) -> Path:
     return output
 
 
-def manufacture(folder: Path, *, count: int | None = None, language: str = "English") -> int:
+def skill_contract() -> list[Path]:
+    """Fail closed if the installed BBS/Free Energy/Whiteboard contract is absent."""
+    required = [BBS_SKILL, FREE_ENERGY_RULE, WHITEBOARD_SKILL_DOC, WHITEBOARD]
+    missing = [str(path) for path in required if not path.is_file()]
+    if missing:
+        raise FileNotFoundError("required Whiteboard skill contract missing: " + ", ".join(missing))
+    docs = [path.read_text(encoding="utf-8") for path in required[:3]]
+    checks = [
+        ("BBS whiteboard generator guidance", "generate-whiteboards.py" in docs[0]),
+        ("Free Energy source-provenance frontmatter rule", "sources:" in docs[1] and "whiteboard-boards" in docs[1]),
+        ("Whiteboard skill full-mode instructions", "--full" in docs[2] and "--guardrails" in docs[2]),
+    ]
+    failed = [label for label, passed in checks if not passed]
+    if failed:
+        raise RuntimeError("installed Whiteboard skill contract changed; re-check: " + ", ".join(failed))
+    if not os.access(WHITEBOARD, os.X_OK):
+        raise PermissionError(f"Whiteboard skill entry point is not executable: {WHITEBOARD}")
+    return required
+
+
+def add_board_provenance(folder: Path, output: Path, count: int) -> None:
+    """Apply the Free Energy Whiteboard frontmatter schema to generated companions."""
+    title = json.dumps(folder.name, ensure_ascii=False)
+    source = json.dumps("../../_whiteboard-preparation.md", ensure_ascii=False)
+    for board_md in sorted((output / "_boards").glob("*.md")):
+        body = board_md.read_text(encoding="utf-8")
+        if body.startswith("---\n"):
+            continue
+        frontmatter = (
+            "---\n"
+            f"title: {title}\n"
+            f"date: {dt.date.today().isoformat()}\n"
+            "type: whiteboard-boards\n"
+            f"board_count: {count}\n"
+            "audience: \"Readers reviewing the source analysis\"\n"
+            "concepts: []\npeople: []\ndevices: []\npatents: []\n"
+            "sources:\n"
+            f"  - path: {source}\n"
+            "    description: \"AIMEAT-reviewed preparation containing the supplied source Markdown and roundtable draft\"\n"
+            "related_boards: []\ntags: [aimeat, roundtable, reviewed-preparation]\n"
+            "---\n\n"
+        )
+        board_md.write_text(frontmatter + body, encoding="utf-8")
+
+
+def manufacture(folder: Path, *, count: int | None = None, language: str = "English",
+                plan_only: bool = False) -> int:
     prep = folder / "_whiteboard-preparation.md"
     if not prep.is_file():
         raise FileNotFoundError(f"review file is missing: {prep}; prepare and collect first")
     text = prep.read_text(encoding="utf-8")
     if len(text.strip()) < 100 or "## Roundtable draft for review" not in text:
         raise ValueError("preparation is too short or does not contain the collected roundtable draft")
-    if not WHITEBOARD.is_file():
-        raise FileNotFoundError(f"whiteboard skill entry point not found: {WHITEBOARD}")
+    required = skill_contract()
     if count is None:
         match = re.search(r"^- Suggested renderer `--count` \(title slot included\): (\d+)\s*$", text, re.MULTILINE)
         count = int(match.group(1)) if match else 5
     today = dt.date.today().isoformat()
     slug = safe_slug(folder.name)
     output = folder / f"{today}-{slug}-whiteboards"
-    command = [str(WHITEBOARD), "--full", "--count", str(count),
+    command = [str(WHITEBOARD), "--full", "--guardrails", "--count", str(count),
                "--language", language, "--title", folder.name,
                "--output-dir", str(output), str(prep)]
+    if plan_only:
+        print("VERIFIED WHITEBOARD SKILL ROUTE (no generator or Gemini call made)")
+        for path in required:
+            print(f"Skill contract: {path}")
+        print("Required modes: --full (synopsis + companion Markdown), --guardrails (Free Energy framing)")
+        print("Exact red-button command:")
+        print("  " + " ".join(shlex.quote(part) for part in command))
+        return 0
     print("RED BUTTON: calling Gemini whiteboard generation for this reviewed folder.", flush=True)
     print(f"Input: {prep}\nOutput: {output}\nBoards requested (including title slot): {count}", flush=True)
-    return subprocess.run(command, check=False).returncode
+    result = subprocess.run(command, check=False)
+    if result.returncode == 0:
+        add_board_provenance(folder, output, count)
+    return result.returncode
 
 
 def main() -> int:
@@ -240,10 +301,11 @@ def main() -> int:
     p_collect = sub.add_parser("collect", help="file the completed roundtable as _whiteboard-preparation.md")
     p_collect.add_argument("job_id")
     p_collect.add_argument("--replace", action="store_true")
-    p_make = sub.add_parser("yes-but-whiteboard", help="explicitly call the Gemini image generator for the reviewed preparation")
+    p_make = sub.add_parser("yes-but-whiteboard", help="show the verified skill route, or explicitly call Gemini")
     p_make.add_argument("folder")
     p_make.add_argument("--count", type=int)
     p_make.add_argument("--language", default="English")
+    p_make.add_argument("--plan", action="store_true", help="verify skill files and print command without generating")
     args = ap.parse_args()
     try:
         if args.verb == "prepare":
@@ -254,7 +316,8 @@ def main() -> int:
             return 0
         if args.count is not None and (args.count < 1 or args.count > 20):
             raise ValueError("board count must be between 1 and 20")
-        return manufacture(board_folder(args.folder), count=args.count, language=args.language)
+        return manufacture(board_folder(args.folder), count=args.count, language=args.language,
+                           plan_only=args.plan)
     except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
         print(f"aimeat-whiteboard: {exc}", file=sys.stderr)
         return 2

@@ -24,11 +24,21 @@ Feature: One selected archive folder gets a reviewed preparation before paid whi
     And an existing review file is preserved unless `--replace` is explicit
 
   @designed @untested
+  Scenario: Verify the installed BBS and Free Energy Whiteboard route without image generation
+    # cite: bin/aimeat-whiteboard skill_contract manufacture
+    Given a reviewed preparation exists
+    When I run `aimeat-whiteboard yes-but-whiteboard <folder> --plan`
+    Then the BBS guidance, Free Energy frontmatter schema and installed Whiteboard skill entry point are checked
+    And the exact red-button command is printed with `--full` and `--guardrails`
+    And neither the generator nor Gemini is called
+
+  @designed @untested
   Scenario: Explicitly manufacture reviewed boards
-    # cite: bin/aimeat-whiteboard manufacture ; ~/.agents/skills/whiteboard/bin/whiteboard-generate.sh
+    # cite: bin/aimeat-whiteboard manufacture skill_contract add_board_provenance ; ~/.agents/skills/whiteboard/bin/whiteboard-generate.sh
     Given I have reviewed and edited `_whiteboard-preparation.md`
     When I run `aimeat-whiteboard yes-but-whiteboard <folder>`
     Then the installed Whiteboard skill receives that Markdown and the selected board count
+    And every generated companion Markdown receives Free Energy source-provenance frontmatter
     And its dated output contains the skill's PNG, PDF, synopsis, companion Markdown and manifest
 
   @untested

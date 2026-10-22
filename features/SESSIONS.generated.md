@@ -8,12 +8,7 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**9 card conversations** plugged in:
-
-### `f1774a04-48cd-4408-9641-5b4d3ea30e50`  (2026-09-20 → 2026-09-21)
-- Resume: `claude --resume f1774a04-48cd-4408-9641-5b4d3ea30e50`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/f1774a04-48cd-4408-9641-5b4d3ea30e50.jsonl
-- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+**10 card conversations** plugged in:
 
 ### `5bb7b403-2577-4b45-9253-991f212b8087`  (2026-09-21 → 2026-09-22)
 - Resume: `claude --resume 5bb7b403-2577-4b45-9253-991f212b8087`
@@ -54,8 +49,20 @@
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
 - Cards touched (3): converse-to-obsidian.feature, fm-converse.feature, sesh.feature
 
+### `40b0d1ae-cb5e-4a07-b7b8-cb543600a045`  (2026-10-21)
+- Resume: `claude --resume 40b0d1ae-cb5e-4a07-b7b8-cb543600a045`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/40b0d1ae-cb5e-4a07-b7b8-cb543600a045.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (2): converse-to-obsidian.feature, fm-converse.feature
+
 ### `ce16f90d-5886-4101-8d57-510226c39db9`  (2026-10-21)
 - Resume: `claude --resume ce16f90d-5886-4101-8d57-510226c39db9`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/ce16f90d-5886-4101-8d57-510226c39db9.jsonl
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
 - Cards touched (4): apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature, transcript-vault-email-analysis.feature
+
+### `dccd82e7-a39d-4b60-b766-ecc77b92579f`  (2026-10-21)
+- Resume: `claude --resume dccd82e7-a39d-4b60-b766-ecc77b92579f`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/dccd82e7-a39d-4b60-b766-ecc77b92579f.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (2): converse-to-obsidian.feature, fm-converse.feature

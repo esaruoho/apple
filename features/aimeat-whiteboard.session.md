@@ -24,3 +24,9 @@ Collected `/Users/esaruoho/work/merlib-dump/articles/boards/2026-08-12-whittaker
 No roundtable or Gemini tests were added. This record describes the single live Mini pilot only; the workflow has not been exercised across other board folders. The current card has verified prepare/collect scenarios and explicitly untested manufacture and image-only paths.
 
 Implementation and initial card commit `d71a59c1` was pushed directly to Apple `main`, with no PR. Only this task's seven files were staged; `features/INDEX.md` and all other pre-existing work stayed unstaged. The report-card delivery line is being recorded as a follow-up card update.
+
+## Continuation — bind the red button to the BBS / Free Energy Whiteboard contract
+
+Esa required proof that the BBS or Free Energy Whiteboard skill is reliably used. Read the Apple repo skill (`skill.md`) and the installed BBS, Free Energy frontmatter, and Whiteboard skill instructions. The prior red-button path called the Whiteboard executable but did not force the Free Energy guardrails, did not verify the skill documents at runtime, and did not add required YAML provenance to generated companion Markdown.
+
+Updated `bin/aimeat-whiteboard` so `yes-but-whiteboard --plan` checks those installed skill contracts and executable, then prints the exact command without calling the generator. The actual button now includes `--full --guardrails`; after a successful run, generated companion Markdown gets the required `whiteboard-boards` provenance fields and a source link back to the reviewed preparation. The plan was run against the actual Whittaker pilot: it resolved the expected skill paths, count 7, dated output path, and exact command. No generator, API, or Gemini call occurred. Manufacture remains @untested until Esa reviews the draft and deliberately invokes the red button.

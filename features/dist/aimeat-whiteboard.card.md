@@ -4,9 +4,9 @@
 
 **Intent:** As Esa I want the existing Mini roundtable to prepare board content for one selected folder So that I can review the Markdown before explicitly triggering Gemini whiteboard images.
 
-**Grades:** @designed × 1 · @runtime-verified × 2 · @stock × 1 · @untested × 2
+**Grades:** @designed × 2 · @runtime-verified × 2 · @stock × 1 · @untested × 3
 
-**Scenarios: 5**
+**Scenarios: 6**
 
 
 ---
@@ -39,7 +39,21 @@
 <sub>cite: bin/aimeat-whiteboard collect</sub>
 
 
-## 3. Explicitly manufacture reviewed boards
+## 3. Verify the installed BBS and Free Energy Whiteboard route without image generation
+
+`@designed @untested`
+
+
+- Given a reviewed preparation exists
+- When I run `aimeat-whiteboard yes-but-whiteboard <folder> --plan`
+- Then the BBS guidance, Free Energy frontmatter schema and installed Whiteboard skill entry point are checked
+- And the exact red-button command is printed with `--full` and `--guardrails`
+- And neither the generator nor Gemini is called
+
+<sub>cite: bin/aimeat-whiteboard skill_contract manufacture</sub>
+
+
+## 4. Explicitly manufacture reviewed boards
 
 `@designed @untested`
 
@@ -47,12 +61,13 @@
 - Given I have reviewed and edited `_whiteboard-preparation.md`
 - When I run `aimeat-whiteboard yes-but-whiteboard <folder>`
 - Then the installed Whiteboard skill receives that Markdown and the selected board count
+- And every generated companion Markdown receives Free Energy source-provenance frontmatter
 - And its dated output contains the skill's PNG, PDF, synopsis, companion Markdown and manifest
 
-<sub>cite: bin/aimeat-whiteboard manufacture ; ~/.agents/skills/whiteboard/bin/whiteboard-generate.sh</sub>
+<sub>cite: bin/aimeat-whiteboard manufacture skill_contract add_board_provenance ; ~/.agents/skills/whiteboard/bin/whiteboard-generate.sh</sub>
 
 
-## 4. Image-only source is kept on the Cloudcity OCR path
+## 5. Image-only source is kept on the Cloudcity OCR path
 
 `@untested`
 
@@ -65,7 +80,7 @@
 <sub>cite: bin/aimeat-whiteboard markdown_sources</sub>
 
 
-## 5. Existing board outputs remain untouched
+## 6. Existing board outputs remain untouched
 
 `@stock`
 
