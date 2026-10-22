@@ -85,6 +85,74 @@ def enqueue(message, queue=None):
     return job
 
 
+
+# REPORT-CARD >> convey/features/substack-analysis-mail.feature
+TEXT_PIPELINE = "aimeat-source-text/1"
+
+
+def enqueue_text(text, *, source_url, title, recipient, queue=None):
+    """Adopt immutable article text into the existing full mail-analysis pipeline."""
+    mini()
+    if not text.strip() or not source_url.startswith(('https://', 'http://')):
+        raise ValueError('A source URL and nonempty text are required')
+    if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', recipient):
+        raise ValueError('Invalid analysis recipient')
+    identity = sha(json.dumps([TEXT_PIPELINE, source_url, sha(text.encode()), recipient]).encode())[:24]
+    job = (queue or QUEUE) / identity
+    job.mkdir(parents=True, exist_ok=True)
+    with (job/'.enqueue.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if (job/'state.json').exists():
+            return job
+        folder = job/'workspace'
+        folder.mkdir(exist_ok=True)
+        message = {'kind': TEXT_PIPELINE, 'message_id': 'source-'+identity,
+                   'from': recipient, 'recipient': recipient, 'subject': title,
+                   'source_url': source_url,
+                   'text': 'Give a full free-energy archive-grounded analysis of this Substack post, '
+                           'including its transcript. Identify the external reservoir and coupling '
+                           'mechanism first; distinguish source claims, archive connections, and '
+                           'device-specific measurement evidence. Source: '+source_url}
+        save(job/'email.json', message)
+        assets, files, offset = [], [], 0
+        # The shared roundtable accepts at most 1 MiB; every character is retained.
+        for number, part in enumerate(chunks(text, 200000), 1):
+            name = f'substack-{identity}-{number:04}.txt'
+            atomic(folder/name, part)
+            assets.append({'text': name, 'sha256': sha(part.encode()),
+                           'range': [offset, offset+len(part)], 'source_url': source_url,
+                           'source_kind': 'text', 'source_chars': len(text)})
+            files.append(name)
+            offset += len(part)
+        email_name = 'email-'+identity+'.json'
+        atomic(folder/email_name, (job/'email.json').read_bytes())
+        save(job/'state.json', {'id': identity, 'kind': TEXT_PIPELINE, 'status': 'reading',
+             'created': time.time(), 'assets': assets, 'files': files+[email_name],
+             'reads': [], 'next_part': 0, 'attempts': 0, 'error': None})
+    return job
+
+
+
+def analysis_html(agent, body):
+    """Use the installed shared rich formatter, or the mail agent's own renderer."""
+    try:
+        from format_email import md_to_html, wrap_email_html
+    except ImportError:
+        return agent.md_to_html(body)
+    return wrap_email_html(md_to_html(body))
+
+
+def send_source_email(agent, key, message, payload):
+    """One send attempt: ambiguous acceptance is retained for manual reconciliation."""
+    body = dict(payload, to=[message['recipient']],
+                subject='Deep analysis: '+message['subject'])
+    url = f"{agent.AM_BASE}/inboxes/{agent.INBOX}/messages/send"
+    request = urllib.request.Request(url, data=json.dumps(body).encode(), method='POST',
+              headers={'Authorization': 'Bearer '+key, 'Content-Type': 'application/json'})
+    with urllib.request.urlopen(request, timeout=120) as response:
+        return json.load(response)
+
+
 def publish(job, state, folder=None, returns=None):
     folder, returns = folder or FOLDER, returns or RETURNS
     destination = returns / state['id']
@@ -270,12 +338,18 @@ def advance(agent, key, job, state, folder, returns):
             route = question+'\n'+text
             context, slugs = agent.wiki_context(route)
             space, why = agent.route_space(message.get('from'), message.get('subject'), route, slugs)
+            if message.get('kind') == TEXT_PIPELINE:
+                space = 'free-energy'
             answer, model = agent.research_email_material(question, '', text, space=space, wiki_ctx=context)
             if agent._is_requeue(answer):
                 raise RuntimeError('Final analysis not sendable; primary reads retained')
             details = '\n\n'.join(f"## {r['source']} · part {r['part']}\n\n{r['analysis']}" for r in state['reads'])
-            coverage = '\n'.join(f"- {a['pdf']}: {a['page_count']} pages; pages with no recognized text: {a['empty_pages']}" for a in state['assets'])
-            body = ('# Email PDF analysis\n\nAnalysis types: full-text section readings; archive-grounded synthesis; '
+            coverage = '\n'.join(
+                f"- {a['text']}: source characters {a['range'][0]}–{a['range'][1]} of {a['source_chars']}; {a['source_url']}"
+                if a.get('source_kind') == 'text' else
+                f"- {a['pdf']}: {a['page_count']} pages; pages with no recognized text: {a['empty_pages']}"
+                for a in state['assets'])
+            body = ('# Source analysis\n\nAnalysis types: full-text section readings; archive-grounded synthesis; '
                     'nine-person Qwen/MLX roundtable (separate transcript); wordcloud, sentencecloud and ideacloud '
                     '(PNGs plus exact Markdown/JSON rendering sources).\n\n'
                     'AI-generated interpretations are separate from source evidence.\n\n'
@@ -343,26 +417,28 @@ def advance(agent, key, job, state, folder, returns):
     elif state['status'] in {'ready-to-send', 'failure-ready-to-send'}:
         failed = state['status'] == 'failure-ready-to-send'
         if failed:
-            body = ('AIMEAT could not complete this PDF job. No complete analysis is claimed.\n\n'
+            body = ('AIMEAT could not complete this source job. No complete analysis is claimed.\n\n'
                     f"Job: {state['id']}\nError: {state['failure']}\n"
                     f"Saved files in merlib-dump/aimeat: {', '.join(state.get('files', []))}\n\n"
                     'Analysis types requested: section readings, archive-grounded synthesis, '
                     'nine-person roundtable and all three cloud types with Markdown rendering sources. Completed checkpoints are retained for recovery.')
         else:
             body = (folder/state['analysis']).read_text()
-        payload = {'text': body, 'html': agent.md_to_html(body), 'attachments': []}
+        payload = {'text': body, 'html': analysis_html(agent, body), 'attachments': []}
         for name in state['files']:
-            if name.endswith(('.pdf', '.analysis.md', '.png', '.source.md', '.render.json', '.ideacloud.md')):
+            if name.endswith(('.pdf', '.txt', '.analysis.md', '.png', '.source.md', '.render.json', '.ideacloud.md')):
                 data = (folder/name).read_bytes()
                 if len(data) <= 15*1024*1024:
                     kind = ('application/pdf' if name.endswith('.pdf') else 'image/png' if name.endswith('.png')
-                            else 'application/json' if name.endswith('.json') else 'text/markdown')
+                            else 'application/json' if name.endswith('.json') else 'text/plain' if name.endswith('.txt') else 'text/markdown')
                     payload['attachments'].append({'filename': name, 'content_type': kind,
                                                    'content': base64.b64encode(data).decode()})
         # A timeout can mean AgentMail accepted the message. Never resend automatically.
         state['status'] = 'sending-unconfirmed'
         publish(job, state, folder, returns)
-        response = agent.send_inbox_reply(key, message['message_id'], payload)
+        response = (send_source_email(agent, key, message, payload)
+                    if message.get('kind') == TEXT_PIPELINE else
+                    agent.send_inbox_reply(key, message['message_id'], payload))
         state.update(status='failed-notified' if failed else 'complete', sent=time.time(), response=response)
 
 
