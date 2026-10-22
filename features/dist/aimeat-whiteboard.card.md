@@ -49,7 +49,7 @@
 - Then the BBS guidance, Free Energy frontmatter schema and installed Whiteboard skill entry point are checked
 - And the exact red-button command is printed with `--full` and `--guardrails`
 - And the guardrails are checked for open-system reservoir framing
-- And the guardrails are checked to prohibit “What We Know / What’s Missing” panels and generic evidence-gap checklists
+- And the guardrails are checked to prohibit evidence-gap, replication, and measurement-question panels
 - And neither the generator nor Gemini is called
 
 <sub>cite: bin/aimeat-whiteboard skill_contract manufacture</sub>

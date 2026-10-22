@@ -231,7 +231,7 @@ def skill_contract() -> list[Path]:
         ("wrapper forwards forced guardrails", '"--guardrails"' in wrapper and 'CMD+=("$GUARDRAILS")' in wrapper),
         ("generator activates guardrails when forced", 'parser.add_argument("--guardrails"' in generator and "use_guardrails = True" in generator),
         ("guardrails retain open-system reservoir framing", "external reservoir" in generator.lower() and "open-system" in generator.lower()),
-        ("guardrails prohibit evidence-gap panels", 'do not add a "what we know"' in generator.lower() and 'include "what we know" vs' not in docs[2].lower()),
+        ("guardrails prohibit evidence-gap and measurement-question panels", 'do not create a board, sidebar, or section organized around evidence gaps' in generator.lower() and 'do not create a board or panel about what is missing' in generator.lower() and 'include "what we know" vs' not in docs[2].lower()),
     ]
     failed = [label for label, passed in checks if not passed]
     if failed:
