@@ -61,15 +61,35 @@ def verify(directory):
     source = directory/'verification.txt'
     source.write_text('\n'.join(p['text'] for p in result['pages']))
     cloud = directory/'verification.wordcloud.png'
-    subprocess.run([str(Path.home()/'work/convey/bin/convey'), 'wordcloud', str(source),
-                    '--out', str(cloud), '--no-open'], check=True, capture_output=True, text=True, timeout=120)
+    sys.path.insert(0, str(root/'shared'))
+    import cloud_assets
+    from cloud_source import read_spec
+    files, errors = cloud_assets.generate(source)
+    assert not errors, errors
+    from PIL import ImageChops
+    clouds = {}
+    for kind in ('wordcloud', 'sentencecloud', 'ideacloud'):
+        png = source.with_suffix('.'+kind+'.png')
+        md = png.with_suffix('.source.md')
+        spec = read_spec(md)
+        assert spec['kind'] == kind and spec['items']
+        if kind == 'ideacloud':
+            assert not any('[0:00]' in item['text'] for item in spec['items'])
+        replay = directory/('replayed-'+kind+'.png')
+        cloud_assets.replay(md, replay)
+        with Image.open(png) as original, Image.open(replay) as recreated:
+            assert original.size == recreated.size
+            assert ImageChops.difference(original.convert('RGB'), recreated.convert('RGB')).getbbox() is None
+            assert original.convert('RGB').getpixel((0, 0)) == (0, 0, 0)
+        clouds[kind] = {'png': str(png), 'markdown': str(md), 'items': len(spec['items']),
+                        'replay_pixel_equal': True, 'background': 'black'}
     with Image.open(cloud) as image:
         rgb = image.convert('RGB')
         pixels = [rgb.getpixel(p) for p in ((0, 0), (image.width-1, 0), (0, image.height-1), (image.width-1, image.height-1))]
         assert all(p == (0, 0, 0) for p in pixels), pixels
     proof = {'host': socket.gethostname(), 'page_count': result['page_count'],
              'last_page': last, 'wordcloud': str(cloud), 'corner_pixels': pixels,
-             'models_called': False, 'email_sent': False}
+             'models_called': False, 'email_sent': False, 'clouds': clouds, 'artifacts': files}
     (directory/'verification.json').write_text(json.dumps(proof, indent=2))
     print(json.dumps(proof))
 

@@ -1,0 +1,7 @@
+#!/usr/bin/env python3
+# REPORT-CARD >> features/cloud-source-markdown.feature
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'shared'))
+from cloud_assets import main
+raise SystemExit(main())

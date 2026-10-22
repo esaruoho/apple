@@ -1,0 +1,85 @@
+{
+  "host": "CloudcityMacMini",
+  "page_count": 25,
+  "last_page": {
+    "method": "vision-ocr",
+    "number": 25,
+    "text": "FINAL PAGE TWENTY FIVE OCR MARKER"
+  },
+  "wordcloud": "/Users/esaruoho/work/comms/queue/aimeat-mail-deploy/ee890110f2619f17/proof/verification.wordcloud.png",
+  "corner_pixels": [
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0
+    ]
+  ],
+  "models_called": false,
+  "email_sent": false,
+  "clouds": {
+    "wordcloud": {
+      "png": "/Users/esaruoho/work/comms/queue/aimeat-mail-deploy/ee890110f2619f17/proof/verification.wordcloud.png",
+      "markdown": "/Users/esaruoho/work/comms/queue/aimeat-mail-deploy/ee890110f2619f17/proof/verification.wordcloud.source.md",
+      "items": 13,
+      "replay_pixel_equal": true,
+      "background": "black"
+    },
+    "sentencecloud": {
+      "png": "/Users/esaruoho/work/comms/queue/aimeat-mail-deploy/ee890110f2619f17/proof/verification.sentencecloud.png",
+      "markdown": "/Users/esaruoho/work/comms/queue/aimeat-mail-deploy/ee890110f2619f17/proof/verification.sentencecloud.source.md",
+      "items": 2,
+      "replay_pixel_equal": true,
+      "background": "black"
+    },
+    "ideacloud": {
+      "png": "/Users/esaruoho/work/comms/queue/aimeat-mail-deploy/ee890110f2619f17/proof/verification.ideacloud.png",
+      "markdown": "/Users/esaruoho/work/comms/queue/aimeat-mail-deploy/ee890110f2619f17/proof/verification.ideacloud.source.md",
+      "items": 2,
+      "replay_pixel_equal": true,
+      "background": "black"
+    }
+  },
+  "artifacts": [
+    "verification.wordcloud.png",
+    "verification.wordcloud.source.md",
+    "verification.wordcloud.render.json",
+    "verification.sentencecloud.png",
+    "verification.sentencecloud.source.md",
+    "verification.sentencecloud.render.json",
+    "verification.ideacloud.png",
+    "verification.ideacloud.source.md",
+    "verification.ideacloud.render.json",
+    "verification.ideacloud.md"
+  ],
+  "runtime_heartbeat": {
+    "schema": "aimeat-mail/1",
+    "host": "CloudcityMacMini",
+    "pid": 9012,
+    "ts": 1792662763.757946,
+    "code_sha256": {
+      "freellmask-mail": "f1e7de4d4385eac8bf6e2991cd9059d2a6f0d28e01e10391e5729ae1adeb176a",
+      "aimeat_mail.py": "a88fd731764f85e131a8abab725c2d5ead5fb301cc0fbae6a9bf2bef517552b3",
+      "cloud_assets.py": "5266d06ef1c413a95fc2d49f841e8556b73d12120d0f8dd0caefec62a3093a63",
+      "cloud_source.py": "2c737808e570138fafa067692316a3ff51edd79864c17929f4100c53b1466434"
+    }
+  },
+  "running_code_matches_checkout": true,
+  "behavioral_tests_passed": 44,
+  "html_formatting": "headings, bold, code, lists, links and tables verified by test",
+  "installed_payload": "ee890110f2619f17"
+}

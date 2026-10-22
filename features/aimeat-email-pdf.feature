@@ -45,9 +45,11 @@ Feature: Owner emails deliver complete PDF material and analyses to AIMEAT
     And local edits are preserved
     And the Mini can run its roundtable directly from the job workspace while the laptop is asleep
     And the email reply carries the analysis and names its analysis types
+    And all three cloud images carry readable source Markdown and rendering JSON
     # cite: shared/aimeat_mail.py publish collect advance
     # cite: roundtable/bridge.py collect
     # cite: shared/aimeat_mail.py merge_mail_inputs
+    # cite: shared/cloud_assets.py generate
 
   @built @runtime-verified
   Scenario: Wordclouds use a black canvas and readable title

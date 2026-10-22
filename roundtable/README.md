@@ -88,10 +88,33 @@ roundtable input files rather than rejected by the watcher's per-file limit.
 The full panel runs on each input. Completion therefore takes longer for books.
 
 Originals, extraction/page records, analysis, roundtable transcripts and new
-black-background wordclouds return through the comms share and are filed beside
+black-background wordcloud, sentencecloud and ideacloud artifacts return through the comms share and are filed beside
 one another in the laptop's `merlib-dump/aimeat`. The final threaded email includes
 the analysis, describes its analysis types, and attaches the saved analysis and
-wordclouds alongside originals when the service size limit permits.
+all three cloud PNGs plus their readable rendering sources alongside originals
+when the service size limit permits. Markdown analysis is rendered as HTML in
+the email body, with a plain-text fallback; Markdown source files remain separate
+attachments for agents.
+
+Each cloud has `<stem>.<type>.png`, `<stem>.<type>.source.md` and
+`<stem>.<type>.render.json`. The source Markdown lists the exact weighted text
+and embeds the complete checksummed JSON input. It is written before the image.
+Ideacloud also retains the extractive takeaways in `<stem>.ideacloud.md`.
+The existing video key-takeaways path keeps its timestamps and `.keyideas.md`;
+its poster now gains `.keyideas.source.md` and `.keyideas.render.json` too.
+Single-file/folder Convey cloud commands preserve sources, and corpus scans skip
+generated `.source.md` files to avoid counting their own prior output.
+
+On the Mini, regenerate an image without reading its PNG:
+
+```sh
+python3 ~/work/apple/bin/cloud-assets render /absolute/path/paper.ideacloud.source.md --out /absolute/path/recreated.png
+```
+
+Build all three types for an existing extracted text with
+`python3 ~/work/apple/bin/cloud-assets build /absolute/path/paper.txt`.
+These are extractive views, not additional model analyses. If no suitable prose
+exists for a sentence or idea cloud, the missing artifact is reported explicitly.
 
 Pending jobs live in `comms/queue/aimeat-mail-jobs/<message-hash>/state.json`.
 The Mini keeps processing artifacts in that job's `workspace`, and the existing

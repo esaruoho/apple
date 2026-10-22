@@ -3064,7 +3064,8 @@ def main():
         print(f"FreeLLMAPI key: {'set' if _read_key('FM_FREE_KEY','~/.fm-free.key') else 'MISSING'}")
     elif cmd=="loop":
         print(f"freellmask-mail loop: polling {INBOX} every {POLL_SEC}s")
-        watched = [Path(__file__), Path(aimeat_mail.__file__)]
+        watched = [Path(__file__), Path(aimeat_mail.__file__), Path(aimeat_mail.cloud_assets.__file__),
+                   Path(__file__).resolve().parent.parent/'shared/cloud_source.py']
         versions = [p.stat().st_mtime_ns for p in watched]
         while True:
             aimeat_mail.mini()

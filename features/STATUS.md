@@ -19,6 +19,7 @@
 | applebar-session | 8 | ✗ | — | — | @built @leak-fixed @shipped @verified |
 | archof | 6 | ✗ | — | — | @built @stock @verified |
 | arm-apple-skill | 17 | ✗ | — | ✓ | @built @hw-verified @observed |
+| cloud-source-markdown | 5 | ✓ | ✓ | — | @code-verified @runtime-verified @sim-verified @stock |
 | converse-to-obsidian | 7 | ✓ | ✓ | — | @build-verified @built @code-verified @runtime-verified |
 | dictation-button | 10 | ✗ | — | — | @built @note @todo @untested @verified |
 | directions-home | 6 | ✗ | — | — | @built @note @verified |
@@ -69,8 +70,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 57
-- Build-verified: 7
-- Runtime-verified: 8 full + 4 partial
+- Cards: 58
+- Build-verified: 8
+- Runtime-verified: 9 full + 4 partial
 - **Hardware-verified: 21**  ·  hardware-untested: 0
 

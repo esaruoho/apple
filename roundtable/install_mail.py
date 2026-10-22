@@ -19,7 +19,8 @@ ROOT = Path(__file__).resolve().parents[1]
 WORK = Path.home()/'work'
 FILES = ['bin/freellmask-mail', 'shared/aimeat_mail.py', 'bin/mail-pdf-text',
          'bin/mail-pdf-text.swift', 'roundtable/install_mail.py',
-         'roundtable/verify_mail.py', 'scripts/wordcloud-dark.py']
+         'roundtable/verify_mail.py', 'scripts/wordcloud-dark.py', 'scripts/cloud-source-sidecars.py',
+         'shared/cloud_source.py', 'shared/cloud_assets.py', 'bin/cloud-assets']
 
 
 def stage(action):
@@ -72,6 +73,7 @@ def install(payload):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(payload/name, target)
     (WORK/'apple/bin/mail-pdf-text').chmod(0o755)
+    (WORK/'apple/bin/cloud-assets').chmod(0o755)
     cache = Path.home()/'.cache/apple/mail-pdf-text'
     cache.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(binary, cache)
@@ -85,6 +87,19 @@ def install(payload):
             saved.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, saved)
     changed = theme.apply(WORK)
+    spec = importlib.util.spec_from_file_location('sidecars', payload/'scripts/cloud-source-sidecars.py')
+    sidecars = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sidecars)
+    for name in ('convey/convey/actions/wordcloud-generator.py', 'convey/convey/actions/sentencecloud-generator.py',
+                 'convey/convey/actions/wordcloud', 'convey/convey/actions/sentencecloud',
+                 'convey/convey/actions/video', 'convey/convey/cli.py', 'convey/convey/actions/cloud_source.py',
+                 'merlib-dump/scripts/wordcloud-generator.py', 'merlib-dump/scripts/cloud_source.py'):
+        path = WORK/name
+        if path.exists():
+            saved = backup/name
+            saved.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(path, saved)
+    source_changes = sidecars.apply(WORK, payload/'shared/cloud_source.py')
     # Keep concurrent roundtable fixes intact. Install only the mail collector
     # hook on older checkouts, rather than copying this shared worker wholesale.
     bridge = WORK/'apple/roundtable/bridge.py'
@@ -111,6 +126,7 @@ def install(payload):
         shutil.copy2(bridge, saved)
         bridge.write_text(text)
     receipt = {'installed': True, 'host': socket.gethostname(), 'theme_changed': changed,
+                      'cloud_source_changes': source_changes,
                       'activation': 'Existing Cloudcity-Boot mail pane requires cloudcity restart',
                       'payload': str(payload), 'files': manifest, 'installed_at': time.time()}
     (payload/'installed.json').write_text(json.dumps(receipt, indent=2))

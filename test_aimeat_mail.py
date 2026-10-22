@@ -155,7 +155,15 @@ class EmailPDFTests(unittest.TestCase):
         mail.atomic(canonical/'job/transcript.md', transcript)
         mail.save(canonical/'job/state.json', {'status': 'complete', 'source': source.name, 'sha256': mail.sha(source.read_bytes()), 'result_sha256': mail.sha(transcript.encode())})
         mail.atomic(source.with_suffix('.wordcloud.png'), b'png-fixture')
-        with patch.object(mail, 'ROUNDTABLE_RETURNS', canonical):
+        def clouds(source):
+            files=[]
+            for kind in ('wordcloud', 'sentencecloud', 'ideacloud'):
+                for suffix in ('.png', '.source.md', '.render.json'):
+                    path=source.with_suffix('.'+kind+suffix)
+                    path.write_text('fixture')
+                    files.append(path.name)
+            return files, {}
+        with patch.object(mail, 'ROUNDTABLE_RETURNS', canonical), patch.object(mail.cloud_assets, 'generate', side_effect=clouds):
             for _ in range(3):
                 mail.process_pending(agent, 'key', self.queue, self.folder, self.returns)
         self.assertEqual(agent.send_inbox_reply.call_count, 1)
@@ -166,6 +174,11 @@ class EmailPDFTests(unittest.TestCase):
         analysis = (laptop/state['analysis']).read_text()
         self.assertIn(transcript, analysis)
         self.assertIn('25 pages', analysis)
+        sent=agent.send_inbox_reply.call_args.args[2]
+        for kind in ('wordcloud', 'sentencecloud', 'ideacloud'):
+            self.assertTrue(any(a['filename'].endswith('.'+kind+'.source.md') for a in sent['attachments']))
+            self.assertTrue(any(a['filename'].endswith('.'+kind+'.png') for a in sent['attachments']))
+        self.assertIn('html', sent)
 
     def test_mini_processing_uses_job_workspace_until_laptop_files_the_source(self):
         job = mail.enqueue(self.message, self.queue)

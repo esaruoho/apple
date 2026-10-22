@@ -15,6 +15,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [AppleBar — what the session accomplished](#applebar-session) — `applebar-session.feature`
 - [The architecture of any repository, whitelabeled](#archof) — `archof.feature`
 - [Arm the Apple skill into the Mini's on-device chat brain](#arm-apple-skill) — `arm-apple-skill.feature`
+- [Cloud images carry readable reproducible source documents](#cloud-source-markdown) — `cloud-source-markdown.feature`
 - [converse-to-obsidian — linked Markdown views of Converse sessions](#converse-to-obsidian) — `converse-to-obsidian.feature`
 - [On-device dictation button](#dictation-button) — `dictation-button.feature`
 - [Directions home via Apple Maps](#directions-home) — `directions-home.feature`
@@ -78,7 +79,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Wordclouds use a black canvas and readable title — `@built @runtime-verified`
 - Compute stays on CloudcityMacMini — `@stock @sim-verified`
 
-**How it does it:** **Key procs:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `scripts/wordcloud-dark.py`, `eligible`, `process_pending`, `extract_pdf` · **Source files:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `roundtable/bridge.py`, `scripts/wordcloud-dark.py`
+**How it does it:** **Key procs:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `scripts/wordcloud-dark.py`, `eligible`, `process_pending`, `extract_pdf` · **Source files:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `roundtable/bridge.py`, `shared/cloud_assets.py`, `scripts/wordcloud-dark.py`
 
 **Grade:** @built ×4 · @runtime-verified ×2 · @sim-verified ×4 · @stock ×1
 
@@ -283,6 +284,24 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Qwen3-4B thinking mode is verbose
 
 **Grade:** @built ×15 · @hw-verified ×11
+
+
+<a id="cloud-source-markdown"></a>
+## Cloud images carry readable reproducible source documents
+
+`features/cloud-source-markdown.feature` · [session](cloud-source-markdown.session.md)
+
+**Behaviour (5 scenarios):**
+
+- Every newly rendered cloud saves its exact inputs before the image — `@code-verified @runtime-verified`
+- Emailed PDFs return all three cloud types with their source files — `@code-verified @sim-verified`
+- An agent can recreate an image from Markdown without OCR — `@code-verified @runtime-verified`
+- Email is sent as formatted HTML with a plain-text fallback — `@code-verified @sim-verified`
+- New source sidecars do not become new corpus material automatically — `@stock @sim-verified`
+
+**How it does it:** **Key procs:** `shared/cloud_source.py`, `shared/cloud_assets.py`, `scripts/cloud-source-sidecars.py`, `generate`, `replay`, `write_spec` · **Source files:** `shared/cloud_source.py`, `scripts/cloud-source-sidecars.py`, `shared/cloud_assets.py`, `shared/aimeat_mail.py`
+
+**Grade:** @code-verified ×4 · @runtime-verified ×2 · @sim-verified ×3 · @stock ×1
 
 
 <a id="converse-to-obsidian"></a>

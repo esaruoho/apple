@@ -48,8 +48,9 @@
 - And local edits are preserved
 - And the Mini can run its roundtable directly from the job workspace while the laptop is asleep
 - And the email reply carries the analysis and names its analysis types
+- And all three cloud images carry readable source Markdown and rendering JSON
 
-<sub>cite: shared/aimeat_mail.py publish collect advance · roundtable/bridge.py collect · shared/aimeat_mail.py merge_mail_inputs</sub>
+<sub>cite: shared/aimeat_mail.py publish collect advance · roundtable/bridge.py collect · shared/aimeat_mail.py merge_mail_inputs · shared/cloud_assets.py generate</sub>
 
 
 ## 4. Wordclouds use a black canvas and readable title

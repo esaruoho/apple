@@ -15,10 +15,13 @@ import socket
 import subprocess
 import tempfile
 import time
+import sys
 import urllib.parse
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT/'shared'))
+import cloud_assets
 QUEUE = Path.home() / 'work/comms/queue/aimeat-mail-jobs'
 RETURNS = Path.home() / 'work/comms/queue/aimeat-mail-results'
 ROUNDTABLE_RETURNS = Path.home() / 'work/comms/queue/aimeat-roundtable-results'
@@ -273,7 +276,8 @@ def advance(agent, key, job, state, folder, returns):
             details = '\n\n'.join(f"## {r['source']} · part {r['part']}\n\n{r['analysis']}" for r in state['reads'])
             coverage = '\n'.join(f"- {a['pdf']}: {a['page_count']} pages; pages with no recognized text: {a['empty_pages']}" for a in state['assets'])
             body = ('# Email PDF analysis\n\nAnalysis types: full-text section readings; archive-grounded synthesis; '
-                    'nine-person Qwen/MLX roundtable (separate transcript); wordcloud.\n\n'
+                    'nine-person Qwen/MLX roundtable (separate transcript); wordcloud, sentencecloud and ideacloud '
+                    '(PNGs plus exact Markdown/JSON rendering sources).\n\n'
                     'AI-generated interpretations are separate from source evidence.\n\n'
                     f'## Extraction coverage\n\n{coverage}\n\n## Synthesis\n\n{answer}\n\n# Section readings\n\n{details}')
             name = f"email-{state['id']}.analysis.md"
@@ -322,19 +326,18 @@ def advance(agent, key, job, state, folder, returns):
             for path in (transcript, status_path):
                 if path.name not in state['files']:
                     state['files'].append(path.name)
-            cloud = source.with_suffix('.wordcloud.png')
-            if not cloud.exists():
-                try:
-                    subprocess.run([str(Path.home()/'work/convey/bin/convey'), 'wordcloud', str(source),
-                                    '--out', str(cloud), '--no-open'], check=True, capture_output=True, timeout=180)
-                except Exception as error:
-                    state['wordcloud_error'] = str(error)
-            if cloud.exists() and cloud.name not in state['files']:
-                state['files'].append(cloud.name)
+            cloud_files, errors = cloud_assets.generate(source)
+            for name in cloud_files:
+                if name not in state['files']:
+                    state['files'].append(name)
+            if errors:
+                state.setdefault('cloud_errors', {})[source.name] = errors
         analysis = (job/'base-analysis.md').read_text()
         analysis += '\n\n# Roundtables\n\n'+'\n\n'.join(p.read_text() for p in transcripts)
-        if state.get('wordcloud_error'):
-            analysis += '\n\nWordcloud generation failed: '+state['wordcloud_error']
+        cloud_files = [name for name in state['files'] if name.endswith(('.png', '.source.md', '.render.json', '.ideacloud.md'))]
+        analysis += '\n\n## Cloud artifacts\n\n'+ '\n'.join('- `'+name+'`' for name in cloud_files)
+        if state.get('cloud_errors'):
+            analysis += '\n\nCloud generation issues (no missing artifact is claimed as complete):\n'+json.dumps(state['cloud_errors'], indent=2)
         atomic(folder/state['analysis'], analysis)
         state['status'] = 'ready-to-send'
     elif state['status'] in {'ready-to-send', 'failure-ready-to-send'}:
@@ -344,15 +347,16 @@ def advance(agent, key, job, state, folder, returns):
                     f"Job: {state['id']}\nError: {state['failure']}\n"
                     f"Saved files in merlib-dump/aimeat: {', '.join(state.get('files', []))}\n\n"
                     'Analysis types requested: section readings, archive-grounded synthesis, '
-                    'nine-person roundtable and wordcloud. Completed checkpoints are retained for recovery.')
+                    'nine-person roundtable and all three cloud types with Markdown rendering sources. Completed checkpoints are retained for recovery.')
         else:
             body = (folder/state['analysis']).read_text()
         payload = {'text': body, 'html': agent.md_to_html(body), 'attachments': []}
         for name in state['files']:
-            if name.endswith(('.pdf', '.analysis.md', '.wordcloud.png')):
+            if name.endswith(('.pdf', '.analysis.md', '.png', '.source.md', '.render.json', '.ideacloud.md')):
                 data = (folder/name).read_bytes()
                 if len(data) <= 15*1024*1024:
-                    kind = 'application/pdf' if name.endswith('.pdf') else ('image/png' if name.endswith('.png') else 'text/markdown')
+                    kind = ('application/pdf' if name.endswith('.pdf') else 'image/png' if name.endswith('.png')
+                            else 'application/json' if name.endswith('.json') else 'text/markdown')
                     payload['attachments'].append({'filename': name, 'content_type': kind,
                                                    'content': base64.b64encode(data).decode()})
         # A timeout can mean AgentMail accepted the message. Never resend automatically.
