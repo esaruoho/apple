@@ -4,7 +4,7 @@
 # areaspace: OWNS one-folder whiteboard preparation and explicit image trigger; reuses AIMEAT roundtable and user Whiteboard skill.
 # MUST NOT touch: unselected board folders, existing PNG/PDF outputs, local OCR, or Gemini image generation during preparation.
 # SESSION: aimeat-whiteboard.session.md
-# RESULT: Mini compatibility payload `0db66f90cebf956d` installed; Whittaker/Tesla pilot returned a hash-verified two-section, 36-turn draft at `_whiteboard-preparation.md`; Gemini manufacture remains unrun pending human review.
+# RESULT: Mini compatibility payload `0db66f90cebf956d` installed; Whittaker/Tesla pilot returned a hash-verified two-section, 36-turn draft at `_whiteboard-preparation.md`; implementation + initial card `d71a59c1` pushed to main, no PR; Gemini manufacture remains unrun pending human review.
 # WATCH: prepare markdown_sources collect manufacture board_folder
 
 Feature: One selected archive folder gets a reviewed preparation before paid whiteboard generation
