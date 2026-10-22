@@ -1,0 +1,14 @@
+#!/bin/bash
+# REPORT-CARD >> features/aimeat-email-pdf.feature
+set -euo pipefail
+case "$(hostname -s | tr '[:upper:]' '[:lower:]')" in
+  cloudcity|cloudcitymacmini) ;;
+  *) echo 'PDF extraction runs only on CloudcityMacMini' >&2; exit 1 ;;
+esac
+HERE="$(cd "$(dirname "$0")" && pwd)"
+CACHE="$HOME/.cache/apple/mail-pdf-text"
+mkdir -p "$(dirname "$CACHE")"
+if [ ! -x "$CACHE" ] || [ "$HERE/mail-pdf-text.swift" -nt "$CACHE" ]; then
+  xcrun swiftc -O "$HERE/mail-pdf-text.swift" -o "$CACHE" -framework PDFKit -framework Vision -framework AppKit
+fi
+exec "$CACHE" "$@"

@@ -10,6 +10,7 @@
 
 | Card | Scn | Build | Runtime | Hardware | Grades present |
 |------|----:|:-----:|:----------:|:--------:|----------------|
+| aimeat-email-pdf | 5 | ✗ | ✓ | — | @built @runtime-verified @sim-verified @stock |
 | aimeat-roundtable | 10 | ✓ | ~ partial | — | @code-verified @runtime-untested @runtime-verified @stock |
 | app-audio-record | 23 | ✗ | — | ✓ | @built @hw-verified @note |
 | apple-energy | 16 | ✗ | — | — | @built @note @parser-verified |
@@ -68,8 +69,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 56
+- Cards: 57
 - Build-verified: 7
-- Runtime-verified: 7 full + 4 partial
+- Runtime-verified: 8 full + 4 partial
 - **Hardware-verified: 21**  ·  hardware-untested: 0
 

@@ -158,7 +158,9 @@ def output_paths(source: Path) -> tuple[Path, Path]:
 
 def collect(folder: Path, returns: Path = RETURN_ROOT) -> int:
     """File verified returned artifacts. No model imports or inference on the client."""
-    copied = 0
+    sys.path.insert(0, str(ROOT / 'shared'))
+    from aimeat_mail import collect as collect_mail
+    copied = collect_mail(folder)
     for path in sorted(returns.glob("*/state.json")):
         try:
             state = read_json(path)

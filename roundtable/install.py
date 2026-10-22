@@ -20,7 +20,7 @@ import shlex
 ROOT = Path(__file__).resolve().parents[1]
 WORK = Path.home() / "work"
 FILES = ["bin/aimeat-roundtable", "roundtable/bridge.py", "roundtable/install.py",
-         "roundtable/convey-roundtable.py.txt"]
+         "roundtable/convey-roundtable.py.txt", "shared/aimeat_mail.py"]
 SMOKE_TEXT = "Roundtable pipeline check. Consider a greenhouse with an open window: sunlight enters, stored heat changes, and warm air leaves. Discuss how identifying the source, boundary and measurable flows helps distinguish a mechanism from a measurement claim. The source marker is GREENHOUSE-731. Address this specific example rather than a generic introduction.\n"
 SERVICE = '''
   # REPORT-CARD >> apple/features/aimeat-roundtable.feature

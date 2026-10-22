@@ -6,6 +6,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 ## Contents
 
+- [Owner emails deliver complete PDF material and analyses to AIMEAT](#aimeat-email-pdf) — `aimeat-email-pdf.feature`
 - [A text file in the AIMEAT folder receives a grounded MLX roundtable beside it](#aimeat-roundtable) — `aimeat-roundtable.feature`
 - [Capture one application's audio to a .wav without a loopback driver](#app-audio-record) — `app-audio-record.feature`
 - [Read macOS energy & power telemetry from the command line](#apple-energy) — `apple-energy.feature`
@@ -62,6 +63,24 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [One button for "Claude talks to me" (server + speech together)](#voicebox-speak-toggle) — `voicebox-speak-toggle.feature`
 - [voicebox-worker — a TTS queue that survives the worker dying mid-job](#voicebox-worker) — `voicebox-worker.feature`
 - [A Voice Memo tagged #audio becomes a .wav sample on disk](#voicememo-audio-tag-to-wav) — `voicememo-audio-tag-to-wav.feature`
+
+
+<a id="aimeat-email-pdf"></a>
+## Owner emails deliver complete PDF material and analyses to AIMEAT
+
+`features/aimeat-email-pdf.feature` · [session](aimeat-email-pdf.session.md)
+
+**Behaviour (5 scenarios):**
+
+- Owner PDF intake is durable and does not answer twice — `@built @sim-verified`
+- Every PDF page and every text section is considered — `@built @sim-verified @runtime-verified`
+- The laptop receives the original and actual returned results — `@built @sim-verified`
+- Wordclouds use a black canvas and readable title — `@built @runtime-verified`
+- Compute stays on CloudcityMacMini — `@stock @sim-verified`
+
+**How it does it:** **Key procs:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `scripts/wordcloud-dark.py`, `eligible`, `process_pending`, `extract_pdf` · **Source files:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `roundtable/bridge.py`, `scripts/wordcloud-dark.py`
+
+**Grade:** @built ×4 · @runtime-verified ×2 · @sim-verified ×4 · @stock ×1
 
 
 <a id="aimeat-roundtable"></a>

@@ -20,6 +20,10 @@ Secrets / config (never in git):
 # FEATURE-CARD >> features/freellmask-mail-anti-loop-and-video-gate.feature
 import atexit, base64, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.parse, urllib.request, urllib.error, uuid
 from pathlib import Path
+import types
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'shared'))
+import aimeat_mail
+# REPORT-CARD >> features/aimeat-email-pdf.feature
 
 def enc(s):  # message_ids look like <...@email.amazonses.com> — must be URL-encoded in the path
     return urllib.parse.quote(s, safe="")
@@ -176,7 +180,10 @@ def _extract_one(k, mid, att):
         tmp=None
         try:
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tf: tf.write(raw); tmp=tf.name
-            cmd=[str(VISION_OCR), tmp] + (["--pages","20"] if suffix.lower()==".pdf" else [])
+            if suffix.lower() == '.pdf':
+                txt, coverage = aimeat_mail.extract_pdf(Path(tmp))
+                return name, txt
+            cmd=[str(VISION_OCR), tmp]
             out=subprocess.run(cmd, capture_output=True, text=True, timeout=240)
             txt=(out.stdout or "")
             # Drop Vision/TextRecognition framework log noise that can leak into stdout — it must
@@ -193,6 +200,8 @@ def _extract_one(k, mid, att):
             if tmp:
                 try: os.unlink(tmp)
                 except Exception: pass
+                try: os.unlink(tmp+'.pages.json')
+                except FileNotFoundError: pass
     return name, f"[unsupported attachment type: {ct or low}]"
 
 def extract_attachments(k, mid, attachments, verbose=False):
@@ -1072,13 +1081,14 @@ def fetch_url_content(body, verbose=False):
                 tmp=None
                 try:
                     with tempfile.NamedTemporaryFile(suffix=".pdf",delete=False) as tf: tf.write(data); tmp=tf.name
-                    out=subprocess.run([str(VISION_OCR),tmp,"--pages","20"],capture_output=True,text=True,timeout=240)
-                    txt=(out.stdout or "").strip()
+                    txt, coverage = aimeat_mail.extract_pdf(Path(tmp))
                 finally:
                     if tmp:
                         try: os.unlink(tmp)
                         except Exception: pass
-                blocks.append(f"--- PDF from URL: {u} ---\n{txt[:MAX_CHARS] if txt else '[no text found]'}")
+                        try: os.unlink(tmp+'.pages.json')
+                        except FileNotFoundError: pass
+                blocks.append(f"--- PDF from URL: {u} ---\n{txt if txt else '[no text found]'}")
                 if verbose: print(f"    · url-pdf {u}: {len(txt)} chars")
             elif "text/html" in ct or "text/plain" in ct or not ct:
                 html_s=data.decode("utf-8","ignore")
@@ -2000,6 +2010,7 @@ def whisp_autosubmit(urls, verbose=False):
 def poll_once(verbose=True):
     transcript_sweep(verbose)   # periodically feed new transcripts into the graph (non-blocking)
     k=am_key(); st=load_state(); seen=OrderedSeen(st.get("seen",[]))
+    aimeat_mail.process_pending(types.SimpleNamespace(**globals()), k)
     listing=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=50", k)
     replied_seed(k, listing.get("messages", listing if isinstance(listing,list) else []))
     replied_mids, replied_threads = replied_load()
@@ -2037,10 +2048,19 @@ def poll_once(verbose=True):
         # The slower the brain gets, the wider the unguarded window: the storm was a race, and rate
         # limiting is what widened it. Claiming up front closes it. A claimed message that then fails
         # to send is a MISSED reply Esa can retrigger — strictly better than twelve duplicates.
+        full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
+        # Owner PDFs become durable jobs BEFORE the legacy reply claim. A crash
+        # cannot turn a partly read PDF into an answered-and-forgotten email.
+        if aimeat_mail.eligible(full, OWNER_ADDRS):
+            aimeat_mail.enqueue(full)
+            seen.add(mid)
+            st['seen']=list(seen)[-SEEN_CAP:]
+            save_state(st)
+            if verbose: print(f"  AIMEAT PDF queued: {full.get('subject', '')}")
+            continue
         replied_add(mid, m.get("thread_id"), m.get("subject", "") or "")
         replied_mids.add(mid)
         replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
-        full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
         # body: prefer extracted/plain text; fall back to HTML (forwards are often HTML-only)
         # AgentMail's `extracted_text` is USUALLY the clean body — but sometimes it extracts ONLY the
         # signature (e.g. 26 chars "-- Esa Ruoho +358…" for a newsletter whose real body is in `text`).
@@ -3044,13 +3064,23 @@ def main():
         print(f"FreeLLMAPI key: {'set' if _read_key('FM_FREE_KEY','~/.fm-free.key') else 'MISSING'}")
     elif cmd=="loop":
         print(f"freellmask-mail loop: polling {INBOX} every {POLL_SEC}s")
+        watched = [Path(__file__), Path(aimeat_mail.__file__)]
+        versions = [p.stat().st_mtime_ns for p in watched]
         while True:
+            aimeat_mail.mini()
+            aimeat_mail.save(aimeat_mail.QUEUE.parent/'aimeat-mail-heartbeat.json', {
+                'schema': 'aimeat-mail/1', 'host': __import__('socket').gethostname(),
+                'pid': os.getpid(), 'ts': time.time(),
+                'code_sha256': {p.name: aimeat_mail.sha(p.read_bytes()) for p in watched}})
             try:
                 n=poll_once(verbose=True)
                 if n: print(f"[{time.strftime('%H:%M:%S')}] answered {n} email(s)")
             except Exception as e:
                 print(f"[{time.strftime('%H:%M:%S')}] poll error: {e}")
             time.sleep(POLL_SEC)
+            if [p.stat().st_mtime_ns for p in watched] != versions:
+                print('Mail code changed; reloading inside the existing Boot pane', flush=True)
+                os.execv(sys.executable, [sys.executable, str(Path(__file__).resolve()), 'loop'])
     else:
         n=poll_once(); print(f"polled: answered {n} new email(s)")
 

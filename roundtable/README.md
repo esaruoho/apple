@@ -70,6 +70,42 @@ AIMEAT website. Website intake would need its own authorized connection.
 
 Verification and deployment grade: [report card](../features/aimeat-roundtable.feature).
 
+## Email PDFs
+
+Email a PDF attachment or an explicit `.pdf` URL to `cloudcity-llm@agentmail.to`
+from a configured owner address (currently Esa's Gmail or iCloud address).
+The existing Mini mail pane durably queues the message, saves the original PDF,
+extracts all pages with embedded text or Mini-side Vision OCR, and records pages
+where no text was recognized. OCR provides text, not interpretation of diagrams.
+The attachment byte-size limit remains explicit (25 MiB by default); there is no
+twenty-page limit. Locked or unreadable files produce an honest error, not an
+analysis of missing content.
+
+Every bounded source section receives a checkpointed reading. All readings are
+retained; large sets are reduced in stages for the final archive-grounded
+synthesis. Large extracted documents are split losslessly into multiple
+roundtable input files rather than rejected by the watcher's per-file limit.
+The full panel runs on each input. Completion therefore takes longer for books.
+
+Originals, extraction/page records, analysis, roundtable transcripts and new
+black-background wordclouds return through the comms share and are filed beside
+one another in the laptop's `merlib-dump/aimeat`. The final threaded email includes
+the analysis, describes its analysis types, and attaches the saved analysis and
+wordclouds alongside originals when the service size limit permits.
+
+Pending jobs live in `comms/queue/aimeat-mail-jobs/<message-hash>/state.json`.
+The existing mail pane advances one checkpoint per poll. Failed steps back off;
+after three failures, one failure email describes the incomplete work. A send
+with an ambiguous outcome is held as `sending-unconfirmed` for inspection and
+is never automatically repeated. `aimeat-mail-heartbeat.json` identifies the
+running host, PID and code hashes. Deployment uses `roundtable/install_mail.py`
+and activation uses Cloudcity-Boot's existing restart control. Future mail code
+updates reload within that existing pane after the current poll.
+
+This PDF intake is separate from the ordinary shorter email-answer path.
+Generic webpage and photo archival intake remains future work.
+See [email PDF report card](../features/aimeat-email-pdf.feature).
+
 Verified on CloudcityMacMini with two documents: 36 real turns, all nine default
 seats twice per discussion, matching source/result hashes and automatic local
 filing. Nineteen behavioral tests cover sectioning, retries, version safety,
