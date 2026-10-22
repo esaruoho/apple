@@ -76,6 +76,13 @@ raw_reply=$(curl -sS -m 180 "${curl_resolve[@]}" -X POST "$HOST/v1/chat/completi
   -H "Content-Type: application/json" -d "$body")
 curl_rc=$?
 if [ "$curl_rc" -ne 0 ] || [ -z "$raw_reply" ]; then
+  # The Mini's supervised folder roundtable uses localhost and must fail boundedly
+  # rather than attempting an SSH fallback when its local inference server is down.
+  # REPORT-CARD >> features/aimeat-roundtable.feature
+  if [ "${FM_MLX_NO_SSH:-0}" = "1" ]; then
+    echo "fm-mlx: MLX HTTP endpoint unavailable (SSH fallback disabled)" >&2
+    exit 1
+  fi
   raw_reply=$(printf '%s' "$body" | ssh "$SSH_HOST" \
     "curl -sS -m 180 -X POST http://127.0.0.1:8080/v1/chat/completions -H 'Content-Type: application/json' --data-binary @-")
 fi

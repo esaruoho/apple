@@ -6,6 +6,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 ## Contents
 
+- [A text file in the AIMEAT folder receives a grounded MLX roundtable beside it](#aimeat-roundtable) — `aimeat-roundtable.feature`
 - [Capture one application's audio to a .wav without a loopback driver](#app-audio-record) — `app-audio-record.feature`
 - [Read macOS energy & power telemetry from the command line](#apple-energy) — `apple-energy.feature`
 - [apple-harness — zero-token-first local ingestion engine](#apple-harness) — `apple-harness.feature`
@@ -61,6 +62,30 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [One button for "Claude talks to me" (server + speech together)](#voicebox-speak-toggle) — `voicebox-speak-toggle.feature`
 - [voicebox-worker — a TTS queue that survives the worker dying mid-job](#voicebox-worker) — `voicebox-worker.feature`
 - [A Voice Memo tagged #audio becomes a .wav sample on disk](#voicememo-audio-tag-to-wav) — `voicememo-audio-tag-to-wav.feature`
+
+
+<a id="aimeat-roundtable"></a>
+## A text file in the AIMEAT folder receives a grounded MLX roundtable beside it
+
+`features/aimeat-roundtable.feature` · [session](aimeat-roundtable.session.md)
+
+**What it does:** As Esa I want one text-file drop to start the existing panel automatically So that its Bearden and Prigogine readings return to the work without manual dispatch.
+
+**Behaviour (9 scenarios):**
+
+- New stable text file starts the Sages panel and streams saved turns — `@runtime-verified`
+- The whole document is assigned explicit source sections — `@code-verified @runtime-untested`
+- Restart and source revision preserve provenance — `@code-verified @runtime-untested`
+- A failed local MLX endpoint cannot start an SSH retry — `@code-verified @runtime-untested`
+- Existing extracted sidecars are not submitted automatically — `@stock`
+- The laptop cannot execute the inference worker — `@runtime-verified`
+- Folded persona instructions survive the dependency-free roster reader — `@runtime-verified`
+- The whole bench is discovered instead of hardcoding a subset — `@runtime-verified`
+- Generated results return through comms without changing the archive share — `@runtime-verified`
+
+**How it does it:** **Key procs:** `stream_section`, `verify_panel`, `candidates`, `collect`, `prepare_roster`, `FM_MLX_NO_SSH` · **Source files:** `roundtable/bridge.py`, `roundtable/install.py`, `test_aimeat_roundtable.py`
+
+**Grade:** @code-verified ×3 · @runtime-untested ×3 · @runtime-verified ×5 · @stock ×1
 
 
 <a id="app-audio-record"></a>

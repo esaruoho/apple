@@ -1,0 +1,62 @@
+{
+  "verified_at": "2026-10-21T20:07:22.345481+00:00",
+  "behavioral_tests": 18,
+  "results": [
+    {
+      "source": "roundtable-pipeline-check.txt",
+      "id": "c521bd6e9ffb1e22df2e93fe",
+      "status": "complete",
+      "host": "cloudcitymacmini",
+      "seats": "Bearden,Russell,Rigel,Prigogine,Hilarion,Aria,Vega,Orion,Lyra",
+      "turns_per_section": 18,
+      "completed": [
+        0
+      ],
+      "sections": 1,
+      "sha256": "6dc07f9c03838e2d275315a4fb75f82ea48cde8fcc97a34d8123884c57f51bed",
+      "result_sha256": "0db92af396ff3488f0b37835d292ee76ddd4d058c68906f879c6941aea65dc9d",
+      "turn_counts": {
+        "Bearden": 2,
+        "Russell": 2,
+        "Rigel": 2,
+        "Prigogine": 2,
+        "Hilarion": 2,
+        "Aria": 2,
+        "Vega": 2,
+        "Orion": 2,
+        "Lyra": 2
+      },
+      "source_hash_matches": true,
+      "result_hash_matches": true,
+      "local_result": "/Users/esaruoho/work/merlib-dump/aimeat/roundtable-pipeline-check.txt.roundtable.md"
+    },
+    {
+      "source": "sample-reactive-power-extract.txt",
+      "id": "223e75233275ad1abf406242",
+      "status": "complete",
+      "host": "cloudcitymacmini",
+      "seats": "Bearden,Russell,Rigel,Prigogine,Hilarion,Aria,Vega,Orion,Lyra",
+      "turns_per_section": 18,
+      "completed": [
+        0
+      ],
+      "sections": 1,
+      "sha256": "71d5621f03e7459a6aa2cdad3ce9b5ab27cf7e16937eca0bdea03b035b8bc0ad",
+      "result_sha256": "e4a33c88ec5dc76a4225c5964e0d4975a755dd5bceabdc13ea684d49f65b35b0",
+      "turn_counts": {
+        "Bearden": 2,
+        "Russell": 2,
+        "Rigel": 2,
+        "Prigogine": 2,
+        "Hilarion": 2,
+        "Aria": 2,
+        "Vega": 2,
+        "Orion": 2,
+        "Lyra": 2
+      },
+      "source_hash_matches": true,
+      "result_hash_matches": true,
+      "local_result": "/Users/esaruoho/work/merlib-dump/aimeat/sample-reactive-power-extract.txt.roundtable.md"
+    }
+  ]
+}

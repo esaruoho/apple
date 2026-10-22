@@ -10,6 +10,7 @@
 
 | Card | Scn | Build | Runtime | Hardware | Grades present |
 |------|----:|:-----:|:----------:|:--------:|----------------|
+| aimeat-roundtable | 9 | ✓ | ~ partial | — | @code-verified @runtime-untested @runtime-verified @stock |
 | app-audio-record | 23 | ✗ | — | ✓ | @built @hw-verified @note |
 | apple-energy | 16 | ✗ | — | — | @built @note @parser-verified |
 | apple-harness | 11 | ✓ | ~ partial | — | @built @code-verified @runtime-untested @runtime-verified |
@@ -67,8 +68,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 55
-- Build-verified: 6
-- Runtime-verified: 7 full + 3 partial
+- Cards: 56
+- Build-verified: 7
+- Runtime-verified: 7 full + 4 partial
 - **Hardware-verified: 21**  ·  hardware-untested: 0
 

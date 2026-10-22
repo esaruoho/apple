@@ -135,3 +135,5 @@ iphonemirror/*.app/
 # Xcode DerivedData for the iOS app. Build output, never source — and its
 # XCBuildData blobs contain token-shaped strings that trip GitHub push protection.
 dualcam/build/
+# Private corpus snapshots installed only on the inference host.
+/roundtable/corpora/
