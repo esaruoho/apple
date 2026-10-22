@@ -15,3 +15,8 @@ This describes the Syncthing-backed local AIMEAT workspace. Publishing into the 
 Source pointers: `bin/freellmask-mail` (`_att_bytes`, `_extract_one`, `extract_attachments`, `fetch_url_content`, `poll_once`); `roundtable/README.md`; `roundtable/bridge.py`.
 
 Status: proposed bridge; not implemented or live-tested by this note.
+
+Implementation update: the owner PDF attachment/direct-PDF-URL path is now built
+and deployed. See `features/aimeat-email-pdf.feature` and `roundtable/README.md`
+for actual behavior and verification. Generic webpage/photo archival intake and
+publishing into the AIMEAT website remain separate work.

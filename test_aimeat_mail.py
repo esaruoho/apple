@@ -31,6 +31,10 @@ class EmailPDFTests(unittest.TestCase):
         self.message['text'] = 'https://example.org/paper.pdf?download=1 https://example.org/paper.pdf?download=1'
         self.assertEqual(len(mail.pdf_sources(self.message)), 2)
 
+    def test_missing_attachment_fields_do_not_block_ordinary_owner_mail(self):
+        self.assertEqual(mail.pdf_sources({'attachments': None, 'text': 'ordinary email'}), [])
+        self.assertEqual(mail.pdf_sources({'attachments': [{'filename': None, 'content_type': None}]}), [])
+
     def test_enqueue_is_durable_and_deduplicated(self):
         first = mail.enqueue(self.message, self.queue)
         state = json.loads((first/'state.json').read_text())

@@ -48,9 +48,9 @@ def save(path, value):
 
 
 def pdf_attachments(message):
-    return [a for a in message.get('attachments', [])
-            if a.get('content_type', '').lower() == 'application/pdf'
-            or a.get('filename', '').lower().endswith('.pdf')]
+    return [a for a in (message.get('attachments') or [])
+            if (a.get('content_type') or '').lower() == 'application/pdf'
+            or (a.get('filename') or '').lower().endswith('.pdf')]
 
 
 def pdf_sources(message):
