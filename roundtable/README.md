@@ -94,6 +94,10 @@ the analysis, describes its analysis types, and attaches the saved analysis and
 wordclouds alongside originals when the service size limit permits.
 
 Pending jobs live in `comms/queue/aimeat-mail-jobs/<message-hash>/state.json`.
+The Mini keeps processing artifacts in that job's `workspace`, and the existing
+roundtable pane reads those inputs directly. It can finish while the laptop is
+asleep. The laptop's collector is the sole writer of returned artifacts into
+its archive; the Mini consumes the canonical roundtable return channel.
 The existing mail pane advances one checkpoint per poll. Failed steps back off;
 after three failures, one failure email describes the incomplete work. A send
 with an ambiguous outcome is held as `sending-unconfirmed` for inspection and

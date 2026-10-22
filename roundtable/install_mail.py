@@ -18,7 +18,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 WORK = Path.home()/'work'
 FILES = ['bin/freellmask-mail', 'shared/aimeat_mail.py', 'bin/mail-pdf-text',
-         'bin/mail-pdf-text.swift', 'roundtable/bridge.py', 'roundtable/install_mail.py',
+         'bin/mail-pdf-text.swift', 'roundtable/install_mail.py',
          'roundtable/verify_mail.py', 'scripts/wordcloud-dark.py']
 
 
@@ -85,6 +85,31 @@ def install(payload):
             saved.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, saved)
     changed = theme.apply(WORK)
+    # Keep concurrent roundtable fixes intact. Install only the mail collector
+    # hook on older checkouts, rather than copying this shared worker wholesale.
+    bridge = WORK/'apple/roundtable/bridge.py'
+    text = bridge.read_text()
+    before_bridge = text
+    if 'from aimeat_mail import collect as collect_mail' not in text:
+        begin = text.index('def collect(')
+        at = text.index('    copied = 0\n', begin)
+        text = text[:at]+('    sys.path.insert(0, str(ROOT / "shared"))\n'
+                         '    from aimeat_mail import collect as collect_mail\n'
+                         '    copied = collect_mail(folder)\n')+text[at+len('    copied = 0\n'):]
+    if 'from aimeat_mail import merge_mail_inputs' not in text:
+        marker = '            if args.verb == "submit" and not args.source:\n'
+        if text.count(marker) != 1:
+            raise RuntimeError('Roundtable watch loop changed; cannot insert mail input hook safely')
+        text = text.replace(marker, '            if args.verb == "watch":\n'
+                            '                sys.path.insert(0, str(ROOT / "shared"))\n'
+                            '                from aimeat_mail import merge_mail_inputs\n'
+                            '                paths = merge_mail_inputs(paths, args.stable_seconds)\n'+marker)
+    compile(text, str(bridge), 'exec')
+    if text != before_bridge:
+        saved = backup/'apple/roundtable/bridge.py'
+        saved.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(bridge, saved)
+        bridge.write_text(text)
     receipt = {'installed': True, 'host': socket.gethostname(), 'theme_changed': changed,
                       'activation': 'Existing Cloudcity-Boot mail pane requires cloudcity restart',
                       'payload': str(payload), 'files': manifest, 'installed_at': time.time()}

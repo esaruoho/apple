@@ -46,9 +46,10 @@
 - When Syncthing returns the exported artifacts
 - Then the filing-only collector verifies hashes and files them in merlib-dump/aimeat
 - And local edits are preserved
+- And the Mini can run its roundtable directly from the job workspace while the laptop is asleep
 - And the email reply carries the analysis and names its analysis types
 
-<sub>cite: shared/aimeat_mail.py publish collect advance · roundtable/bridge.py collect</sub>
+<sub>cite: shared/aimeat_mail.py publish collect advance · roundtable/bridge.py collect · shared/aimeat_mail.py merge_mail_inputs</sub>
 
 
 ## 4. Wordclouds use a black canvas and readable title

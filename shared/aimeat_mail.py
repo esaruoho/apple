@@ -21,6 +21,7 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 QUEUE = Path.home() / 'work/comms/queue/aimeat-mail-jobs'
 RETURNS = Path.home() / 'work/comms/queue/aimeat-mail-results'
+ROUNDTABLE_RETURNS = Path.home() / 'work/comms/queue/aimeat-roundtable-results'
 FOLDER = Path.home() / 'work/merlib-dump/aimeat'
 
 
@@ -155,6 +156,26 @@ def chunks(text, size=8000):
     return [text[i:i+size] for i in range(0, len(text), size)]
 
 
+def merge_mail_inputs(paths, stable_seconds=5, queue=None):
+    """Let the existing Mini roundtable pane process email while the laptop sleeps."""
+    sources = []
+    for state_path in (queue or QUEUE).glob('*/state.json'):
+        try:
+            state = json.loads(state_path.read_text())
+            for asset in state.get('assets', []):
+                name = asset['text']
+                if Path(name).name != name:
+                    continue
+                source = state_path.parent/'workspace'/name
+                if source.is_file() and not source.is_symlink() and time.time()-source.stat().st_mtime >= stable_seconds:
+                    sources.append(source)
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    # A later Syncthing copy in the archive is the same input, not a second job.
+    identities = {(p.name, sha(p.read_bytes())) for p in sources}
+    return [p for p in paths if (p.name, sha(p.read_bytes())) not in identities]+sources
+
+
 def advance(agent, key, job, state, folder, returns):
     """One checkpointed step per poll; no background worker or new service."""
     message = json.loads((job / 'email.json').read_text())
@@ -265,18 +286,38 @@ def advance(agent, key, job, state, folder, returns):
         for asset in state['assets']:
             source = folder / asset['text']
             status_path = Path(str(source)+'.roundtable.json')
-            if not status_path.exists():
+            # The laptop is the sole writer in the send-only archive. The Mini
+            # consumes its canonical result channel, not a beside-source copy.
+            candidates = []
+            for path in ROUNDTABLE_RETURNS.glob('*/state.json'):
+                try:
+                    result = json.loads(path.read_text())
+                    if result.get('source') == asset['text'] and result.get('sha256') == asset['sha256']:
+                        candidates.append((result.get('created', 0), path, result))
+                except (OSError, ValueError):
+                    continue
+            canonical = max(candidates, key=lambda item: item[0]) if candidates else None
+            if canonical:
+                _, status_path, result = canonical
+            elif status_path.exists():
+                result = json.loads(status_path.read_text())
+            else:
                 return
-            result = json.loads(status_path.read_text())
             if result.get('sha256') != asset['sha256']:
                 raise RuntimeError('Roundtable source hash mismatch')
             if result['status'] == 'failed':
                 raise RuntimeError('Roundtable failed; inspect its status before retrying')
             if result['status'] != 'complete':
                 return
-            transcript = Path(str(source)+'.roundtable.md')
+            transcript = status_path.parent/'transcript.md' if canonical else Path(str(source)+'.roundtable.md')
             if sha(transcript.read_bytes()) != result['result_sha256']:
                 return
+            if canonical:
+                data = transcript.read_bytes()
+                transcript = Path(str(source)+'.roundtable.md')
+                atomic(transcript, data)
+                status_path = Path(str(source)+'.roundtable.json')
+                save(status_path, result)
             transcripts.append(transcript)
             for path in (transcript, status_path):
                 if path.name not in state['files']:
@@ -334,15 +375,16 @@ def process_pending(agent, key, queue=None, folder=None, returns=None):
 
 
 def _process_pending(agent, key, queue, folder, returns):
-    folder, returns = folder or FOLDER, returns or RETURNS
-    folder.mkdir(parents=True, exist_ok=True)
+    returns = returns or RETURNS
     paths = list(queue.glob('*/state.json'))
     for path in sorted(paths, key=lambda p: json.loads(p.read_text()).get('serviced', 0)):
         state = json.loads(path.read_text())
         if state['status'] in {'complete', 'sending-unconfirmed', 'failed', 'failed-notified'} or state.get('retry_after', 0) > time.time():
             continue
+        workspace = folder or path.parent/'workspace'
+        workspace.mkdir(parents=True, exist_ok=True)
         try:
-            advance(agent, key, path.parent, state, folder, returns)
+            advance(agent, key, path.parent, state, workspace, returns)
             state['error'] = None
             state['attempts'] = 0
         except Exception as error:
@@ -354,7 +396,7 @@ def _process_pending(agent, key, queue, folder, returns):
                 state['failure'] = str(error)
                 state['status'] = 'failure-ready-to-send'
             print(f"AIMEAT PDF {state['id']}: {state['error']}", flush=True)
-        publish(path.parent, state, folder, returns)
+        publish(path.parent, state, workspace, returns)
         state['serviced'] = time.time()
         save(path, state)
         break  # bounded work per poll; oldest serviced job is next

@@ -151,11 +151,13 @@ class EmailPDFTests(unittest.TestCase):
         self.assertIn('UNIQUE FINAL PAGE MARKER', agent._fm_call.call_args_list[-1].args[0][-1]['content'])
         source = self.folder/state['assets'][0]['text']
         transcript = 'All nine participants discussed the source.'
-        mail.atomic(Path(str(source)+'.roundtable.md'), transcript)
-        mail.save(Path(str(source)+'.roundtable.json'), {'status': 'complete', 'sha256': mail.sha(source.read_bytes()), 'result_sha256': mail.sha(transcript.encode())})
+        canonical = self.root/'roundtable-returns'
+        mail.atomic(canonical/'job/transcript.md', transcript)
+        mail.save(canonical/'job/state.json', {'status': 'complete', 'source': source.name, 'sha256': mail.sha(source.read_bytes()), 'result_sha256': mail.sha(transcript.encode())})
         mail.atomic(source.with_suffix('.wordcloud.png'), b'png-fixture')
-        for _ in range(3):
-            mail.process_pending(agent, 'key', self.queue, self.folder, self.returns)
+        with patch.object(mail, 'ROUNDTABLE_RETURNS', canonical):
+            for _ in range(3):
+                mail.process_pending(agent, 'key', self.queue, self.folder, self.returns)
         self.assertEqual(agent.send_inbox_reply.call_count, 1)
         self.assertEqual(json.loads((job/'state.json').read_text())['status'], 'complete')
         laptop = self.root/'laptop'
@@ -164,6 +166,27 @@ class EmailPDFTests(unittest.TestCase):
         analysis = (laptop/state['analysis']).read_text()
         self.assertIn(transcript, analysis)
         self.assertIn('25 pages', analysis)
+
+    def test_mini_processing_uses_job_workspace_until_laptop_files_the_source(self):
+        job = mail.enqueue(self.message, self.queue)
+        coverage = {'page_count': 1, 'pages': [{'number': 1, 'text': 'A source', 'method': 'embedded-text'}]}
+        def extract(path):
+            mail.save(Path(str(path)+'.pages.json'), coverage)
+            return 'A source', coverage
+        agent = types.SimpleNamespace(MAX_ATT=200, _att_bytes=Mock(return_value=b'%PDF-original'))
+        with patch.object(mail, 'extract_pdf', side_effect=extract):
+            mail.process_pending(agent, 'key', self.queue, returns=self.returns)
+        state = json.loads((job/'state.json').read_text())
+        self.assertTrue((job/'workspace'/state['assets'][0]['pdf']).exists())
+        self.assertFalse((self.folder/state['assets'][0]['pdf']).exists())
+        self.assertGreater(mail.collect(self.folder, self.returns), 0)
+        self.assertTrue((self.folder/state['assets'][0]['pdf']).exists())
+        source_name = state['assets'][0]['text']
+        private_source = job/'workspace'/source_name
+        self.assertEqual(mail.merge_mail_inputs([], 0, self.queue), [private_source])
+        self.assertEqual(mail.merge_mail_inputs([self.folder/source_name], 0, self.queue), [private_source])
+        (self.folder/source_name).write_text('A deliberate local revision')
+        self.assertEqual(mail.merge_mail_inputs([self.folder/source_name], 0, self.queue), [self.folder/source_name, private_source])
 
 
 if __name__ == '__main__':

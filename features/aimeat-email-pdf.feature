@@ -11,8 +11,8 @@
 #         convey b7862fb27 (black wordcloud canvas), delivered by cd02ac15d.
 #         Direct-push to main, no PR; newer Convey remote work preserved by merge.
 #         Card-authoring commit: c86de4bf; delivery bookkeeping follows in git.
-#         Mini activation verified for 041ccc97556e14f8; null-field follow-up e926c927fee2bd9e.
-#         Evidence: analysis/proofs/aimeat-email-pdf-verification.json (38 tests).
+#         Mini activation verified; final private-workspace integration dfc71c558e8a859b.
+#         Evidence: analysis/proofs/aimeat-email-pdf-verification.json (39 tests).
 #         Email transport is simulated in tests; no live test email sent.
 # Tests: test_aimeat_mail.py plus existing mail/editor/roundtable behavioral suites.
 
@@ -43,9 +43,11 @@ Feature: Owner emails deliver complete PDF material and analyses to AIMEAT
     When Syncthing returns the exported artifacts
     Then the filing-only collector verifies hashes and files them in merlib-dump/aimeat
     And local edits are preserved
+    And the Mini can run its roundtable directly from the job workspace while the laptop is asleep
     And the email reply carries the analysis and names its analysis types
     # cite: shared/aimeat_mail.py publish collect advance
     # cite: roundtable/bridge.py collect
+    # cite: shared/aimeat_mail.py merge_mail_inputs
 
   @built @runtime-verified
   Scenario: Wordclouds use a black canvas and readable title

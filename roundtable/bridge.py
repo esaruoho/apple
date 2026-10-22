@@ -436,6 +436,10 @@ def main() -> int:
         worker_mtime = Path(__file__).stat().st_mtime_ns
         while True:
             paths = [args.source.expanduser().resolve()] if args.verb == "submit" and args.source else candidates(folder, args.stable_seconds)
+            if args.verb == "watch":
+                sys.path.insert(0, str(ROOT / "shared"))
+                from aimeat_mail import merge_mail_inputs
+                paths = merge_mail_inputs(paths, args.stable_seconds)
             if args.verb == "submit" and not args.source:
                 ap.error("submit requires a source path")
             failed = False

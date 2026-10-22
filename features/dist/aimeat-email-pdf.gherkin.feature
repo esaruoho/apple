@@ -29,9 +29,11 @@ Feature: Owner emails deliver complete PDF material and analyses to AIMEAT
     When Syncthing returns the exported artifacts
     Then the filing-only collector verifies hashes and files them in merlib-dump/aimeat
     And local edits are preserved
+    And the Mini can run its roundtable directly from the job workspace while the laptop is asleep
     And the email reply carries the analysis and names its analysis types
     # cite: shared/aimeat_mail.py publish collect advance
     # cite: roundtable/bridge.py collect
+    # cite: shared/aimeat_mail.py merge_mail_inputs
 
   @built @runtime-verified
   Scenario: Wordclouds use a black canvas and readable title
