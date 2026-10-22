@@ -1,0 +1,264 @@
+#!/usr/bin/env python3
+"""AIMEAT review gate for turning one archive folder into whiteboards.
+
+REPORT-CARD >> features/aimeat-whiteboard.feature
+
+prepare sends one folder's existing Markdown to the Cloudcity AIMEAT roundtable.
+collect files its transcript as a human-editable preparation. The deliberately
+explicit yes-but-whiteboard command is the only path that calls Gemini images.
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+BOARDS = Path.home() / "work/merlib-dump/articles/boards"
+AIMEAT = Path.home() / "work/merlib-dump/aimeat"
+RETURN_ROOT = Path.home() / "work/comms/queue/aimeat-roundtable-results"
+WHITEBOARD = Path.home() / ".agents/skills/whiteboard/bin/whiteboard-generate.sh"
+SCHEMA = "aimeat-whiteboard/1"
+MAX_BYTES = 1024 * 1024
+EXCLUDED_PARTS = {"_boards", "_whiteboards", "reviewed", ".git"}
+
+
+def digest(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def safe_slug(value: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")[:72] or "board"
+
+
+def board_folder(value: str) -> Path:
+    candidate = Path(value).expanduser()
+    if not candidate.is_absolute():
+        candidate = BOARDS / candidate
+    candidate = candidate.resolve()
+    if candidate.parent != BOARDS.resolve() or not candidate.is_dir():
+        raise ValueError(f"select one existing direct child folder of {BOARDS}")
+    return candidate
+
+
+def markdown_sources(folder: Path) -> list[Path]:
+    paths = []
+    for path in sorted(folder.rglob("*.md")):
+        relative = path.relative_to(folder)
+        if any(part in EXCLUDED_PARTS or part.startswith(".") for part in relative.parts[:-1]):
+            continue
+        name = path.name.lower()
+        if ("whiteboard-preparation" in name or ".roundtable." in name
+                or name.endswith(".transcript.md") or name == "manifest.md"):
+            continue
+        paths.append(path)
+    return paths
+
+
+def suggested_renderer_count(sources: list[Path]) -> int:
+    """The installed skill's count includes its title board."""
+    numbers = set()
+    pattern = re.compile(r"^#{1,6}\s+(?:Board|Whiteboard)\s+(\d+)\b", re.IGNORECASE)
+    for path in sources:
+        try:
+            for line in path.read_text(encoding="utf-8-sig").splitlines():
+                match = pattern.match(line.strip())
+                if match:
+                    numbers.add(int(match.group(1)))
+        except (OSError, UnicodeError):
+            continue
+    return max(numbers) + 1 if numbers else 5
+
+
+def prepare(folder: Path) -> str:
+    sources = markdown_sources(folder)
+    if not sources:
+        raise ValueError("this folder has no usable Markdown. OCR/text extraction stays on the Cloudcity pipeline; no local PDF OCR is run.")
+    parts = []
+    source_records = []
+    for path in sources:
+        data = path.read_bytes()
+        text = data.decode("utf-8-sig")
+        if not text.strip():
+            continue
+        source_records.append({"path": str(path), "sha256": digest(data), "bytes": len(data)})
+        parts.append(f"\n\n--- SOURCE: {path.relative_to(folder)} ---\n\n{text}")
+    if not parts:
+        raise ValueError("Markdown files were empty")
+    title = folder.name
+    renderer_count = suggested_renderer_count(sources)
+    assets = []
+    for path in sorted(folder.rglob("*")):
+        if not path.is_file() or any(part in EXCLUDED_PARTS for part in path.relative_to(folder).parts[:-1]):
+            continue
+        if path.suffix.lower() in {".pdf", ".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff"}:
+            assets.append(f"- `{path.relative_to(folder)}` ({path.stat().st_size} bytes)")
+    asset_note = ("\n".join(assets) if assets else "- No PDF/image assets found.")
+    instructions = f"""\n\n--- AIMEAT WHITEBOARD PREPARATION REQUEST ---
+Create a human-reviewable Markdown preparation for a possible visual whiteboard set about: {title}.
+
+The selected folder also contains these PDF/image assets (names and byte sizes only; their contents are not supplied in this request):
+{asset_note}
+
+This is preparation only. Do not generate images, spend image-generation credits, or claim any board was manufactured. Ground every point in the supplied Markdown. For free-energy devices, state the open-system wheel and its external reservoir/coupling first; never use closed-system skepticism as the conclusion. Put measurement uncertainty last and make it specific to that device. Label claims versus interpretation. Do not invent source citations or technical values.
+
+Each participant should make its response useful as a Markdown board-plan draft, not general debate prose. Use numbered board proposals with a title, teaching purpose, core claims, visual layout, exact labels/numbers, source passage pointers, and device-specific evidence notes. Preserve the source's proposed board set unless a concrete coverage reason supports a change. The human will review and edit the material before any image generation.
+
+The renderer's --count includes its title board. Suggested starting count for this source folder: {renderer_count}. Account for that slot explicitly so a final content board is not dropped.
+"""
+    request = ("# Whiteboard preparation request\n\n" + "\n".join(parts) + instructions).encode("utf-8")
+    if len(request) > MAX_BYTES:
+        raise ValueError(f"prepared request is {len(request)} bytes; the roundtable intake limit is {MAX_BYTES}")
+    job_id = digest(request)[:20]
+    AIMEAT.mkdir(parents=True, exist_ok=True)
+    jobs = AIMEAT / ".whiteboard-jobs"
+    jobs.mkdir(exist_ok=True)
+    request_path = AIMEAT / f"whiteboard-prep-{safe_slug(title)}-{job_id}.txt"
+    metadata_path = jobs / f"{job_id}.json"
+    metadata = {"schema": SCHEMA, "id": job_id, "folder": str(folder),
+                "title": title, "request": str(request_path),
+                "sources": source_records, "request_sha256": digest(request)}
+    if metadata_path.exists():
+        old = json.loads(metadata_path.read_text())
+        if old.get("request_sha256") != digest(request):
+            raise RuntimeError(f"job metadata collision: {metadata_path}")
+    else:
+        metadata_path.write_text(json.dumps(metadata, indent=2) + "\n")
+    if request_path.exists() and request_path.read_bytes() != request:
+        raise RuntimeError(f"refusing to overwrite changed AIMEAT input: {request_path}")
+    if not request_path.exists():
+        partial = request_path.with_name(request_path.name + ".partial")
+        with partial.open("wb") as output:
+            output.write(request)
+            output.flush()
+            os.fsync(output.fileno())
+        partial.replace(request_path)
+    print(f"Preparation id: {job_id}")
+    print(f"Queued one-folder preparation: {request_path}")
+    print(f"Source Markdown files: {len(source_records)}; request SHA-256: {digest(request)}")
+    print("Cloudcity AIMEAT will return the panel transcript. Then run collect; no Gemini image call has happened.")
+    return job_id
+
+
+def collect(job_id: str, *, replace: bool = False) -> Path:
+    if not re.fullmatch(r"[0-9a-f]{20}", job_id):
+        raise ValueError("job id must be the 20-character id printed by prepare")
+    metadata_path = AIMEAT / ".whiteboard-jobs" / f"{job_id}.json"
+    if not metadata_path.is_file():
+        raise FileNotFoundError(f"no AIMEAT whiteboard preparation record: {metadata_path}")
+    metadata = json.loads(metadata_path.read_text())
+    if metadata.get("schema") != SCHEMA:
+        raise ValueError("unsupported AIMEAT whiteboard job schema")
+    matches = []
+    for state_path in RETURN_ROOT.glob("*/state.json"):
+        try:
+            candidate = json.loads(state_path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        if (candidate.get("source") == Path(metadata["request"]).name
+                and candidate.get("sha256") == metadata.get("request_sha256")):
+            matches.append((state_path, candidate))
+    if len(matches) != 1:
+        raise RuntimeError(f"expected one returned roundtable for {metadata['request']}; found {len(matches)}")
+    state_path, state = matches[0]
+    result_dir = state_path.parent
+    transcript_path = result_dir / "transcript.md"
+    if not transcript_path.is_file():
+        raise RuntimeError(f"roundtable transcript has not synced yet: {transcript_path}")
+    if state.get("status") != "complete":
+        raise RuntimeError(f"roundtable status is {state.get('status')}; see {state_path}")
+    folder = board_folder(metadata["folder"])
+    output = folder / "_whiteboard-preparation.md"
+    if output.exists() and not replace:
+        raise FileExistsError(f"preserving existing review file: {output}; pass --replace to replace it")
+    transcript = transcript_path.read_text(encoding="utf-8")
+    if not transcript.strip():
+        raise ValueError("returned roundtable transcript is empty")
+    if state.get("result_sha256") and digest(transcript_path.read_bytes()) != state["result_sha256"]:
+        raise ValueError("returned roundtable transcript hash does not match its status record")
+    source_parts = []
+    for item in metadata["sources"]:
+        source = Path(item["path"])
+        if source.resolve().parent != folder and folder not in source.resolve().parents:
+            raise ValueError(f"recorded source escaped the selected folder: {source}")
+        data = source.read_bytes()
+        if digest(data) != item["sha256"]:
+            raise RuntimeError(f"source changed since preparation was queued: {source}")
+        source_parts.append(f"### {source.relative_to(folder)}\n\n{data.decode('utf-8-sig').rstrip()}")
+    header = (f"# Whiteboard preparation: {metadata['title']}\n\n"
+              f"> AIMEAT roundtable draft. The supplied source Markdown is primary; panel turns are suggestions that need review. Image generation only occurs when you run `aimeat-whiteboard yes-but-whiteboard {folder.name}`.\n\n"
+              "## Review before Gemini\n\n"
+              "- [ ] Confirm source claims, values and quotations against the supplied Markdown.\n"
+              "- [ ] For energy devices, preserve the open-system reservoir and coupling mechanism; repair or remove panel turns that use closed-system skepticism as a conclusion.\n"
+              "- [ ] Separate source statements from interpretation and put device-level measurement questions last.\n"
+              "- [ ] Check board count and verify that the final source section is represented.\n"
+              f"- Suggested renderer `--count` (title slot included): {suggested_renderer_count([Path(item['path']) for item in metadata['sources']])}\n\n"
+              f"## Inputs\n\n" + "\n".join(
+                  f"- `{Path(item['path']).name}` — SHA-256 `{item['sha256']}`"
+                  for item in metadata["sources"]) +
+              "\n\n## Source Markdown supplied to the roundtable\n\n" +
+              "\n\n".join(source_parts) +
+              "\n\n## Roundtable draft for review\n\n")
+    output.write_text(header + transcript.rstrip() + "\n", encoding="utf-8")
+    print(output)
+    return output
+
+
+def manufacture(folder: Path, *, count: int | None = None, language: str = "English") -> int:
+    prep = folder / "_whiteboard-preparation.md"
+    if not prep.is_file():
+        raise FileNotFoundError(f"review file is missing: {prep}; prepare and collect first")
+    text = prep.read_text(encoding="utf-8")
+    if len(text.strip()) < 100 or "## Roundtable draft for review" not in text:
+        raise ValueError("preparation is too short or does not contain the collected roundtable draft")
+    if not WHITEBOARD.is_file():
+        raise FileNotFoundError(f"whiteboard skill entry point not found: {WHITEBOARD}")
+    if count is None:
+        match = re.search(r"^- Suggested renderer `--count` \(title slot included\): (\d+)\s*$", text, re.MULTILINE)
+        count = int(match.group(1)) if match else 5
+    today = dt.date.today().isoformat()
+    slug = safe_slug(folder.name)
+    output = folder / f"{today}-{slug}-whiteboards"
+    command = [str(WHITEBOARD), "--full", "--count", str(count),
+               "--language", language, "--title", folder.name,
+               "--output-dir", str(output), str(prep)]
+    print("RED BUTTON: calling Gemini whiteboard generation for this reviewed folder.", flush=True)
+    print(f"Input: {prep}\nOutput: {output}\nBoards requested (including title slot): {count}", flush=True)
+    return subprocess.run(command, check=False).returncode
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description="AIMEAT → reviewed whiteboard preparation → explicit Gemini manufacture")
+    sub = ap.add_subparsers(dest="verb", required=True)
+    p_prepare = sub.add_parser("prepare", help="send one selected board folder's Markdown to the Cloudcity roundtable")
+    p_prepare.add_argument("folder", help="folder name under articles/boards")
+    p_collect = sub.add_parser("collect", help="file the completed roundtable as _whiteboard-preparation.md")
+    p_collect.add_argument("job_id")
+    p_collect.add_argument("--replace", action="store_true")
+    p_make = sub.add_parser("yes-but-whiteboard", help="explicitly call the Gemini image generator for the reviewed preparation")
+    p_make.add_argument("folder")
+    p_make.add_argument("--count", type=int)
+    p_make.add_argument("--language", default="English")
+    args = ap.parse_args()
+    try:
+        if args.verb == "prepare":
+            prepare(board_folder(args.folder))
+            return 0
+        if args.verb == "collect":
+            collect(args.job_id, replace=args.replace)
+            return 0
+        if args.count is not None and (args.count < 1 or args.count > 20):
+            raise ValueError("board count must be between 1 and 20")
+        return manufacture(board_folder(args.folder), count=args.count, language=args.language)
+    except (OSError, ValueError, RuntimeError, json.JSONDecodeError) as exc:
+        print(f"aimeat-whiteboard: {exc}", file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
