@@ -57,6 +57,8 @@ On an older Mini, the installer also backs up and updates only Convey's
 `cmd_roundtable` function from the existing local source, adds its missing seat
 flag and checks that corpus retrieval is available. It does not replace the
 whole Convey checkout. Source files are syntax-checked before installation.
+The verified compatibility function is bundled for a clean older checkout,
+so reproducing the upgrade does not depend on uncommitted Convey changes.
 
 The service targets Mini-local HTTP inference at `127.0.0.1:8080`; it disables
 fm-mlx's SSH fallback and bounds subprocess groups. It reuses Convey's engine,
@@ -70,6 +72,6 @@ Verification and deployment grade: [report card](../features/aimeat-roundtable.f
 
 Verified on CloudcityMacMini with two documents: 36 real turns, all nine default
 seats twice per discussion, matching source/result hashes and automatic local
-filing. Eighteen behavioral tests cover sectioning, retries, version safety,
+filing. Nineteen behavioral tests cover sectioning, retries, version safety,
 transport integrity, full-panel enrollment and the Mini-only execution guard.
 See [verification.json](verification.json).

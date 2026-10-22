@@ -1,0 +1,302 @@
+# Compatibility snapshot of the existing Convey cmd_roundtable function.
+# Source: ~/work/convey/convey/cli.py; deployed and verified in payload 436505c7f5e38412.
+# Used only when an older checkout lacks named-seat/per-persona lore support.
+def cmd_roundtable(args) -> int:
+    # REPORT-CARD >> apple/features/aimeat-roundtable.feature
+    # CONVEY-CARD >> convey-roundtable-live.feature (loop: thinking spinner, self-heal, inject, anti-tic)
+    """N FoundationModels personas converse about a topic, each in its own voice. The
+    transcript is WIRED INTO ITSELF — each turn is the context for the next (RBI). When
+    the context budget fills, the conversation is DROPPED and a fresh one starts (so it
+    never overflows fm's small window). Every turn is saved to the kb and to a growing
+    transcript. Runs until --turns (0 = until Ctrl-C). Drop --no-speak to hear it."""
+    import time as _t
+    topic = (args.topic or "").strip()
+    if not topic:
+        return _fail("convey roundtable needs a topic")
+    # --fleet: hand the topic (a normal argument, not a filename) to the always-on Mini
+    # worker and return immediately. The laptop can sleep; the table runs on the Mini and
+    # the bundle lands in convey-results. This is `convey roundtable "<topic>" --fleet`.
+    if getattr(args, "fleet", False):
+        return _submit_roundtable_to_fleet(args, topic)
+    # Brain backend is now PER-PARTICIPANT (relay.ask_brain dispatches mlx/fm/human),
+    # so a mixed FM+MLX table just falls out of a roster with mixed `brain:` values.
+    # Resolution of the DEFAULT brain (for personas that don't pin one):
+    #   --brain flag  →  --fm alias  →  $CONVEY_BRAIN  →  config default_brain  →  mlx
+    try:
+        _, config = _ctx()
+    except Exception:
+        config = dict(DEFAULT_CONFIG)
+    default_brain = (getattr(args, "brain", None)
+                     or ("fm" if getattr(args, "fm", False) else None)
+                     or os.environ.get("CONVEY_BRAIN")
+                     or config.get("default_brain", "mlx")).lower()
+    if default_brain not in relay_mod.BRAINS:
+        default_brain = "mlx"
+    roster_name = getattr(args, "roster", None) or config.get("default_roster", "classic")
+    participants = roster_mod.load_roster(roster_name, default_brain)
+    # --seat: the caller names exactly who sits down (checkbox-style selection), by persona
+    # name, in the order given — so a GUI can turn each figure on/off. One name is a direct
+    # grounded Q&A with that figure. Overrides --panel; unknown names are skipped; no match
+    # falls back to the first --panel personas so a typo can't empty the table.
+    seat = (getattr(args, "seat", None) or "").strip()
+    seated_by_name = False
+    if seat:
+        want = [s.strip() for s in seat.split(",") if s.strip()]
+        by_name = {p["name"].lower(): p for p in participants}
+        chosen = [by_name[w.lower()] for w in want if w.lower() in by_name]
+        if chosen:
+            participants = chosen
+            seated_by_name = True
+    n = len(participants) if seated_by_name else max(2, min(len(participants), args.panel))
+    panel = participants[:n]
+    # --debate: pair each persona into an MLX twin and an FM twin (same stance, both
+    # brains) so an FM persona converses with an MLX version of itself.
+    if getattr(args, "debate", False):
+        twins = []
+        for p in panel:
+            for b in ("mlx", "fm"):
+                t = dict(p); t["brain"] = b; t["name"] = f"{p['name']}·{b}"
+                twins.append(t)
+        panel = twins
+        n = len(panel)
+    brains_used = sorted({p["brain"] for p in panel})
+    brain_label = (relay_mod.model_label(brains_used[0]) if len(brains_used) == 1
+                   else "mixed (" + "+".join(brains_used) + ")")
+    speak = not args.no_speak
+    budget = args.context_budget
+    max_turns = args.turns
+    # Fleet mode (Stage 1): render each turn to an audio FILE instead of local speakers,
+    # so a roundtable run ON THE MINI lands a playable bundle in convey-results that any
+    # peer — laptop, phone — reads & hears over Syncthing. Implies audio regardless of
+    # --no-speak; the whole point is to produce sound someone elsewhere can play.
+    render_dir = Path(args.render_audio).expanduser() if getattr(args, "render_audio", None) else None
+    if render_dir is not None:
+        render_dir.mkdir(parents=True, exist_ok=True)
+        speak = True
+
+    stamp = _t.strftime("%Y%m%d-%H%M%S")
+    header_txt = ("# Roundtable: " + topic + "\n\nPanel: "
+                  + ", ".join(f"{p['name']} ({p['voice']})" for p in panel)
+                  + f"\nStarted: {stamp}\n\n")
+    # Continuation: a reply in a roundtable thread resumes THIS table — seed the panel
+    # with the last few prior turns + the steer (inject), and keep numbering/audio going.
+    cont = bool(getattr(args, "continue_", False)) and render_dir is not None
+    inject = (getattr(args, "inject", "") or "").strip()
+    turn_offset = 0
+    transcript = ""   # the wired-into-itself running context; reset when exhausted
+
+    if render_dir is not None:
+        # Fleet bundle: render_dir/transcript.md IS the canonical transcript.
+        transcript_path = render_dir / "transcript.md"
+        if cont and transcript_path.exists():
+            prior = _roundtable_prior_turns(transcript_path)
+            transcript = "".join(f"{nm}: {tx}\n" for nm, tx in prior[-3:])
+            turn_offset = len(list(render_dir.glob("*.aiff")))
+            with transcript_path.open("a", encoding="utf-8") as f:
+                f.write(f"\n---\n\n## Continued — steer: {inject or '(none)'}\n\n")
+        else:
+            transcript_path.write_text(header_txt, encoding="utf-8")
+    else:
+        tdir = kb_root() / "roundtable"
+        tdir.mkdir(parents=True, exist_ok=True)
+        transcript_path = tdir / f"{stamp}-{slugify(topic)[:40]}.md"
+        transcript_path.write_text(header_txt, encoding="utf-8")
+
+    # The shared board (convey-canvas.feature, Path A): show the panel the SAME content
+    # I'm looking at — image and/or markdown — by GROUNDING it to text the text-only
+    # brains read, dropped in as a span everyone reacts to. Seeded BEFORE any steer so
+    # the table opens ON the board.
+    board_paths = getattr(args, "board", None) or []
+    board_imgs = []
+    board_seed = ""   # a PINNED preamble: re-seeded on EVERY context reset so the panel
+                      # never loses sight of the shared board mid-table (a large board
+                      # would otherwise be the first thing the over-budget reset drops).
+    grounding = ""
+    if board_paths:
+        grounding, board_imgs = _ground_content(board_paths)
+    # --recall: also pull what convey ALREADY knows similar to the topic (+ board) and
+    # pin it alongside — 'draw a circle, find something similar' on the live table.
+    if getattr(args, "recall", False):
+        rb = _recall_block(f"{topic}\n{grounding}")
+        if rb:
+            grounding = (grounding + "\n\n" + rb).strip()
+    if grounding:
+        # Full grounding goes to the transcript FILE (the record); a capped excerpt is
+        # pinned into the wired context so it survives resets without itself blowing the
+        # budget (leave at least half the budget for the actual turns).
+        cap = max(1200, int(budget * 0.5))
+        pinned = grounding if len(grounding) <= cap else grounding[:cap].rstrip() + " …[board excerpt]"
+        label = ("ON THE BOARD (everyone is looking at this now)" if board_paths
+                 else "FROM MEMORY (related to the topic)")
+        board_seed = f"{label}: {pinned}\n"
+        transcript += board_seed
+        with transcript_path.open("a", encoding="utf-8") as f:
+            f.write(f"### {'On the board' if board_paths else 'From memory'}\n\n{grounding}\n\n")
+        # Reveal the image(s) to me at the SAME point the panel is grounded on them —
+        # "at the same time as I see it" (skipped in headless/fleet render mode).
+        if render_dir is None:
+            for img in board_imgs:
+                subprocess.run(["open", str(img)], stdin=subprocess.DEVNULL)
+
+    if inject:
+        transcript += f"Esa (moderator steer): {inject}\n"
+        with transcript_path.open("a", encoding="utf-8") as f:
+            f.write(f"### Esa (steer)\n\n{inject}\n\n")
+
+    # --jsonl: headless machine mode for GUIs (Converse). Emit one JSON line per turn to
+    # stdout + read steer lines from stdin; the SAME engine still feeds kb + DreamGraph.
+    jsonl = getattr(args, "jsonl", False)
+    if jsonl:
+        print(json.dumps({"type": "meta", "topic": topic, "roster": roster_name,
+                          "transcript": str(transcript_path),
+                          "panel": [{"name": p["name"], "brain": p["brain"], "voice": p["voice"]}
+                                    for p in panel]}, ensure_ascii=False), flush=True)
+    else:
+        print(f"🎙  Roundtable on: {topic}{' (continued)' if cont else ''}")
+        print(f"   brain: {brain_label}  ·  roster: {roster_name}{' · debate' if getattr(args, 'debate', False) else ''}")
+        print("   panel: " + ", ".join(f"{p['brain'].upper()}-{p['name']} ({p['voice']})" for p in panel))
+        print(f"   transcript: {transcript_path}")
+        if board_paths:
+            print("   🖼  on the board: " + ", ".join(Path(b).name for b in board_paths))
+        print("   (q = finish this turn, then stop+save · i = inject a steer · Ctrl-C = stop now)\n", flush=True)
+
+    # The roundtable's voice — anti-tic system prompt + the opening/continue prompt.
+    def _rt_sys(p, topic):
+        return (f"You are {p['name']}, {p['stance']}. You're in a spoken roundtable about: "
+                f"{topic}. Reply in 2-3 sentences, conversationally — build on or challenge "
+                f"what was just said, do not repeat earlier points, no stage directions. "
+                f"Do NOT quote, restate, or copy any earlier turn — add ONLY your own new "
+                f"sentences; never reproduce another speaker's words. "
+                f"Speak only as {p['name']}. Do NOT begin with your name or any 'Name:' "
+                f"label — just say your line directly. NEVER introduce yourself or state your "
+                f"name or role (no 'I'm {p['name']}', no 'As the {p['stance'].split('—')[0].strip()}…') "
+                f"— everyone already knows who you are; dive straight into the substance. "
+                f"End on a statement, NOT a question: never hand off by addressing another "
+                f"panelist by name — make your point and stop; the next speaker follows on their own.")
+
+    def _rt_lore(p, topic, transcript):
+        """Path A: a persona with a `knows:` corpus answers FROM its real source material.
+        Retrieve the passages most relevant to THIS turn (topic + board + the live tail of
+        the table) and hand them to that persona only — so 'Bearden' speaks grounded in the
+        652-claim ledger, in his own voice, not from a small model's weights. Mirrors the
+        canvas Path-A grounding (canvaslive._persona_lore); '' when the persona has no corpus."""
+        src = p.get("knows")
+        if not src:
+            return ""
+        try:
+            from . import knows as knows_mod
+        except Exception:
+            return ""
+        query = (topic + "\n" + board_seed + "\n" + transcript[-1200:]).strip()
+        try:
+            return knows_mod.retrieve(src, query, k=4)
+        except Exception:
+            return ""
+
+    def _rt_prompt(p, topic, transcript):
+        lore = _rt_lore(p, topic, transcript)
+        lore_block = (f"\n\nRELEVANT THINGS YOU ({p['name']}) HAVE ACTUALLY WRITTEN — speak FROM "
+                      f"these, in your own voice; do not quote verbatim or cite claim numbers:\n{lore}\n"
+                      if lore else "")
+        base = (f"The conversation so far:\n{transcript}\nNow {p['name']}, your turn:"
+                if transcript.strip() else
+                f"Open the roundtable on '{topic}' with one striking opening thought, {p['name']}.")
+        return base + lore_block
+
+    convo, turn = 1, 0
+    try:
+      with (_StdinSteer() if jsonl else _QuitKeyWatcher()) as qwatch:
+        # ONE engine (relay.converse) drives the turns — same as `convey relay`. This caller
+        # only does the roundtable's I/O: transcript file + kb + DreamGraph + render/karaoke/say
+        # (or the JSON line in --jsonl). board_seed is the pinned preamble re-applied on reset.
+        for ev in relay_mod.converse(panel, topic=topic, system_fn=_rt_sys, prompt_fn=_rt_prompt,
+                                     order="roundrobin", turns=max_turns, timeout=args.timeout,
+                                     budget=budget, controller=qwatch, dedupe=True,
+                                     seed=transcript, pinned=board_seed):
+            k = ev["kind"]
+            if k == "steer":
+                with transcript_path.open("a", encoding="utf-8") as f:
+                    f.write(f"### Esa (steer)\n\n{ev['text']}\n\n")
+                if not jsonl:
+                    print("  ⟲ injected steer — panel responds now.\n", flush=True)
+                continue
+            if k == "reset":
+                convo = ev["convo"]
+                with transcript_path.open("a", encoding="utf-8") as f:
+                    f.write(f"\n---\n\n## New conversation {convo} (context reset)\n\n")
+                if not jsonl:
+                    print(f"— context reset (conversation {convo}) —\n", flush=True)
+                continue
+            if k == "skip":
+                if not jsonl:
+                    print(f"  [{ev['name']} only repeated earlier points — skipping]", flush=True)
+                continue
+            if k == "error":
+                if jsonl:
+                    print(json.dumps({"type": "error", "message": ev["msg"], "name": ev["name"]}), flush=True)
+                if not jsonl:
+                    print(f"  [{ev['name']}: {relay_mod.model_label(ev['brain'])} error — {ev['msg']}]", flush=True)
+                    if ev["fatal"]:
+                        hint = ("fm-submit / worker" if ev["brain"] == "fm"
+                                else "is mlx_lm.server up on the Mini? try `fm-mlx hello`")
+                        print(f"\n⏹  brain not responding ({hint}). Stopping.", flush=True)
+                continue
+            # a real, novel turn
+            p = ev["p"]; said = ev["text"]; convo = ev["convo"]; turn = ev["seq"]
+            with transcript_path.open("a", encoding="utf-8") as f:
+                f.write(f"### [{convo}.{turn}] {p['name']} ({p['brain']})\n\n{said}\n\n")
+            _kb_record(f"roundtable «{topic}» — {p['name']}", said, source="fm",
+                       extra={"kind": "roundtable", "speaker": p["name"],
+                              "brain": p["brain"], "model": relay_mod.model_label(p["brain"]),
+                              "topic": topic, "convo": convo})
+            if jsonl:
+                print(json.dumps({"type": "turn", "seq": turn, "convo": convo,
+                                  "name": p["name"], "brain": p["brain"],
+                                  "model": relay_mod.model_label(p["brain"]),
+                                  "voice": p["voice"], "text": said}, ensure_ascii=False), flush=True)
+            else:
+                header = f"\033[1m{p['brain'].upper()}-{p['name']}\033[0m ({p['voice']}):"
+                karaoke = speak and render_dir is None and sys.stdout.isatty()
+                if karaoke:
+                    print(header, flush=True)
+                else:
+                    print(f"{header}\n{said}\n", flush=True)
+                if render_dir is not None:
+                    spoken = _strip_md(said)
+                    af = render_dir / f"{turn_offset + turn:03d}-{p['name']}.aiff"
+                    subprocess.run(["say", "-v", p["voice"], "-o", str(af), spoken],
+                                   stdin=subprocess.DEVNULL)
+                    print(f"   ♪ {af.name}", flush=True)
+                elif karaoke:
+                    _karaoke_over_text(said, p["voice"])
+                elif speak:
+                    spoken = _strip_md(said)
+                    subprocess.run(["say", "-v", p["voice"], spoken], stdin=subprocess.DEVNULL)
+            if qwatch.requested and not jsonl:
+                print("\n⏹  q — finishing here; this turn spoke in full. Saving.", flush=True)
+    except KeyboardInterrupt:
+        print("\n⏹  roundtable stopped.", flush=True)
+    if render_dir is not None:
+        # The bundle's transcript.md is written in place; refresh the playlist last
+        # (its mtime is the completion signal peers poll on).
+        afs = sorted(a.name for a in render_dir.glob("*.aiff"))
+        (render_dir / "playlist.m3u").write_text("\n".join(afs) + "\n", encoding="utf-8")
+        print(f"   📁 results bundle: {render_dir}  ({len(afs)} audio turns + transcript.md)", flush=True)
+    # DreamGraph conveyor belt: a finished roundtable IS a new memory → auto-update the
+    # graph deterministically (no tokens, no manual step). Soft-guarded so a graph hiccup
+    # never breaks the roundtable. Runs wherever the table runs — laptop or the Mini worker.
+    try:
+        from .graph import KB
+        fed = KB.ingest_roundtable(transcript_path)
+        KB.build()
+        if not jsonl:
+            print(f"   🧠 dreamgraph: +{fed['claims_added']} claims on '{fed['entity']}'", flush=True)
+    except Exception as e:
+        if not jsonl:
+            print(f"   (dreamgraph auto-feed skipped: {e})", flush=True)
+    if jsonl:
+        print(json.dumps({"type": "end", "turns": turn, "convos": convo,
+                          "transcript": str(transcript_path)}, ensure_ascii=False), flush=True)
+    else:
+        print(f"\n{turn} turns across {convo} conversation(s) — transcript: {transcript_path}", flush=True)
+    return 0

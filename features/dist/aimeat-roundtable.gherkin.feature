@@ -79,3 +79,11 @@ Feature: A text file in the AIMEAT folder receives a grounded MLX roundtable bes
     Then it publishes hash-linked Markdown and status through the two-way comms share
     And the existing local watcher files only matching source revisions
     And collection performs no model inference
+
+  @code-verified @runtime-untested
+  Scenario: A clean older Convey checkout can reproduce the grounded panel upgrade
+    # cite: roundtable/install.py compatible_function ; roundtable/convey-roundtable.py.txt
+    Given the checkout lacks named-seat and per-persona lore support
+    When deployment prepares the roundtable function
+    Then it uses the bundled snapshot already verified on the Mini
+    And structured error reporting is not duplicated on repeated preparation

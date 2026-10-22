@@ -71,7 +71,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 **What it does:** As Esa I want one text-file drop to start the existing panel automatically So that its Bearden and Prigogine readings return to the work without manual dispatch.
 
-**Behaviour (9 scenarios):**
+**Behaviour (10 scenarios):**
 
 - New stable text file starts the Sages panel and streams saved turns — `@runtime-verified`
 - The whole document is assigned explicit source sections — `@code-verified @runtime-untested`
@@ -82,10 +82,11 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Folded persona instructions survive the dependency-free roster reader — `@runtime-verified`
 - The whole bench is discovered instead of hardcoding a subset — `@runtime-verified`
 - Generated results return through comms without changing the archive share — `@runtime-verified`
+- A clean older Convey checkout can reproduce the grounded panel upgrade — `@code-verified @runtime-untested`
 
 **How it does it:** **Key procs:** `stream_section`, `verify_panel`, `candidates`, `collect`, `prepare_roster`, `FM_MLX_NO_SSH` · **Source files:** `roundtable/bridge.py`, `roundtable/install.py`, `test_aimeat_roundtable.py`
 
-**Grade:** @code-verified ×3 · @runtime-untested ×3 · @runtime-verified ×5 · @stock ×1
+**Grade:** @code-verified ×4 · @runtime-untested ×4 · @runtime-verified ×5 · @stock ×1
 
 
 <a id="app-audio-record"></a>

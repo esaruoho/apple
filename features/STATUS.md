@@ -10,7 +10,7 @@
 
 | Card | Scn | Build | Runtime | Hardware | Grades present |
 |------|----:|:-----:|:----------:|:--------:|----------------|
-| aimeat-roundtable | 9 | ✓ | ~ partial | — | @code-verified @runtime-untested @runtime-verified @stock |
+| aimeat-roundtable | 10 | ✓ | ~ partial | — | @code-verified @runtime-untested @runtime-verified @stock |
 | app-audio-record | 23 | ✗ | — | ✓ | @built @hw-verified @note |
 | apple-energy | 16 | ✗ | — | — | @built @note @parser-verified |
 | apple-harness | 11 | ✓ | ~ partial | — | @built @code-verified @runtime-untested @runtime-verified |

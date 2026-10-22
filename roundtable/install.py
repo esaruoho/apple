@@ -19,7 +19,8 @@ import shlex
 
 ROOT = Path(__file__).resolve().parents[1]
 WORK = Path.home() / "work"
-FILES = ["bin/aimeat-roundtable", "roundtable/bridge.py", "roundtable/install.py"]
+FILES = ["bin/aimeat-roundtable", "roundtable/bridge.py", "roundtable/install.py",
+         "roundtable/convey-roundtable.py.txt"]
 SMOKE_TEXT = "Roundtable pipeline check. Consider a greenhouse with an open window: sunlight enters, stored heat changes, and warm air leaves. Discuss how identifying the source, boundary and measurable flows helps distinguish a mechanism from a measurement claim. The source marker is GREENHOUSE-731. Address this specific example rather than a generic introduction.\n"
 SERVICE = '''
   # REPORT-CARD >> apple/features/aimeat-roundtable.feature
@@ -83,6 +84,24 @@ def add_service(text):
     return "".join(lines)
 
 
+def compatible_function(engine_source):
+    """Use current Convey when available; retain a reproducible older-host patch."""
+    tree = ast.parse(engine_source)
+    node = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "cmd_roundtable")
+    function = "\n".join(engine_source.splitlines()[node.lineno - 1:node.end_lineno]) + "\n"
+    if "_rt_lore" not in function or "seated_by_name" not in function:
+        function = (ROOT / "roundtable/convey-roundtable.py.txt").read_text()
+    if '"type": "error", "message": ev["msg"]' not in function:
+        function = function.replace('            if k == "error":\n',
+            '            if k == "error":\n'
+            '                if jsonl:\n'
+            '                    print(json.dumps({"type": "error", "message": ev["msg"], "name": ev["name"]}), flush=True)\n')
+    if "REPORT-CARD >> apple/features/aimeat-roundtable.feature" not in function:
+        function = function.replace('    # CONVEY-CARD >>', '    # REPORT-CARD >> apple/features/aimeat-roundtable.feature\n    # CONVEY-CARD >>', 1)
+    compile(function, "convey-roundtable-compatibility", "exec")
+    return function
+
+
 def stage(action="install"):
     if action == "smoke":
         # Create the input on the sending computer too. Archive Syncthing is
@@ -96,16 +115,7 @@ def stage(action="install"):
     russell = Path.home() / ".agents/skills/rhythmic-balanced-interchange/SKILL.md"
     digest.update(russell.read_bytes())
     engine_source = (WORK / "convey/convey/cli.py").read_text()
-    engine_ast = ast.parse(engine_source)
-    node = next(n for n in engine_ast.body if isinstance(n, ast.FunctionDef) and n.name == "cmd_roundtable")
-    function = "\n".join(engine_source.splitlines()[node.lineno - 1:node.end_lineno]) + "\n"
-    if "_rt_lore" not in function or "seated_by_name" not in function:
-        raise RuntimeError("The source roundtable lacks grounded named-seat support")
-    function = function.replace('            if k == "error":\n',
-        '            if k == "error":\n'
-        '                if jsonl:\n'
-        '                    print(json.dumps({"type": "error", "message": ev["msg"], "name": ev["name"]}), flush=True)\n')
-    function = function.replace('    # CONVEY-CARD >>', '    # REPORT-CARD >> apple/features/aimeat-roundtable.feature\n    # CONVEY-CARD >>', 1)
+    function = compatible_function(engine_source)
     digest.update(function.encode())
     target = WORK / "comms/queue/aimeat-roundtable-deploy" / digest.hexdigest()[:16]
     target.mkdir(parents=True, exist_ok=True)

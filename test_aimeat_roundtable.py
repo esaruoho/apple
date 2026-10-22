@@ -210,6 +210,14 @@ class BootInstallTests(unittest.TestCase):
         self.assertEqual(self.install.add_service(result), result)
         self.assertIn("name: existing", result)
 
+    def test_old_convey_checkout_uses_the_verified_compatibility_snapshot(self):
+        function = self.install.compatible_function("def cmd_roundtable(args):\n    return 0\n")
+        self.assertIn("_rt_lore", function)
+        self.assertIn("seated_by_name", function)
+        self.assertEqual(function.count('"type": "error", "message": ev["msg"]'), 1)
+        again = self.install.compatible_function(function)
+        self.assertEqual(function[function.index("def cmd_roundtable"):], again)
+
     def test_boot_pane_insertion_is_idempotent_and_refuses_ambiguous_structure(self):
         original = "tell application \"iTerm\"\n" + self.install.ANCHOR
         result = self.install.add_pane(original)

@@ -4,9 +4,9 @@
 
 **Intent:** As Esa I want one text-file drop to start the existing panel automatically So that its Bearden and Prigogine readings return to the work without manual dispatch.
 
-**Grades:** @code-verified × 3 · @runtime-untested × 3 · @runtime-verified × 5 · @stock × 1
+**Grades:** @code-verified × 4 · @runtime-untested × 4 · @runtime-verified × 5 · @stock × 1
 
-**Scenarios: 9**
+**Scenarios: 10**
 
 
 ---
@@ -129,3 +129,16 @@
 - And collection performs no model inference
 
 <sub>cite: roundtable/bridge.py render collect ; bin/tag-watcher main</sub>
+
+
+## 10. A clean older Convey checkout can reproduce the grounded panel upgrade
+
+`@code-verified @runtime-untested`
+
+
+- Given the checkout lacks named-seat and per-persona lore support
+- When deployment prepares the roundtable function
+- Then it uses the bundled snapshot already verified on the Mini
+- And structured error reporting is not duplicated on repeated preparation
+
+<sub>cite: roundtable/install.py compatible_function ; roundtable/convey-roundtable.py.txt</sub>

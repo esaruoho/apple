@@ -4,7 +4,8 @@
 # areaspace: OWNS text intake and results; reuses Convey's panel and MLX.
 # MUST NOT TOUCH existing papers, dossiers, other queued work or persona corpora.
 # SESSION: aimeat-roundtable.session.md
-# RESULT: Deployed on CloudcityMacMini and runtime-verified; source commit pending.
+# RESULT: Feature/card e269dfc8, direct-push to main, no PR. Deployed on CloudcityMacMini.
+# RESULT: Delivery record and compatibility seed are recorded by this card's git history.
 # WATCH: stream_section verify_panel candidates collect prepare_roster FM_MLX_NO_SSH
 # RESULT-LOG >>
 #   2026-10-21  built and deployed via Syncthing; 18 behavioral tests and two 18-turn Mini jobs verified
@@ -86,3 +87,11 @@ Feature: A text file in the AIMEAT folder receives a grounded MLX roundtable bes
     Then it publishes hash-linked Markdown and status through the two-way comms share
     And the existing local watcher files only matching source revisions
     And collection performs no model inference
+
+  @code-verified @runtime-untested
+  Scenario: A clean older Convey checkout can reproduce the grounded panel upgrade
+    # cite: roundtable/install.py compatible_function ; roundtable/convey-roundtable.py.txt
+    Given the checkout lacks named-seat and per-persona lore support
+    When deployment prepares the roundtable function
+    Then it uses the bundled snapshot already verified on the Mini
+    And structured error reporting is not duplicated on repeated preparation
