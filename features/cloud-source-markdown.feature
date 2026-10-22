@@ -8,9 +8,11 @@
 # Areaspace: exact cloud rendering inputs, existing extractive key-takeaways,
 #            email/cloud artifact return; no laptop rendering or OCR.
 # RESULT: Mini installed and running payload ee890110f2619f17; code hashes matched.
+#         apple feature/card commit 7e12d57f; convey renderer commit 2a660677a.
+#         Direct-push, no PR; Convey delivered by merge d81d5fe51 with newer remote work preserved.
 #         Evidence: analysis/proofs/cloud-sources/verification.json (44 tests).
 #         All three Markdown-only replays have identical pixels; email transport simulated.
-#         Feature/card commit and direct-push delivery recorded in git history.
+#         Files: renderer/source helpers, email integration, tests and proof artifacts cited below.
 
 Feature: Cloud images carry readable reproducible source documents
 
