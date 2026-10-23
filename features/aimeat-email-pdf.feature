@@ -8,6 +8,7 @@
 # Areaspace: owner-email PDFs and explicit PDF URLs, durable source/analysis return,
 #            existing Mini mail pane and existing roundtable; no laptop inference.
 # RESULT: apple c86de4bf, fda339dd, 5a8af07e (PDF intake, transport, tests, integration).
+#         apple 481d5c27 (completion-gated Substack delivery, checkpoint-safe failures).
 #         convey b7862fb27 (black wordcloud canvas), delivered by cd02ac15d.
 #         Direct-push to main, no PR; newer Convey remote work preserved by merge.
 #         Card-authoring commit: c86de4bf; delivery bookkeeping follows in git.

@@ -10,6 +10,8 @@ It uses the same Cloudcity freellmapi + optional MLX lesser take + AgentMail sen
 """
 import argparse, base64, json, mimetypes, os, re, sys, time, html as _html, urllib.parse, urllib.request, urllib.error
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared"))
+from format_email import md_to_html, source_attachments
 
 HOME = Path.home()
 FM_HOST = os.environ.get("FREE_ENERGY_ANALYSIS_FM_HOST", "http://cloudcitymacmini:3001/v1/chat/completions")
@@ -139,99 +141,8 @@ def chat_retry(label, attempts, delays, *args, **kwargs):
     return f"({label} unavailable: {last})"
 
 
-def _inline(t):
-    t = _html.escape(t)
-    t = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
-    t = re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", t)
-    t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
-    return t
 
 
-def md_to_html(md):
-    out, para, in_ul, in_ol = [], [], False, False
-
-    def close_para():
-        nonlocal para
-        if para:
-            out.append("<p>%s</p>" % "<br>".join(_inline(x) for x in para))
-            para = []
-
-    def close_lists():
-        nonlocal in_ul, in_ol
-        if in_ul:
-            out.append("</ul>")
-            in_ul = False
-        if in_ol:
-            out.append("</ol>")
-            in_ol = False
-
-    def cells(row):
-        return [c.strip() for c in row.strip().strip("|").split("|")]
-
-    lines = (md or "").strip().splitlines()
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        s = line.strip()
-        if (
-            s.startswith("|")
-            and i + 1 < len(lines)
-            and re.match(r"^\s*\|?[\s:|-]+\|?\s*$", lines[i + 1])
-            and "-" in lines[i + 1]
-        ):
-            close_para(); close_lists()
-            head = cells(line)
-            out.append("<table style='border-collapse:collapse;width:100%;margin:12px 0;font-size:14px'>")
-            out.append("<thead><tr>")
-            for cell in head:
-                out.append("<th style='border:1px solid #777;padding:6px 8px;text-align:left;vertical-align:top'>%s</th>" % _inline(cell))
-            out.append("</tr></thead><tbody>")
-            i += 2
-            while i < len(lines) and lines[i].strip().startswith("|"):
-                row = cells(lines[i])
-                width = max(len(head), len(row))
-                row += [""] * (width - len(row))
-                out.append("<tr>")
-                for cell in row[:width]:
-                    out.append("<td style='border:1px solid #777;padding:6px 8px;vertical-align:top'>%s</td>" % _inline(cell))
-                out.append("</tr>")
-                i += 1
-            out.append("</tbody></table>")
-            continue
-
-        h = re.match(r"^\s*(#{1,6})\s+(.+?)\s*$", line)
-        ul = re.match(r"^\s*[-*]\s+(.+?)\s*$", line)
-        ol = re.match(r"^\s*\d+\.\s+(.+?)\s*$", line)
-        if h:
-            close_para(); close_lists()
-            lvl = min(len(h.group(1)) + 1, 6)
-            out.append(f"<h{lvl}>{_inline(h.group(2))}</h{lvl}>")
-        elif ul:
-            close_para()
-            if in_ol:
-                out.append("</ol>")
-                in_ol = False
-            if not in_ul:
-                out.append("<ul>")
-                in_ul = True
-            out.append("<li>%s</li>" % _inline(ul.group(1)))
-        elif ol:
-            close_para()
-            if in_ul:
-                out.append("</ul>")
-                in_ul = False
-            if not in_ol:
-                out.append("<ol>")
-                in_ol = True
-            out.append("<li>%s</li>" % _inline(ol.group(1)))
-        elif not line.strip():
-            close_para(); close_lists()
-        else:
-            close_lists()
-            para.append(line)
-        i += 1
-    close_para(); close_lists()
-    return "\n".join(out)
 
 
 def clean_subject(s, limit=180):
@@ -260,8 +171,9 @@ def send_email(subject, text, html, attachments=None):
         raise SystemExit("no AgentMail key")
     url = "%s/inboxes/%s/messages/send" % (AM_BASE, urllib.parse.quote(INBOX, safe="@"))
     msg = {"to": [TO], "subject": subject, "text": text, "html": html}
-    if attachments:
-        msg["attachments"] = attachments
+    msg["attachments"] = list(attachments or [])
+    present = {a.get("filename") for a in msg["attachments"]}
+    msg["attachments"].extend(a for a in source_attachments(text, "analysis") if a["filename"] not in present)
     body = json.dumps(msg).encode()
     req = urllib.request.Request(url, data=body, method="POST",
                                  headers={"Content-Type": "application/json", "Authorization": "Bearer " + k})

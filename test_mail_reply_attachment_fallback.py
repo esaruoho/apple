@@ -27,10 +27,12 @@ class ReplyFallbackTests(unittest.TestCase):
                 with self.assertRaises(type(error)):agent.send_inbox_reply("key","original",{"attachments":[{}]})
                 self.assertEqual(send.call_count,1)
 
-    def test_no_attachments_cannot_use_size_fallback(self):
+    def test_generated_source_attachment_can_use_size_fallback(self):
         with patch.object(agent,"http",side_effect=urllib.error.HTTPError("u",413,"large",{},None)) as send:
             with self.assertRaises(urllib.error.HTTPError):agent.send_inbox_reply("key","original",{"text":"large"})
-            self.assertEqual(send.call_count,1)
+            self.assertEqual(send.call_count,2)
+            self.assertNotIn("attachments", send.call_args.args[3])
+            self.assertIn("large", send.call_args.args[3]["text"])
 
     def test_success_is_sent_once(self):
         with patch.object(agent,"http",return_value={"message_id":"ok"}) as send:
