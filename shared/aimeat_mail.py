@@ -629,7 +629,7 @@ def advance(agent, key, job, state, folder, returns):
         system = MAIN_SYS + (LENS_SYS if agent.lens_voices_enabled() else '') + '\n\n' + SOURCE_ANALYSIS_INSTRUCTIONS
         prompt = f"TITLE: {message.get('subject') or 'Free Energy source'}\n\nSUPPLIED MATERIAL:\n{material}"
         session = f"aimeat-flubuild-{state['id']}-try{state.get('attempts', 0)}"
-        command = [str(ROOT/'bin/fm-converse'), '--session', session, '--flubuild',
+        command = [sys.executable, str(ROOT/'bin/fm-converse'), '--session', session, '--flubuild',
                    '--timeout', '900', '--system', system, prompt]
         result = subprocess.run(command, capture_output=True, text=True, timeout=930)
         if result.returncode != 0:

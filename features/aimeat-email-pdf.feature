@@ -85,7 +85,7 @@ Feature: Owner emails deliver complete PDF and text material and analyses to AIM
     And no email is sent unless every model output, titled Sage, source digest, and artifact passes validation
     And queued Free Energy articles are processed end-to-end in arrival order to avoid batch round-robin delay
     # cite: shared/aimeat_email_template.py build_dossier clean_source titled_roundtable validate_dossier
-    # cite: shared/aimeat_mail.py enqueue_text require_complete_analysis advance
+    # cite: shared/aimeat_mail.py enqueue_text require_complete_analysis advance sys.executable
     # cite: bin/fm-converse call_flubuild ; bin/flubuild-request.py prepare
     # cite: shared/format_email.py email_payload
 
