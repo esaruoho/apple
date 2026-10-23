@@ -8,6 +8,11 @@
 # Areaspace: exact cloud rendering inputs, existing extractive key-takeaways,
 #            email/cloud artifact return; no laptop rendering or OCR.
 # RESULT: Mini installed and running payload ee890110f2619f17; code hashes matched.
+#         2026-10-23 Mini fallback payload handler-6ffded5012be60c4 installed;
+#         mail/renderer hashes match. Jobs 240b63870a67d20259b76450 and
+#         041491faaa211a1f1b5361cb returned complete manifests and success mail.
+#         Focused fallback tests: 2 passed. Pillow fallback itself is sim-verified;
+#         both live retries completed with the regular cloud-assets renderer.
 #         apple feature/card commit 7e12d57f; convey renderer commit 2a660677a.
 #         Direct-push, no PR; Convey delivered by merge d81d5fe51 with newer remote work preserved.
 #         Evidence: analysis/proofs/cloud-sources/verification.json (44 tests).
@@ -35,6 +40,16 @@ Feature: Cloud images carry readable reproducible source documents
     And a missing cloud is reported explicitly
     # cite: shared/cloud_assets.py generate
     # cite: shared/aimeat_mail.py advance
+
+  @code-verified @sim-verified
+  Scenario: Wordcloud rendering falls back when Convey's wordcloud command fails
+    Given the normal Convey wordcloud command returns a nonzero status
+    When the normal Convey wordcloud command fails
+    Then AIMEAT renders a black-background wordcloud using Pillow
+    And it saves the exact weighted words to source Markdown and checksummed JSON
+    And the analysis email remains held until the PNG and both source files verify
+    # cite: shared/cloud_assets.py render_wordcloud_fallback generate
+    # cite: test_cloud_assets_wordcloud_fallback.py
 
   @code-verified @runtime-verified
   Scenario: An agent can recreate an image from Markdown without OCR

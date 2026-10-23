@@ -24,6 +24,16 @@ Feature: Cloud images carry readable reproducible source documents
     # cite: shared/cloud_assets.py generate
     # cite: shared/aimeat_mail.py advance
 
+  @code-verified @sim-verified
+  Scenario: Wordcloud rendering falls back when Convey's wordcloud command fails
+    Given the normal Convey wordcloud command returns a nonzero status
+    When the normal Convey wordcloud command fails
+    Then AIMEAT renders a black-background wordcloud using Pillow
+    And it saves the exact weighted words to source Markdown and checksummed JSON
+    And the analysis email remains held until the PNG and both source files verify
+    # cite: shared/cloud_assets.py render_wordcloud_fallback generate
+    # cite: test_cloud_assets_wordcloud_fallback.py
+
   @code-verified @runtime-verified
   Scenario: An agent can recreate an image from Markdown without OCR
     Given a saved cloud rendering source

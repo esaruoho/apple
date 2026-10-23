@@ -8,6 +8,7 @@
 # RESULT: Delivery record and compatibility seed are recorded by this card's git history.
 # WATCH: stream_section verify_panel candidates collect prepare_roster FM_MLX_NO_SSH
 # RESULT-LOG >>
+#   2026-10-23  direct-commit  touched: collect
 #   2026-10-21  built and deployed via Syncthing; 18 behavioral tests and two 18-turn Mini jobs verified
 
 Feature: A text file in the AIMEAT folder receives a grounded MLX roundtable beside it

@@ -20,7 +20,7 @@
 | applebar-session | 8 | ✗ | — | — | @built @leak-fixed @shipped @verified |
 | archof | 6 | ✗ | — | — | @built @stock @verified |
 | arm-apple-skill | 17 | ✗ | — | ✓ | @built @hw-verified @observed |
-| cloud-source-markdown | 5 | ✓ | ✓ | — | @code-verified @runtime-verified @sim-verified @stock |
+| cloud-source-markdown | 6 | ✓ | ✓ | — | @code-verified @runtime-verified @sim-verified @stock |
 | converse-to-obsidian | 7 | ✓ | ✓ | — | @build-verified @built @code-verified @runtime-verified |
 | dictation-button | 10 | ✗ | — | — | @built @note @todo @untested @verified |
 | directions-home | 6 | ✗ | — | — | @built @note @verified |
