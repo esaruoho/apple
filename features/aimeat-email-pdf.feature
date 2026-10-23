@@ -21,6 +21,7 @@
 #         f925ff96: reasoning-leak gate + accurate source naming; runtime-untested.
 #         34a3f3d9: exclude KeelyNet distribution boilerplate from analysis output.
 #         ef2d41d8: deterministic output scrub before rendering; runtime-untested.
+#         621d0f85: require clean source section structure; pin to configured gateway model.
 # Tests: test_aimeat_mail.py plus existing mail/editor/roundtable behavioral suites.
 
 Feature: Owner emails deliver complete PDF and text material and analyses to AIMEAT
