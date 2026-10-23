@@ -241,7 +241,7 @@ def _has_leak(text):
     head=(text or "").strip().lower()
     return head.startswith(("here's a thinking process", "here is a thinking process",
         "let's think step by step", "we need to analyze", "i need to analyze", "we should analyze",
-        "the user asks", "we need to", "okay, the user", "the user is asking", "the user wants",
+        "the user asks", "we need", "okay, the user", "the user is asking", "the user wants",
         "let me answer", "i need to answer", "let's answer", "the question is", "okay, so",
         "alright, the user", "so the user"))
 

@@ -450,11 +450,17 @@ def advance(agent, key, job, state, folder, returns):
         index = state['next_part']
         if index < len(parts):
             asset, number, part = parts[index]
+            is_source = is_text_source(message)
+            call_options = {'max_tokens': 1800, 'temperature': 0.2}
+            if is_source:
+                call_options['model'] = agent.FM_MODEL
             answer, model = agent._fm_call([
-                {'role': 'system', 'content': agent.CHAPTER_SYSTEM + ('\n'+SOURCE_ANALYSIS_INSTRUCTIONS if is_text_source(message) else '')},
-                {'role': 'user', 'content': f"{asset['text']} — part {number}\n\n{part}"}],
-                max_tokens=1800, temperature=0.2)
-            if not answer.strip() or agent._has_leak(answer) or agent._is_reasoning_dump(answer):
+                {'role': 'system', 'content': agent.CHAPTER_SYSTEM + ('\n'+SOURCE_ANALYSIS_INSTRUCTIONS if is_source else '')},
+                {'role': 'user', 'content': f"{asset['text']} — part {number}\n\n{part}"}], **call_options)
+            canonical_opening = re.match(r'^(?:\*\*What this part covers\*\*|this (?:part|section) is (?:front matter|a table of contents|boilerplate))',
+                                         answer.lstrip(), re.I)
+            if (not answer.strip() or agent._has_leak(answer) or agent._is_reasoning_dump(answer)
+                    or (is_source and not canonical_opening)):
                 raise RuntimeError(f'Unusable read for part {index+1}; will retry')
             state['reads'].append({'source': asset['text'], 'part': number, 'analysis': answer, 'model': model})
             state['next_part'] += 1

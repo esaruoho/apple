@@ -62,6 +62,7 @@ Feature: Owner emails deliver complete PDF and text material and analyses to AIM
     And Free Energy synthesis uses the shared MAIN_SYS and LENS_SYS from mail-free-energy-analysis
     And the existing Sages, source-coverage, artifact-validation and shared-renderer stages run
     And private reasoning leaks are rejected before they enter the dossier
+    And source reads must begin with the canonical report headings
     And the source filename is preserved in analysis references
     And the send gate removes archival distribution boilerplate even if a model repeats it
     And an incomplete analysis is not emailed

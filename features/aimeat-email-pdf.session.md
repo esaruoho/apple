@@ -73,3 +73,5 @@ A ZPE1 queue attempt showed a model returning a private thinking-process preambl
 The shared analysis instructions also exclude the KeelyNet word-processing, contact, sponsorship, and distribution-permission boilerplate from generated email content. The source attachment itself remains byte-for-byte unchanged.
 
 The prompt request alone did not prevent the model from repeating the contact line. The send gate now strips the known word-processing, BBS contact, sponsorship, and permission notice before rendering both email body and Markdown attachment; the original source remains unchanged.
+
+The section-reader gate now requires the canonical source-read heading and pins those source reads to the configured FreeLLMAPI default model, while using that same shared pipeline and renderer. This blocks analysis-plan text from being saved as a section result.
