@@ -78,6 +78,14 @@ The section-reader gate now requires the canonical source-read heading and pins 
 
 The single-model pin made one source read remain in the gateway call for several minutes. It is removed; the established FreeLLMAPI fallback chain handles endpoint availability, while the canonical opening-heading guard still rejects reasoning dumps.
 
+## Follow-up: require the complete Phase Conjugation dossier for every Free Energy source
+
+Esa reported that delivered messages still had untitled roundtable speakers, omitted standalone Qwen MLX and FreeLLMAPI analyses, and included KeelyNet masthead/contact/distribution text from the source attachment. The previous `complete` receipt only proved that the send API accepted the message; it did not prove the content matched the requested package.
+
+The mailer now builds the same seven-section dossier map as the saved Phase Conjugation package, using one Markdown content builder and the existing `format_email.py` rich-text/math renderer. A send gate requires separate FreeLLMAPI, Qwen MLX, and Flubuild outputs, the comparative synthesis, all nine canonical Sage names and titles, and the source/artifact manifest. The source cleaner removes the word-processor line, distribution notice, sponsorship/address, and split contact banners from the analyzed text and mailed attachment while retaining source files and useful `See also` filenames in the archive. The original source digest remains recorded.
+
+Inspection also found the checked-in `fm-converse` did not yet accept `--flubuild`, although the current local working copy has that capability uncommitted. The minimal CLI route and tokenizer-aware Flubuild helper are included here; the helper refuses requests that exceed the model context instead of shortening the article and sending a partial audit. Delivery remains runtime-untested until a generated dossier passes the gate and the actual recipient package is inspected. This turn had no retrievable session transcript or session ID; none is fabricated.
+
 ## Follow-up: quality failures also need model fallback (2026-10-23)
 
 Esa reported that no ZPE or Zenneck emails had arrived after an hour. Inspection found that the Mini mailer retried queued source jobs, but `_fm_call` advanced to another configured model only for transport/provider exceptions. A response that arrived successfully and then failed the source-read leak/opening check was rejected after the call, so the same first model was selected again on the next poll. Several jobs showed this failure; none had reached email delivery. I queued ZPE1, ZPE2PT1–3, ZPE3–7, and ZENNECK through the existing `enqueue_text` pipeline, preserving the existing canonical synthesis, roundtable, artifact checks, renderer, and send gate.

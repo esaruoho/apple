@@ -75,6 +75,19 @@ Feature: Owner emails deliver complete PDF and text material and analyses to AIM
     # cite: bin/mail-free-energy-analysis main
     # cite: bin/freellmask-mail poll_once
 
+  @built @runtime-untested
+  Scenario: Free Energy source email uses the Phase Conjugation dossier structure
+    Given a KeelyNet article is queued through the shared text pipeline
+    When FreeLLMAPI, Qwen MLX, Flubuild, the titled Sages panel, and comparative synthesis finish
+    Then the single shared Phase-based dossier builder assembles all seven sections
+    And the existing format_email.py remains the only rich-text and math renderer
+    And the original archive file remains unchanged while its email attachment omits BBS boilerplate
+    And no email is sent unless every model output, titled Sage, source digest, and artifact passes validation
+    # cite: shared/aimeat_email_template.py build_dossier clean_source titled_roundtable validate_dossier
+    # cite: shared/aimeat_mail.py enqueue_text require_complete_analysis advance
+    # cite: bin/fm-converse call_flubuild ; bin/flubuild-request.py prepare
+    # cite: shared/format_email.py email_payload
+
   @built @sim-verified
   Scenario: The laptop receives the original and actual returned results
     Given completed section analyses and a matching completed roundtable

@@ -21,12 +21,14 @@ the turn — so "drag a file in, select it, Cmd-1" just works.
     fm-converse --reset                forget this session's conversation
     fm-converse --history              print the running transcript
     fm-converse --timeout 90 "..."     how long to wait (default 120s)
+    fm-converse --flubuild "..."       send to the Flubuild remote brain
 
 Apple-native: python3 stdlib only. Delegates the round-trip to fm-submit.
 """
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -142,6 +144,9 @@ MLX_RESOLVE_IP = os.environ.get("FM_MLX_RESOLVE_IP", "100.117.30.102")
 MLX_SSH_HOST = os.environ.get("FM_MLX_SSH_HOST", "100.117.30.102")
 MLX_PREFER_SSH = os.environ.get("FM_MLX_PREFER_SSH", "1") != "0"
 MLX_BUDGET = int(os.environ.get("FM_MLX_BUDGET", "4000"))
+FLUBUILD_SSH_HOST = os.environ.get("FM_FLUBUILD_SSH_HOST", "bg-archivist")
+FLUBUILD_MODEL = os.environ.get("FM_FLUBUILD_MODEL", "Qwen/Qwen2.5-7B-Instruct-AWQ")
+FLUBUILD_MAX_TOKENS = int(os.environ.get("FM_FLUBUILD_MAX_TOKENS", "2048"))
 
 
 def _parse_mlx_response(raw: str):
@@ -266,6 +271,30 @@ def call_mlx(turns, system, user_turn, timeout):
     return "", f"MLX server unreachable after retries ({last})"
 
 
+def call_flubuild(messages, timeout_s: float):
+    """Call the Flubuild service using its tokenizer-aware request helper."""
+    body = json.dumps({"model": FLUBUILD_MODEL, "messages": messages,
+                       "max_tokens": FLUBUILD_MAX_TOKENS}).encode()
+    script = (HERE / "flubuild-request.py").read_text()
+    remote_cmd = f"python3 -c {shlex.quote(script)} {shlex.quote(str(timeout_s))}"
+    try:
+        proc = subprocess.run(["ssh", FLUBUILD_SSH_HOST, remote_cmd], input=body,
+                              capture_output=True, timeout=timeout_s + 10)
+    except subprocess.TimeoutExpired:
+        return "", f"Flubuild timed out after {timeout_s + 10:.0f}s"
+    if proc.returncode:
+        return "", f"Flubuild failed rc={proc.returncode}: {proc.stderr.decode(errors='replace').strip()[-1200:]}"
+    try:
+        data = json.loads(proc.stdout.decode(errors="replace"))
+        answer = data["choices"][0]["message"]["content"].strip()
+        note = data.get("fm_context_note")
+        if note:
+            answer += "\n\n*" + note + "*"
+        return answer, None
+    except Exception as error:
+        return "", f"Flubuild returned an unreadable response: {error}"
+
+
 def main() -> int:
     args = sys.argv[1:]
     if args and args[0] in ("-h", "--help"):
@@ -278,6 +307,7 @@ def main() -> int:
     do_reset = False
     do_history = False
     use_mlx = False
+    use_flubuild = False
     arm_skill = False        # --apple: arm the skill governing arm_cwd
     arm_cwd = None           # --cwd DIR
     rest = []
@@ -296,6 +326,8 @@ def main() -> int:
             do_history = True; i += 1
         elif a == "--mlx":
             use_mlx = True; i += 1
+        elif a == "--flubuild":
+            use_flubuild = True; use_mlx = False; i += 1
         elif a == "--apple":
             arm_skill = True; i += 1
         elif a == "--cwd":
@@ -414,7 +446,16 @@ def main() -> int:
         cmd.append(replay_text)
         return subprocess.run(cmd, capture_output=True, text=True)
 
-    if use_mlx:
+    if use_flubuild:
+        messages = []
+        if state.get("system"):
+            messages.append({"role": "system", "content": state["system"]})
+        messages.append({"role": "user", "content": user_turn})
+        reply, flubuild_err = call_flubuild(messages, float(timeout))
+        if not reply:
+            print(f"[Flubuild] {flubuild_err or 'no reply'}")
+            return 1
+    elif use_mlx:
         # MLX brain: send the real multi-turn message history to the Mini's mlx_lm.server.
         reply, mlx_err = call_mlx(state["turns"], state.get("system", ""), user_turn, timeout)
         if not reply:
