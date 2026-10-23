@@ -351,7 +351,8 @@ def require_complete_analysis(job, state, folder):
                 if (not artifact.is_file() or not artifact.stat().st_size
                         or artifact.name not in state.get('files', [])):
                     raise RuntimeError(f'{source_name}: {kind} artifacts are incomplete; email delivery withheld')
-                if artifact.name not in analysis:
+                display_artifact = display_asset_name(artifact.name, state)
+                if display_artifact not in analysis:
                     raise RuntimeError(f'{source_name}: {kind} artifacts are not recorded in the analysis; email delivery withheld')
 
 
