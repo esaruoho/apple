@@ -315,17 +315,20 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/cloud-source-markdown.feature` · [session](cloud-source-markdown.session.md)
 
-**Behaviour (5 scenarios):**
+**Behaviour (6 scenarios):**
 
 - Every newly rendered cloud saves its exact inputs before the image — `@code-verified @runtime-verified`
 - Emailed PDFs return all three cloud types with their source files — `@code-verified @sim-verified`
+- Wordcloud rendering falls back when Convey's wordcloud command fails — `@code-verified @sim-verified`
 - An agent can recreate an image from Markdown without OCR — `@code-verified @runtime-verified`
 - Email is sent as formatted HTML with a plain-text fallback — `@code-verified @sim-verified`
 - New source sidecars do not become new corpus material automatically — `@stock @sim-verified`
 
-**How it does it:** **Key procs:** `shared/cloud_source.py`, `shared/cloud_assets.py`, `scripts/cloud-source-sidecars.py`, `generate`, `replay`, `write_spec` · **Source files:** `shared/cloud_source.py`, `scripts/cloud-source-sidecars.py`, `shared/cloud_assets.py`, `shared/aimeat_mail.py`
+**How it does it:** **Key procs:** `shared/cloud_source.py`, `shared/cloud_assets.py`, `scripts/cloud-source-sidecars.py`, `generate`, `replay`, `write_spec` · **Source files:** `shared/cloud_source.py`, `scripts/cloud-source-sidecars.py`, `shared/cloud_assets.py`, `shared/aimeat_mail.py`, `test_cloud_assets_wordcloud_fallback.py`
 
-**Grade:** @code-verified ×4 · @runtime-verified ×2 · @sim-verified ×3 · @stock ×1
+**Grade:** @code-verified ×5 · @runtime-verified ×2 · @sim-verified ×4 · @stock ×1
+
+**Commits:** `041491faaa211a1f1b5361cb` returned complete manifests and success mail.
 
 
 <a id="converse-to-obsidian"></a>

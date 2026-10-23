@@ -2,9 +2,9 @@
 
 > Source: `features/cloud-source-markdown.feature` · printable rendering · regenerate with `python3 print-card.py`
 
-**Grades:** @code-verified × 4 · @runtime-verified × 2 · @sim-verified × 3 · @stock × 1
+**Grades:** @code-verified × 5 · @runtime-verified × 2 · @sim-verified × 4 · @stock × 1
 
-**Scenarios: 5**
+**Scenarios: 6**
 
 
 ---
@@ -38,7 +38,21 @@
 <sub>cite: shared/cloud_assets.py generate · shared/aimeat_mail.py advance</sub>
 
 
-## 3. An agent can recreate an image from Markdown without OCR
+## 3. Wordcloud rendering falls back when Convey's wordcloud command fails
+
+`@code-verified @sim-verified`
+
+
+- Given the normal Convey wordcloud command returns a nonzero status
+- When the normal Convey wordcloud command fails
+- Then AIMEAT renders a black-background wordcloud using Pillow
+- And it saves the exact weighted words to source Markdown and checksummed JSON
+- And the analysis email remains held until the PNG and both source files verify
+
+<sub>cite: shared/cloud_assets.py render_wordcloud_fallback generate · test_cloud_assets_wordcloud_fallback.py</sub>
+
+
+## 4. An agent can recreate an image from Markdown without OCR
 
 `@code-verified @runtime-verified`
 
@@ -51,7 +65,7 @@
 <sub>cite: shared/cloud_assets.py replay · shared/cloud_source.py read_spec</sub>
 
 
-## 4. Email is sent as formatted HTML with a plain-text fallback
+## 5. Email is sent as formatted HTML with a plain-text fallback
 
 `@code-verified @sim-verified`
 
@@ -65,7 +79,7 @@
 <sub>cite: bin/freellmask-mail md_to_html md_to_inner_html · shared/aimeat_mail.py advance</sub>
 
 
-## 5. New source sidecars do not become new corpus material automatically
+## 6. New source sidecars do not become new corpus material automatically
 
 `@stock @sim-verified`
 

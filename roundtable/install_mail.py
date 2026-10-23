@@ -22,7 +22,7 @@ FILES = ['bin/freellmask-mail', 'shared/aimeat_mail.py', 'bin/mail-pdf-text',
          'bin/mail-pdf-text.swift', 'roundtable/install_mail.py',
          'roundtable/verify_mail.py', 'scripts/wordcloud-dark.py', 'scripts/cloud-source-sidecars.py',
          'shared/cloud_source.py', 'shared/cloud_assets.py', 'bin/cloud-assets']
-HANDLER_FILES = ['roundtable/install_mail.py', 'shared/aimeat_mail.py']
+HANDLER_FILES = ['roundtable/install_mail.py', 'shared/aimeat_mail.py', 'shared/cloud_assets.py']
 
 
 def stage_handler():
@@ -46,7 +46,7 @@ def stage_handler():
 
 
 def install_handler(payload, work=None):
-    """Atomically install only aimeat_mail.py on the Mini; its pane reloads on mtime."""
+    """Atomically install only the AIMEAT handler and its cloud renderer on the Mini."""
     if socket.gethostname().split('.')[0].lower() not in {'cloudcity', 'cloudcitymacmini'}:
         raise RuntimeError('Install on CloudcityMacMini only')
     payload = Path(payload)
@@ -62,23 +62,32 @@ def install_handler(payload, work=None):
         if time.monotonic() >= deadline:
             raise ValueError('Incomplete Syncthing payload: '+', '.join(missing))
         time.sleep(1)
-    source = payload/'shared/aimeat_mail.py'
-    compile(source.read_text(), str(source), 'exec')
+    for name in HANDLER_FILES:
+        source = payload/name
+        if name.endswith('.py'):
+            compile(source.read_text(), str(source), 'exec')
     apple = (work or Path.home()/'work')/'apple'
-    target = apple/'shared/aimeat_mail.py'
-    backup = payload/('backup-'+str(time.time_ns()))/'apple/shared/aimeat_mail.py'
-    if target.exists():
-        backup.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(target, backup)
-    target.parent.mkdir(parents=True, exist_ok=True)
-    temporary = target.with_name('.aimeat_mail.py.handler-tmp')
-    shutil.copyfile(source, temporary)
-    if target.exists():
-        temporary.chmod(target.stat().st_mode)
-    os.replace(temporary, target)
+    backups = {}
+    installed = {}
+    for name in HANDLER_FILES:
+        if name == 'roundtable/install_mail.py':
+            continue
+        source = payload/name
+        target = apple/name
+        backup = payload/('backup-'+str(time.time_ns()))/Path('apple')/Path(name)
+        if target.exists():
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(target, backup)
+            backups[name] = str(backup)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary = target.with_name('.'+target.name+'.handler-tmp')
+        shutil.copyfile(source, temporary)
+        if target.exists():
+            temporary.chmod(target.stat().st_mode)
+        os.replace(temporary, target)
+        installed[name] = hashlib.sha256(target.read_bytes()).hexdigest()
     receipt = {'installed': True, 'host': socket.gethostname(),
-               'source_sha256': manifest['shared/aimeat_mail.py'],
-               'target': str(target), 'backup': str(backup) if backup.exists() else None,
+               'files': installed, 'backups': backups,
                'installed_at': time.time(), 'activation': 'existing mail pane reloads on file change'}
     (payload/'handler-installed.json').write_text(json.dumps(receipt, indent=2))
     print(json.dumps(receipt))
