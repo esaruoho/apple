@@ -88,6 +88,7 @@ Feature: Owner emails deliver complete PDF and text material and analyses to AIM
     And queued Free Energy articles are processed end-to-end in arrival order to avoid batch round-robin delay
     And the Sages worker accepts queued mail sources only after their mail state reaches the roundtable stage
     And those mail sources are returned to the Sages worker in enqueue order
+    And archive copies of any queued mail source are excluded until that mail source is eligible
     # cite: shared/aimeat_email_template.py build_dossier clean_source contains_keelynet_boilerplate titled_roundtable validate_dossier
     # cite: shared/aimeat_mail.py enqueue_text require_complete_analysis advance merge_mail_inputs sys.executable
     # cite: bin/fm-converse call_flubuild ; bin/flubuild-request.py prepare

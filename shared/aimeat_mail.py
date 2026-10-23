@@ -432,26 +432,30 @@ def chunks(text, size=8000):
 def merge_mail_inputs(paths, stable_seconds=5, queue=None):
     """Let the existing Mini roundtable pane process email while the laptop sleeps."""
     sources = []
+    mail_identities = set()
     for state_path in (queue or QUEUE).glob('*/state.json'):
         try:
             state = json.loads(state_path.read_text())
-            if state.get('status') != 'roundtable':
-                continue
-            if state.get('quality_hold') or (state_path.parent/'quality-hold.json').exists():
-                continue
             for asset in state.get('assets', []):
                 name = asset['text']
                 if Path(name).name != name:
                     continue
                 source = state_path.parent/'workspace'/name
-                if source.is_file() and not source.is_symlink() and time.time()-source.stat().st_mtime >= stable_seconds:
+                if not source.is_file() or source.is_symlink():
+                    continue
+                identity = (source.name, sha(source.read_bytes()))
+                mail_identities.add(identity)
+                if (state.get('status') == 'roundtable' and not state.get('quality_hold')
+                        and not (state_path.parent/'quality-hold.json').exists()
+                        and time.time()-source.stat().st_mtime >= stable_seconds):
                     sources.append((state.get('created', 0), source))
         except (OSError, ValueError, KeyError, TypeError):
             continue
-    # A later Syncthing copy in the archive is the same input, not a second job.
-    identities = {(p.name, sha(p.read_bytes())) for p in sources}
-    archive_paths = [p for p in paths if (p.name, sha(p.read_bytes())) not in identities]
-    return archive_paths + [path for _, path in sorted(sources, key=lambda item: item[0])]
+    # Exclude every mail-job archive duplicate, including held/unfinished jobs. Otherwise
+    # the archive scan can bypass the mail stage gate and occupy the single Sages worker.
+    archive_paths = [p for p in paths if (p.name, sha(p.read_bytes())) not in mail_identities]
+    ordered_mail_sources = [path for _, path in sorted(sources, key=lambda item: item[0])]
+    return ordered_mail_sources + archive_paths
 
 
 def advance(agent, key, job, state, folder, returns):
