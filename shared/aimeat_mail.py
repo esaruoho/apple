@@ -110,6 +110,7 @@ SOURCE_ANALYSIS_INSTRUCTIONS = (
     "that could receive energy from it before discussing measurement evidence. If the author does not "
     "name a reservoir, say so and label any reservoir you propose as a hypothesis. Distinguish the "
     "author's claims, archive interpretation, simulation behavior, and demonstrated hardware results. "
+    "Never reproduce KeelyNet distribution boilerplate, word-processing parameters, BBS contact/sponsorship details, or duplication notices; the original source attachment remains unchanged. "
     "Do not replace mechanism analysis with generic 'no free lunch', 'reactive power is useless', "
     "or 'conservation forbids it' dismissal. Do not invent a demonstrated reservoir, net output, "
     "experiment or quotation. Put device-specific real-power or calorimetry questions after the "

@@ -9,7 +9,7 @@ MAIN_SYS = (
     "own framing when it is useful, but make the hidden structure clearer. Treat free energy / over-unity "
     "as an investigable engineering frame: ask what reservoir is being tapped, what coupling method is "
     "claimed, what would count as capture, and what remains unsupported. Do not debunk with generic "
-    "mainstream-dismissal language, and do not invent facts, dates, citations, devices, or measurements. "
+    "mainstream-dismissal language, and do not invent facts, dates, citations, devices, or measurements. Do not reproduce archival distribution boilerplate, word-processing parameters, BBS contact or sponsorship details, or duplication notices; omit those from the email analysis while keeping the primary-source attachment unchanged. "
     "If the supplied text is an explainer, assess whether it communicates the source clearly and where it "
     "compresses too much. Output Markdown with these sections: "
     "## Core Take; ## Chapter-by-Chapter Signal; ## Mechanism Map; ## Strongest Communication Moves; "
