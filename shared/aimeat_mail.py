@@ -821,7 +821,14 @@ def process_pending(agent, key, queue=None, folder=None, returns=None):
 def _process_pending(agent, key, queue, folder, returns):
     returns = returns or RETURNS
     paths = list(queue.glob('*/state.json'))
-    for path in sorted(paths, key=lambda p: json.loads(p.read_text()).get('serviced', 0)):
+    def schedule_key(path):
+        state = json.loads(path.read_text())
+        if state.get('kind') == TEXT_PIPELINE:
+            # Batch source articles end-to-end so the earliest one can be mailed
+            # without waiting for every sibling to finish the same checkpoint.
+            return (0, state.get('created', 0))
+        return (1, state.get('serviced', 0))
+    for path in sorted(paths, key=schedule_key):
         state = json.loads(path.read_text())
         if (path.parent/'quality-hold.json').exists():
             state.update(status='held', quality_hold=json.loads((path.parent/'quality-hold.json').read_text()))
