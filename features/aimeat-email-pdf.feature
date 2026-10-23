@@ -22,6 +22,7 @@
 #         34a3f3d9: exclude KeelyNet distribution boilerplate from analysis output.
 #         ef2d41d8: deterministic output scrub before rendering; runtime-untested.
 #         621d0f85: require clean source section structure; use existing gateway model chain.
+#         135cf4ef: retain gateway fallback for section reads after slow pinned call.
 # Tests: test_aimeat_mail.py plus existing mail/editor/roundtable behavioral suites.
 
 Feature: Owner emails deliver complete PDF and text material and analyses to AIMEAT
