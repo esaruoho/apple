@@ -24,6 +24,9 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'shared'))
 import cloud_assets
+
+
+
 QUEUE = Path.home() / 'work/comms/queue/aimeat-mail-jobs'
 RETURNS = Path.home() / 'work/comms/queue/aimeat-mail-results'
 ROUNDTABLE_RETURNS = Path.home() / 'work/comms/queue/aimeat-roundtable-results'
@@ -150,13 +153,6 @@ def enqueue_text(text, *, source_url, title, recipient, queue=None):
 
 
 
-def analysis_html(agent, body):
-    """Use the installed shared rich formatter, or the mail agent's own renderer."""
-    try:
-        from format_email import md_to_html, wrap_email_html
-    except ImportError:
-        return agent.md_to_html(body)
-    return wrap_email_html(md_to_html(body))
 
 
 
@@ -169,7 +165,9 @@ def bounded_source_step(state):
     if not state.get('kind', '').startswith('aimeat-source-text/') or state.get('status') not in {'reading', 'synthesis'}:
         yield
         return
-    seconds = int(os.environ.get('AIMEAT_SOURCE_STEP_SECONDS', '600'))
+    # Full archive-grounded synthesis can take longer than ten minutes on the
+    # Mini. Keep a generous hard bound while retaining every saved checkpoint.
+    seconds = int(os.environ.get('AIMEAT_SOURCE_STEP_SECONDS', '3600'))
     def expired(signum, frame):
         raise SourceStepTimeout(f'Source analysis step exceeded {seconds}s; checkpoints retained for retry')
     previous = signal.signal(signal.SIGALRM, expired)
@@ -190,6 +188,61 @@ def send_source_email(agent, key, message, payload):
               headers={'Authorization': 'Bearer '+key, 'Content-Type': 'application/json'})
     with urllib.request.urlopen(request, timeout=120) as response:
         return json.load(response)
+
+
+def analysis_payload(agent, body, title, filename):
+    """Build rich mail with the newer renderer API or the Mini's existing renderer."""
+    try:
+        from format_email import email_payload
+        return email_payload(body, title=title, filename=filename)
+    except ImportError:
+        try:
+            from format_email import md_to_html, wrap_email_html
+            rendered = wrap_email_html(md_to_html(body, title=title), title=title)
+        except ImportError:
+            rendered = agent.md_to_html(body)
+        return {'text': body, 'html': rendered, 'attachments': []}
+
+
+
+
+def require_complete_analysis(job, state, folder):
+    """Refuse delivery unless every requested source, panel and cloud artifact is complete."""
+    if state.get('status') != 'ready-to-send' or state.get('failure'):
+        raise RuntimeError('Analysis is not complete; email delivery withheld')
+    analysis_name = state.get('analysis')
+    if not analysis_name or Path(analysis_name).name != analysis_name:
+        raise RuntimeError('Completed analysis Markdown is missing; email delivery withheld')
+    analysis_path = folder / analysis_name
+    analysis = analysis_path.read_text() if analysis_path.is_file() else ''
+    if not analysis.strip():
+        raise RuntimeError('Completed analysis Markdown is empty; email delivery withheld')
+
+    for asset in state.get('assets', []):
+        source_name = asset.get('text', '')
+        if Path(source_name).name != source_name:
+            raise RuntimeError('Unsafe AIMEAT source path; email delivery withheld')
+        source = folder / source_name
+        sidecar = Path(str(source) + '.roundtable.json')
+        transcript = Path(str(source) + '.roundtable.md')
+        if not source.is_file() or sha(source.read_bytes()) != asset.get('sha256'):
+            raise RuntimeError(f'{source_name}: source verification failed; email delivery withheld')
+        if not sidecar.is_file() or not transcript.is_file():
+            raise RuntimeError(f'{source_name}: completed roundtable is missing; email delivery withheld')
+        result = json.loads(sidecar.read_text())
+        transcript_text = transcript.read_text()
+        if (result.get('status') != 'complete' or result.get('sha256') != asset.get('sha256')
+                or not transcript_text.strip()
+                or sha(transcript.read_bytes()) != result.get('result_sha256')
+                or transcript_text not in analysis):
+            raise RuntimeError(f'{source_name}: roundtable completion could not be verified; email delivery withheld')
+        for kind in ('wordcloud', 'sentencecloud', 'ideacloud'):
+            for artifact in cloud_assets.artifacts(source, kind):
+                if (not artifact.is_file() or not artifact.stat().st_size
+                        or artifact.name not in state.get('files', [])):
+                    raise RuntimeError(f'{source_name}: {kind} artifacts are incomplete; email delivery withheld')
+                if artifact.name not in analysis:
+                    raise RuntimeError(f'{source_name}: {kind} artifacts are not recorded in the analysis; email delivery withheld')
 
 
 def publish(job, state, folder=None, returns=None):
@@ -458,18 +511,15 @@ def advance(agent, key, job, state, folder, returns):
             analysis += '\n\nCloud generation issues (no missing artifact is claimed as complete):\n'+json.dumps(state['cloud_errors'], indent=2)
         atomic(folder/state['analysis'], analysis)
         state['status'] = 'ready-to-send'
-    elif state['status'] in {'ready-to-send', 'failure-ready-to-send'}:
-        failed = state['status'] == 'failure-ready-to-send'
-        if failed:
-            body = ('AIMEAT could not complete this source job. No complete analysis is claimed.\n\n'
-                    f"Job: {state['id']}\nError: {state['failure']}\n"
-                    f"Saved files in merlib-dump/aimeat: {', '.join(state.get('files', []))}\n\n"
-                    'Analysis types requested: section readings, archive-grounded synthesis, '
-                    'nine-person roundtable and all three cloud types with Markdown rendering sources. Completed checkpoints are retained for recovery.')
-        else:
-            body = (folder/state['analysis']).read_text()
-        payload = {'text': body, 'html': analysis_html(agent, body), 'attachments': []}
+    elif state['status'] == 'ready-to-send':
+        require_complete_analysis(job, state, folder)
+        body = (folder/state['analysis']).read_text()
+        title = message.get('subject', 'AIMEAT analysis')
+        payload = analysis_payload(agent, body, message.get('subject', 'AIMEAT analysis'),
+                                   state.get('analysis', 'analysis'))
         for name in state['files']:
+            if any(a.get('filename') == name for a in payload['attachments']):
+                continue
             if name.endswith(('.pdf', '.txt', '.analysis.md', '.png', '.source.md', '.render.json', '.ideacloud.md')):
                 data = (folder/name).read_bytes()
                 if len(data) <= 15*1024*1024:
@@ -483,7 +533,7 @@ def advance(agent, key, job, state, folder, returns):
         response = (send_source_email(agent, key, message, payload)
                     if is_text_source(message) else
                     agent.send_inbox_reply(key, message['message_id'], payload))
-        state.update(status='failed-notified' if failed else 'complete', sent=time.time(), response=response)
+        state.update(status='complete', sent=time.time(), response=response)
 
 
 def process_pending(agent, key, queue=None, folder=None, returns=None):
@@ -507,6 +557,15 @@ def _process_pending(agent, key, queue, folder, returns):
             state.update(status='held', quality_hold=json.loads((path.parent/'quality-hold.json').read_text()))
             save(path, state)
             continue
+        if state['status'] == 'failure-ready-to-send':
+            # Legacy state from the old handler: it represented an error notice,
+            # not a completed analysis. Preserve checkpoints without emailing it.
+            state['resume_status'] = state.get('resume_status') or 'unknown'
+            state['status'] = 'failed'
+            state['serviced'] = time.time()
+            save(path, state)
+            publish(path.parent, state, folder or path.parent/'workspace', returns)
+            continue
         if state['status'] in {'complete', 'sending-unconfirmed', 'failed', 'failed-notified'} or state.get('retry_after', 0) > time.time():
             continue
         workspace = folder or path.parent/'workspace'
@@ -523,7 +582,7 @@ def _process_pending(agent, key, queue, folder, returns):
             if state['attempts'] >= 3 and state['status'] != 'sending-unconfirmed':
                 state['resume_status'] = state['status']
                 state['failure'] = str(error)
-                state['status'] = 'failure-ready-to-send'
+                state['status'] = 'failed'
             print(f"AIMEAT PDF {state['id']}: {state['error']}", flush=True)
         publish(path.parent, state, workspace, returns)
         state['serviced'] = time.time()

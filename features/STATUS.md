@@ -10,7 +10,7 @@
 
 | Card | Scn | Build | Runtime | Hardware | Grades present |
 |------|----:|:-----:|:----------:|:--------:|----------------|
-| aimeat-email-pdf | 5 | ✗ | ✓ | — | @built @runtime-verified @sim-verified @stock |
+| aimeat-email-pdf | 6 | ✓ | ✓ | — | @built @code-verified @runtime-verified @sim-verified @stock |
 | aimeat-roundtable | 10 | ✓ | ~ partial | — | @code-verified @runtime-untested @runtime-verified @stock |
 | aimeat-whiteboard | 6 | ✗ | ✓ | — | @built @designed @runtime-verified @stock @untested |
 | app-audio-record | 23 | ✗ | — | ✓ | @built @hw-verified @note |
@@ -25,6 +25,7 @@
 | dictation-button | 10 | ✗ | — | — | @built @note @todo @untested @verified |
 | directions-home | 6 | ✗ | — | — | @built @note @verified |
 | dualcam | 6 | ✗ | — | ✓ | @built @hw-verified @note |
+| email-math-renderer | 3 | ✗ | — | — | @built @sim-verified |
 | find-my | 5 | ✗ | — | — | @note @verified |
 | finder-settings | 7 | ✗ | — | — | @built @note |
 | fleet-identity-and-view | 10 | ✓ | ✓ | — | @build-verified @ops-verified @runtime-verified |
@@ -71,8 +72,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 59
-- Build-verified: 8
+- Cards: 60
+- Build-verified: 9
 - Runtime-verified: 10 full + 4 partial
 - **Hardware-verified: 21**  ·  hardware-untested: 0
 

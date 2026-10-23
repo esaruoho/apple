@@ -37,6 +37,19 @@ Feature: Owner emails deliver complete PDF material and analyses to AIMEAT
     # cite: shared/aimeat_mail.py merge_mail_inputs
     # cite: shared/cloud_assets.py generate
 
+  @code-verified @sim-verified
+  Scenario: Substack analysis mail is sent only after every requested analysis is complete
+    Given a Substack source job has saved reading checkpoints
+    When source synthesis times out, the roundtable fails, or any cloud artifact is missing
+    Then the failure and checkpoints remain in the job state without sending an email
+    And the handler sends only after nonempty analysis, matching completed roundtables,
+        and all three cloud PNGs and Markdown rendering sources pass verification
+    And source-analysis steps have a one-hour default deadline on the Mini
+    And targeted Mini deployment replaces only the handler and preserves a backup
+    # cite: shared/aimeat_mail.py bounded_source_step require_complete_analysis advance _process_pending
+    # cite: shared/aimeat_mail.py analysis_html ; roundtable/install_mail.py stage_handler install_handler
+    # cite: test_aimeat_source.py
+
   @built @runtime-verified
   Scenario: Wordclouds use a black canvas and readable title
     Given an installed Convey or archive wordcloud generator

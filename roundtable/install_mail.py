@@ -7,6 +7,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import shlex
 import shutil
@@ -21,6 +22,67 @@ FILES = ['bin/freellmask-mail', 'shared/aimeat_mail.py', 'bin/mail-pdf-text',
          'bin/mail-pdf-text.swift', 'roundtable/install_mail.py',
          'roundtable/verify_mail.py', 'scripts/wordcloud-dark.py', 'scripts/cloud-source-sidecars.py',
          'shared/cloud_source.py', 'shared/cloud_assets.py', 'bin/cloud-assets']
+HANDLER_FILES = ['roundtable/install_mail.py', 'shared/aimeat_mail.py']
+
+
+def stage_handler():
+    """Stage only the mail handler; leave other Mini-owned files untouched."""
+    digest = hashlib.sha256(b''.join((ROOT/n).read_bytes() for n in HANDLER_FILES)).hexdigest()[:16]
+    payload = WORK/'comms/queue/aimeat-mail-deploy'/('handler-'+digest)
+    manifest = {}
+    for name in HANDLER_FILES:
+        target = payload/name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT/name, target)
+        manifest[name] = hashlib.sha256(target.read_bytes()).hexdigest()
+    (payload/'manifest.json').write_text(json.dumps(manifest))
+    command = 'run --direct --timeout 120 '+shlex.join([
+        '/opt/homebrew/bin/python3', str(payload/'roundtable/install_mail.py'),
+        'handler', '--payload', str(payload)])
+    request = WORK/'comms/queue/pakettibot-inbox'/f'aimeat-mail-handler-{time.time_ns()}.cmd'
+    request.write_text(command+'\n')
+    print(json.dumps({'payload': str(payload), 'request': str(request),
+                      'reply': str(WORK/'comms/queue/pakettibot-outbox'/(request.stem+'.out.txt'))}))
+
+
+def install_handler(payload, work=None):
+    """Atomically install only aimeat_mail.py on the Mini; its pane reloads on mtime."""
+    if socket.gethostname().split('.')[0].lower() not in {'cloudcity', 'cloudcitymacmini'}:
+        raise RuntimeError('Install on CloudcityMacMini only')
+    payload = Path(payload)
+    manifest = json.loads((payload/'manifest.json').read_text())
+    if set(manifest) != set(HANDLER_FILES):
+        raise ValueError('Unexpected AIMEAT handler payload')
+    deadline = time.monotonic()+75
+    while True:
+        missing = [n for n,h in manifest.items() if not (payload/n).is_file()
+                   or hashlib.sha256((payload/n).read_bytes()).hexdigest() != h]
+        if not missing:
+            break
+        if time.monotonic() >= deadline:
+            raise ValueError('Incomplete Syncthing payload: '+', '.join(missing))
+        time.sleep(1)
+    source = payload/'shared/aimeat_mail.py'
+    compile(source.read_text(), str(source), 'exec')
+    apple = (work or Path.home()/'work')/'apple'
+    target = apple/'shared/aimeat_mail.py'
+    backup = payload/('backup-'+str(time.time_ns()))/'apple/shared/aimeat_mail.py'
+    if target.exists():
+        backup.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(target, backup)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_name('.aimeat_mail.py.handler-tmp')
+    shutil.copyfile(source, temporary)
+    if target.exists():
+        temporary.chmod(target.stat().st_mode)
+    os.replace(temporary, target)
+    receipt = {'installed': True, 'host': socket.gethostname(),
+               'source_sha256': manifest['shared/aimeat_mail.py'],
+               'target': str(target), 'backup': str(backup) if backup.exists() else None,
+               'installed_at': time.time(), 'activation': 'existing mail pane reloads on file change'}
+    (payload/'handler-installed.json').write_text(json.dumps(receipt, indent=2))
+    print(json.dumps(receipt))
+    return receipt
 
 
 def stage(action):
@@ -135,10 +197,15 @@ def install(payload):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['stage', 'install', 'activate', 'verify'])
+    parser.add_argument('action', choices=['stage', 'install', 'activate', 'verify', 'handler'])
     parser.add_argument('--payload', type=Path)
     args = parser.parse_args()
-    if args.action == 'install':
+    if args.action == 'handler':
+        if args.payload:
+            install_handler(args.payload)
+        else:
+            stage_handler()
+    elif args.action == 'install':
         install(args.payload)
     else:
         stage(args.action if args.action in {'activate', 'verify'} else 'install')

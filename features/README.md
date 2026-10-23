@@ -21,6 +21,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [On-device dictation button](#dictation-button) — `dictation-button.feature`
 - [Directions home via Apple Maps](#directions-home) — `directions-home.feature`
 - [Front and rear iPhone cameras in one picture](#dualcam) — `dualcam.feature`
+- [Research emails share one renderer and retain equation source](#email-math-renderer) — `email-math-renderer.feature`
 - [Find My — open the right tab and surface the right person/device](#find-my) — `find-my.feature`
 - [Read & control Finder Settings from the command line](#finder-settings) — `finder-settings.feature`
 - [Fleet shows each Mac once, correctly named, and one click screen-shares to it](#fleet-identity-and-view) — `fleet-identity-and-view.feature`
@@ -72,17 +73,18 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/aimeat-email-pdf.feature` · [session](aimeat-email-pdf.session.md)
 
-**Behaviour (5 scenarios):**
+**Behaviour (6 scenarios):**
 
 - Owner PDF intake is durable and does not answer twice — `@built @sim-verified`
 - Every PDF page and every text section is considered — `@built @sim-verified @runtime-verified`
 - The laptop receives the original and actual returned results — `@built @sim-verified`
+- Substack analysis mail is sent only after every requested analysis is complete — `@code-verified @sim-verified`
 - Wordclouds use a black canvas and readable title — `@built @runtime-verified`
 - Compute stays on CloudcityMacMini — `@stock @sim-verified`
 
-**How it does it:** **Key procs:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `scripts/wordcloud-dark.py`, `eligible`, `process_pending`, `extract_pdf` · **Source files:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `roundtable/bridge.py`, `shared/cloud_assets.py`, `scripts/wordcloud-dark.py`
+**How it does it:** **Key procs:** `shared/aimeat_mail.py`, `roundtable/install_mail.py`, `test_aimeat_source.py`, `bin/mail-pdf-text.swift`, `scripts/wordcloud-dark.py`, `eligible`, `process_pending`, `extract_pdf`, `bounded_source_step`, `require_complete_analysis`, `analysis_html`, `stage_handler`, `install_handler` · **Source files:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `roundtable/bridge.py`, `shared/cloud_assets.py`, `roundtable/install_mail.py`, `test_aimeat_source.py`, `scripts/wordcloud-dark.py`
 
-**Grade:** @built ×4 · @runtime-verified ×2 · @sim-verified ×4 · @stock ×1
+**Grade:** @built ×4 · @code-verified ×1 · @runtime-verified ×2 · @sim-verified ×5 · @stock ×1
 
 
 <a id="aimeat-roundtable"></a>
@@ -407,6 +409,22 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - INSTALL IS BLOCKED — the free team is full — `@built`
 
 **Grade:** @built ×4 · @hw-verified ×2
+
+
+<a id="email-math-renderer"></a>
+## Research emails share one renderer and retain equation source
+
+`features/email-math-renderer.feature` · [session](email-math-renderer.session.md)
+
+**Behaviour (3 scenarios):**
+
+- Slash and dollar delimited multiline equations survive Markdown — `@built @sim-verified`
+- Unsupported syntax never silently loses mathematical content — `@built @sim-verified`
+- All five mail paths delegate rendering — `@built @sim-verified`
+
+**How it does it:** **Key procs:** `shared/format_email.py`, `shared/email_renderer_install.py`, `test_email_renderer.py`
+
+**Grade:** @built ×3 · @sim-verified ×3
 
 
 <a id="find-my"></a>
