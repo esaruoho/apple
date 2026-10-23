@@ -15,6 +15,8 @@
 #         Mini activation/hash match verified for final payload dfc71c558e8a859b.
 #         Evidence: analysis/proofs/aimeat-email-pdf-verification.json (39 tests).
 #         Email transport is simulated in tests; no live test email sent.
+#         b22d0635: shared Free Energy prompt, owner text attachments, unified subject/output.
+#         Runtime-untested; no analysis email sent in this change.
 # Tests: test_aimeat_mail.py plus existing mail/editor/roundtable behavioral suites.
 
 Feature: Owner emails deliver complete PDF and text material and analyses to AIMEAT
