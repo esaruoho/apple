@@ -54,7 +54,7 @@ Regression coverage exercises legacy failure states, three repeated analysis fai
 
 The hand-built `batch_ingest_keelynet_10.py` was reviewed, copied to `aimeat/shelved/`, and its active entry point replaced with an inert refusal. `process_zpe_corpus.py` was likewise made inert so it cannot dispatch that batch. The attempted Mini invocation failed during import of the legacy renderer shim before analysis or email delivery; the Mini outbox confirms exit 1, and the process inspection found no running batch.
 
-The existing `mail-free-energy-analysis` system prompt (`MAIN_SYS`, `LENS_SYS`) is now the shared prompt source for Free Energy AIMEAT synthesis. Its existing FreeLLMAPI model chain already includes Gemini models, so the shelved direct-Gemini fallback is not imported. Owner UTF-8 text attachments join the existing durable AIMEAT path used by PDFs: hash-keyed intake, full source reads, the existing roundtable, artifact gates, and the shared `format_email.py` renderer.
+The existing `mail-free-energy-analysis` system prompt (`MAIN_SYS`, `LENS_SYS`) is now the shared prompt source for Free Energy AIMEAT synthesis. Its existing FreeLLMAPI model chain already includes Gemini models, so the shelved direct-Gemini fallback is not imported. Owner UTF-8 text attachments join the existing durable AIMEAT path used by PDFs: hash-keyed intake, full source reads, the existing roundtable, artifact gates, and the shared `format_email.py` renderer. The same `enqueue_text` entry accepts `keelynet://` provenance references for locally archived text, and its new-email subject is the source title without a generated prefix.
 
 ### How to get back
 

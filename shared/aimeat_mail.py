@@ -128,8 +128,9 @@ def is_substack_source(message):
 def enqueue_text(text, *, source_url, title, recipient, queue=None):
     """Adopt immutable article text into the existing full mail-analysis pipeline."""
     mini()
-    if not text.strip() or not source_url.startswith(('https://', 'http://')):
-        raise ValueError('A source URL and nonempty text are required')
+    source_ref = source_url.startswith(('https://', 'http://', 'keelynet://'))
+    if not text.strip() or not source_ref:
+        raise ValueError('An HTTP(S) or keelynet:// source reference and nonempty text are required')
     if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', recipient):
         raise ValueError('Invalid analysis recipient')
     identity = sha(json.dumps([TEXT_PIPELINE, source_url, sha(text.encode()), recipient]).encode())[:24]
@@ -144,8 +145,8 @@ def enqueue_text(text, *, source_url, title, recipient, queue=None):
         message = {'kind': TEXT_PIPELINE, 'message_id': 'source-'+identity,
                    'from': recipient, 'recipient': recipient, 'subject': title,
                    'source_url': source_url,
-                   'text': SOURCE_ANALYSIS_INSTRUCTIONS+' Give a full free-energy archive-grounded analysis of this Substack post, '
-                           'including its transcript. Identify the external reservoir and coupling '
+                   'text': SOURCE_ANALYSIS_INSTRUCTIONS+' Give a full free-energy archive-grounded analysis of this source, '
+                           'including all supplied text or transcript. Identify the external reservoir and coupling '
                            'mechanism first; distinguish source claims, archive connections, and '
                            'device-specific measurement evidence. Source: '+source_url}
         save(job/'email.json', message)

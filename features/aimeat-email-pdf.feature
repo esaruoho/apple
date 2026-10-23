@@ -42,6 +42,14 @@ Feature: Owner emails deliver complete PDF and text material and analyses to AIM
 
 
   @built @runtime-untested
+  Scenario: Local archival text can be queued into the same AIMEAT source pipeline
+    Given a KeelyNet Markdown source already resides on Cloudcity
+    When enqueue_text receives its complete text and keelynet:// source reference
+    Then it creates the same checkpointed source job used for Substack text
+    And it sends the completed package with the source title as the subject
+    # cite: shared/aimeat_mail.py enqueue_text send_source_email advance
+
+  @built @runtime-untested
   Scenario: Owner text attachments use the same durable AIMEAT analysis path
     Given an owner emails a UTF-8 text, Markdown, CSV or JSON attachment
     When the Cloudcity mail pane polls the inbox
