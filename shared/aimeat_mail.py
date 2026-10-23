@@ -452,8 +452,6 @@ def advance(agent, key, job, state, folder, returns):
             asset, number, part = parts[index]
             is_source = is_text_source(message)
             call_options = {'max_tokens': 1800, 'temperature': 0.2}
-            if is_source:
-                call_options['model'] = agent.FM_MODEL
             answer, model = agent._fm_call([
                 {'role': 'system', 'content': agent.CHAPTER_SYSTEM + ('\n'+SOURCE_ANALYSIS_INSTRUCTIONS if is_source else '')},
                 {'role': 'user', 'content': f"{asset['text']} — part {number}\n\n{part}"}], **call_options)

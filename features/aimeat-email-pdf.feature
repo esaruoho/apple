@@ -21,7 +21,7 @@
 #         f925ff96: reasoning-leak gate + accurate source naming; runtime-untested.
 #         34a3f3d9: exclude KeelyNet distribution boilerplate from analysis output.
 #         ef2d41d8: deterministic output scrub before rendering; runtime-untested.
-#         621d0f85: require clean source section structure; pin to configured gateway model.
+#         621d0f85: require clean source section structure; use existing gateway model chain.
 # Tests: test_aimeat_mail.py plus existing mail/editor/roundtable behavioral suites.
 
 Feature: Owner emails deliver complete PDF and text material and analyses to AIMEAT
@@ -64,6 +64,7 @@ Feature: Owner emails deliver complete PDF and text material and analyses to AIM
     And the existing Sages, source-coverage, artifact-validation and shared-renderer stages run
     And private reasoning leaks are rejected before they enter the dossier
     And source reads must begin with the canonical report headings
+    And source reads use the existing FreeLLMAPI fallback chain
     And the source filename is preserved in analysis references
     And the send gate removes archival distribution boilerplate even if a model repeats it
     And an incomplete analysis is not emailed
