@@ -126,6 +126,28 @@ def is_substack_source(message):
     return message.get('kind', '').startswith('aimeat-source-text/')
 
 
+def strip_keelynet_distribution_boilerplate(markdown):
+    """Keep BBS distribution metadata out of the email while preserving the source attachment."""
+    cleaned, skip = [], 0
+    for line in markdown.splitlines():
+        low = line.casefold()
+        if skip:
+            skip -= 1
+            continue
+        if 'there are absolutely no restrictions' in low:
+            skip = 2
+            continue
+        if ('word processor parameters' in low or low.startswith('taken from keelynet bbs')
+                or low.startswith('sponsored by vangard sciences')
+                or low.strip() in {'po box 1031', 'mesquite, tx 75150'}):
+            continue
+        line = re.sub(r'KeelyNet BBS\s*\(214\)\s*324-3501', 'KeelyNet BBS', line, flags=re.I)
+        line = re.sub(r'Vangard Sciences,?\s*PO BOX 1031,?\s*Mesquite,?\s*TX 75150',
+                      'Vangard Sciences', line, flags=re.I)
+        cleaned.append(line)
+    return '\n'.join(cleaned).strip() + ('\n' if markdown.endswith('\n') else '')
+
+
 def enqueue_text(text, *, source_url, title, recipient, queue=None):
     """Adopt immutable article text into the existing full mail-analysis pipeline."""
     mini()
@@ -563,6 +585,9 @@ def advance(agent, key, job, state, folder, returns):
     elif state['status'] == 'ready-to-send':
         require_complete_analysis(job, state, folder)
         body = (folder/state['analysis']).read_text()
+        body = strip_keelynet_distribution_boilerplate(body)
+        atomic(folder/state['analysis'], body)
+        atomic(job/'base-analysis.md', body)
         title = message.get('subject', 'AIMEAT analysis')
         payload = email_payload(body, title=message.get('subject', 'AIMEAT analysis'), filename=state.get('analysis', 'analysis'))
         for name in state['files']:
