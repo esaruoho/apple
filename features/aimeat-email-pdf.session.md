@@ -63,3 +63,8 @@ The existing `mail-free-energy-analysis` system prompt (`MAIN_SYS`, `LENS_SYS`) 
 - Resume command: unavailable until a session ID is assigned.
 - Date: 2026-10-23 from the active environment; turn timestamps were not present in a transcript.
 - User request: this follow-up asks to shelve the custom batch and make owner PDF/text email analysis use one established Free Energy output source.
+
+
+## Follow-up: preserve KeelyNet source names and block reasoning leaks
+
+A ZPE1 queue attempt showed a model returning a private thinking-process preamble. That attempt had not emailed; it exposed a gap in the existing leak detector. The detector and chapter prompt now reject that preamble shape. The shared `enqueue_text` path now derives a display filename from its source reference, so KeelyNet jobs do not surface with a fabricated `substack-` filename. The in-flight ZPE1 job will be reset to remove the rejected read and reprocessed after the updated Mini handler is active. No tests or live emails have been run for these changes.

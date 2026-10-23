@@ -239,9 +239,11 @@ def _has_leak(text):
     """nemotron (a reasoning model) leaks its chain-of-thought as a preamble ~2/3 of the time
     ('The user asks:', 'Okay, the user is…'). Not a final answer — regenerate."""
     head=(text or "").strip().lower()
-    return head.startswith(("the user asks","we need to","okay, the user","the user is asking",
-        "the user wants","let me answer","i need to answer","let's answer","the question is",
-        "okay, so","alright, the user","so the user"))
+    return head.startswith(("here's a thinking process", "here is a thinking process",
+        "let's think step by step", "we need to analyze", "i need to analyze", "we should analyze",
+        "the user asks", "we need to", "okay, the user", "the user is asking", "the user wants",
+        "let me answer", "i need to answer", "let's answer", "the question is", "okay, so",
+        "alright, the user", "so the user"))
 
 _DUMP_MARKS = ("we need to output", "we must not add", "must follow exactly", "let's locate",
                "the user gave", "we need to extract", "let me check the text", "we should output",
@@ -2404,7 +2406,7 @@ CHAPTER_SYSTEM = (
     "one, say that plainly.\n"
     "**Verbatim** — one or two short quotes, in quotation marks, ONLY if the wording matters.\n"
     "Never invent a number, a name or a quotation. If this part is front matter, a table of contents "
-    "or boilerplate, say so in one line and stop."
+    "or boilerplate, say so in one line and stop. Do not reveal hidden chain-of-thought or describe a private reasoning process; provide only the requested final report."
 )
 
 

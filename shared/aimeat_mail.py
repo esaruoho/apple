@@ -151,11 +151,13 @@ def enqueue_text(text, *, source_url, title, recipient, queue=None):
                            'device-specific measurement evidence. Source: '+source_url}
         save(job/'email.json', message)
         assets, files, offset = [], [], 0
+        source_name = Path(urllib.parse.urlsplit(source_url).path).name or title or 'source.txt'
+        source_stem = re.sub('[^A-Za-z0-9_-]+', '-', Path(source_name).stem)[:70] or 'source'
         # The shared roundtable accepts at most 1 MiB; every character is retained.
         for number, part in enumerate(chunks(text, 200000), 1):
-            name = f'substack-{identity}-{number:04}.txt'
+            name = f'{source_stem}-{identity}-{number:04}.txt'
             atomic(folder/name, part)
-            assets.append({'text': name, 'sha256': sha(part.encode()),
+            assets.append({'text': name, 'sha256': sha(part.encode()), 'source_name': source_name,
                            'range': [offset, offset+len(part)], 'source_url': source_url,
                            'source_kind': 'text', 'source_chars': len(text)})
             files.append(name)
