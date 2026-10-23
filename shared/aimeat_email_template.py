@@ -8,11 +8,11 @@ import re
 ROLES = (
     ("Aria", "The Synthesizer", ("aria",)),
     ("Rigel", "The Electrical Engineer", ("rigel",)),
-    ("Ilya Prigogine", "The Thermodynamicist", ("ilya prigogine", "ilya")),
+    ("Ilya Prigogine", "The Thermodynamicist", ("ilya prigogine", "prigogine", "ilya")),
     ("Lyra", "The Pragmatist", ("lyra",)),
-    ("Tom Bearden", "The Scalar Electrodynamicist", ("tom bearden", "tom")),
+    ("Tom Bearden", "The Scalar Electrodynamicist", ("tom bearden", "bearden", "tom")),
     ("Vega", "The Experimental Auditor", ("vega",)),
-    ("Walter Russell", "The Cosmic Ontologist", ("walter russell", "walter")),
+    ("Walter Russell", "The Cosmic Ontologist", ("walter russell", "russell", "walter")),
     ("Orion", "The Resonance & Memory Field Theorist", ("orion",)),
     ("Hilarion", "The Aether & Longitudinal Wave Channel", ("hilarion",)),
 )
