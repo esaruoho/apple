@@ -48,3 +48,18 @@ Esa reported two Substack jobs that generated failure emails before producing co
 The failure-email transition and send branch are removed. Old `failure-ready-to-send` jobs are converted to local `failed` state without email, and new jobs retain their latest error and checkpoints in `failed`. The source-step default is now 3600 seconds. Before any success email, the sender gate verifies nonempty analysis Markdown, unchanged source hashes, `complete` roundtable sidecars with matching transcript hashes and inclusion in the analysis, plus each wordcloud, sentencecloud and ideacloud PNG/source-Markdown/render-JSON artifact. Missing or inconsistent results remain unsent.
 
 Regression coverage exercises legacy failure states, three repeated analysis failures, incomplete ready-to-send state, successful delivery only after all requested artifacts verify, rich-renderer and Mini-renderer fallback behavior, and the targeted handler installer preserving a backup without overwriting the mailer or other files. The AIMEAT source/mail/roundtable suite passes 45 tests; with the optional renderer suite, 51 pass. After a concurrent renderer deployment changed the handler, the handler-only payload `handler-066b759c619b5e33` was installed on CloudcityMacMini. The install receipt and active mail heartbeat both report SHA-256 `5000c197ef75076697a9eb548738556d0a531ed976e4e73b1a23f251ed3511f0`; the heartbeat process is PID 67310. This verifies installation and process reload, not a live email. No email was sent and neither old job was replayed. This active-session follow-up does not yet have a separate bundled transcript/session ID.
+
+
+## Follow-up: one Free Energy analysis source for PDF and text email (2026-10-23)
+
+The hand-built `batch_ingest_keelynet_10.py` was reviewed, copied to `aimeat/shelved/`, and its active entry point replaced with an inert refusal. `process_zpe_corpus.py` was likewise made inert so it cannot dispatch that batch. The attempted Mini invocation failed during import of the legacy renderer shim before analysis or email delivery; the Mini outbox confirms exit 1, and the process inspection found no running batch.
+
+The existing `mail-free-energy-analysis` system prompt (`MAIN_SYS`, `LENS_SYS`) is now the shared prompt source for Free Energy AIMEAT synthesis. Its existing FreeLLMAPI model chain already includes Gemini models, so the shelved direct-Gemini fallback is not imported. Owner UTF-8 text attachments join the existing durable AIMEAT path used by PDFs: hash-keyed intake, full source reads, the existing roundtable, artifact gates, and the shared `format_email.py` renderer.
+
+### How to get back
+
+- Transcript path: unavailable in this API run; no transcript file was found yet.
+- Session ID: unavailable; not fabricated.
+- Resume command: unavailable until a session ID is assigned.
+- Date: 2026-10-23 from the active environment; turn timestamps were not present in a transcript.
+- User request: this follow-up asks to shelve the custom batch and make owner PDF/text email analysis use one established Free Energy output source.

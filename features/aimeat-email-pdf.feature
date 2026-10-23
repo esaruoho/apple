@@ -1,6 +1,6 @@
 # REPORT CARD: email PDFs into AIMEAT, with complete page/section accounting
 # SESSION >> features/aimeat-email-pdf.session.md
-# WATCH: shared/aimeat_mail.py roundtable/install_mail.py test_aimeat_source.py bin/mail-pdf-text.swift scripts/wordcloud-dark.py eligible process_pending extract_pdf bounded_source_step require_complete_analysis analysis_html stage_handler install_handler
+# WATCH: shared/aimeat_mail.py shared/free_energy_analysis.py bin/mail-free-energy-analysis bin/freellmask-mail roundtable/install_mail.py test_aimeat_source.py bin/mail-pdf-text.swift eligible text_attachments is_text_source process_pending extract_pdf bounded_source_step require_complete_analysis advance
 # WHAT THIS CARD SPAWNS
 # Codespace: shared/aimeat_mail.py, bin/mail-pdf-text{,.swift}, roundtable/install_mail.py,
 #            bin/freellmask-mail poll integration, roundtable/bridge.py collector.
@@ -17,7 +17,7 @@
 #         Email transport is simulated in tests; no live test email sent.
 # Tests: test_aimeat_mail.py plus existing mail/editor/roundtable behavioral suites.
 
-Feature: Owner emails deliver complete PDF material and analyses to AIMEAT
+Feature: Owner emails deliver complete PDF and text material and analyses to AIMEAT
 
   @built @sim-verified
   Scenario: Owner PDF intake is durable and does not answer twice
@@ -37,6 +37,21 @@ Feature: Owner emails deliver complete PDF material and analyses to AIMEAT
     And pages with no recognized text are listed explicitly
     # cite: bin/mail-pdf-text.swift
     # cite: shared/aimeat_mail.py extract_pdf chunks advance
+
+
+  @built @runtime-untested
+  Scenario: Owner text attachments use the same durable AIMEAT analysis path
+    Given an owner emails a UTF-8 text, Markdown, CSV or JSON attachment
+    When the Cloudcity mail pane polls the inbox
+    Then it queues the source before the legacy reply claim
+    And it preserves and analyzes the complete attachment without truncation
+    And Free Energy synthesis uses the shared MAIN_SYS and LENS_SYS from mail-free-energy-analysis
+    And the existing Sages, source-coverage, artifact-validation and shared-renderer stages run
+    And an incomplete analysis is not emailed
+    # cite: shared/aimeat_mail.py text_attachments eligible enqueue advance require_complete_analysis
+    # cite: shared/free_energy_analysis.py MAIN_SYS LENS_SYS
+    # cite: bin/mail-free-energy-analysis main
+    # cite: bin/freellmask-mail poll_once
 
   @built @sim-verified
   Scenario: The laptop receives the original and actual returned results

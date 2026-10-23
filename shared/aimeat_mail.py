@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'shared'))
 import cloud_assets
 from format_email import email_payload
+from free_energy_analysis import MAIN_SYS, LENS_SYS
 
 
 
@@ -74,8 +75,17 @@ def pdf_sources(message):
     return sources
 
 
+TEXT_SUFFIXES = ('.txt', '.md', '.markdown', '.csv', '.json', '.xml')
+
+def text_attachments(message):
+    return [a for a in (message.get('attachments') or [])
+            if (a.get('content_type') or '').lower().startswith('text/')
+            or (a.get('filename') or '').lower().endswith(TEXT_SUFFIXES)
+            or (a.get('content_type') or '').lower() in {'application/json', 'application/xml'}]
+
 def eligible(message, owners):
-    return email.utils.parseaddr(message.get('from') or '')[1].lower() in owners and bool(pdf_sources(message))
+    owner = email.utils.parseaddr(message.get('from') or '')[1].lower() in owners
+    return owner and bool(pdf_sources(message) or text_attachments(message))
 
 
 def enqueue(message, queue=None):
@@ -108,6 +118,10 @@ SOURCE_ANALYSIS_INSTRUCTIONS = (
 
 
 def is_text_source(message):
+    return (message.get('kind', '').startswith('aimeat-source-text/')
+            or bool(text_attachments(message)))
+
+def is_substack_source(message):
     return message.get('kind', '').startswith('aimeat-source-text/')
 
 
@@ -182,8 +196,7 @@ def bounded_source_step(state):
 
 def send_source_email(agent, key, message, payload):
     """One send attempt: ambiguous acceptance is retained for manual reconciliation."""
-    body = dict(payload, to=[message['recipient']],
-                subject='Deep analysis: '+message['subject'])
+    body = dict(payload, to=[message['recipient']], subject=message['subject'])
     url = f"{agent.AM_BASE}/inboxes/{agent.INBOX}/messages/send"
     request = urllib.request.Request(url, data=json.dumps(body).encode(), method='POST',
               headers={'Authorization': 'Bearer '+key, 'Content-Type': 'application/json'})
@@ -376,6 +389,32 @@ def advance(agent, key, job, state, folder, returns):
                 offset += len(piece)
                 files.append(txt.name)
             files.extend([name, name+'.pages.json'])
+        for index, att in enumerate(text_attachments(message), 1):
+            original = Path(att.get('filename') or f'document-{index}.txt').name
+            if (att.get('size') or 0) > agent.MAX_ATT:
+                raise RuntimeError(f'{original}: exceeds attachment size limit; not read')
+            aid = att.get('attachment_id')
+            if not aid:
+                raise RuntimeError(f'{original}: missing attachment id; not read')
+            raw = agent._att_bytes(key, message['message_id'], aid)
+            if not raw or len(raw) > agent.MAX_ATT:
+                raise RuntimeError(f'{original}: invalid, empty or oversized text attachment')
+            try:
+                content = raw.decode('utf-8')
+            except UnicodeDecodeError as error:
+                raise RuntimeError(f'{original}: not valid UTF-8 text; not analyzed') from error
+            if not content.strip():
+                raise RuntimeError(f'{original}: text attachment is empty')
+            stem = re.sub('[^A-Za-z0-9_-]+', '-', Path(original).stem)[:70] or 'document'
+            name = f"{stem}-{state['id'][:12]}-text-{index}.txt"
+            source = folder / name
+            atomic(source, raw)
+            assets.append({'text': name, 'sha256': sha(raw), 'range': [0, len(content)],
+                           'source_kind': 'text', 'source_name': original,
+                           'source_chars': len(content)})
+            files.append(name)
+        if not assets:
+            raise RuntimeError('Email has no supported PDF or text source attachments')
         email_name = f"email-{state['id']}.json"
         atomic(folder / email_name, (job / 'email.json').read_bytes())
         state.update(assets=assets, files=list(dict.fromkeys(files+[email_name])), status='reading', reads=[], next_part=0)
@@ -426,12 +465,29 @@ def advance(agent, key, job, state, folder, returns):
             options = dict(space=space, wiki_ctx=context)
             if is_text_source(message):
                 options.update(tries=2, honour_tries=True)
-            answer, model = agent.research_email_material(question, '', text, **options)
-            if agent._is_requeue(answer):
-                raise RuntimeError('Final analysis not sendable; primary reads retained')
+            if space == 'free-energy':
+                system = MAIN_SYS + (LENS_SYS if agent.lens_voices_enabled() else '') + '\n\n' + SOURCE_ANALYSIS_INSTRUCTIONS
+                prompt = f"TITLE: {message.get('subject') or question}\n\nSUPPLIED MATERIAL:\n{text[:60000]}"
+                answer, model = agent._fm_call([{'role': 'system', 'content': system},
+                                                {'role': 'user', 'content': prompt}],
+                                               max_tokens=2600, temperature=0.2)
+                headings = ['Core Take', 'Chapter-by-Chapter Signal', 'Mechanism Map',
+                            'Strongest Communication Moves', 'Gaps / Follow-up Questions',
+                            'Cross-Connections', 'Visual / Animation Treatment']
+                if agent.lens_voices_enabled():
+                    headings.append('Cross-Lens Reads')
+                missing = [heading for heading in headings
+                           if not re.search(r'(?m)^## ' + re.escape(heading) + r'\s*$', answer)]
+                if not answer.strip() or missing or agent._has_leak(answer) or agent._is_reasoning_dump(answer):
+                    raise RuntimeError('Canonical mail-free-energy-analysis sections incomplete; primary reads retained: '
+                                       + ', '.join(missing))
+            else:
+                answer, model = agent.research_email_material(question, '', text, **options)
+                if agent._is_requeue(answer):
+                    raise RuntimeError('Final analysis not sendable; primary reads retained')
             details = '\n\n'.join(f"## {r['source']} · part {r['part']}\n\n{r['analysis']}" for r in state['reads'])
             coverage = '\n'.join(
-                f"- {a['text']}: source characters {a['range'][0]}–{a['range'][1]} of {a['source_chars']}; {a['source_url']}"
+                f"- {a.get('source_name', a['text'])}: source characters {a['range'][0]}–{a['range'][1]} of {a['source_chars']}" + (f"; {a['source_url']}" if a.get('source_url') else '')
                 if a.get('source_kind') == 'text' else
                 f"- {a['pdf']}: {a['page_count']} pages; pages with no recognized text: {a['empty_pages']}"
                 for a in state['assets'])
@@ -508,7 +564,7 @@ def advance(agent, key, job, state, folder, returns):
         for name in state['files']:
             if any(a.get('filename') == name for a in payload['attachments']):
                 continue
-            if name.endswith(('.pdf', '.txt', '.analysis.md', '.png', '.source.md', '.render.json', '.ideacloud.md')):
+            if name.endswith(('.pdf', '.txt', '.md', '.csv', '.json', '.xml', '.analysis.md', '.png', '.source.md', '.render.json', '.ideacloud.md')):
                 data = (folder/name).read_bytes()
                 if len(data) <= 15*1024*1024:
                     kind = ('application/pdf' if name.endswith('.pdf') else 'image/png' if name.endswith('.png')
@@ -519,7 +575,7 @@ def advance(agent, key, job, state, folder, returns):
         state['status'] = 'sending-unconfirmed'
         publish(job, state, folder, returns)
         response = (send_source_email(agent, key, message, payload)
-                    if is_text_source(message) else
+                    if is_substack_source(message) else
                     agent.send_inbox_reply(key, message['message_id'], payload))
         state.update(status='complete', sent=time.time(), response=response)
 

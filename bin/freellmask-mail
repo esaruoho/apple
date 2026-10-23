@@ -2008,14 +2008,14 @@ def poll_once(verbose=True):
         # limiting is what widened it. Claiming up front closes it. A claimed message that then fails
         # to send is a MISSED reply Esa can retrigger — strictly better than twelve duplicates.
         full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
-        # Owner PDFs become durable jobs BEFORE the legacy reply claim. A crash
-        # cannot turn a partly read PDF into an answered-and-forgotten email.
+        # Owner PDF/text attachments become durable AIMEAT jobs before the legacy reply claim.
+        # A crash cannot turn a partly read source into an answered-and-forgotten email.
         if aimeat_mail.eligible(full, OWNER_ADDRS):
             aimeat_mail.enqueue(full)
             seen.add(mid)
             st['seen']=list(seen)[-SEEN_CAP:]
             save_state(st)
-            if verbose: print(f"  AIMEAT PDF queued: {full.get('subject', '')}")
+            if verbose: print(f"  AIMEAT source queued: {full.get('subject', '')}")
             continue
         replied_add(mid, m.get("thread_id"), m.get("subject", "") or "")
         replied_mids.add(mid)
