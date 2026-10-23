@@ -24,6 +24,7 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT/'shared'))
 import cloud_assets
+from format_email import email_payload
 
 
 
@@ -190,18 +191,6 @@ def send_source_email(agent, key, message, payload):
         return json.load(response)
 
 
-def analysis_payload(agent, body, title, filename):
-    """Build rich mail with the newer renderer API or the Mini's existing renderer."""
-    try:
-        from format_email import email_payload
-        return email_payload(body, title=title, filename=filename)
-    except ImportError:
-        try:
-            from format_email import md_to_html, wrap_email_html
-            rendered = wrap_email_html(md_to_html(body, title=title), title=title)
-        except ImportError:
-            rendered = agent.md_to_html(body)
-        return {'text': body, 'html': rendered, 'attachments': []}
 
 
 
@@ -515,8 +504,7 @@ def advance(agent, key, job, state, folder, returns):
         require_complete_analysis(job, state, folder)
         body = (folder/state['analysis']).read_text()
         title = message.get('subject', 'AIMEAT analysis')
-        payload = analysis_payload(agent, body, message.get('subject', 'AIMEAT analysis'),
-                                   state.get('analysis', 'analysis'))
+        payload = email_payload(body, title=message.get('subject', 'AIMEAT analysis'), filename=state.get('analysis', 'analysis'))
         for name in state['files']:
             if any(a.get('filename') == name for a in payload['attachments']):
                 continue

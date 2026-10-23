@@ -121,7 +121,7 @@ def patch_generic_mail(source):
 
 
 def patch_aimeat_mail(source):
-    source = remove_nodes(source, lambda n: (isinstance(n, ast.FunctionDef) and n.name == 'analysis_html')
+    source = remove_nodes(source, lambda n: (isinstance(n, ast.FunctionDef) and n.name in {'analysis_html', 'analysis_payload'})
                           or (isinstance(n, ast.ImportFrom) and n.module == 'format_email'))
     source = source.replace('import cloud_assets\n', 'import cloud_assets\nfrom format_email import email_payload\n', 1)
     # Only the rendering assignment changes. Delivery checks, retry policy and

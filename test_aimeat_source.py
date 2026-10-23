@@ -41,22 +41,9 @@ class HandlerDeploymentTests(unittest.TestCase):
 
 
 class SourceMailTests(unittest.TestCase):
-    def test_html_rendering_uses_the_single_canonical_renderer(self):
-        try:
-            from format_email import email_payload
-        except ImportError:
-            self.skipTest('optional shared rich email renderer is not installed')
-        source = r'\(\chi^3\)'
-        payload = m.analysis_payload(SimpleNamespace(), source, 'Test', 'analysis.md')
-        self.assertEqual(payload, email_payload(source, title='Test', filename='analysis.md'))
-        self.assertIn('χ<sup>3</sup>', payload['html'])
-
-    def test_html_rendering_falls_back_when_renderer_module_is_not_installed(self):
-        agent = SimpleNamespace(md_to_html=lambda body: '<p>'+body+'</p>')
-        with patch.dict('sys.modules', {'format_email': None}):
-            payload = m.analysis_payload(agent, 'Finished analysis', 'Test', 'analysis.md')
-        self.assertEqual(payload['html'], '<p>Finished analysis</p>')
-        self.assertEqual(payload['text'], 'Finished analysis')
+    def test_single_renderer(self):
+        from format_email import email_payload
+        self.assertIs(m.email_payload, email_payload)
 
     def test_text_snapshots_deduplicate_and_preserve_all_unicode_ranges(self):
         with TemporaryDirectory() as temp, patch.object(m, 'mini'):
