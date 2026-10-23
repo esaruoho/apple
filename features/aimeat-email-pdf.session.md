@@ -77,3 +77,16 @@ The prompt request alone did not prevent the model from repeating the contact li
 The section-reader gate now requires the canonical source-read heading and pins those source reads to the configured FreeLLMAPI default model, while using that same shared pipeline and renderer. This blocks analysis-plan text from being saved as a section result.
 
 The single-model pin made one source read remain in the gateway call for several minutes. It is removed; the established FreeLLMAPI fallback chain handles endpoint availability, while the canonical opening-heading guard still rejects reasoning dumps.
+
+## Follow-up: quality failures also need model fallback (2026-10-23)
+
+Esa reported that no ZPE or Zenneck emails had arrived after an hour. Inspection found that the Mini mailer retried queued source jobs, but `_fm_call` advanced to another configured model only for transport/provider exceptions. A response that arrived successfully and then failed the source-read leak/opening check was rejected after the call, so the same first model was selected again on the next poll. Several jobs showed this failure; none had reached email delivery. I queued ZPE1, ZPE2PT1–3, ZPE3–7, and ZENNECK through the existing `enqueue_text` pipeline, preserving the existing canonical synthesis, roundtable, artifact checks, renderer, and send gate.
+
+The code change makes `_fm_call` accept a caller quality validator and continue through the same configured model chain when a candidate's content fails that validator. Source reads, synthesis reductions, and the canonical sectioned analysis use this path. It does not weaken completion gates or add another sender/template. Runtime delivery remains unverified until job receipts report `complete`.
+
+### How to get back
+
+- Transcript: no local session JSONL was available in the configured Codex project paths during this turn.
+- Session ID / `Codex --resume`: unavailable; not fabricated.
+- Date: 2026-10-23 from the active environment; transcript timestamps unavailable.
+- User request: send the queued ZPE1/ZPE2/Zenneck analyses through the existing definitive AIMEAT email template.

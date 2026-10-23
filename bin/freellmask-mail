@@ -266,7 +266,7 @@ def _has_across_shape(text):
                                   "what is never resolved"))
 
 
-def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
+def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None, validate=None):
     """One FreeLLMAPI /chat/completions call. Walks FM_MODEL_CHAIN: a model answering 429/502/503 is an
     UNAVAILABLE ENDPOINT, so move to the next one in seconds rather than waiting out a window on a
     provider that is simply down. Only the LAST model in the chain gets the patient backoff treatment.
@@ -276,7 +276,10 @@ def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None):
     for i, cand in enumerate(chain):
         is_last = (i == len(chain) - 1)
         try:
-            return _fm_call_one(messages, max_tokens, temperature, cand, patient=is_last)
+            result = _fm_call_one(messages, max_tokens, temperature, cand, patient=is_last)
+            if validate is not None and not validate(result[0]):
+                raise ValueError("response failed the caller's quality gate")
+            return result
         except urllib.error.HTTPError as e:
             last = e
             if e.code in FM_DEAD_CODES and not is_last:

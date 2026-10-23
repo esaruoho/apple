@@ -452,6 +452,13 @@ def advance(agent, key, job, state, folder, returns):
             asset, number, part = parts[index]
             is_source = is_text_source(message)
             call_options = {'max_tokens': 1800, 'temperature': 0.2}
+            def usable_read(candidate):
+                opening = re.match(r'^(?:\*\*What this part covers\*\*|this (?:part|section) is (?:front matter|a table of contents|boilerplate))',
+                                   candidate.lstrip(), re.I)
+                return (bool(candidate.strip()) and not agent._has_leak(candidate)
+                        and not agent._is_reasoning_dump(candidate)
+                        and (not is_source or bool(opening)))
+            call_options['validate'] = usable_read
             answer, model = agent._fm_call([
                 {'role': 'system', 'content': agent.CHAPTER_SYSTEM + ('\n'+SOURCE_ANALYSIS_INSTRUCTIONS if is_source else '')},
                 {'role': 'user', 'content': f"{asset['text']} — part {number}\n\n{part}"}], **call_options)
@@ -472,9 +479,13 @@ def advance(agent, key, job, state, folder, returns):
             level = state.setdefault('reduce', {'parts': chunks(text), 'done': []})
             index = len(level['done'])
             if index < len(level['parts']):
+                def usable_reduction(candidate):
+                    return (bool(candidate.strip()) and not agent._has_leak(candidate)
+                            and not agent._is_reasoning_dump(candidate))
                 answer, model = agent._fm_call([
                     {'role': 'system', 'content': agent.ACROSS_SYSTEM},
-                    {'role': 'user', 'content': level['parts'][index]}], max_tokens=1000, temperature=0.2)
+                    {'role': 'user', 'content': level['parts'][index]}], max_tokens=1000,
+                    temperature=0.2, validate=usable_reduction)
                 if not answer.strip() or agent._has_leak(answer) or agent._is_reasoning_dump(answer):
                     raise RuntimeError('Unusable synthesis; will retry')
                 level['done'].append(answer)
@@ -498,14 +509,20 @@ def advance(agent, key, job, state, folder, returns):
             if space == 'free-energy':
                 system = MAIN_SYS + (LENS_SYS if agent.lens_voices_enabled() else '') + '\n\n' + SOURCE_ANALYSIS_INSTRUCTIONS
                 prompt = f"TITLE: {message.get('subject') or question}\n\nSUPPLIED MATERIAL:\n{text[:60000]}"
-                answer, model = agent._fm_call([{'role': 'system', 'content': system},
-                                                {'role': 'user', 'content': prompt}],
-                                               max_tokens=2600, temperature=0.2)
                 headings = ['Core Take', 'Chapter-by-Chapter Signal', 'Mechanism Map',
                             'Strongest Communication Moves', 'Gaps / Follow-up Questions',
                             'Cross-Connections', 'Visual / Animation Treatment']
                 if agent.lens_voices_enabled():
                     headings.append('Cross-Lens Reads')
+                def usable_synthesis(candidate):
+                    return (bool(candidate.strip()) and not agent._has_leak(candidate)
+                            and not agent._is_reasoning_dump(candidate)
+                            and all(re.search(r'(?m)^## ' + re.escape(heading) + r'\s*$', candidate)
+                                    for heading in headings))
+                answer, model = agent._fm_call([{'role': 'system', 'content': system},
+                                                {'role': 'user', 'content': prompt}],
+                                               max_tokens=2600, temperature=0.2,
+                                               validate=usable_synthesis)
                 missing = [heading for heading in headings
                            if not re.search(r'(?m)^## ' + re.escape(heading) + r'\s*$', answer)]
                 if not answer.strip() or missing or agent._has_leak(answer) or agent._is_reasoning_dump(answer):

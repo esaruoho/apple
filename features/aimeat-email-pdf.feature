@@ -1,6 +1,6 @@
 # REPORT CARD: email PDFs into AIMEAT, with complete page/section accounting
 # SESSION >> features/aimeat-email-pdf.session.md
-# WATCH: shared/aimeat_mail.py shared/free_energy_analysis.py bin/mail-free-energy-analysis bin/freellmask-mail roundtable/install_mail.py test_aimeat_source.py bin/mail-pdf-text.swift eligible text_attachments is_text_source process_pending extract_pdf bounded_source_step require_complete_analysis advance
+# WATCH: shared/aimeat_mail.py shared/free_energy_analysis.py bin/mail-free-energy-analysis bin/freellmask-mail roundtable/install_mail.py test_aimeat_source.py bin/mail-pdf-text.swift eligible text_attachments is_text_source process_pending extract_pdf bounded_source_step require_complete_analysis advance _fm_call usable_read usable_reduction usable_synthesis
 # WHAT THIS CARD SPAWNS
 # Codespace: shared/aimeat_mail.py, bin/mail-pdf-text{,.swift}, roundtable/install_mail.py,
 #            bin/freellmask-mail poll integration, roundtable/bridge.py collector.
@@ -66,6 +66,7 @@ Feature: Owner emails deliver complete PDF and text material and analyses to AIM
     And private reasoning leaks are rejected before they enter the dossier
     And source reads must begin with the canonical report headings
     And source reads use the existing FreeLLMAPI fallback chain
+    And unusable model output advances through that chain before the job retries on a later poll
     And the source filename is preserved in analysis references
     And the send gate removes archival distribution boilerplate even if a model repeats it
     And an incomplete analysis is not emailed
