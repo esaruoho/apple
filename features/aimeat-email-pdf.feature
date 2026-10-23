@@ -18,6 +18,7 @@
 #         b22d0635: shared Free Energy prompt, owner text attachments, unified subject/output.
 #         Runtime-untested; no analysis email sent in this change.
 #         b2f179a7: local KeelyNet text intake reuses enqueue_text, not a batch sender.
+#         f925ff96: reasoning-leak gate + accurate source naming; runtime-untested.
 # Tests: test_aimeat_mail.py plus existing mail/editor/roundtable behavioral suites.
 
 Feature: Owner emails deliver complete PDF and text material and analyses to AIMEAT
