@@ -20,6 +20,7 @@
 #         b2f179a7: local KeelyNet text intake reuses enqueue_text, not a batch sender.
 #         f925ff96: reasoning-leak gate + accurate source naming; runtime-untested.
 #         34a3f3d9: exclude KeelyNet distribution boilerplate from analysis output.
+#         ef2d41d8: deterministic output scrub before rendering; runtime-untested.
 # Tests: test_aimeat_mail.py plus existing mail/editor/roundtable behavioral suites.
 
 Feature: Owner emails deliver complete PDF and text material and analyses to AIMEAT
