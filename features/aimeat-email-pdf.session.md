@@ -90,6 +90,14 @@ The Mini worker advances only one checkpoint per poll. With ten articles queued 
 
 The first article completed FreeLLMAPI and Qwen MLX. Its Flubuild attempt found that invoking `fm-converse` via its shebang selected an older Python than the already-running mail worker, failing on modern type-annotation syntax. The subprocess now uses `sys.executable` from the mail worker. The job retains both completed brain outputs and will retry Flubuild after the code reload; no partial email was sent.
 
+## Follow-up: gate roundtable inputs to the active mail job
+
+The Sages bridge scanned every stable text file in the AIMEAT mail queue. That let it begin ZPE3's long roundtable while the mailer was still finishing ZPE1, blocking the single roundtable worker. `merge_mail_inputs` now includes queue-backed sources only when their durable mail state is `roundtable`, orders them by original enqueue time, and continues to deduplicate identical archive copies. The mailer remains the sole owner of stage progression and delivery. Syntax and whitespace checks passed; deployment and live email formatting still require runtime verification.
+
+## Follow-up: remove KeelyNet banners from the entire outgoing package
+
+Esa supplied two examples of boilerplate still visible in the output: the wrapped Jerry/Ron service banner and phone numbers, plus the word-processor parameters, KeelyNet source/sponsor/address lines, duplication notice, and Tom Albion contact footer. The shared cleaner now removes those forms even when they occur after article content, handles wrapped contact numbers and the `If` lead-in, and preserves the page's `See also` archive filenames while dropping its page counter. Before sending, the same cleaner now runs over every KeelyNet text attachment, and the sender withholds the email if the dossier body or any text attachment still contains a known marker or contact phone. A direct probe using both supplied screenshot text shapes passed; Python compilation and `git diff --check` passed. Live delivery remains pending inspection of a complete email package.
+
 ## Follow-up: quality failures also need model fallback (2026-10-23)
 
 Esa reported that no ZPE or Zenneck emails had arrived after an hour. Inspection found that the Mini mailer retried queued source jobs, but `_fm_call` advanced to another configured model only for transport/provider exceptions. A response that arrived successfully and then failed the source-read leak/opening check was rejected after the call, so the same first model was selected again on the next poll. Several jobs showed this failure; none had reached email delivery. I queued ZPE1, ZPE2PT1–3, ZPE3–7, and ZENNECK through the existing `enqueue_text` pipeline, preserving the existing canonical synthesis, roundtable, artifact checks, renderer, and send gate.

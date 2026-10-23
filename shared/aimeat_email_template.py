@@ -22,10 +22,21 @@ _BOILERPLATE = (
     "word processor parameters", "taken from keelynet bbs", "sponsored by vangard sciences",
     "po box 1031", "mesquite, tx 75150", "there are absolutely no restrictions",
     "on duplicating, publishing or distributing the", "files on keelynet",
-    "we can be of service", "contact jerry at", "or ron at",
+    "we can be of service", "you may contact jerry at", "contact jerry at", "or ron at",
     "214) 324-8741", "214) 242-9346", "214-324-8741", "214-242-9346",
-    "tom operates the thc online system", "604-361-4549",
+    "tom operates the thc online system", "604-361-4549", "except where noted",
 )
+
+_CONTACT_LINE = re.compile(r"\b(?:214|604)[\s().-]*\d{3}[\s.-]*\d{4}\b", re.I)
+_CONTACT_FRAGMENT = re.compile(r"\b\d{3}[\s.-]*\d{4}\b")
+
+
+def contains_keelynet_boilerplate(text: str) -> bool:
+    """Detect known KeelyNet masthead/footer language after whitespace folding."""
+    folded = re.sub(r"\s+", " ", text).casefold()
+    if any(marker in folded for marker in _BOILERPLATE):
+        return True
+    return bool(_CONTACT_LINE.search(folded))
 
 def clean_source(text: str, *, strip_frontmatter: bool = True,
                  strip_duplicate_title: bool = True) -> str:
@@ -55,7 +66,7 @@ def clean_source(text: str, *, strip_frontmatter: bool = True,
         if is_rule(low) and (masthead or adjacent_to_banner(index)):
             continue
         if contact_continuation:
-            if re.search(r"\b\d{3}[\s.-]*\d{4}\b", low):
+            if _CONTACT_FRAGMENT.search(low) or any(marker in low for marker in ("or ron at", "contact jerry at")):
                 drop_separator=True
                 contact_continuation=False
                 continue
@@ -83,7 +94,8 @@ def clean_source(text: str, *, strip_frontmatter: bool = True,
                 if "files on keelynet" in low:
                     masthead_notice=False
                 continue
-            if low.startswith("march ") or low.startswith("date:"):
+            if low.startswith(("march ", "october ", "september ", "january ", "february ", "april ",
+                              "may ", "june ", "july ", "august ", "november ", "december ", "date:")):
                 masthead=False
                 cleaned.append(line)
                 continue
@@ -97,10 +109,20 @@ def clean_source(text: str, *, strip_frontmatter: bool = True,
             masthead=False
         if any(x in low for x in _BOILERPLATE):
             drop_separator = True
-            if "we can be of service" in low or "contact jerry at" in low:
+            if any(x in low for x in ("we can be of service", "you may contact jerry at", "contact jerry at")):
                 contact_continuation=True
+                if cleaned and cleaned[-1].strip().casefold() in {"if", "if you"}:
+                    cleaned.pop()
             continue
         cleaned.append(line)
+    # The BBS contact banner may wrap its opening "If" onto a separate line.
+    for index in range(len(cleaned)-1):
+        if cleaned[index].strip().casefold() in {"if", "if you"} and any(
+                marker in cleaned[index+1].casefold() for marker in ("we can be of service", "you may contact jerry")):
+            cleaned[index] = ""
+    # Keep the useful archive filenames from a page footer while discarding its page counter.
+    cleaned = [re.sub(r"(?i)^\s*page\s+\d+\s+(\*\*see also:\*\*|see also:)", r"\1", line)
+               for line in cleaned]
     return "\n".join(cleaned).strip()+"\n"
 
 def source_metadata(text: str) -> dict[str, object]:
@@ -238,7 +260,7 @@ def validate_dossier(markdown: str) -> None:
         if f"### {name} ({role})" not in markdown: raise ValueError("Missing canonical titled Sages speaker: "+name)
     low=markdown.casefold()
     if "<div style=" in low: raise ValueError("Raw HTML found in dossier")
-    if any(x in low for x in _BOILERPLATE):
+    if contains_keelynet_boilerplate(markdown):
         raise ValueError("KeelyNet distribution masthead leaked into dossier")
-    if re.search(r"(?m)^.*(?:214|604)[\s).-]*\d{3}[\s.-]*\d{4}.*$", markdown):
+    if _CONTACT_LINE.search(markdown):
         raise ValueError("KeelyNet contact phone leaked into dossier")

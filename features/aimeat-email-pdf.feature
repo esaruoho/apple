@@ -82,10 +82,14 @@ Feature: Owner emails deliver complete PDF and text material and analyses to AIM
     Then the single shared Phase-based dossier builder assembles all seven sections
     And the existing format_email.py remains the only rich-text and math renderer
     And the original archive file remains unchanged while its email attachment omits BBS boilerplate
+    And known word-processor, sponsor, address, distribution, and split contact banners are stripped from every outgoing text attachment
+    And delivery is withheld if any known KeelyNet boilerplate remains in the dossier or a text attachment
     And no email is sent unless every model output, titled Sage, source digest, and artifact passes validation
     And queued Free Energy articles are processed end-to-end in arrival order to avoid batch round-robin delay
-    # cite: shared/aimeat_email_template.py build_dossier clean_source titled_roundtable validate_dossier
-    # cite: shared/aimeat_mail.py enqueue_text require_complete_analysis advance sys.executable
+    And the Sages worker accepts queued mail sources only after their mail state reaches the roundtable stage
+    And those mail sources are returned to the Sages worker in enqueue order
+    # cite: shared/aimeat_email_template.py build_dossier clean_source contains_keelynet_boilerplate titled_roundtable validate_dossier
+    # cite: shared/aimeat_mail.py enqueue_text require_complete_analysis advance merge_mail_inputs sys.executable
     # cite: bin/fm-converse call_flubuild ; bin/flubuild-request.py prepare
     # cite: shared/format_email.py email_payload
 

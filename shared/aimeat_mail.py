@@ -26,7 +26,8 @@ sys.path.insert(0, str(ROOT/'shared'))
 import cloud_assets
 from format_email import email_payload
 from free_energy_analysis import MAIN_SYS, LENS_SYS
-from aimeat_email_template import build_dossier, clean_source, source_metadata, titled_roundtable, validate_dossier
+from aimeat_email_template import (build_dossier, clean_source, contains_keelynet_boilerplate,
+                                   source_metadata, titled_roundtable, validate_dossier)
 
 
 
@@ -434,6 +435,8 @@ def merge_mail_inputs(paths, stable_seconds=5, queue=None):
     for state_path in (queue or QUEUE).glob('*/state.json'):
         try:
             state = json.loads(state_path.read_text())
+            if state.get('status') != 'roundtable':
+                continue
             if state.get('quality_hold') or (state_path.parent/'quality-hold.json').exists():
                 continue
             for asset in state.get('assets', []):
@@ -442,12 +445,13 @@ def merge_mail_inputs(paths, stable_seconds=5, queue=None):
                     continue
                 source = state_path.parent/'workspace'/name
                 if source.is_file() and not source.is_symlink() and time.time()-source.stat().st_mtime >= stable_seconds:
-                    sources.append(source)
+                    sources.append((state.get('created', 0), source))
         except (OSError, ValueError, KeyError, TypeError):
             continue
     # A later Syncthing copy in the archive is the same input, not a second job.
     identities = {(p.name, sha(p.read_bytes())) for p in sources}
-    return [p for p in paths if (p.name, sha(p.read_bytes())) not in identities]+sources
+    archive_paths = [p for p in paths if (p.name, sha(p.read_bytes())) not in identities]
+    return archive_paths + [path for _, path in sorted(sources, key=lambda item: item[0])]
 
 
 def advance(agent, key, job, state, folder, returns):
@@ -773,6 +777,8 @@ def advance(agent, key, job, state, folder, returns):
         require_complete_analysis(job, state, folder)
         body = (folder/state['analysis']).read_text()
         body = strip_keelynet_distribution_boilerplate(body)
+        if message.get('source_url', '').startswith('keelynet://') and contains_keelynet_boilerplate(body):
+            raise RuntimeError('KeelyNet boilerplate remains in the outgoing dossier; email delivery withheld')
         atomic(folder/state['analysis'], body)
         atomic(job/'base-analysis.md', body)
         title = message.get('subject', 'AIMEAT analysis')
@@ -789,14 +795,23 @@ def advance(agent, key, job, state, folder, returns):
                 path = folder/name
                 data = path.read_bytes()
                 if (message.get('source_url', '').startswith('keelynet://')
-                        and any(name == asset.get('text') for asset in state.get('assets', []))
-                        and name.endswith(('.txt', '.md', '.markdown'))):
-                    data = clean_source(data.decode('utf-8')).encode('utf-8')
+                        and name.endswith(('.txt', '.md', '.markdown', '.csv', '.xml'))):
+                    data = clean_source(data.decode('utf-8'), strip_frontmatter=False,
+                                        strip_duplicate_title=False).encode('utf-8')
+                    if contains_keelynet_boilerplate(data.decode('utf-8')):
+                        raise RuntimeError(f'KeelyNet boilerplate remains in attachment {display_name}; email delivery withheld')
                 if len(data) <= 15*1024*1024:
                     kind = ('application/pdf' if name.endswith('.pdf') else 'image/png' if name.endswith('.png')
                             else 'application/json' if name.endswith('.json') else 'text/plain' if display_name.endswith('.txt') else 'text/markdown')
                     payload['attachments'].append({'filename': display_name, 'content_type': kind,
                                                    'content': base64.b64encode(data).decode()})
+        if message.get('source_url', '').startswith('keelynet://'):
+            for attachment in payload['attachments']:
+                if attachment.get('content_type') not in ('text/plain', 'text/markdown', 'text/csv', 'application/xml'):
+                    continue
+                attached_text = base64.b64decode(attachment['content']).decode('utf-8', errors='replace')
+                if contains_keelynet_boilerplate(attached_text):
+                    raise RuntimeError(f"KeelyNet boilerplate remains in outgoing {attachment.get('filename')}; email delivery withheld")
         # A timeout can mean AgentMail accepted the message. Never resend automatically.
         state['status'] = 'sending-unconfirmed'
         publish(job, state, folder, returns)
