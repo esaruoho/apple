@@ -23,6 +23,9 @@ from pathlib import Path
 import types
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'shared'))
 import aimeat_mail
+from format_email import md_to_html as md_to_inner_html, render_email as md_to_html, source_attachments
+# REPORT-CARD >> features/email-math-renderer.feature
+
 # REPORT-CARD >> features/aimeat-email-pdf.feature
 
 def enc(s):  # message_ids look like <...@email.amazonses.com> — must be URL-encoded in the path
@@ -136,6 +139,10 @@ def send_inbox_reply(key, mid, reply):
     A timeout or other ambiguous failure must retain the at-most-once guarantee.
     The source attachments remain accessible in the original email thread.
     """
+    reply = dict(reply)
+    reply['attachments'] = list(reply.get('attachments', []))
+    present = {a.get('filename') for a in reply['attachments']}
+    reply['attachments'].extend(a for a in source_attachments(reply.get('text', ''), 'analysis') if a['filename'] not in present)
     url=f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply"
     try:
         return http(url, key, "POST", reply)
@@ -780,56 +787,8 @@ def research_email_material(question, context, text, *, space, wiki_ctx="", lens
             return REQUEUE_NO_THINKING+"\x00missing document sections: "+", ".join(missing), model
     return answer, model
 
-def _md_inline(t):
-    t=(t.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;"))
-    t=re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
-    t=re.sub(r"(?<!\*)\*([^*\n]+)\*(?!\*)", r"<em>\1</em>", t)
-    t=re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
-    t=re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', t)
-    return t
 
-_TH='style="border:1px solid #999;padding:4px 8px;background:#eef;text-align:left"'
-_TD='style="border:1px solid #999;padding:4px 8px;text-align:left;vertical-align:top"'
-def md_to_inner_html(md):
-    """Markdown→HTML body: headings, bold/italic/code/links, lists, and real TABLES."""
-    out=[]; i=0; lines=(md or "").split("\n"); in_ul=in_ol=False
-    def close():
-        nonlocal in_ul,in_ol
-        if in_ul: out.append("</ul>"); in_ul=False
-        if in_ol: out.append("</ol>"); in_ol=False
-    def cells(row): return [c.strip() for c in row.strip().strip("|").split("|")]
-    n=len(lines)
-    while i<n:
-        line=lines[i]; s=line.strip()
-        # pipe table: a |row| followed by a |---|---| separator
-        if s.startswith("|") and i+1<n and re.match(r"^\s*\|?[\s:|-]+\|?\s*$", lines[i+1]) and "-" in lines[i+1]:
-            close()
-            out.append('<table style="border-collapse:collapse;width:100%;margin:6px 0;font-size:10px"><thead><tr>'
-                       + "".join(f"<th {_TH}>{_md_inline(c)}</th>" for c in cells(line)) + "</tr></thead><tbody>")
-            i+=2
-            while i<n and lines[i].strip().startswith("|"):
-                out.append("<tr>"+"".join(f"<td {_TD}>{_md_inline(c)}</td>" for c in cells(lines[i]))+"</tr>"); i+=1
-            out.append("</tbody></table>"); continue
-        h=re.match(r"^(#{1,6})\s*(\S.*)$", line)   # tolerate '##Heading' with no space after #
-        ol=re.match(r"^\s*\d+\.\s+(.*)$", line); ul=re.match(r"^\s*[-*+]\s+(.*)$", line)
-        if h: close(); out.append(f"<h{len(h.group(1))}>{_md_inline(h.group(2))}</h{len(h.group(1))}>")
-        elif ol:
-            if not in_ol: close(); out.append("<ol>"); in_ol=True
-            out.append(f"<li>{_md_inline(ol.group(1))}</li>")
-        elif ul:
-            if not in_ul: close(); out.append("<ul>"); in_ul=True
-            out.append(f"<li>{_md_inline(ul.group(1))}</li>")
-        elif s=="": close()
-        else: close(); out.append(f"<p>{_md_inline(line)}</p>")
-        i+=1
-    close()
-    return "\n".join(out)
 
-def md_to_html(md):
-    """Email-body HTML (rich, renders in any mail client)."""
-    return ('<div style="font-family:-apple-system,Segoe UI,sans-serif;line-height:1.5;font-size:14px">'
-            + md_to_inner_html(md) + '<hr><p style="color:#888;font-size:12px">— freellmask · '
-            'answered by FreeLLMAPI on cloudcity ($0). Reply to continue.</p></div>')
 
 def load_state():
     try: return json.loads(STATE.read_text())
@@ -2790,6 +2749,8 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
                 return True, used
         except Exception as e:
             return False, f"analysis could not be saved; not sending: {e}"
+    present = {a.get('filename') for a in payload.get('attachments', [])}
+    payload.setdefault('attachments', []).extend(a for a in source_attachments(text, 'analysis') if a['filename'] not in present)
     try:
         response = http(f"{AM_BASE}/inboxes/{INBOX}/messages/send", k, "POST", payload)
     except Exception as e:
@@ -3065,7 +3026,8 @@ def main():
     elif cmd=="loop":
         print(f"freellmask-mail loop: polling {INBOX} every {POLL_SEC}s")
         watched = [Path(__file__), Path(aimeat_mail.__file__), Path(aimeat_mail.cloud_assets.__file__),
-                   Path(__file__).resolve().parent.parent/'shared/cloud_source.py']
+                   Path(__file__).resolve().parent.parent/'shared/cloud_source.py',
+                   Path(__file__).resolve().parent.parent/'shared/format_email.py']
         versions = [p.stat().st_mtime_ns for p in watched]
         while True:
             aimeat_mail.mini()
