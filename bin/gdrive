@@ -71,12 +71,14 @@ case "${1:-}" in
 esac
 
 # Pull the Drive id out of a folder / file / open?id= URL.
+# Handles canonical, /u/N/ multi-account, and query-param formats.
 gdrive_id() {
   local u="$1" id=""
   case "$u" in
-    *drive.google.com/drive/folders/*) id="${u#*drive/folders/}" ;;
-    *drive.google.com/file/d/*)        id="${u#*file/d/}"; id="${id%%/*}" ;;
-    *[?\&]id=*)                        id="${u#*id=}" ;;
+    *drive.google.com/*folders/*)  id="${u#*folders/}" ;;
+    *drive.google.com/*file/d/*)   id="${u#*file/d/}" ;;
+    *drive.google.com/*file/*/d/*) id="${u#*d/}" ;;
+    *[?\&]id=*)                    id="${u#*id=}" ;;
   esac
   id="${id%%[?&/]*}"                    # strip query/path tail
   printf '%s' "$id"
