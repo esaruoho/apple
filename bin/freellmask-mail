@@ -19,6 +19,8 @@ Secrets / config (never in git):
 """
 # FEATURE-CARD >> features/freellmask-mail-anti-loop-and-video-gate.feature
 import atexit, base64, json, os, re, shutil, subprocess, sys, tempfile, time, urllib.parse, urllib.request, urllib.error, uuid
+import socket
+# REPORT-CARD >> ~/work/convey/features/sage-email-socket-fix.feature
 from pathlib import Path
 import types
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'shared'))
@@ -30,6 +32,32 @@ from format_email import md_to_html as md_to_inner_html, render_email as md_to_h
 
 def enc(s):  # message_ids look like <...@email.amazonses.com> — must be URL-encoded in the path
     return urllib.parse.quote(s, safe="")
+
+def format_text_provenance(prov):
+    if not prov or not isinstance(prov, dict):
+        return ""
+    lines = ["━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", "PROVENANCE & ORIGIN:"]
+    if prov.get("trigger"):
+        lines.append(f"• Trigger: {prov['trigger']}")
+    if prov.get("message_id"):
+        lines.append(f"• Message-ID: {prov['message_id']}")
+    space_part = f"• Space: [{prov.get('space', '')}]"
+    if prov.get("why"):
+        space_part += f" ({prov['why']})"
+    if prov.get("model"):
+        space_part += f" · Engine: {prov['model']}"
+    lines.append(space_part)
+    if prov.get("sources"):
+        srcs = prov["sources"]
+        s_str = ", ".join(str(s) for s in srcs) if isinstance(srcs, list) else str(srcs)
+        if s_str:
+            lines.append(f"• Context Sources: {s_str}")
+    host = prov.get("host")
+    ts = prov.get("timestamp")
+    if host or ts:
+        lines.append(f"• Host: {host or ''} · Dispatched: {ts or ''}")
+    lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+    return "\n".join(lines)
 
 AM_BASE   = "https://api.agentmail.to/v0"
 INBOX     = os.environ.get("AGENTMAIL_INBOX", "cloudcity-llm@agentmail.to")
@@ -455,7 +483,8 @@ MATERIAL_SECTIONS = (
 # verified in code, which is exactly why Prigogine kept vanishing from the emails and nobody noticed
 # (Esa, 2026-08-12: "where was prigogine from freellmask-mail???").
 TONE_HEADINGS = ["In Walter Russell's tone", "In Tom Bearden's tone", "In Ilya Prigogine's tone",
-                 "In Hilarion's tone", "In the skeptical closed-system electrical engineer's tone"]
+                 "In Hilarion's tone", "In Charles Proteus Steinmetz's tone", "In Don Smith's tone",
+                 "In the skeptical closed-system electrical engineer's tone"]
 MATERIAL_HEADINGS = ["Summary", "Key points", "Notable quotes", "People & entities mentioned",
                      "What holds up", "What is worth checking", "Overall assessment"]
 REQUEUE_NO_THINKING = "\x00REQUEUE-NO-THINKING\x00"
@@ -539,8 +568,17 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "never dropped.)\n"
           "## In Hilarion's tone\n(2-4 sentences in the Hilarion channel's cadence: one living substance, "
           "consciousness as ground, gentle didactic cosmology — everything a modulation of the one energy)\n"
-          # The eleventh voice, LAST on purpose (Esa, 2026-08-12). Rigorous, not dismissive: it demands
-          # the books balance and names the measurement that would settle it. It is ONE lens of eleven
+          "## In Charles Proteus Steinmetz's tone\n(2-4 sentences in Steinmetz's cadence: the engineer who "
+          "made alternating current calculable via the symbolic method; current and voltage as mathematical "
+          "fictions of the dielectric and magnetic fields in space; reactance as wattless surging of energy; "
+          "hysteresis and open-system negative resistance through variable reactance without flattening)\n"
+          "## In Don Smith's tone\n(2-4 sentences in Don Smith's cadence: ambient background voltage at hundreds "
+          "of thousands of volts; all useful electricity over-unity between ambient and ground; resonance "
+          "generating immense magnetic flux without drawing down the source electrons; wattless energy transfer "
+          "to decoupled secondaries; never load the resonant tank directly — store in a high-voltage capacitor bank "
+          "at E = 1/2 C V^2 before doing work)\n"
+          # The skeptical voice, LAST on purpose (Esa, 2026-08-12). Rigorous, not dismissive: it demands
+          # the books balance and names the measurement that would settle it. It is ONE lens of thirteen
           # and it speaks after the open-system readings — it never becomes the frame they are judged by.
           "## In the skeptical closed-system electrical engineer's tone\n(3-5 sentences from a working "
           "EE who wants the energy books to balance: what is on the INPUT side that is not being "
@@ -549,11 +587,27 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "calorimetry over an hour, joules out minus joules in, both ports metered. Name the step "
           "where this class of claim usually dies. Be specific and testable; do NOT declare it "
           "impossible and do NOT argue from the ceiling — say what would falsify it.)")
-        sysm=viewpoint+"\n\n"+base+struct
+        # REPORT-CARD >> convey/features/don-smith-email-grounding.feature
+        # DEGRADE, DON'T FAIL (2026-11-01): if the verified ledgers cannot be resolved on this host
+        # (the Mini does not mirror merlib-dump; see convey/kb/quote-ledgers + voice_grounding), fall
+        # back to the NON-voice structured answer and SEND it. Re-queueing here is what silenced
+        # cloudcity-llm 2026-10-30 — a missing source must downgrade quality, never stop the reply.
+        sys.path.insert(0, str(Path.home()/"work/convey"))
+        try:
+            from convey.voice_grounding import email_voice_context
+            voice_sources = email_voice_context("\n".join([question or "", attachments[:24000], thread_context[-2000:]]))
+            sysm=viewpoint+"\n\n"+base+struct+"\n\n"+voice_sources
+        except (ImportError, OSError, ValueError) as exc:
+            print(f"      ⚠️ voice grounding unavailable ({exc}) — sending ungrounded answer (degraded)", flush=True)
+            voices_on = False   # makes `required` below drop the tone sections; the citation gate is skipped
+            sysm=(viewpoint+"\n\n"+base+
+                  " Output Markdown with a direct substantive answer. Verified-ledger grounding is "
+                  "unavailable on this host, so do NOT add Walter Russell, Tom Bearden, Ilya Prigogine, "
+                  "Hilarion, Charles Proteus Steinmetz, or Don Smith tone sections — answer directly.")
     elif viewpoint:
         sysm=(viewpoint+"\n\n"+base+
               " Output Markdown with a direct substantive answer. FREE_ENERGY_LENS_VOICES is off, "
-              "so do not add Walter Russell, Tom Bearden, Ilya Prigogine, or Hilarion tone sections.")
+              "so do not add Walter Russell, Tom Bearden, Ilya Prigogine, Hilarion, Charles Proteus Steinmetz, or Don Smith tone sections.")
     else:           # off-corpus (e.g. parenting) → plain direct answer, no preamble, no tones
         sysm=base+" Output ONLY the final answer — no reasoning preamble; begin directly with the answer."
         if lens:    # a skill-backed space (apple/health/hyp) → frame the answer through the skill's lens
@@ -705,6 +759,11 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
         # whole lottery at once — which is why twelve attempts could produce nothing at all.
         got_now = []
         for h, body in _sections(ans).items():
+            if viewpoint and voices_on:
+                from convey.voice_grounding import voice_section_supported
+                if not voice_section_supported(h, body):
+                    why.append("ungrounded voice section: "+h)
+                    continue
             if h not in have and _substantive(h, body):
                 have[h] = body; got_now.append(h)
         miss = [h for h in required if h not in have]
@@ -1364,7 +1423,14 @@ def _is_owner(sender):
     return any(a in s for a in OWNER_ADDRS)
 SPACECARDS = {
   "free-energy": {"label":"Free energy / over-unity","mode":"creative","personas":True,"headings":True,
-      "retrieval":True,"memory_ns":"esa/free-energy","adjacent":["spirituality"],"senders":[],"keywords":[],"access":"open"},
+      "retrieval":True,"memory_ns":"esa/free-energy","adjacent":["spirituality"],"senders":[],
+      "keywords":["free energy","free-energy","over-unity","overunity","cop>1","cop > 1",
+                  "reactive power","reactive-power","reactive energy","longitudinal","longitudinal waves",
+                  "radiant energy","cold electricity","zero point","zero-point","zpe","phase conjugation",
+                  "phase-conjugate","bearden","bedini","russell","walter russell","steinmetz","don smith",
+                  "donald smith","tesla coil","magnifying transmitter","asymmetrical regauging","open system",
+                  "open-system","vacuum reservoir","dielectric","parametric resonance","back-emf","lenz","scalar"],
+      "access":"open"},
   "spirituality": {"label":"Spirituality / esoteric / mysticism","mode":"answer","personas":False,"headings":False,
       "retrieval":False,"memory_ns":"esa/spirituality","adjacent":["health","free-energy"],"senders":[],
       "keywords":["spiritual","spirituality","esoteric","mysticism","mystical","occult","hermetic","kabbalah",
@@ -1375,23 +1441,15 @@ SPACECARDS = {
   # shared to the Mini) by _load_spaces_config() below, and MERGED into this dict.
   "apple": {"label":"Apple / macOS automation / AppleScript tooling (apple skill)","mode":"answer",
       "personas":False,"headings":False,"retrieval":"skill","skill_dir":"~/work/apple","memory_ns":"esa/apple",
-      "adjacent":["admin","music"],"senders":[],
+      "adjacent":["admin"],"senders":[],
       "model":"gemini-2.5-flash",   # CLI/technical space: nemotron fabricates command flags; gemini obeys "zero unverified flags". Low volume → quota fine.
       "keywords":["applescript","apple script","osascript","asobjc","appletoolbox","apple toolbox",
                   "applebar","loupedeck","streamdeck","contour shuttle","macos automation","system events",
                   "shortcuts","app intents","url scheme","sdef","scripting dictionary","finder","sal soghoian",
                   "xcode","xcrun","agent skills","swiftui","swift package","ios/macos","macos app","app development",
                   "iphone","ipados","cocoa","objective-c","spm","tccutil"]},
-  "finances": {"label":"Finances / money / admin-money","mode":"answer","personas":False,"headings":False,
-      "retrieval":False,"memory_ns":"esa/finances","adjacent":["music","admin"],"senders":[],
-      "keywords":["invoice","tax","vat","budget","income","expense","salary","payment","bank","loan","kela",
-                  "matkalasku","accounting","finance","financial","pricing","revenue"]},
-  "music": {"label":"Music / promotion / tooling (Paketti, Gumroad, Renoise)","mode":"answer","personas":False,
-      "headings":False,"retrieval":False,"memory_ns":"esa/music","adjacent":["finances","admin"],"senders":[],
-      "keywords":["music","track","song","album","release","mixdown","renoise","paketti","gumroad","bandcamp",
-                  "spotify","promotion","promo","midi","sample","synth","daw","lackluster"]},
   "admin": {"label":"Admin: suggested tools/links/study/LLMs/URLs/YT-analysis","mode":"answer","personas":False,
-      "headings":False,"retrieval":False,"memory_ns":"esa/admin","adjacent":["music","finances"],"senders":[],
+      "headings":False,"retrieval":False,"memory_ns":"esa/admin","adjacent":[],"senders":[],
       "keywords":["tooling","suggest","recommend","study","resource","workflow","automation","configure",
                   "install","llm","chatgpt","claude"]},
   "general": {"label":"General / plain","mode":"answer","personas":False,"headings":False,"retrieval":False,
@@ -2257,7 +2315,20 @@ def poll_once(verbose=True):
                 debug_log(kind, mid, subj, question=question,
                           note=f"re-queued (not sent); will retry next poll. causes: {_why or 'n/a'}")
                 continue
-            reply={"text": answer, "html": md_to_html(answer)}
+            prov = {
+                "origin": "inbound-email",
+                "trigger": f"'{full.get('subject','(no subject)')}' from {full.get('from','?')}",
+                "message_id": mid,
+                "thread_id": m.get("thread_id"),
+                "space": space,
+                "why": why,
+                "model": used,
+                "sources": [f"wiki:{s}" for s in wslugs] + [a.get("filename", "attachment") for a in atts],
+                "host": socket.gethostname().split(".")[0],
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+            }
+            reply={"text": format_text_provenance(prov) + answer,
+                   "html": md_to_html(answer, title=full.get("subject", ""), provenance=prov)}
             if WANT_PDF.search(question or ""):     # a NEW question that also wants a PDF
                 b64=make_pdf_b64(answer)
                 if b64:
@@ -2640,8 +2711,19 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
         note += f"\n\n---\n▶ Source: {source}"
     if label:
         note += f"\n📄 {label}"
+    prov = {
+        "origin": "cli-compose",
+        "trigger": f"'{subject}'" + (f" · file: {attach}" if attach else "") + (f" · source: {source}" if source else ""),
+        "space": space,
+        "why": "explicit",
+        "model": used,
+        "sources": ([label] if label else []) + ([attach] if attach else []) + ([source] if source else []),
+        "host": socket.gethostname().split(".")[0],
+        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+    }
     text = answer + note
-    payload = {"to": [to], "subject": subject, "text": text, "html": md_to_html(text)}
+    payload = {"to": [to], "subject": subject, "text": format_text_provenance(prov) + text,
+               "html": md_to_html(text, title=subject, provenance=prov)}
     # ATTACH the material itself — the first mailer always did, and losing it would lose a feature.
     if attach and Path(attach).exists():
         try:

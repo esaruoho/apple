@@ -72,6 +72,16 @@ def prepare_roster(convey: Path) -> list[str]:
                 people.setdefault(person["name"], person)
     if not people:
         raise RuntimeError("Installed full-bench roster has no participants")
+    # Canonical dialectic order: Aria -> Rigel -> Ilya (Prigogine) -> Lyra -> Tom (Bearden) -> Vega -> Walter (Russell) -> Orion -> Hilarion
+    PREFERRED_ORDER = ["Aria", "Rigel", "Prigogine", "Lyra", "Bearden", "Vega", "Russell", "Orion", "Hilarion"]
+    ordered_people = {}
+    for name in PREFERRED_ORDER:
+        if name in people:
+            ordered_people[name] = people[name]
+    for name, person in people.items():
+        if name not in ordered_people:
+            ordered_people[name] = person
+    people = ordered_people
     lines = ["# Generated from the installed full bench; edit the original rosters.", "name: aimeat-sages", "participants:"]
     for person in people.values():
         lines.append(f"  - name: {person['name']}")
@@ -215,14 +225,16 @@ def render(source: Path, job: Path, state: dict) -> None:
     markdown = "\n".join(lines)
     atomic_text(job / "transcript.md", markdown)
     write_json(job / "state.json", state)
-    # merlib-dump is send-only on RayMac. Return artifacts through the two-way
-    # comms share; the existing client watcher files them beside the original.
+    # merlib-dump is send-only on RayMac. The Mini returns artifacts ONLY through
+    # the two-way comms share; it must never write into the shared merlib-dump
+    # tree, which forked .sync-conflict copies of the beside-source result
+    # (2026-10-22). The client's collect() is the sole writer beside the source.
     if state.get("host") in {"cloudcity", "cloudcitymacmini"}:
         returned = dict(state, result_sha256=hashlib.sha256(markdown.encode()).hexdigest())
         atomic_text(RETURN_ROOT / state["id"] / "transcript.md", markdown)
         write_json(RETURN_ROOT / state["id"] / "state.json", returned)
     # Never attach a stale result to source bytes edited while inference was running.
-    if source.exists() and hashlib.sha256(source.read_bytes()).hexdigest() == state["sha256"]:
+    elif source.exists() and hashlib.sha256(source.read_bytes()).hexdigest() == state["sha256"]:
         atomic_text(result, markdown)
         write_json(status, state)
 
@@ -340,8 +352,13 @@ async def process(source: Path, *, convey: Path = DEFAULT_CONVEY, seats: str = S
     if state["status"] == "complete":
         state.setdefault("host", socket.gethostname().split(".")[0].lower())
         result, status = output_paths(source)
-        missing_return = state["host"] in {"cloudcity", "cloudcitymacmini"} and not (RETURN_ROOT / state["id"] / "state.json").exists()
-        if not result.exists() or read_json(status).get("id") != state["id"] or missing_return:
+        on_mini = state["host"] in {"cloudcity", "cloudcitymacmini"}
+        # On the Mini the result never lands beside the source any more, so a
+        # completed job is settled when its return-channel state exists; only the
+        # client re-files beside the source. This stops per-tick re-render churn.
+        missing_return = on_mini and not (RETURN_ROOT / state["id"] / "state.json").exists()
+        needs_client_file = not on_mini and (not result.exists() or read_json(status).get("id") != state["id"])
+        if needs_client_file or missing_return:
             render(source, job, state)
         return state
     if state["status"] == "failed" and not retry:
@@ -420,7 +437,8 @@ def main() -> int:
                 args.seats = ",".join(prepare_roster(args.convey))
         except RuntimeError as exc:
             ap.error(str(exc))
-    seats = [s.strip() for s in args.seats.split(",") if s.strip()]
+    SEAT_ALIASES = {"ilya": "Prigogine", "tom": "Bearden", "walter": "Russell"}
+    seats = [SEAT_ALIASES.get(s.strip().lower(), s.strip()) for s in args.seats.split(",") if s.strip()]
     args.seats = ",".join(seats)
     args.turns = args.turns or 2 * len(seats)
     if not seats or len(seats) != len(set(seats)) or args.turns < len(seats) or args.turns > 60:
@@ -450,6 +468,14 @@ def main() -> int:
             if args.verb == "watch":
                 sys.path.insert(0, str(ROOT / "shared"))
                 from aimeat_mail import merge_mail_inputs
+                # REPORT-CARD >> merlib-dump/features/video-aimeat-completion.feature
+                # Reuse this Boot-owned watcher; no second inference/daemon.
+                try:
+                    sys.path.insert(0, str(args.convey.resolve().parents[1]))
+                    from convey.video_completion import reconcile as reconcile_video
+                    reconcile_video()
+                except Exception as exc:
+                    print(f"video completion bridge: {type(exc).__name__}", file=sys.stderr, flush=True)
                 paths = merge_mail_inputs(paths, args.stable_seconds)
             if args.verb == "submit" and not args.source:
                 ap.error("submit requires a source path")

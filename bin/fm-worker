@@ -109,6 +109,7 @@ def process_one(path: Path) -> bool:
         "ok": res["ok"], "rc": res["rc"],
         "out": res["out"], "err": res["err"],
         "model_ms": res["model_ms"],
+        "model": "FoundationModels",
         "host": socket.gethostname().split(".")[0],
         "ts": int(time.time()),
         "from": job.get("submitter_host"),

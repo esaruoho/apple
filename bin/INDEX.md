@@ -1,4 +1,4 @@
-# CLI Tools Index — 335 tools in bin/
+# CLI Tools Index — 351 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
@@ -21,6 +21,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-keywords` — the "useful words, no junk" extractor. Apple-native, no deps. — `bin/apple-keywords`
 `apple-lang` — Apple-native language detector. — `bin/apple-lang`
 `apple-lemma` — Apple-native lemma extractor. — `bin/apple-lemma`
+`apple-mono-toggle` — (no description) — `bin/apple-mono-toggle`
 `apple-ner` — Apple-native named-entity recognition (NaturalLanguage NLTagger, — `bin/apple-ner`
 `apple-ner.swift` — apple-ner — Apple-native named-entity recognition pipe. — `bin/apple-ner.swift`
 `apple-panel` — (no description) — `bin/apple-panel`
@@ -69,8 +70,12 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cc-index` — (no description) — `bin/cc-index`
 `cloudcity-mlx-safety-test` — (no description) — `bin/cloudcity-mlx-safety-test`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
+`compass` — read the iPhone's Compass heading onto the Mac command line, and — `bin/compass`
+`compass.py` — (no description) — `bin/compass.py`
 `convergence` — (no description) — `bin/convergence`
 `converse` — (no description) — `bin/converse`
+`converse-publish` — REPORT-CARD >> features/converse-to-obsidian.feature — `bin/converse-publish`
+`converse-to-obsidian` — REPORT-CARD >> features/converse-to-obsidian.feature — `bin/converse-to-obsidian`
 `convey` — (no description) — `bin/convey`
 `create-image` — image-create — generate an image with Apple's on-device Image Playground. — `bin/create-image`
 `describe-submit` — scene-describe an image via the Mac Mini's local VLM (Ollama), — `bin/describe-submit`
@@ -144,7 +149,14 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `homepod-now` — (no description) — `bin/homepod-now`
 `html-to-pdf` — render HTML to a properly-formatted paginated PDF via WKWebView. — `bin/html-to-pdf`
 `html-to-png` — render HTML to a crisp PNG via WKWebView takeSnapshot. — `bin/html-to-png`
+`icdcheck` — REPORT-CARD >> features/icdcopy.feature — `bin/icdcheck`
+`icdcopy` — REPORT-CARD >> features/icdcopy.feature — `bin/icdcopy`
+`icdmat` — materialize (force-download) iCloud Drive files and WAIT until done. — `bin/icdmat`
+`icdsize` — (no description) — `bin/icdsize`
+`icdsizefolder` — (no description) — `bin/icdsizefolder`
 `icloud-drop` — (no description) — `bin/icloud-drop`
+`icloud-materialize.swift` — REPORT-CARD >> features/icdcopy.feature — `bin/icloud-materialize.swift`
+`icloudsize` — (no description) — `bin/icloudsize`
 `image-create` — generate an image with Apple's on-device Image Playground. — `bin/image-create`
 `imessage` — (no description) — `bin/imessage`
 `imessage-send-file` — (no description) — `bin/imessage-send-file`
@@ -174,6 +186,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `mailgraph` — (no description) — `bin/mailgraph`
 `maps-directions` — open Apple Maps with a route to your OTHER anchor. — `bin/maps-directions`
 `md-to-clipboard` — render Markdown as rich text and put it on the — `bin/md-to-clipboard`
+`md-to-clipboard.bak-2026-09-04` — md-to-clipboard — render Markdown as rich text and put it on the — `bin/md-to-clipboard.bak-2026-09-04`
 `me-address` — print your home postal address. Resolve-once, then cached, so — `bin/me-address`
 `me-location` — deduce WHERE I AM RIGHT NOW from device presence, print that place's — `bin/me-location`
 `merge-ontology-additions.py` — SHIM → canonical copy in convey: ~/work/convey/bin/merge-ontology-additions.py — `bin/merge-ontology-additions.py`
@@ -188,6 +201,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `mlx-drive-renoise` — zero-token English -> Renoise agent loop. — `bin/mlx-drive-renoise`
 `mlx-here` — chat with the Mini's MLX brain (Qwen3-4B), ARMED with the Apple — `bin/mlx-here`
 `mlx-relay` — (no description) — `bin/mlx-relay`
+`mono` — switch macOS accessibility audio to play stereo audio as mono — `bin/mono`
 `morning-digest` — (no description) — `bin/morning-digest`
 `musicmouse` — launch Laurie Spiegel's 1989 Music Mouse inside Mini vMac — `bin/musicmouse`
 `ner-graph` — (no description) — `bin/ner-graph`
@@ -234,6 +248,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `rec-subtitle` — (no description) — `bin/rec-subtitle`
 `recburn` — the full screencast in one word: screen + system audio + microphone + — `bin/recburn`
 `recburn-click-reset` — put the burned-in CLICKS counter back to 0, mid-recording. — `bin/recburn-click-reset`
+`recburn-install-deps` — REPORT-CARD >> features/recburn-whisper-deps.feature — `bin/recburn-install-deps`
 `recburn-redact` — surgically redact a region of a recburn video for a time window. — `bin/recburn-redact`
 `recburn-url` — the guaranteed-portable control seam for RecBurn.app. — `bin/recburn-url`
 `recburn-youtube` — (no description) — `bin/recburn-youtube`
@@ -284,6 +299,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `speech-toggle` — pause ⇄ resume the speech currently being read aloud by — `bin/speech-toggle`
 `speech-transcribe` — on-device speech-to-text via Apple's Speech framework. — `bin/speech-transcribe`
 `spotlight-export.sh` — Compile workflow scripts to Spotlight-reachable .app bundles — `bin/spotlight-export.sh`
+`stereo` — switch macOS accessibility audio to play stereo audio as stereo (disable mono) — `bin/stereo`
 `stickies-claude-install.sh` — stickies-claude-install — install/uninstall the stickies → claude watcher — `bin/stickies-claude-install.sh`
 `stickies-claude-watcher` — scan Stickies for #claude-tagged notes and — `bin/stickies-claude-watcher`
 `swiftgen` — (no description) — `bin/swiftgen`

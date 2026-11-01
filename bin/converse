@@ -10,6 +10,7 @@ app, no ⌘3), use `mlx` (a.k.a. mlx-here).
     converse midi-sync                    # NAMED discussion 'midi-sync' (resume by reusing the name)
     converse --list                       # list discussions started in this folder
     converse --fm                         # use the FoundationModels brain instead of MLX
+    converse --flubuild                   # use the flubuild remote brain
     converse --cwd DIR [name]             # arm the skill governing DIR (not the shell cwd)
     converse --autoarm [on|off]           # set this folder as the default AND launch a
                                           # grounded session now. `off` → plain MLX, no launch.
@@ -233,8 +234,8 @@ def write_session(dirpath: Path, stamp: str):
         tpath.write_text("")
 
 
-def set_brain(use_mlx: bool, arm_cwd=None):
-    """Merge Converse's settings.json: pre-select the ⌘3 MLX (vs ⌘1 FM) brain, and —
+def set_brain(use_mlx: bool, arm_cwd=None, brain: str | None = None):
+    """Merge Converse's settings.json: pre-select the chosen chat brain, and —
     when arm_cwd is given — record it as `mlxArmCwd` so that simply OPENING Converse
     and pressing ⌘3 self-arms to that folder's skill (the boot-time `mlx` experience,
     no terminal). Pass arm_cwd="" to clear (back to plain MLX)."""
@@ -245,7 +246,7 @@ def set_brain(use_mlx: bool, arm_cwd=None):
             o = json.loads(SETTINGS.read_text())
         except Exception:
             o = {}
-    o["brain"] = "mlx" if use_mlx else "fm"
+    o["brain"] = brain or ("mlx" if use_mlx else "fm")
     if arm_cwd is not None:
         o["mlxArmCwd"] = arm_cwd
     SETTINGS.write_text(json.dumps(o, indent=2))
@@ -289,6 +290,7 @@ def launch(dirpath: Path):
 def main():
     args = sys.argv[1:]
     use_mlx = True
+    use_flubuild = False
     cwd_override = None
     name = None
     do_list = False
@@ -302,7 +304,9 @@ def main():
         elif a == "--fm":
             use_mlx = False; i += 1
         elif a == "--mlx":
-            use_mlx = True; i += 1
+            use_mlx = True; use_flubuild = False; i += 1
+        elif a == "--flubuild":
+            use_mlx = False; use_flubuild = True; i += 1
         elif a == "--list":
             do_list = True; i += 1
         elif a == "--cwd":
@@ -346,13 +350,16 @@ def main():
     # a settings change back to plain MLX.
     if autoarm is not None:
         if autoarm == "off":
-            set_brain(use_mlx, arm_cwd="")
-            print("converse: boot-time self-arm OFF — opening Converse + ⌘3 is plain MLX.")
+            set_brain(use_mlx, arm_cwd="", brain="flubuild" if use_flubuild else None)
+            print("converse: boot-time self-arm OFF.")
             return 0
         else:
             skill = arm_apple.detect_skill(cwd); arm_apple._ACTIVE = skill
-            set_brain(True, arm_cwd=cwd)
-            use_mlx = True
+            if use_flubuild:
+                set_brain(False, arm_cwd=cwd, brain="flubuild")
+            else:
+                set_brain(True, arm_cwd=cwd)
+                use_mlx = True
 
     skill = arm_apple.detect_skill(cwd)
     arm_apple._ACTIVE = skill
@@ -371,7 +378,7 @@ def main():
         # voice.json so replies speak in the clone. arm_cwd cleared so ⌘3 doesn't
         # rebuild a slow system each turn (that 35s+ build is what timed out).
         seed_persona(persona, stamp)
-        set_brain(use_mlx, arm_cwd="")
+        set_brain(use_mlx, arm_cwd="", brain="flubuild" if use_flubuild else None)
     else:
         seed_fm_state(stamp, cwd)
         vf = dirpath / "voice.json"
@@ -379,17 +386,20 @@ def main():
             vf.unlink()
         # Make THIS the boot default: opening Converse + ⌘3 later self-arms to the
         # same folder's skill, so "just open Converse" keeps the mlx experience.
-        set_brain(use_mlx, arm_cwd=cwd if use_mlx else None)
+        set_brain(use_mlx, arm_cwd=cwd if (use_mlx or use_flubuild) else None,
+                  brain="flubuild" if use_flubuild else None)
     # touch the dir so it is the NEWEST session → fm-converse's current_session_key()
     # resolves to it, so Converse's ⌘3 loads exactly the bucket we just armed.
     os.utime(dirpath, None)
     launch(dirpath)
 
-    brain = "MLX (Qwen3-4B)" if use_mlx else "FoundationModels"
+    brain = "flubuild" if use_flubuild else ("MLX (Qwen3-4B)" if use_mlx else "FoundationModels")
     verb = "resuming" if resuming else "new"
     print(f"converse: {verb} discussion '{stamp[4:]}'  ·  {label} armed  ·  brain: {brain}")
     print(f"     session: {dirpath}")
-    mode_hint = "Enter sends via MLX/⌘3" if use_mlx else "Enter sends via FoundationModels/⌘1"
+    mode_hint = ("Enter sends via flubuild"
+                 if use_flubuild else
+                 ("Enter sends via MLX/⌘3" if use_mlx else "Enter sends via FoundationModels/⌘1"))
     print(f"     in Converse: type, press Enter · {mode_hint} · ⌘C copies a reply · ⌘O reopens · ⌘S saves")
     return 0
 

@@ -208,7 +208,7 @@ async def generate(job: dict) -> dict:
         ms = int((time.perf_counter() - t0) * 1000)
         return {
             "id": job_id, "ok": True, "out": out.rstrip("\n"), "err": "",
-            "model_ms": ms, "host": HOST, "ts": int(time.time()),
+            "model_ms": ms, "model": "FoundationModels", "host": HOST, "ts": int(time.time()),
             "from": job.get("submitter_host"), "session": key,
             "turns": entry.turns if key else 1,
             "streamed": bool(stream), "error_type": None, "reset": did_reset,
@@ -219,7 +219,7 @@ def _err(job_id, key, exc, t0, reset_done=False):
     ms = int((time.perf_counter() - t0) * 1000)
     return {
         "id": job_id, "ok": False, "out": "", "err": str(exc),
-        "model_ms": ms, "host": HOST, "ts": int(time.time()),
+        "model_ms": ms, "model": "FoundationModels", "host": HOST, "ts": int(time.time()),
         "from": None, "session": key, "turns": None, "streamed": False,
         "error_type": type(exc).__name__, "reset": reset_done,
     }

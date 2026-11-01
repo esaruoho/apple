@@ -10,7 +10,7 @@
 
 | Card | Scn | Build | Runtime | Hardware | Grades present |
 |------|----:|:-----:|:----------:|:--------:|----------------|
-| aimeat-email-pdf | 6 | ✓ | ✓ | — | @built @code-verified @runtime-verified @sim-verified @stock |
+| aimeat-email-pdf | 7 | ✓ | ~ partial | — | @built @code-verified @runtime-untested @runtime-verified @sim-verified @stock |
 | aimeat-roundtable | 10 | ✓ | ~ partial | — | @code-verified @runtime-untested @runtime-verified @stock |
 | aimeat-whiteboard | 6 | ✗ | ✓ | — | @built @designed @runtime-verified @stock @untested |
 | app-audio-record | 23 | ✗ | — | ✓ | @built @hw-verified @note |
@@ -74,6 +74,6 @@
 ## Tally (computed)
 - Cards: 60
 - Build-verified: 9
-- Runtime-verified: 10 full + 4 partial
+- Runtime-verified: 9 full + 5 partial
 - **Hardware-verified: 21**  ·  hardware-untested: 0
 

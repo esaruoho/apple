@@ -1,4 +1,4 @@
-# Workflows Index — 304 scripts across 34 apps
+# Workflows Index — 305 scripts across 34 apps
 
 **Grep this file to find the right script without scanning every app.**
 Grep by trigger keyword (`grep airdrop`), by app name (`^## finder`), or by description token.
@@ -7,12 +7,13 @@ Format: `script-name` — description — triggers: a, b, c — `path`
 Regenerate: `python3 bin/gen-skill-indexes.py`
 Re-seed trigger headers after adding scripts: `python3 bin/seed-script-triggers.py`
 
-## accessibility (8)
+## accessibility (9)
 
 `ax-system-settings-battery` — Open System Settings Battery pane via Accessibility API — triggers: ax, system, settings, battery, open, pane, accessibility, api — `scripts/workflows/accessibility/ax-system-settings-battery.applescript`
 `ax-system-settings-bluetooth` — Open System Settings Bluetooth pane via Accessibility API — triggers: ax, system, settings, bluetooth, open, pane, accessibility, api — `scripts/workflows/accessibility/ax-system-settings-bluetooth.applescript`
 `ax-system-settings-displays` — Open System Settings Displays pane via Accessibility API — triggers: ax, system, settings, displays, open, pane, accessibility, api — `scripts/workflows/accessibility/ax-system-settings-displays.applescript`
 `ax-system-settings-keyboard` — Open System Settings Keyboard pane via Accessibility API — triggers: ax, system, settings, keyboard, open, pane, accessibility, api — `scripts/workflows/accessibility/ax-system-settings-keyboard.applescript`
+`ax-system-settings-mono` — Set macOS accessibility audio to play stereo audio as mono or stereo — triggers: mono, stereo, audio, accessibility, ax, system, settings, play stereo audio as mono — `scripts/workflows/accessibility/ax-system-settings-mono.applescript`
 `ax-system-settings-notifications` — Open System Settings Notifications pane via Accessibility API — triggers: ax, system, settings, notifications, open, pane, accessibility, api — `scripts/workflows/accessibility/ax-system-settings-notifications.applescript`
 `ax-system-settings-privacy` — Open System Settings Privacy & Security pane via Accessibility API — triggers: ax, system, settings, privacy, open, security, pane, accessibility — `scripts/workflows/accessibility/ax-system-settings-privacy.applescript`
 `ax-system-settings-sound` — Open System Settings Sound pane via Accessibility API — triggers: ax, system, settings, sound, open, pane, accessibility, api — `scripts/workflows/accessibility/ax-system-settings-sound.applescript`

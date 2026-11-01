@@ -1,0 +1,96 @@
+"""THE one AgentMail send primitive. Import this; never hand-roll another POST to /messages/send.
+
+Why this exists (2026-11-01): cloudcity-llm@agentmail.to was being driven by ELEVEN different
+scripts that each re-implemented the AgentMail POST — different timeouts, different (or missing)
+HTML rendering, and only ONE of them (freellmask-mail's threaded reply) had the HTTP-413
+"payload too large" fallback. Each copy was independently flaky. This module is the single
+fresh-send implementation. The one sanctioned exception is a THREADED REPLY to an inbound
+message, which is freellmask-mail's `send_inbox_reply` (the reply endpoint + attachment
+reconciliation). Everything else — digests, eval reports, proofs, one-shots — calls `agentmail_send`.
+
+See convey/bin/EMAILER-RULE.md and docs/cloudcity-llm-silent-since-2026-10-30-diagnosis.md.
+"""
+from __future__ import annotations
+import html as _html
+import json
+import os
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+DEFAULT_INBOX = "cloudcity-llm@agentmail.to"
+AM_BASE = "https://api.agentmail.to/v0"
+
+
+def _key() -> str | None:
+    """AgentMail key from AGENTMAIL_API_KEY, else ~/.agentmail.key. None if neither is present."""
+    env = os.environ.get("AGENTMAIL_API_KEY")
+    if env:
+        return env.strip()
+    kp = Path.home() / ".agentmail.key"
+    return kp.read_text(encoding="utf-8").strip() if kp.exists() else None
+
+
+def _default_html(text: str) -> str:
+    """Render plain text as safe HTML. If apple/shared/format_email is importable, use its richer
+    Markdown renderer; otherwise fall back to an escaped <pre> so we never ship raw markup."""
+    try:
+        from format_email import md_to_html  # type: ignore
+        return md_to_html(text)
+    except Exception:
+        return ("<html><body style='font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif'>"
+                f"<pre style='white-space:pre-wrap'>{_html.escape(text)}</pre></body></html>")
+
+
+def agentmail_send(subject: str, text: str, to, *, inbox: str | None = None,
+                   html: str | None = None, attachments: list | None = None,
+                   timeout: int = 60, quiet: bool = False) -> bool:
+    """Send one fresh email from an AgentMail inbox. Returns True on 2xx, False otherwise.
+
+    to          : a single address (str) or a list of addresses.
+    inbox       : sending inbox; defaults to AGENTMAIL_INBOX env or cloudcity-llm@agentmail.to.
+    html        : explicit HTML body; if None it is rendered from `text`.
+    attachments : optional AgentMail attachment dicts. On HTTP 413 they are DROPPED and the
+                  message is retried text-only (the one place every caller used to get wrong).
+    """
+    key = _key()
+    if not key:
+        if not quiet:
+            print("agentmail_send: no AGENTMAIL_API_KEY and no ~/.agentmail.key — not sending")
+        return False
+    inbox = inbox or os.environ.get("AGENTMAIL_INBOX") or DEFAULT_INBOX
+    to_list = [to] if isinstance(to, str) else list(to)
+    body = {"to": to_list, "subject": subject, "text": text, "html": html or _default_html(text)}
+    if attachments:
+        body["attachments"] = list(attachments)
+    url = f"{AM_BASE}/inboxes/{urllib.parse.quote(inbox, safe='')}/messages/send"
+
+    def _post(payload: dict) -> bool:
+        req = urllib.request.Request(
+            url, data=json.dumps(payload).encode("utf-8"),
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            method="POST")
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status in (200, 201, 202)
+
+    try:
+        return _post(body)
+    except urllib.error.HTTPError as e:
+        if e.code == 413 and body.get("attachments"):
+            if not quiet:
+                print("agentmail_send: 413 too large — retrying without attachments")
+            body.pop("attachments", None)
+            try:
+                return _post(body)
+            except Exception as e2:
+                if not quiet:
+                    print(f"agentmail_send: retry failed: {e2}")
+                return False
+        if not quiet:
+            print(f"agentmail_send: HTTP {e.code}: {e}")
+        return False
+    except Exception as e:
+        if not quiet:
+            print(f"agentmail_send: send failed: {e}")
+        return False

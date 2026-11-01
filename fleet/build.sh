@@ -18,6 +18,12 @@ xcrun swiftc -O -parse-as-library Fleet.swift ../shared/SupportHelp.swift -o "$A
     -framework AppKit \
     -framework Network
 
+echo "==> App icon (AppIcon.icns)..."
+if [ ! -f "AppIcon.icns" ] || [ make-icon.swift -nt AppIcon.icns ]; then
+    xcrun swift make-icon.swift
+fi
+cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+
 echo "==> Writing Info.plist (Local Network + Bonjour service)..."
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -31,6 +37,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>1.0</string>
     <key>CFBundleVersion</key><string>1</string>
+    <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>LSMinimumSystemVersion</key><string>13.0</string>
     <key>NSHighResolutionCapable</key><true/>
     <key>NSHumanReadableCopyright</key><string>Apple skill — esaruoho/apple</string>
@@ -55,6 +62,10 @@ else
     echo "==> Ad-hoc codesign (Local Network prompt will reappear on each rebuild)"
     codesign --force --sign - "$APP" 2>&1 | sed 's/^/    /'
 fi
+
+echo "==> Refreshing Launch Services..."
+LSREG=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+"$LSREG" -f "$APP" >/dev/null 2>&1 || true
 
 echo "==> Built: $(pwd)/$APP"
 echo "    Binary: $(du -h "$APP/Contents/MacOS/$NAME" | cut -f1)"

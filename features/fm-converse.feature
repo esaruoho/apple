@@ -4,16 +4,15 @@ t w# ===========================================================================
 # Convention: ~/.claude/skills/report-card/SKILL.md  ·  GHERKIN-FEATURE-WIKI-PATTERN.md
 # SESSION >> features/fm-converse.session.md   (the vibe diff that spawned this — TODO, see gaps)
 #
-# STATUS OF THIS CARD: a STUDY of the current state. fm-converse shipped over three
-# commits WITHOUT a card. This card is being authored after the fact, so it grades
-# what exists today and flags every place the unit fails the four report-card
-# properties. Born-with-a-card it was NOT; this is the retrofit.
+# STATUS OF THIS CARD: a retrofit that is now active again. fm-converse shipped
+# originally without a card; on 2026-09-22 it gained livefile capture and Scaff
+# push so its outputs are no longer only volatile cache state.
 #
 # ── WHAT THIS CARD SPAWNS ───────────────────────────────────────────────────
 #   Codespace : bin/fm-converse (this unit) → bin/fm-submit (Syncthing round-trip)
 #               → [Mini] fm-worker → bin/fm + bin/fm.swift (FoundationModels).
 #               State: ~/.cache/fm-converse/<session-key>.json {system, turns[]}.
-#   Thinkspace: held in features/fm-converse.session.md — MISSING (gap G2 below).
+#   Thinkspace: held in features/fm-converse.session.md.
 #   Areaspace : OWNS the stateful replay + prompt assembly + terminal rendering.
 #               MUST NOT own: the model itself (fm.swift), the transport (fm-submit),
 #               or the tool preamble (fm.swift --tools). Stateless one-shots = fm-submit.
@@ -36,7 +35,13 @@ t w# ===========================================================================
 #   Feature delivery : 408a628 (initial), b66f39d (budget+tools fix), c122a61 (md render)
 #                      — all pushed direct to esaruoho/apple main, no PR.
 #   This card authored: (pending commit of features/fm-converse.feature)
-#   Triad status     : .feature = THIS (partial) · .session = MISSING · RESULT = here.
+#   2026-09-22       : bin/fm-converse now captures successful turns into
+#                      ~/work/converse/sessions/<key>/livefile.jsonl and pushes
+#                      them to ~/work/scaff/ConverseInbox via Scaff converse-push.
+#   2026-09-24       : added --flubuild as a transcript-compatible remote chat
+#                      backend. It shares the same session memory and livefile
+#                      capture shape as --mlx / FoundationModels.
+#   Triad status     : .feature = THIS · .session = present · RESULT = here.
 # =============================================================================
 
 Feature: fm-converse — a remembering conversation with the on-device LLM
@@ -108,22 +113,68 @@ Feature: fm-converse — a remembering conversation with the on-device LLM
     # actually typing in, the wrong conversation is continued. Mtime ≠ "the window I'm in".
 
   @built @caveat
-  Scenario: Stored conversation is volatile and reportcard-less
-    # cite: bin/fm-converse STORE = ~/.cache/fm-converse (69), save (106)
+  Scenario: Stored conversation remains replay memory while the livefile is the durable artifact
+    # cite: bin/fm-converse STORE = ~/.cache/fm-converse, save()
+    # cite: bin/fm-converse _append_capture_turn writes livefile.jsonl
     Given any fm-converse exchange completes
     When you look for a durable record of it
-    Then there is only a flat ~/.cache JSON buffer — not dated, not titled, not in the
-    vault, not synced, no per-conversation transcript, no grade, no event log
-    # this is the "reportcard-less RESULT" Esa flagged: the TOOL has no card AND its
-    # OUTPUTS have no durable card either.
+    Then ~/.cache/fm-converse still holds replay memory and livefile.jsonl holds the capturable record
+    # caveat: cache remains the model-memory store; livefile is the semantic/audit surface.
+
+  @built @self-test
+  Scenario: A terminal fm-converse turn becomes a Converse-shaped livefile
+    # cite: bin/fm-converse _append_capture_turn creates manifest.json + livefile.jsonl
+    # cite: test_fm_converse.py test_successful_turn_writes_livefile_pair
+    Given fm-converse gets a successful answer outside Converse.app
+    When the turn is persisted
+    Then it writes session.created, talk.heard and agent.responded events with one request_id
+    # self-test 2026-09-22: python3 test_fm_converse.py
+
+  @built @self-test
+  Scenario: Converse.app-owned turns are not duplicated by fm-converse
+    # cite: bin/fm-converse _recent_app_already_owns_turn checks recent talk.heard
+    # cite: test_fm_converse.py test_existing_converse_app_turn_is_not_duplicated
+    Given Converse.app already wrote the user turn to livefile.jsonl
+    When its fm-converse child returns the answer
+    Then fm-converse does not write another copy of that same turn
+    # self-test 2026-09-22: python3 test_fm_converse.py
+
+  @built @self-test
+  Scenario: Captured fm-converse turns are pushed to Scaff
+    # cite: bin/fm-converse _push_capture_to_scaff shells into semantic-convey-file converse-push
+    Given a successful fm-converse turn was appended to a livefile
+    When ~/work/scaff has semantic-convey-file available
+    Then Scaff receives linked session and turn Markdown under ConverseInbox
+    # self-test scope: the capture function is unit-tested; the Scaff receiver itself
+    # was verified separately by swift test --filter ConveyBridgeTests.
+
+  @built @verified-live
+  Scenario: A flubuild turn uses the same replay memory and livefile transcript shape
+    # cite: bin/fm-converse call_flubuild sends messages[] to the remote OpenAI-compatible port over SSH
+    # cite: bin/fm-converse _brain_capture maps --flubuild to agent_type=flubuild
+    # cite: test_fm_converse.py test_flubuild_turn_records_flubuild_agent_type
+    Given a Converse session calls fm-converse with --flubuild
+    When the remote model returns a reply
+    Then fm-converse appends talk.heard and agent.responded events with agent_type flubuild
+    And the same ~/.cache/fm-converse/<session>.json replay memory is updated
+    And the flubuild default generation cap is 2048 tokens unless FM_FLUBUILD_MAX_TOKENS overrides it
+    # verified-live 2026-09-24: fm-converse --flubuild --session flubuild-smoke-20260924
+    # returned "flubuild-ok" and wrote the expected livefile pair.
 
 # ── WHERE fm-converse FAILS THE FOUR PROPERTIES (the point of the study) ──────
 # P1 verifiable claims : ✗ until this file — behaviour lived only as code + comments.
 # P2 linked to innards : ✗ — no citation structure existed before this card.
 # P3 honestly graded   : ✗ — nothing recorded what was tested vs assumed.
-# P4 two-way back-link  : ✗ — fm-converse / fm-submit / fm.swift carry NO
-#                         "# FEATURE-CARD >> features/fm-converse.feature" marker.
-# Triad                : .feature partial (this) · .session MISSING · RESULT present.
-# ⇒ fm-converse is, by the report-card definition, an INCOMPLETE unit: it shipped
-#   without its card, and three of four properties are unmet until this retrofit
-#   is finished (back-links added + session captured + committed).
+# P4 two-way back-link  : partial — bin/fm-converse now carries the feature-card marker;
+#                         fm-submit / fm.swift are still separate units.
+# Triad                : .feature present · .session present · RESULT present.
+
+  @build-verified @runtime-verified
+  Scenario: Flubuild budgets input with the server tokenizer and exposes HTTP failures
+    # cite: bin/fm-converse call_flubuild ; bin/flubuild-request.py prepare main
+    # companion: /Users/esaruoho/work/FinderSearch/features/flubuild-context.feature
+    Given Flubuild serves an 8192-token context model
+    When input plus reply allowance exceeds the model context
+    Then old conversation messages are omitted before the current document is shortened
+    And any context reduction is disclosed in the returned answer
+    And HTTP failures include the server response body

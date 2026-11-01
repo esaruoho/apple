@@ -30,6 +30,9 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import fm_render
+
 QUEUE = Path.home() / "work" / "comms" / "queue"
 INBOX = QUEUE / "fm-inbox"
 OUTBOX = QUEUE / "fm-outbox"
@@ -67,7 +70,10 @@ def wait_for(job_id: str, timeout: float):
     while time.time() - t0 < timeout:
         if result_path.exists():
             try:
-                return json.loads(result_path.read_text()), time.time() - t0
+                res = json.loads(result_path.read_text())
+                sys.stderr.write("\r" + " " * 40 + "\r")
+                sys.stderr.flush()
+                return res, time.time() - t0
             except Exception:
                 pass  # mid-write; try again
         i += 1
@@ -207,6 +213,87 @@ def status(as_json: bool = False):
         print("worker: no heartbeat yet (fm-worker not running on the Mini?)")
 
 
+def save_to_knowledgebank(question: str, answer: str) -> str:
+    """Append the question and answer to the FoundationModels knowledgebank.
+    Returns the user-friendly string path (using ~ for home folder)."""
+    import os
+    path_str = os.environ.get("FM_KNOWLEDGEBANK")
+    if not path_str:
+        path_str = str(Path.home() / ".config" / "apple-bar" / "foundationmodels-knowledgebank.md")
+    path = Path(path_str)
+    
+    # ensure parent directories exist
+    path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # write header if empty/new
+    if not path.exists() or path.stat().st_size == 0:
+        header = (
+            "# FoundationModels Knowledgebank\n\n"
+            "Every `chat`/`?` answer from the on-device model (fm-submit → the Mini), "
+            "appended for recall.\n\n"
+        )
+        path.write_text(header, encoding="utf-8")
+        
+    stamp = time.strftime("%Y-%m-%d %H:%M:%S")
+    entry = f"## {stamp} · submit\n\n**Q:** {question}\n\n{answer}\n\n---\n\n"
+    
+    with path.open("a", encoding="utf-8") as f:
+        f.write(entry)
+        
+    return path.as_posix().replace(Path.home().as_posix(), "~")
+
+
+def save_local_note(question: str, answer: str, model_name: str) -> str:
+    """Save the question and answer to a local standalone Markdown file in the current workspace.
+    Returns the user-friendly string path of the written file."""
+    # 1. Determine destination directory
+    cwd = Path.cwd()
+    dest_dir = cwd
+    
+    kb_entities = cwd / "kb" / "graph" / "entities"
+    converse_dir = cwd / "Converse"
+    
+    if kb_entities.is_dir():
+        dest_dir = kb_entities
+    elif converse_dir.is_dir():
+        dest_dir = converse_dir
+        
+    # 2. Generate slugified filename
+    # limit to first 60 chars of slug
+    raw_slug = re.sub(r"[^a-zA-Z0-9]+", "-", question.strip().lower()).strip("-")
+    slug = raw_slug[:60].strip("-") or "untitled"
+    
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    filename = f"{timestamp}-{slug}.md"
+    filepath = dest_dir / filename
+    
+    # 3. Build beautifully formatted Markdown with YAML frontmatter
+    stamp_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    title = question[:80].strip() + ("..." if len(question) > 80 else "")
+    
+    frontmatter = (
+        "---\n"
+        f"type: fm-submit\n"
+        f"title: {json.dumps(title, ensure_ascii=False)}\n"
+        f"prompt: {json.dumps(question, ensure_ascii=False)}\n"
+        f"date: {json.dumps(stamp_iso)}\n"
+        f"model: {json.dumps(model_name)}\n"
+        "---\n\n"
+        f"# {title}\n\n"
+        f"**Q:** {question}\n\n"
+        f"{answer}\n"
+    )
+    
+    filepath.write_text(frontmatter, encoding="utf-8")
+    
+    # Return user-friendly path (relative if inside current directory, otherwise replace home with ~)
+    try:
+        rel = filepath.relative_to(cwd)
+        return f"./{rel}"
+    except ValueError:
+        return filepath.as_posix().replace(Path.home().as_posix(), "~")
+
+
 def main() -> int:
     args = sys.argv[1:]
     if not args or args[0] in ("-h", "--help"):
@@ -276,9 +363,14 @@ def main() -> int:
 
     # Happy path: a real answer to the original prompt.
     if ok and not refused:
-        print(out)
-        sys.stderr.write(f"  [{result.get('host', '?')} · model {result.get('model_ms', 0)/1000:.1f}s · "
+        fm_render.emit_reply(out)
+        model_name = result.get("model", "FoundationModels")
+        sys.stderr.write(f"  [{result.get('host', '?')} · {model_name} · model {result.get('model_ms', 0)/1000:.1f}s · "
                          f"round-trip {rt:.1f}s]\n")
+        local_path = save_local_note(prompt, out, model_name)
+        kb_path = save_to_knowledgebank(prompt, out)
+        sys.stderr.write(f"  [stored to {local_path}]\n")
+        sys.stderr.write(f"  [banked to {kb_path}]\n")
         return 0
 
     # Recover from a guardrail BLOCK or a soft REFUSAL by deterministically rephrasing —
@@ -292,8 +384,14 @@ def main() -> int:
             submit(rw, system, jid)
             r2, rt2 = wait_for(jid, timeout)
             if r2 and r2.get("ok") and not looks_refused(r2.get("out", "")):
-                print(f"_(reworded past the guardrail: {rw})_\n\n{r2.get('out', '')}")
-                sys.stderr.write(f"  [reworded · {r2.get('host', '?')} · round-trip {rt2:.1f}s]\n")
+                ans_text = r2.get('out', '')
+                fm_render.emit_reply(f"*(reworded past the guardrail: {rw})*\n\n{ans_text}")
+                model_name = r2.get("model", "FoundationModels")
+                sys.stderr.write(f"  [reworded · {r2.get('host', '?')} · {model_name} · round-trip {rt2:.1f}s]\n")
+                local_path = save_local_note(prompt, ans_text, model_name)
+                kb_path = save_to_knowledgebank(prompt, ans_text)
+                sys.stderr.write(f"  [stored to {local_path}]\n")
+                sys.stderr.write(f"  [banked to {kb_path}]\n")
                 return 0
             reason = "still declined" if (r2 and r2.get("ok")) else "still blocked"
 
@@ -301,7 +399,7 @@ def main() -> int:
     if not ok:
         sys.stderr.write(f"fm: {humanize_err(result.get('err', ''))}\n")
         return 1
-    print(out)   # model declined and the neutral rephrasings did too — show its words
+    fm_render.emit_reply(out)   # model declined and the neutral rephrasings did too — show its words
     sys.stderr.write("  [model declined; neutral rephrasings also declined]\n")
     return 0
 

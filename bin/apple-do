@@ -34,6 +34,8 @@ caps() {
 "sleep	put the display to sleep" \
 "disk	disk space overview" \
 "mute	toggle audio mute" \
+"mono	switch accessibility audio to play stereo audio as mono" \
+"stereo	switch accessibility audio to play stereo audio as stereo" \
 "screenshot	screenshot to the clipboard" \
 "eject	eject removable disks" \
 "caffeinate	keep the Mac awake for an hour" \
@@ -87,6 +89,8 @@ case "$cap" in
   mute)
     osascript -e 'set volume output muted (not (output muted of (get volume settings)))' 2>/dev/null
     [ "$(osascript -e 'output muted of (get volume settings)' 2>/dev/null)" = "true" ] && echo "Muted." || echo "Unmuted." ;;
+  mono)   exec "$HERE/mono" "$@" ;;
+  stereo) exec "$HERE/stereo" "$@" ;;
   screenshot) screencapture -c 2>/dev/null && echo "Screenshot copied to clipboard." || echo "screenshot: failed." ;;
   eject)
     osascript -e 'tell application "Finder" to eject (every disk whose ejectable is true)' 2>/dev/null \

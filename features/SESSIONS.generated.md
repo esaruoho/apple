@@ -10,12 +10,6 @@
 
 **7 card conversations** plugged in:
 
-### `790216b4-ab37-4432-bf12-2b492c424964`  (2026-10-01)
-- Resume: `claude --resume 790216b4-ab37-4432-bf12-2b492c424964`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/790216b4-ab37-4432-bf12-2b492c424964.jsonl
-- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
-- Cards touched (2): converse-to-obsidian.feature, fm-converse.feature
-
 ### `74eca925-9055-4719-bcc9-f613827152ee`  (2026-10-06)
 - Resume: `claude --resume 74eca925-9055-4719-bcc9-f613827152ee`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/74eca925-9055-4719-bcc9-f613827152ee.jsonl
@@ -51,3 +45,9 @@
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/dccd82e7-a39d-4b60-b766-ecc77b92579f.jsonl
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
 - Cards touched (2): converse-to-obsidian.feature, fm-converse.feature
+
+### `cfa8c45f-fde4-49b4-8c7d-f7ecf2b3acf0`  (2026-10-26 → 2026-10-29)
+- Resume: `claude --resume cfa8c45f-fde4-49b4-8c7d-f7ecf2b3acf0`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/cfa8c45f-fde4-49b4-8c7d-f7ecf2b3acf0.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (5): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, converse-to-obsidian.feature, fm-converse.feature

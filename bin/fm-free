@@ -81,8 +81,15 @@ try:
     used = d.get("model") or "FreeLLMAPI/auto"
     prov = d.get("provider")
     label = f"{prov}/{used}" if prov else used
+    choice = d["choices"][0]
+    finish = choice.get("finish_reason")
+    if finish == "length":
+        sys.exit(f"fm-free: {label} hit its output-token limit; refusing to return a truncated answer")
+    content = choice.get("message", {}).get("content")
+    if not isinstance(content, str) or not content.strip():
+        sys.exit(f"fm-free: {label} returned an empty answer (finish_reason={finish!r})")
     print(label)                                   # line 1: which model answered
-    print(d["choices"][0]["message"]["content"])   # line 2+: the reply
+    print(content)                                 # line 2+: the reply
 except SystemExit: raise
 except Exception:
     sys.exit("fm-free: unexpected response:\n" + raw[:500])

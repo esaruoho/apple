@@ -6,7 +6,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 ## Contents
 
-- [Owner emails deliver complete PDF material and analyses to AIMEAT](#aimeat-email-pdf) — `aimeat-email-pdf.feature`
+- [Owner emails deliver complete PDF and text material and analyses to AIMEAT](#aimeat-email-pdf) — `aimeat-email-pdf.feature`
 - [A text file in the AIMEAT folder receives a grounded MLX roundtable beside it](#aimeat-roundtable) — `aimeat-roundtable.feature`
 - [One selected archive folder gets a reviewed preparation before paid whiteboard generation](#aimeat-whiteboard) — `aimeat-whiteboard.feature`
 - [Capture one application's audio to a .wav without a loopback driver](#app-audio-record) — `app-audio-record.feature`
@@ -69,22 +69,23 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 
 <a id="aimeat-email-pdf"></a>
-## Owner emails deliver complete PDF material and analyses to AIMEAT
+## Owner emails deliver complete PDF and text material and analyses to AIMEAT
 
 `features/aimeat-email-pdf.feature` · [session](aimeat-email-pdf.session.md)
 
-**Behaviour (6 scenarios):**
+**Behaviour (7 scenarios):**
 
 - Owner PDF intake is durable and does not answer twice — `@built @sim-verified`
 - Every PDF page and every text section is considered — `@built @sim-verified @runtime-verified`
+- Owner text attachments use the same durable AIMEAT analysis path — `@built @runtime-untested`
 - The laptop receives the original and actual returned results — `@built @sim-verified`
 - Substack analysis mail is sent only after every requested analysis is complete — `@code-verified @sim-verified`
 - Wordclouds use a black canvas and readable title — `@built @runtime-verified`
 - Compute stays on CloudcityMacMini — `@stock @sim-verified`
 
-**How it does it:** **Key procs:** `shared/aimeat_mail.py`, `roundtable/install_mail.py`, `test_aimeat_source.py`, `bin/mail-pdf-text.swift`, `scripts/wordcloud-dark.py`, `eligible`, `process_pending`, `extract_pdf`, `bounded_source_step`, `require_complete_analysis`, `analysis_html`, `stage_handler`, `install_handler` · **Source files:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `roundtable/bridge.py`, `shared/cloud_assets.py`, `roundtable/install_mail.py`, `test_aimeat_source.py`, `scripts/wordcloud-dark.py`
+**How it does it:** **Key procs:** `shared/aimeat_mail.py`, `shared/free_energy_analysis.py`, `bin/mail-free-energy-analysis`, `bin/freellmask-mail`, `roundtable/install_mail.py`, `test_aimeat_source.py`, `bin/mail-pdf-text.swift`, `eligible`, `text_attachments`, `is_text_source`, `process_pending`, `extract_pdf`, `bounded_source_step`, `require_complete_analysis`, `advance` · **Source files:** `shared/aimeat_mail.py`, `bin/mail-pdf-text.swift`, `shared/free_energy_analysis.py`, `roundtable/bridge.py`, `shared/cloud_assets.py`, `roundtable/install_mail.py`, `test_aimeat_source.py`, `scripts/wordcloud-dark.py`
 
-**Grade:** @built ×4 · @code-verified ×1 · @runtime-verified ×2 · @sim-verified ×5 · @stock ×1
+**Grade:** @built ×5 · @code-verified ×1 · @runtime-untested ×1 · @runtime-verified ×2 · @sim-verified ×5 · @stock ×1
 
 
 <a id="aimeat-roundtable"></a>
@@ -610,7 +611,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/free-energy-lens-voices.feature`
 
-**What it does:** As the operator of Cloudcity's free-energy workflows I want Russell, Bearden, Prigogine, and Hilarion lens output to be controlled by one switch So that cloudcity-llm replies and KeelyNet batch emails can turn those voices on or off together Background: Given the shared switch is named `FREE_ENERGY_LENS_VOICES` And truthy values are `1`, `true`, `yes`, and `on` And falsey values are `0`, `false`, `no`, and `off` And the recognised lens names are `russell`, `bearden`, `prigogine`, and `hilarion`
+**What it does:** As the operator of Cloudcity's free-energy workflows I want Russell, Bearden, Prigogine, Hilarion, Steinmetz, and Don Smith lens output to be controlled by one switch So that cloudcity-llm replies and KeelyNet batch emails can turn those voices on or off together Background: Given the shared switch is named `FREE_ENERGY_LENS_VOICES` And truthy values are `1`, `true`, `yes`, and `on` And falsey values are `0`, `false`, `no`, and `off` And the recognised lens names are `russell`, `bearden`, `prigogine`, `hilarion`, `steinmetz`, and `don-smith`
 
 **Behaviour (7 scenarios):**
 

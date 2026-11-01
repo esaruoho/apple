@@ -146,6 +146,17 @@ Arm the Apple skill into the Mini's on-device chat brain  —  17 scenarios   (f
   triad: .session✓  transcript✗  RESULT✓
   honesty: 15/17 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+converse-to-obsidian — linked Markdown views of Converse sessions  —  7 scenarios   (features/converse-to-obsidian.feature)
+  - [@built] A named Converse session exports to linked Markdown
+  - [@built] Existing fm-converse memory is usable before livefile turn loggi
+  - [@built] Future livefile agent events take precedence over cache state
+  - [@built] The shared publisher updates Scaff and the Obsidian vault from o
+  - [@built @build-verified] Converse.app automatically calls the shared publisher after repl
+  - [@built] fm-converse automatically calls the shared publisher after captu
+  - [@built] Booting Converse.app automatically populates the vault after a m
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 7/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 On-device dictation button  —  10 scenarios   (features/dictation-button.feature)
   - [@verified] A fresh engine is idle
   - [@verified] On-device recognition is preferred (audio stays local)
@@ -214,7 +225,7 @@ Fleet shows each Mac once, correctly named, and one click screen-shares to it  �
   triad: .session✓  transcript✗  RESULT✓
   honesty: 1/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
-fm-converse — a remembering conversation with the on-device LLM  —  8 scenarios   (features/fm-converse.feature)
+fm-converse — a remembering conversation with the on-device LLM  —  13 scenarios   (features/fm-converse.feature)
   - [@built] A follow-up question keeps the prior context
   - [@built] Replay stays inside the 4096-token FoundationModels window
   - [@built] Markdown renders as ANSI on a terminal, plain when piped
@@ -222,9 +233,14 @@ fm-converse — a remembering conversation with the on-device LLM  —  8 scenar
   - [@built @untested] A file path is read and summarised instead of sent literally
   - [@built @untested] Context-overflow self-heal retries without history
   - [@built] The conversation is keyed to the newest Converse session dir
-  - [@built] Stored conversation is volatile and reportcard-less
-  triad: .session✗  transcript✗  RESULT✓
-  honesty: 8/8 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+  - [@built] Stored conversation remains replay memory while the livefile is 
+  - [@built] A terminal fm-converse turn becomes a Converse-shaped livefile
+  - [@built] Converse.app-owned turns are not duplicated by fm-converse
+  - [@built] Captured fm-converse turns are pushed to Scaff
+  - [@built] A flubuild turn uses the same replay memory and livefile transcr
+  - [@build-verified] Flubuild budgets input with the server tokenizer and exposes HTT
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 13/13 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 chat/ask answers are banked to a FoundationModels Knowledgebank  —  5 scenarios   (features/fm-knowledgebank.feature)
   - [@verified] a chat answer from the on-device model is appended to the bank
@@ -328,6 +344,36 @@ Read HomePod temperature + humidity from the laptop, live and on demand  —  7 
   triad: .session✓  transcript✓  RESULT✓
   honesty: 2/7 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Copy iCloud Drive files and folders to external storage without Finder errors  —  26 scenarios   (features/icdcopy.feature)
+  - [@built] latest folder ranking can be copied by number
+  - [@built] folder ranking rows are actual folders
+  - [@built] folder ranking defaults to useful iCloud scope and reports scan 
+  - [@built] folder ranking table has stable aligned numeric columns
+  - [@built] AbletonCloud can be ranked without typing the long iCloud path
+  - [@built] command has the one-and-done shape Esa asked for
+  - [@built] copy is resumable after iCloud or disk interruption
+  - [@built] verification is checksum-based before success is claimed
+  - [@built] Finder metadata does not make a verified copy fail
+  - [@built] verification differences are repaired automatically
+  - [@built] iCloud files are explicitly materialized before rsync copy
+  - [@built] Apple FileProvider enums are hidden in normal use
+  - [@built] stalled download progress says elapsed time and timeout remainin
+  - [@built] interrupted iCloud download phase exits cleanly
+  - [@built] a stuck iCloud download fails with the exact file instead of han
+  - [@built] slow iCloud completion is allowed to finish in one command
+  - [@built] resident bytes count as ready even if FileProvider status is sta
+  - [@built] zero visible progress is reported but not treated as failure
+  - [@built] wrapper script stays parse-clean after shell edits
+  - [@built] source data is never deleted by the wrapper
+  - [@built] quoted Terminal-escaped paths are accepted
+  - [@built @sim-verified] icdcheck confirms a fully-local folder is PERFECT
+  - [@built @sim-verified] icdcheck flags dataless placeholders and in-flight downloads
+  - [@built] icdcheck never triggers a download (read-only audit)
+  - [@built] icdcheck emits machine-readable JSON for tooling
+  - [@built] icdcheck reuses the materializer engine rather than re-rolling s
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 26/26 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 image-playground — on-device pictures, locally, as the prose's twin  —  16 scenarios   (features/image-playground.feature)
   - [@built] The CLI generates an image from a prompt
   - [@built] Bare prompt → derived filename, auto-open
@@ -355,6 +401,15 @@ An iPhone photo, on the Mac clipboard, the way you took it  —  4 scenarios   (
   - [@built] Disarm / re-arm cycle behaves
   triad: .session✗  transcript✗  RESULT✓
   honesty: 4/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
+Read the iPhone Compass onto the Mac and point out East  —  5 scenarios   (features/iphone-compass.feature)
+  - [@stock] The Mac cannot read iPhone heading via CoreLocation
+  - [@built] Parse the heading from Compass OCR text
+  - [@built] Compute the rotation to face East
+  - [@built @hw-verified] Launch Compass on the phone from the Mac (no custom app)
+  - [@built] End-to-end live read from a tethered phone
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 4/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen  —  33 scenarios   (features/iphonemirror-rotated-live-mirror.feature)
   - [@built @hw-verified] A Lightning iPhone is found at all
@@ -392,6 +447,21 @@ iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen
   - [@todo] recburn can bake the phone feed in directly
   triad: .session✓  transcript✗  RESULT✓
   honesty: 32/33 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
+Free Energy documents retain the complete editorial format across entry points  —  4 scenarios   (features/mail-material-editor-contract.feature)
+  - [@built @sim-verified] Free Energy material invokes the same full editor
+  - [@built @sim-verified] Missing sections cannot pass as successful analysis
+  - [@built @sim-verified] Other topics retain their routed viewpoint
+  - [(no grade)] Correct the incomplete Milewski email
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 3/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
+Deliver analysis when returned original attachments exceed the mail service limit  —  3 scenarios   (features/mail-reply-attachment-fallback.feature)
+  - [@built @sim-verified] Explicit size rejection permits a smaller reply
+  - [@built @sim-verified] Ambiguous errors preserve the at-most-once contract
+  - [(no grade)] Recover the actual Milewski PDF request
+  triad: .session✓  transcript✗  RESULT✓
+  honesty: 2/3 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
 mailfe is a reusable Convey belt from source material to emailed analysis  —  14 scenarios   (features/mailfe-convey-belt.feature)
   - [@built] the front door accepts stdin as a source
@@ -589,6 +659,14 @@ Lift the voice against the app audio, measured not guessed  —  10 scenarios   
   triad: .session✓  transcript✗  RESULT✓
   honesty: 7/10 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+Install and verify compatible Whisper dependencies  —  4 scenarios   (features/recburn-whisper-deps.feature)
+  - [(no grade)] Check the actual Whisper runtime without installing packages
+  - [@built] Install a compatible dependency family together
+  - [(no grade)] Real recording transcribes after dependency repair
+  - [(no grade)] Subtitle burn-in exports the real recording
+  triad: .session✓  transcript✓  RESULT✓
+  honesty: 1/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Burn a live click counter into a screen recording  —  13 scenarios   (features/recburnclick.feature)
   - [@hw-verified] counting clicks needs NO event tap and NO Accessibility prompt  
   - [@hw-verified] the number is really in the pixels  (ran live 2026-07-29)
@@ -670,6 +748,14 @@ Live Spotlight-style suggestions in AppleBar  —  5 scenarios   (features/spotl
   triad: .session✓  transcript✗  RESULT✓
   honesty: 4/5 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
 
+A conveyed video yields a readable transcript and its analyses  —  4 scenarios   (features/transcript-vault-email-analysis.feature)
+  - [(no grade)] Save the exact response before attempting mail delivery
+  - [(no grade)] Analyses arrive after the transcript through Syncthing
+  - [@runtime-untested] Normal video completion includes saved analysis
+  - [@stock] Machine output does not close the deep-analysis backlog
+  triad: .session✓  transcript✓  RESULT✓
+  honesty: 0/4 scenario(s) claim working but have no Convey runner — unverified by Convey (declared grades trusted)
+
 Recover a wedged USB-C port without losing the work on the machine  —  14 scenarios   (features/usb-port-revive.feature)
   - [@built @hw-verified] Classify a fault that only a restart recovered
   - [@built @hw-verified] launchd service churn must not be mistaken for bus activity
@@ -722,5 +808,3 @@ A Voice Memo tagged #audio becomes a .wav sample on disk  —  4 scenarios   (fe
 Indexed in atlas → /Users/esaruoho/work/apple/atlas/INDEX.md
 ```
 
-
-- [Transcript Vault automatic email analysis](transcript-vault-email-analysis.feature) — exact composed responses, linked analysis children, Syncthing return; [session](transcript-vault-email-analysis.session.md).
