@@ -43,12 +43,17 @@ def _default_html(text: str) -> str:
                 f"<pre style='white-space:pre-wrap'>{_html.escape(text)}</pre></body></html>")
 
 
-def agentmail_send(subject: str, text: str, to, *, inbox: str | None = None,
+def agentmail_send(subject: str, text: str, to, *, cc=None, inbox: str | None = None,
                    html: str | None = None, attachments: list | None = None,
-                   timeout: int = 60, quiet: bool = False) -> bool:
-    """Send one fresh email from an AgentMail inbox. Returns True on 2xx, False otherwise.
+                   timeout: int = 60, quiet: bool = False):
+    """Send one fresh email from an AgentMail inbox.
+
+    Returns the parsed AgentMail response dict on success (TRUTHY — so `if agentmail_send(...)`
+    still reads as a boolean, and callers that need threading can read `.get("message_id")` /
+    `.get("thread_id")`), or None on failure.
 
     to          : a single address (str) or a list of addresses.
+    cc          : optional single address or list.
     inbox       : sending inbox; defaults to AGENTMAIL_INBOX env or cloudcity-llm@agentmail.to.
     html        : explicit HTML body; if None it is rendered from `text`.
     attachments : optional AgentMail attachment dicts. On HTTP 413 they are DROPPED and the
@@ -58,21 +63,29 @@ def agentmail_send(subject: str, text: str, to, *, inbox: str | None = None,
     if not key:
         if not quiet:
             print("agentmail_send: no AGENTMAIL_API_KEY and no ~/.agentmail.key — not sending")
-        return False
+        return None
     inbox = inbox or os.environ.get("AGENTMAIL_INBOX") or DEFAULT_INBOX
     to_list = [to] if isinstance(to, str) else list(to)
     body = {"to": to_list, "subject": subject, "text": text, "html": html or _default_html(text)}
+    if cc:
+        body["cc"] = [cc] if isinstance(cc, str) else list(cc)
     if attachments:
         body["attachments"] = list(attachments)
     url = f"{AM_BASE}/inboxes/{urllib.parse.quote(inbox, safe='')}/messages/send"
 
-    def _post(payload: dict) -> bool:
+    def _post(payload: dict):
         req = urllib.request.Request(
             url, data=json.dumps(payload).encode("utf-8"),
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
             method="POST")
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            return resp.status in (200, 201, 202)
+            raw = resp.read().decode("utf-8", "replace") if resp.status in (200, 201, 202) else ""
+            if resp.status not in (200, 201, 202):
+                return None
+            try:
+                return json.loads(raw) if raw.strip() else {}
+            except json.JSONDecodeError:
+                return {}
 
     try:
         return _post(body)
@@ -86,11 +99,11 @@ def agentmail_send(subject: str, text: str, to, *, inbox: str | None = None,
             except Exception as e2:
                 if not quiet:
                     print(f"agentmail_send: retry failed: {e2}")
-                return False
+                return None
         if not quiet:
             print(f"agentmail_send: HTTP {e.code}: {e}")
-        return False
+        return None
     except Exception as e:
         if not quiet:
             print(f"agentmail_send: send failed: {e}")
-        return False
+        return None
