@@ -21,6 +21,12 @@ ROOT = Path(__file__).resolve().parents[1]
 ACTIONS = Path.home()/'work/convey/convey/actions'
 
 STOPWORDS = set('a an and are as at be been being but by can could did do does for from had has have he her hers him his how i if in into is it its may might more most must my no not of on or our ours she should so than that the their theirs them then there these they this those to too up us very was we were what when where which who will with would you your'.split())
+# URL / web noise: URLs are stripped whole before tokenizing, these catch leftovers.
+STOPWORDS.update('http https www com org net edu gov io co html htm href src url uri ftp mailto'.split())
+
+# Strip whole URLs before tokenizing so "https"/"substack"/"com" never become tokens.
+# `\S+` after a fixed prefix is linear — no catastrophic backtracking.
+URL_RE = re.compile(r"(?:https?://|ftp://|www\.|mailto:)\S+", re.IGNORECASE)
 
 
 def render_wordcloud_fallback(source, output):
@@ -28,7 +34,8 @@ def render_wordcloud_fallback(source, output):
     from PIL import Image, ImageDraw, ImageFont
 
     source, output = Path(source), Path(output)
-    tokens = re.findall(r"[a-z][a-z0-9'-]{2,29}", source.read_text(encoding='utf-8').lower())
+    text = URL_RE.sub(' ', source.read_text(encoding='utf-8').lower())
+    tokens = re.findall(r"[a-z][a-z0-9'-]{2,29}", text)
     counts = Counter(token.strip("'-") for token in tokens)
     counts = Counter({word: count for word, count in counts.items()
                       if word not in STOPWORDS and not word.isdigit()})
