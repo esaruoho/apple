@@ -885,16 +885,28 @@ REPLIED   = Path(os.environ.get("FREELLMASK_MAIL_REPLIED", Path.home()/"work"/"c
 THREAD_MAX_PER_HOUR = int(os.environ.get("FREELLMASK_MAIL_THREAD_MAX_HOUR", "4"))
 
 def replied_load():
-    """(set of replied mids, {thread_id: [epoch,…]}). Best-effort — never raises into the poll loop."""
-    mids=set(); threads={}
+    """(set of replied mids, {thread_id: [epoch,…]}). Best-effort — never raises into the poll loop.
+
+    A `retract:true` record UN-claims a mid. The poll loop claims a message in this ledger BEFORE it
+    generates/sends (an anti-storm claim-up-front), but a claim that then FAILS to send (429 re-queue,
+    pre-send exception, gated hold) must not permanently burn the message: those branches now append a
+    retraction, so the next poll sees the mid as un-replied and retries it. Last writer wins per mid, so
+    a real reply after a retraction re-claims it. Threads are rebuilt only from surviving claims, so a
+    retracted claim also doesn't count toward the per-thread hourly ceiling."""
+    recs={}
     try:
         for line in REPLIED.read_text().splitlines():
             try: r=json.loads(line)
             except Exception: continue
-            if r.get("mid"): mids.add(r["mid"])
-            t=r.get("thread")
-            if t: threads.setdefault(t, []).append(float(r.get("t") or 0))
+            mid=r.get("mid")
+            if not mid: continue
+            if r.get("retract"): recs.pop(mid, None)
+            else: recs[mid]=r
     except Exception: pass
+    mids=set(recs); threads={}
+    for r in recs.values():
+        t=r.get("thread")
+        if t: threads.setdefault(t, []).append(float(r.get("t") or 0))
     return mids, threads
 
 def replied_seed(k, msgs):
@@ -929,6 +941,23 @@ def replied_add(mid, thread, subject="", t=None):
             f.write(json.dumps({"mid":mid,"thread":thread,"subj":(subject or "")[:120],
                                 "t":float(t if t is not None else time.time()),
                                 "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
+    except Exception: pass
+
+def replied_retract(mid, replied_mids=None, replied_threads=None, thread=None):
+    """Un-claim a mid we claimed up front but could NOT send (a definite PRE-send failure), so the next
+    poll retries it instead of the claim silently burning the message forever. Append-only: a later real
+    reply re-claims it. Also updates the in-run sets so the current poll is consistent. NEVER call this
+    after the POST — a send that errors client-side may still have gone out (at-most-once wins there)."""
+    if not mid: return
+    try:
+        with REPLIED.open("a") as f:
+            f.write(json.dumps({"mid":mid,"retract":True,
+                                "t":time.time(),"ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
+    except Exception: pass
+    try:
+        if replied_mids is not None: replied_mids.discard(mid)
+        if replied_threads is not None and thread and thread in replied_threads and replied_threads[thread]:
+            replied_threads[thread].pop()
     except Exception: pass
 
 def _epoch(ts):
@@ -2151,6 +2180,10 @@ def poll_once(verbose=True):
                 _email_owner_approval(k, frm_full, _sem, _gspace, full.get("subject","(no subject)"),
                                       (question or raw_body or ""), _pid)
                 print(f"  🚦 gated [{_gspace}] from {_sem} → held for approval (asked Esa)")
+                # Held ≠ replied. Un-claim the up-front claim, else a later `approve` un-sees the message
+                # but ANTI-LOOP 1 still blocks it on the replied-ledger and the approved sender is never
+                # answered. The approval-release discards `seen`; this discards the claim to match.
+                replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
                 seen.add(mid); new+=1; continue
         # BARE VIDEO: an email that is essentially just a YouTube link is a "convey this video"
         # request, NOT a question. The model CANNOT watch the video — answering it hallucinates the
@@ -2302,10 +2335,20 @@ def poll_once(verbose=True):
                     answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp, lens=lens,
                                                model_override=card.get("model",""))
             except Exception as e:
-                print(f"  research failed for {mid}: {e}"); continue
+                # fm_research threw BEFORE any send → un-claim (we claimed up front) so the next poll
+                # retries, and DEBUG-LOG it to the synced file (a bare print vanished — that is why the
+                # Nov-3 "Fwd: Next Energy Revolution" drop left no trace). Never silently burn a message.
+                print(f"  research failed for {mid}: {e}")
+                debug_log("research-exception", mid, full.get("subject","(no subject)"),
+                          question=question, note=f"fm_research raised (not sent); un-claimed, retries next poll: {e}")
+                replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
+                continue
             if _is_requeue(answer):
                 # Not sendable this pass → do NOT send, do NOT mark seen (next poll retries fresh), and
                 # DEBUG-LOG it (flagged + saved) so the failure is visible, never silently emitted.
+                # The message was CLAIMED up front (anti-storm); un-claim it here or ANTI-LOOP 1 would
+                # see the claim on the next poll and block the retry forever — the silent-drop bug that
+                # burned every 429'd forward Nov 2+ (claimed-but-never-sent). Retry is the whole intent.
                 kind = ("no-thinking-heading" if _is_requeue(answer, REQUEUE_NO_THINKING)
                         else "model-bailed")
                 _why = _requeue_why(answer)
@@ -2314,6 +2357,7 @@ def poll_once(verbose=True):
                       f"— will retry next poll")
                 debug_log(kind, mid, subj, question=question,
                           note=f"re-queued (not sent); will retry next poll. causes: {_why or 'n/a'}")
+                replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
                 continue
             prov = {
                 "origin": "inbound-email",
