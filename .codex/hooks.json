@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '<<APPLE SKILL ACTIVE>> Invoke the apple skill via the Skill tool before responding.'"
+          }
+        ]
+      }
+    ]
+  }
+}

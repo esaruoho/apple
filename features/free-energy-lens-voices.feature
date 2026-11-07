@@ -28,14 +28,14 @@
 
 Feature: Free-energy lens voices are a shared switch
   As the operator of Cloudcity's free-energy workflows
-  I want Russell, Bearden, Prigogine, and Hilarion lens output to be controlled by one switch
+  I want Russell, Bearden, Prigogine, Hilarion, Steinmetz, and Don Smith lens output to be controlled by one switch
   So that cloudcity-llm replies and KeelyNet batch emails can turn those voices on or off together
 
   Background:
     Given the shared switch is named `FREE_ENERGY_LENS_VOICES`
     And truthy values are `1`, `true`, `yes`, and `on`
     And falsey values are `0`, `false`, `no`, and `off`
-    And the recognised lens names are `russell`, `bearden`, `prigogine`, and `hilarion`
+    And the recognised lens names are `russell`, `bearden`, `prigogine`, `hilarion`, `steinmetz`, and `don-smith`
 
   @built
   Scenario: cloudcity-llm includes lens voices for free-energy routed mail
@@ -43,7 +43,7 @@ Feature: Free-energy lens voices are a shared switch
     And `FREE_ENERGY_LENS_VOICES=1`
     When cloudcity-llm generates the reply
     Then the reply includes the normal answer
-    And it includes sections for Walter Russell, Tom Bearden, Ilya Prigogine, and Hilarion
+    And it includes sections for Walter Russell, Tom Bearden, Ilya Prigogine, Hilarion, Charles Proteus Steinmetz, and Don Smith
     And those sections are generated from the same source context as the answer
 
   @built
@@ -52,7 +52,7 @@ Feature: Free-energy lens voices are a shared switch
     And `FREE_ENERGY_LENS_VOICES=0`
     When cloudcity-llm generates the reply
     Then the reply still uses the committed free-energy viewpoint
-    But it does not require or emit Russell, Bearden, Prigogine, or Hilarion sections
+    But it does not require or emit Russell, Bearden, Prigogine, Hilarion, Steinmetz, or Don Smith sections
 
   @built
   Scenario: KeelyNet batch emails can include the same lens voices
@@ -60,7 +60,7 @@ Feature: Free-energy lens voices are a shared switch
     And `FREE_ENERGY_LENS_VOICES=1`
     When it builds the main prompt
     Then the main analysis includes a compact `Cross-Lens Reads` section
-    And that section contains Russell, Bearden, Prigogine, and Hilarion lens reads
+    And that section contains Russell, Bearden, Prigogine, Hilarion, Steinmetz, and Don Smith lens reads
     And the lens reads do not repeat wrapper facts like `KeelyNet`, `ENERGY`, or `ASCII file`
 
   @built
@@ -91,6 +91,6 @@ Feature: Free-energy lens voices are a shared switch
     Given an inbound AgentMail message routes to `apple`, `admin`, `music`, `spirituality`, or `general`
     And `FREE_ENERGY_LENS_VOICES=1`
     When cloudcity-llm replies
-    Then Russell, Bearden, Prigogine, and Hilarion sections are suppressed
+    Then Russell, Bearden, Prigogine, Hilarion, Steinmetz, and Don Smith sections are suppressed
     And the answer follows the routed space instead
 

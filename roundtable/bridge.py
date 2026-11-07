@@ -55,9 +55,12 @@ def fold_roster(text: str) -> str:
     return "\n".join(out) + "\n"
 
 
-def prepare_roster(convey: Path) -> list[str]:
+def prepare_roster(convey: Path, brain: str = "mlx") -> list[str]:
     sys.path.insert(0, str(convey.resolve().parents[1]))
     from convey import roster
+    if brain not in ("mlx", "flubuild"):
+        raise ValueError("unsupported roundtable brain")
+    roster_name = "aimeat-sages" if brain == "mlx" else "aimeat-sages-" + brain
     directory = roster.roster_dir()
     source = directory / "sages.yaml"
     if not source.is_file():
@@ -82,10 +85,10 @@ def prepare_roster(convey: Path) -> list[str]:
         if name not in ordered_people:
             ordered_people[name] = person
     people = ordered_people
-    lines = ["# Generated from the installed full bench; edit the original rosters.", "name: aimeat-sages", "participants:"]
+    lines = ["# Generated from the installed full bench; edit the original rosters.", f"name: {roster_name}", "participants:"]
     for person in people.values():
         lines.append(f"  - name: {person['name']}")
-        person["brain"] = "mlx"  # This service is explicitly a Qwen/MLX panel.
+        person["brain"] = brain  # Shared personas, explicit selected backend; no fallback.
         # Resolve a legacy home-directory skill alias from installed locations.
         if person.get("knows") and not Path(person["knows"]).expanduser().is_file():
             aliases = [Path.home() / ".agents/skills/rhythmic-balanced-interchange/SKILL.md",
@@ -99,7 +102,7 @@ def prepare_roster(convey: Path) -> list[str]:
             if person.get(key):
                 lines.append(f"    {key}: {person[key]}")
     text = "\n".join(lines) + "\n"
-    derived = directory / "aimeat-sages.yaml"
+    derived = directory / (roster_name + ".yaml")
     if not derived.exists() or derived.read_text() != text:
         atomic_text(derived, text)
     return list(people)
@@ -150,13 +153,16 @@ def candidates(folder: Path, stable_seconds: float) -> list[Path]:
             and now - p.stat().st_mtime >= stable_seconds]
 
 
-def job_for(source: Path, data: bytes, seats: str, turns: int) -> tuple[Path, dict]:
+def job_for(source: Path, data: bytes, seats: str, turns: int, brain: str = "mlx") -> tuple[Path, dict]:
     sha = hashlib.sha256(data).hexdigest()
-    jid = hashlib.sha256(json.dumps([source.name, sha, seats, turns]).encode()).hexdigest()[:24]
+    identity = [source.name, sha, seats, turns]
+    if brain != "mlx":
+        identity.append(brain)
+    jid = hashlib.sha256(json.dumps(identity).encode()).hexdigest()[:24]
     directory = source.parent / ".roundtable" / jid
     state = read_json(directory / "state.json") or {
         "schema": SCHEMA, "id": jid, "source": source.name, "sha256": sha,
-        "seats": seats, "turns_per_section": turns, "status": "queued",
+        "seats": seats, "turns_per_section": turns, "brain": brain, "status": "queued",
         "completed": [], "attempts": 0, "created": time.time(),
     }
     return directory, state
@@ -203,7 +209,7 @@ def render(source: Path, job: Path, state: dict) -> None:
     lines = [f"# Roundtable — {source.name}", "",
              "AI-generated persona interpretations grounded in the configured corpora.",
              "These are not quotations or statements by the historical people.", "",
-             f"Status: **{state['status']}** · Panel: {state['seats']} · Brain: Qwen via MLX",
+             f"Status: **{state['status']}** · Panel: {state['seats']} · Brain: {state.get('brain', 'mlx')}",
              f"Source SHA-256: `{state['sha256']}`", "",
              f"Sections completed: {len(state['completed'])}/{state.get('sections', 0)}", ""]
     if state.get("error"):
@@ -298,24 +304,24 @@ def running_mlx_model() -> str:
     raise RuntimeError("Mini reports multiple models without a matching worker heartbeat; refusing to select weights")
 
 
-def verify_panel(convey: Path, seats: str) -> None:
+def verify_panel(convey: Path, seats: str, brain: str = "mlx") -> None:
     require_mini()
-    prepare_roster(convey)
+    prepare_roster(convey, brain)
     # load_roster falls back to classic when the file is missing. Fail explicitly
     # rather than quietly substitute generic personas for the requested figures.
     sys.path.insert(0, str(convey.resolve().parents[1]))
     from convey import roster
     if "sages" not in roster.available():
         raise RuntimeError("Sages roster is not installed on this machine")
-    panel = {p["name"]: p for p in roster.load_roster("aimeat-sages", "mlx")}
+    panel = {p["name"]: p for p in roster.load_roster("aimeat-sages" if brain == "mlx" else "aimeat-sages-" + brain, brain)}
     for name in (list(panel) if seats == "all" else seats.split(",")):
         if name not in panel:
             raise RuntimeError(f"Sages persona missing: {name}")
         p = panel[name]
         if p["stance"] in {">", ">-", "|", "|-"}:
             raise RuntimeError(f"{name}'s persona prose was not parsed")
-        if p["brain"] != "mlx":
-            raise RuntimeError(f"{name} is not configured for MLX")
+        if p["brain"] != brain:
+            raise RuntimeError(f"{name} is not configured for {brain}")
         if name in ("Bearden", "Prigogine", "Russell", "Hilarion"):
             corpus = Path(p.get("knows", "")).expanduser()
             if not corpus.is_file() or not corpus.stat().st_size:
@@ -335,10 +341,10 @@ def source_instructions(source):
 
 async def process(source: Path, *, convey: Path = DEFAULT_CONVEY, seats: str = SEATS,
                   turns: int = 0, timeout: float = 1500, retry: bool = False,
-                  runner=stream_section, preflight=verify_panel) -> dict:
+                  runner=stream_section, preflight=verify_panel, brain: str = "mlx") -> dict:
     if seats == "all":
         require_mini()
-        seats = ",".join(prepare_roster(convey))
+        seats = ",".join(prepare_roster(convey, brain))
     turns = turns or 2 * len(seats.split(","))
     if source.is_symlink() or source.suffix.lower() not in (".txt", ".md"):
         raise ValueError("submit a regular UTF-8 .txt or .md file")
@@ -348,7 +354,7 @@ async def process(source: Path, *, convey: Path = DEFAULT_CONVEY, seats: str = S
         raise ValueError("empty text file")
     if len(data) > 1024 * 1024:
         raise ValueError("text exceeds the 1 MiB per-document processing limit")
-    job, state = job_for(source, data, seats, turns)
+    job, state = job_for(source, data, seats, turns, brain)
     if state["status"] == "complete":
         state.setdefault("host", socket.gethostname().split(".")[0].lower())
         result, status = output_paths(source)
@@ -375,8 +381,11 @@ async def process(source: Path, *, convey: Path = DEFAULT_CONVEY, seats: str = S
     atomic_text(job / "source.txt", text)
     render(source, job, state)
     try:
-        preflight(convey, seats)
-        if runner is stream_section:
+        if brain == "mlx":
+            preflight(convey, seats)
+        else:
+            preflight(convey, seats, brain=brain)
+        if runner is stream_section and brain == "mlx":
             os.environ["FM_MLX_MODEL"] = running_mlx_model()
         for index, (start, end, chunk) in enumerate(parts):
             if index in state["completed"]:
@@ -384,7 +393,7 @@ async def process(source: Path, *, convey: Path = DEFAULT_CONVEY, seats: str = S
             board = job / f"section-{index + 1:04}.txt"
             atomic_text(board, chunk)
             topic = f"Discuss {source.name}: section {index + 1}/{len(parts)}"
-            command = [str(convey), "roundtable", topic, "--roster", "aimeat-sages", "--brain", "mlx",
+            command = [str(convey), "roundtable", topic, "--roster", "aimeat-sages" if brain == "mlx" else "aimeat-sages-" + brain, "--brain", brain,
                        "--seat", seats, "--turns", str(turns), "--no-speak", "--jsonl",
                        "--board", str(board), "--context-budget", "18000",
                        "--inject", source_instructions(source)]
@@ -414,6 +423,7 @@ def main() -> int:
     ap.add_argument("--folder", type=Path, default=DEFAULT_FOLDER)
     ap.add_argument("--convey", type=Path, default=DEFAULT_CONVEY)
     ap.add_argument("--seats", default=SEATS)
+    ap.add_argument("--brain", choices=["mlx", "flubuild"], default="mlx")
     ap.add_argument("--turns", type=int, default=0, help="0 = two full panel rounds")
     ap.add_argument("--poll", type=float, default=3)
     ap.add_argument("--stable-seconds", type=float, default=5)
@@ -434,7 +444,7 @@ def main() -> int:
         try:
             require_mini()
             if args.seats == "all":
-                args.seats = ",".join(prepare_roster(args.convey))
+                args.seats = ",".join(prepare_roster(args.convey, args.brain))
         except RuntimeError as exc:
             ap.error(str(exc))
     SEAT_ALIASES = {"ilya": "Prigogine", "tom": "Bearden", "walter": "Russell"}
@@ -486,7 +496,7 @@ def main() -> int:
                     write_json(hb, {"schema": SCHEMA, "ts": time.time(), "status": "running", "source": path.name})
                 try:
                     state = asyncio.run(process(path, convey=args.convey, seats=SEATS if auto_seats else args.seats,
-                                                turns=0 if auto_turns else args.turns, timeout=args.timeout, retry=args.retry))
+                                                turns=0 if auto_turns else args.turns, timeout=args.timeout, retry=args.retry, brain=args.brain))
                     print(f"{state['status']}: {path.name}", flush=True)
                     failed |= state["status"] != "complete"
                 except (OSError, UnicodeError, ValueError) as exc:

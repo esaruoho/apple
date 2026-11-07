@@ -1,0 +1,267 @@
+#!/usr/bin/env python3
+# REPORT-CARD >> features/converse-to-obsidian.feature
+"""Render a Converse session as Obsidian-readable linked Markdown.
+
+The source of truth is the Converse session directory. Prefer livefile.jsonl
+agent events; fall back to ~/.cache/fm-converse/<session>.json so today's
+fm-converse/MLX sessions can be exported before Converse.app writes every turn
+into the livefile itself.
+
+Examples:
+  converse-to-obsidian mlx-apple-20260826-212515 --repo ~/work/scaff
+  converse-to-obsidian ~/work/converse/sessions/mlx-demo --out /tmp/converse-notes
+  converse-to-obsidian latest --repo ~/work/scaff --dry-run
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+
+SESSIONS = Path.home() / "work" / "converse" / "sessions"
+FM_CACHE = Path.home() / ".cache" / "fm-converse"
+
+
+@dataclass
+class Turn:
+    request_id: str
+    user: str
+    response: str
+    agent: str
+    agent_type: str
+    model: str
+    cwd: str
+    status: str
+    source: str
+
+
+def slugify(s: str) -> str:
+    out = re.sub(r"[^a-zA-Z0-9]+", "-", s.strip().lower()).strip("-")
+    return out or "untitled"
+
+
+def yaml_scalar(s: str) -> str:
+    return json.dumps(s or "", ensure_ascii=False)
+
+
+def note_title(s: str) -> str:
+    words = re.split(r"[-_\s]+", s.strip())
+    return " ".join(w[:1].upper() + w[1:] for w in words if w) or "Untitled"
+
+
+def read_json(path: Path, default: Any) -> Any:
+    try:
+        return json.loads(path.read_text())
+    except Exception:
+        return default
+
+
+def resolve_session(arg: str) -> Path:
+    if arg == "latest":
+        dirs = [p for p in SESSIONS.iterdir() if p.is_dir()]
+        if not dirs:
+            raise SystemExit(f"no Converse sessions under {SESSIONS}")
+        return max(dirs, key=lambda p: p.stat().st_mtime)
+    p = Path(arg).expanduser()
+    if p.is_dir():
+        return p
+    p = SESSIONS / arg
+    if p.is_dir():
+        return p
+    raise SystemExit(f"session not found: {arg}")
+
+
+def default_out_dir(repo: str | None, vault: str | None, out: str | None) -> Path:
+    if out:
+        return Path(out).expanduser()
+    if vault:
+        return Path(vault).expanduser()
+    if repo:
+        root = Path(repo).expanduser()
+        kb = root / "kb" / "graph" / "entities"
+        if kb.is_dir():
+            return kb
+        return root / "Converse"
+    raise SystemExit("pass --repo, --vault, or --out")
+
+
+def fm_cache_path(session_id: str) -> Path:
+    safe = "".join(c if c.isalnum() or c in "-_." else "_" for c in session_id)
+    return FM_CACHE / f"{safe}.json"
+
+
+def events_from_livefile(session_dir: Path) -> list[dict[str, Any]]:
+    live = session_dir / "livefile.jsonl"
+    if not live.exists():
+        return []
+    events = []
+    for line in live.read_text(errors="replace").splitlines():
+        if not line.strip():
+            continue
+        try:
+            events.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return events
+
+
+def turns_from_events(events: list[dict[str, Any]], fallback_cwd: str) -> list[Turn]:
+    requests: dict[str, dict[str, Any]] = {}
+    heard_queue: list[dict[str, Any]] = []
+    turns: list[Turn] = []
+    for event in events:
+        etype = event.get("type")
+        rid = event.get("request_id") or ""
+        if etype == "agent.requested" and rid:
+            requests[rid] = event
+        elif etype == "talk.heard" and event.get("body"):
+            heard_queue.append(event)
+        elif etype == "agent.responded":
+            req = requests.get(rid, {})
+            if not req and heard_queue:
+                req = heard_queue.pop(0)
+            user = str(req.get("body") or event.get("instruction") or "")
+            response = str(event.get("body") or "")
+            if not response:
+                continue
+            agent = str(event.get("agent") or req.get("agent") or "assistant")
+            agent_type = str(event.get("agent_type") or req.get("agent_type") or "agent")
+            model = str(event.get("model") or req.get("model") or agent)
+            cwd = str(event.get("agent_cwd") or req.get("agent_cwd") or fallback_cwd)
+            status = str(event.get("status") or "ok")
+            turns.append(Turn(rid or f"req_{len(turns) + 1:04d}", user, response,
+                              agent, agent_type, model, cwd, status, "livefile"))
+    return turns
+
+
+def turns_from_cache(session_id: str) -> tuple[list[Turn], dict[str, Any]]:
+    state = read_json(fm_cache_path(session_id), {})
+    raw_turns = state.get("turns") if isinstance(state, dict) else []
+    turns: list[Turn] = []
+    i = 0
+    while i + 1 < len(raw_turns):
+        role1, text1 = raw_turns[i]
+        role2, text2 = raw_turns[i + 1]
+        if role1 == "user" and role2 == "assistant":
+            rid = f"req_{i // 2 + 1:04d}"
+            model = "MLX or FoundationModels"
+            turns.append(Turn(rid, str(text1), str(text2), model, "fm-converse",
+                              model, str(state.get("arm_cwd") or state.get("cwd") or ""),
+                              "ok", "fm-cache"))
+        i += 2
+    return turns, state if isinstance(state, dict) else {}
+
+
+def frontmatter(items: dict[str, str]) -> str:
+    lines = ["---"]
+    for key, value in items.items():
+        lines.append(f"{key}: {yaml_scalar(value)}")
+    lines.append("---")
+    return "\n".join(lines) + "\n\n"
+
+
+def write(path: Path, text: str, dry_run: bool):
+    if dry_run:
+        print(path)
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+
+
+def render_session_note(session_id: str, session_dir: Path, turns: list[Turn],
+                        turn_titles: list[str], state: dict[str, Any]) -> str:
+    title = f"Converse {note_title(session_id)}"
+    cwd = str(state.get("arm_cwd") or state.get("cwd") or (turns[0].cwd if turns else ""))
+    body = frontmatter({
+        "type": "converse-session",
+        "session_id": session_id,
+        "source": str(session_dir / "livefile.jsonl"),
+        "cwd": cwd,
+        "turn_count": str(len(turns)),
+    })
+    body += f"# {title}\n\n"
+    body += "Source: `" + str(session_dir) + "`\n\n"
+    if cwd:
+        body += f"Context: [[{note_title(Path(cwd).name)}]]\n\n"
+    if turn_titles:
+        body += "## Turns\n\n"
+        for t in turn_titles:
+            body += f"- [[{t}]]\n"
+        body += "\n"
+    body += "## Timeline\n\n"
+    for n, turn in enumerate(turns, 1):
+        body += f"### Turn {n}: Esa\n\n{turn.user.strip()}\n\n"
+        body += f"### Turn {n}: {turn.agent}\n\n{turn.response.strip()}\n\n"
+    return body
+
+
+def render_turn_note(session_title: str, session_id: str, turn: Turn, idx: int) -> str:
+    title = f"Converse {note_title(session_id)} Turn {idx:03d}"
+    body = frontmatter({
+        "type": "converse-turn",
+        "session_id": session_id,
+        "request_id": turn.request_id,
+        "agent": turn.agent,
+        "agent_type": turn.agent_type,
+        "model": turn.model,
+        "cwd": turn.cwd,
+        "status": turn.status,
+        "source": turn.source,
+    })
+    body += f"# {title}\n\n"
+    body += f"Session: [[{session_title}]]\n\n"
+    if turn.cwd:
+        body += f"Context: [[{note_title(Path(turn.cwd).name)}]]\n\n"
+    body += f"Model: [[{turn.agent}]]\n\n"
+    body += "## User\n\n" + turn.user.strip() + "\n\n"
+    body += "## Response\n\n" + turn.response.strip() + "\n"
+    return body
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("session", help="session directory/name, or 'latest'")
+    ap.add_argument("--repo", help="repo to benefit; defaults output to repo/kb/graph/entities when present")
+    ap.add_argument("--vault", help="Obsidian vault directory")
+    ap.add_argument("--out", help="explicit output directory")
+    ap.add_argument("--dry-run", action="store_true", help="print target files without writing")
+    args = ap.parse_args()
+
+    session_dir = resolve_session(args.session)
+    session_id = session_dir.name
+    manifest = read_json(session_dir / "manifest.json", {})
+    events = events_from_livefile(session_dir)
+    fallback_cwd = str(manifest.get("cwd") or "")
+    turns = turns_from_events(events, fallback_cwd)
+    cache_turns, state = turns_from_cache(session_id)
+    if not turns:
+        turns = cache_turns
+    if not turns:
+        raise SystemExit(f"no agent/FM turns found for {session_id}")
+
+    out_dir = default_out_dir(args.repo, args.vault, args.out)
+    session_title = f"Converse {note_title(session_id)}"
+    session_file = out_dir / f"{slugify(session_title)}.md"
+    turn_titles = [f"{session_title} Turn {i:03d}" for i in range(1, len(turns) + 1)]
+
+    for i, turn in enumerate(turns, 1):
+        turn_file = out_dir / f"{slugify(turn_titles[i - 1])}.md"
+        write(turn_file, render_turn_note(session_title, session_id, turn, i), args.dry_run)
+    write(session_file, render_session_note(session_id, session_dir, turns, turn_titles, state), args.dry_run)
+
+    if args.dry_run:
+        return 0
+    print(f"wrote {len(turns) + 1} note(s) to {out_dir}")
+    print(f"session note: {session_file}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

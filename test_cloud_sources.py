@@ -52,7 +52,7 @@ class CloudSourceTests(unittest.TestCase):
     def test_email_html_renders_markdown_without_visible_markers(self):
         from test_mail_reply_attachment_fallback import agent
         html=agent.md_to_html('# Analysis\n\n**Measured input** and `watts`.\n\n- First finding\n- Second finding\n\n[Source](https://example.org/paper)\n\n| Quantity | Value |\n|---|---|\n| Input | 2 W |')
-        for tag in ('<h1>','<strong>','<code>','<ul>','<table','href="https://example.org/paper"'):
+        for tag in ('<h1', '<strong', '<code', '<ul', '<table', 'href="https://example.org/paper"'):
             self.assertIn(tag,html)
         self.assertNotIn('**Measured input**',html)
         self.assertNotIn('# Analysis',html)

@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+# REPORT-CARD >> features/converse-to-obsidian.feature
+"""Publish one Converse/livefile session into every downstream knowledge surface.
+
+Source of truth: ~/work/converse/sessions/<id>/livefile.jsonl
+
+Views produced:
+  - Scaff:   ~/work/scaff/ConverseInbox/*.md via semantic-convey-file converse-push
+  - Vault:   ~/work/cc/vault/sources/conversations/converse/*.md via converse-to-obsidian
+
+This is the DRY bridge: Converse.app, fm-converse, and future fm-mlx capture should
+all call this publisher instead of each inventing their own Markdown/Scaff export.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+HERE = Path(__file__).resolve().parent
+DEFAULT_SCAFF = Path.home() / "work" / "scaff"
+DEFAULT_VAULT = Path.home() / "work" / "cc" / "vault" / "sources" / "conversations" / "converse"
+
+
+def expand(value: str | None) -> Path | None:
+    if not value:
+        return None
+    return Path(value).expanduser().resolve()
+
+
+def default_scaff_repo() -> Path:
+    return expand(os.environ.get("CONVERSE_SCAFF_REPO") or os.environ.get("FM_CONVERSE_SCAFF_REPO")) or DEFAULT_SCAFF
+
+
+def default_vault_dir() -> Path:
+    return expand(os.environ.get("CONVERSE_OBSIDIAN_VAULT") or os.environ.get("FM_CONVERSE_OBSIDIAN_VAULT")) or DEFAULT_VAULT
+
+
+def session_arg(value: str) -> str:
+    return str(Path(value).expanduser()) if value.startswith("~") else value
+
+
+def print_line(text: str, quiet: bool):
+    if not quiet:
+        print(text)
+
+
+def publish_scaff(args: argparse.Namespace) -> tuple[bool, str]:
+    repo = expand(args.scaff_repo) or default_scaff_repo()
+    if not (repo / "Package.swift").exists():
+        return True, f"Scaff skipped: no Package.swift at {repo}"
+    if not (repo / "Sources" / "ConveyBridge" / "ConversePushIngest.swift").exists():
+        return True, f"Scaff skipped: ConversePushIngest missing under {repo}"
+
+    out_dir = expand(args.scaff_out) or (repo / "ConverseInbox")
+    cmd = [
+        "swift", "run", "semantic-convey-file", "converse-push", session_arg(args.session),
+        "--out", str(out_dir),
+    ]
+    if args.context:
+        cmd += ["--context", args.context]
+    if args.context_path:
+        cmd += ["--context-path", str(expand(args.context_path) or Path(args.context_path))]
+    if args.dry_run:
+        return True, "Scaff dry-run: " + " ".join(cmd)
+
+    proc = subprocess.run(cmd, cwd=str(repo), capture_output=True, text=True, timeout=90)
+    if proc.returncode != 0:
+        return False, (proc.stderr or proc.stdout or "Scaff publish failed").strip()
+    lines = [line for line in proc.stdout.splitlines() if line.strip()]
+    return True, f"Scaff wrote {len(lines)} path line(s) to {out_dir}"
+
+
+def publish_vault(args: argparse.Namespace) -> tuple[bool, str]:
+    vault = expand(args.vault) or default_vault_dir()
+    cmd = [str(HERE / "converse-to-obsidian"), session_arg(args.session), "--vault", str(vault)]
+    if args.dry_run:
+        cmd.append("--dry-run")
+    proc = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
+    if proc.returncode != 0:
+        return False, (proc.stderr or proc.stdout or "Vault publish failed").strip()
+    last = proc.stdout.strip().splitlines()[-1] if proc.stdout.strip() else str(vault)
+    return True, f"Vault updated: {last}"
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("session", help="Converse session directory/name, or latest")
+    ap.add_argument("--context", help="Human context label for Scaff notes")
+    ap.add_argument("--context-path", help="Filesystem context path for Scaff notes")
+    ap.add_argument("--scaff-repo", help="Scaff repo path")
+    ap.add_argument("--scaff-out", help="Scaff output directory")
+    ap.add_argument("--vault", help="Obsidian vault/conversation output directory")
+    ap.add_argument("--no-scaff", action="store_true", help="skip Scaff publish")
+    ap.add_argument("--no-vault", action="store_true", help="skip Obsidian vault publish")
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--quiet", action="store_true")
+    args = ap.parse_args()
+
+    results: list[tuple[bool, str]] = []
+    if not args.no_scaff:
+        results.append(publish_scaff(args))
+    if not args.no_vault:
+        results.append(publish_vault(args))
+
+    if not results:
+        print_line("Nothing to publish.", args.quiet)
+        return 0
+    for ok, message in results:
+        print_line(("ok: " if ok else "error: ") + message, args.quiet)
+    return 0 if all(ok for ok, _ in results) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

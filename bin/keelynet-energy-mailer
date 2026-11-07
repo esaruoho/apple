@@ -18,6 +18,8 @@ Keys: ~/.agentmail.key, ~/.fm-free.key. Never in git.
 """
 import json, os, random, re, subprocess, sys, time, html as _html, urllib.parse, urllib.request
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared"))
+from format_email import wrap_email_html, md_to_html as canonical_md_to_html
 
 HOME = Path.home()
 SRCDIR = HOME/"work"/"merlib-dump"/"keelynet"/"ENERGY"
@@ -62,8 +64,8 @@ LESSER_SYS = ("You are a local model writing a short 'lesser take' (~180 words) 
 
 LENS_VOICE_SYS = (
     "\n\nBecause FREE_ENERGY_LENS_VOICES is enabled, include one final section exactly named "
-    "## Cross-Lens Reads. Keep it compact: four bullets, one for **Russell**, **Bearden**, "
-    "**Prigogine**, and **Hilarion**. Each bullet should interpret the source through that lens "
+    "## Cross-Lens Reads. Keep it compact: six bullets, one for **Russell**, **Bearden**, "
+    "**Prigogine**, **Hilarion**, **Steinmetz**, and **Don Smith**. Each bullet should interpret the source through that lens "
     "without repeating wrapper facts, and without inventing dates, devices, measurements, "
     "citations, or demonstrations not present in the source/context."
 )
@@ -347,14 +349,12 @@ def remove_claim_spam(md):
     return "\n".join(lines)
 
 def send_email(subject, text, html_body):
-    k = key("AGENTMAIL_API_KEY", "~/.agentmail.key")
-    if not k: sys.exit("no AgentMail key")
-    url = "%s/inboxes/%s/messages/send" % (AM_BASE, urllib.parse.quote(INBOX, safe="@"))
-    body = json.dumps({"to": [TO], "subject": subject, "text": text, "html": html_body}).encode()
-    req = urllib.request.Request(url, data=body, method="POST",
-                                 headers={"Content-Type": "application/json", "Authorization": "Bearer " + k})
-    with urllib.request.urlopen(req, timeout=90) as r:
-        return json.load(r)
+    from agentmail_send import agentmail_send
+    result = agentmail_send(subject, text, TO, inbox=INBOX, html=html_body,
+                            attachments=None, timeout=120)
+    if result is None: raise RuntimeError("AgentMail delivery failed")
+    return result
+
 
 def normalize_subject_chars(s):
     return str(s or "").translate(str.maketrans({
@@ -962,14 +962,14 @@ def main():
             display_title = "%s — %s" % (display_title, meta["author"])
         text_body = ("%s\n\n%s\n\n=== QWEN LESSER TAKE ===\n%s\n" %
                      (subject, main_an, lesser))
-        html_body = (
-            "<div style='font-family:-apple-system,Segoe UI,sans-serif;max-width:680px'>"
-            "<p style='color:#888;font-size:12px'><code>%s.md</code> · <b>Claimed / unverified</b></p>"
-            "<h2>%s</h2>%s<hr>"
-            "<h3 style='color:#888'>qwen lesser take</h3>%s"
-            "<p style='color:#aaa;font-size:11px'>Generated on the Mac Mini (freellmapi :3001 + MLX :8080), "
-            "zero-cloud-cost brains where local. Grounded in the source file; not independently verified.</p></div>"
-            % (name, _html.escape(display_title), md_to_html(main_an), md_to_html(lesser)))
+        inner = (
+            "<p style='color:#8b949e;font-size:12px;margin-bottom:12px;'><code style='background:#21262d;color:#f0f6fc;padding:2px 5px;border-radius:4px;'>%s.md</code> · <b style='color:#ffffff;'>Claimed / unverified</b></p>"
+            "<h1 style='color:#f0f6fc;border-bottom:2px solid #30363d;padding-bottom:8px;margin-top:12px;font-size:22px;'>%s</h1>%s<hr style='border:0;border-top:1px solid #30363d;margin:20px 0;'>"
+            "<h3 style='color:#8b949e'>qwen lesser take</h3>%s"
+            "<p style='color:#8b949e;font-size:11px;margin-top:24px;'>Generated on the Mac Mini (freellmapi :3001 + MLX :8080), "
+            "zero-cloud-cost brains where local. Grounded in the source file; not independently verified.</p>"
+            % (name, _html.escape(display_title), canonical_md_to_html(main_an), canonical_md_to_html(lesser)))
+        html_body = wrap_email_html(inner, title=display_title)
         try:
             res = send_email(subject, text_body, html_body)
         except Exception as e:

@@ -21,17 +21,18 @@ the turn — so "drag a file in, select it, Cmd-1" just works.
     fm-converse --reset                forget this session's conversation
     fm-converse --history              print the running transcript
     fm-converse --timeout 90 "..."     how long to wait (default 120s)
-    fm-converse --flubuild "..."       send to the Flubuild remote brain
+    fm-converse --flubuild "..."       send to the flubuild remote brain
 
 Apple-native: python3 stdlib only. Delegates the round-trip to fm-submit.
 """
 import json
 import os
 import re
-import shlex
 import subprocess
 import sys
 import time
+import uuid
+from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -55,6 +56,10 @@ MAX_INPUT_CHARS = 9000    # hard ceiling on the assembled prompt sent to fm-subm
 ARM_IDENTITY_VERSION = 4  # bump when the generated skill instructions change
 
 
+def _safe_key(key: str) -> str:
+    return "".join(c if c.isalnum() or c in "-_." else "_" for c in key)
+
+
 def current_session_key() -> str:
     """The Converse session you're in right now = newest sessions/ dir."""
     try:
@@ -68,8 +73,7 @@ def current_session_key() -> str:
 
 def store_path(key: str) -> Path:
     STORE.mkdir(parents=True, exist_ok=True)
-    safe = "".join(c if c.isalnum() or c in "-_." else "_" for c in key)
-    return STORE / f"{safe}.json"
+    return STORE / f"{_safe_key(key)}.json"
 
 
 def load(key: str) -> dict:
@@ -135,6 +139,176 @@ def build_replay(turns: list, new_user: str) -> str:
     return "\n".join(lines)
 
 
+# ── Converse livefile capture + Scaff push ───────────────────────────────────
+# FEATURE-CARD >> features/fm-converse.feature
+def _iso_now() -> str:
+    return datetime.now().astimezone().isoformat(timespec="milliseconds")
+
+
+def _read_jsonl(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    events = []
+    for line in path.read_text(errors="replace").splitlines():
+        if not line.strip():
+            continue
+        try:
+            obj = json.loads(line)
+        except Exception:
+            continue
+        if isinstance(obj, dict):
+            events.append(obj)
+    return events
+
+
+def _next_event_number(events: list[dict]) -> int:
+    max_seen = 0
+    for event in events:
+        m = re.match(r"^evt_(\d+)$", str(event.get("id", "")))
+        if m:
+            max_seen = max(max_seen, int(m.group(1)))
+    return max_seen + 1
+
+
+def _write_jsonl(path: Path, obj: dict):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(obj, ensure_ascii=False, sort_keys=True) + "\n")
+
+
+def _capture_session_dir(key: str) -> Path:
+    return SESSIONS / _safe_key(key)
+
+
+def _ensure_capture_manifest(session_dir: Path, key: str, context_path: str, source: str):
+    session_dir.mkdir(parents=True, exist_ok=True)
+    (session_dir / "chunks").mkdir(exist_ok=True)
+    manifest = session_dir / "manifest.json"
+    if manifest.exists():
+        return
+    manifest.write_text(json.dumps({
+        "session_id": session_dir.name,
+        "session_key": key,
+        "doctrine": "envoy-livefile-v1",
+        "event_log": "livefile.jsonl",
+        "created_by": "fm-converse",
+        "source": source,
+        "context_path": context_path,
+        "started_at": _iso_now(),
+    }, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
+
+
+def _recent_app_already_owns_turn(events: list[dict], raw_prompt: str, user_turn: str) -> bool:
+    needles = {raw_prompt.strip(), user_turn.strip()}
+    needles.discard("")
+    if not needles:
+        return False
+    # Converse.app logs talk.heard before it invokes fm-converse. If we see that
+    # just-authored user turn, the app owns the livefile and will log the answer.
+    for event in events[-40:]:
+        if event.get("type") == "talk.heard" and str(event.get("body", "")).strip() in needles:
+            return True
+    return False
+
+
+def _brain_capture(use_mlx: bool, use_flubuild: bool) -> tuple[str, str]:
+    if use_flubuild:
+        return "flubuild", FLUBUILD_MODEL
+    if use_mlx:
+        return "mlx", MLX_MODEL
+    return "foundationmodels", "Apple FoundationModels"
+
+
+def _append_capture_turn(key: str,
+                         state: dict,
+                         raw_prompt: str,
+                         user_turn: str,
+                         reply: str,
+                         use_mlx: bool,
+                         filename: str | None,
+                         use_flubuild: bool = False) -> tuple[bool, Path]:
+    if os.environ.get("FM_CONVERSE_CAPTURE", "1") == "0":
+        return False, _capture_session_dir(key)
+
+    session_dir = _capture_session_dir(key)
+    livefile = session_dir / "livefile.jsonl"
+    events = _read_jsonl(livefile)
+    if _recent_app_already_owns_turn(events, raw_prompt, user_turn):
+        return False, session_dir
+
+    context_path = os.path.realpath(state.get("arm_cwd") or state.get("cwd") or os.getcwd())
+    _ensure_capture_manifest(session_dir, key, context_path, "fm-converse")
+
+    events = _read_jsonl(livefile)
+    counter = _next_event_number(events)
+    if not events:
+        _write_jsonl(livefile, {
+            "id": f"evt_{counter:06d}",
+            "type": "session.created",
+            "t": _iso_now(),
+            "actor": "fm-converse",
+            "body": session_dir.name,
+            "session_id": session_dir.name,
+            "doctrine": "envoy-livefile-v1",
+        })
+        counter += 1
+
+    request_id = f"req_{uuid.uuid4().hex[:12]}"
+    agent_type, model = _brain_capture(use_mlx, use_flubuild)
+    _write_jsonl(livefile, {
+        "id": f"evt_{counter:06d}",
+        "type": "talk.heard",
+        "t": _iso_now(),
+        "actor": "local-user",
+        "source": "fm-converse",
+        "body": user_turn,
+        "raw_prompt": raw_prompt,
+        "filename": filename or "",
+        "request_id": request_id,
+        "agent": "fm-converse",
+        "agent_type": agent_type,
+        "model": model,
+        "agent_cwd": context_path,
+    })
+    _write_jsonl(livefile, {
+        "id": f"evt_{counter + 1:06d}",
+        "type": "agent.responded",
+        "t": _iso_now(),
+        "actor": "fm-converse",
+        "source": "agent",
+        "body": reply,
+        "instruction": user_turn,
+        "request_id": request_id,
+        "agent": "fm-converse",
+        "agent_type": agent_type,
+        "model": model,
+        "status": "ok",
+        "output_chars": len(reply),
+        "agent_cwd": context_path,
+    })
+    return True, session_dir
+
+
+def _publish_capture_session(session_dir: Path, state: dict):
+    context_path = os.path.realpath(state.get("arm_cwd") or state.get("cwd") or os.getcwd())
+    context_name = Path(context_path).name or "fm-converse"
+    cmd = [
+        str(HERE / "converse-publish"), str(session_dir),
+        "--context", context_name,
+        "--context-path", context_path,
+        "--quiet",
+    ]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
+    except Exception as e:
+        if os.environ.get("FM_CONVERSE_CAPTURE_DEBUG") == "1":
+            sys.stderr.write(f"fm-converse: publish failed: {e}\n")
+        return
+    if proc.returncode != 0 and os.environ.get("FM_CONVERSE_CAPTURE_DEBUG") == "1":
+        err = (proc.stderr or proc.stdout).strip()
+        sys.stderr.write(f"fm-converse: publish failed: {err}\n")
+
+
 # ── MLX brain port (the Mini's mlx_lm.server, OpenAI-compatible, over Tailscale) ──
 # Unlike fm-submit (one flat prompt to FoundationModels), the MLX server takes a real
 # messages[] array — so multi-turn is native: we just hand it the whole dialogue.
@@ -144,9 +318,13 @@ MLX_RESOLVE_IP = os.environ.get("FM_MLX_RESOLVE_IP", "100.117.30.102")
 MLX_SSH_HOST = os.environ.get("FM_MLX_SSH_HOST", "100.117.30.102")
 MLX_PREFER_SSH = os.environ.get("FM_MLX_PREFER_SSH", "1") != "0"
 MLX_BUDGET = int(os.environ.get("FM_MLX_BUDGET", "4000"))
-FLUBUILD_SSH_HOST = os.environ.get("FM_FLUBUILD_SSH_HOST", "bg-archivist")
-FLUBUILD_MODEL = os.environ.get("FM_FLUBUILD_MODEL", "Qwen/Qwen2.5-7B-Instruct-AWQ")
-FLUBUILD_MAX_TOKENS = int(os.environ.get("FM_FLUBUILD_MAX_TOKENS", "2048"))
+# SHARED-BRAIN-ROUTING v1
+# REPORT-CARD >> ~/work/convey/features/shared-brain-routing.feature
+sys.path.insert(0, str(Path.home()/"work/convey"))
+from convey import brain_routes
+from convey.brain_routes import (FLUBUILD_SSH_HOST, FLUBUILD_MODEL,
+                                 FLUBUILD_BUDGET, FLUBUILD_MAX_TOKENS)
+
 
 
 def _parse_mlx_response(raw: str):
@@ -271,28 +449,34 @@ def call_mlx(turns, system, user_turn, timeout):
     return "", f"MLX server unreachable after retries ({last})"
 
 
-def call_flubuild(messages, timeout_s: float):
-    """Call the Flubuild service using its tokenizer-aware request helper."""
-    body = json.dumps({"model": FLUBUILD_MODEL, "messages": messages,
-                       "max_tokens": FLUBUILD_MAX_TOKENS}).encode()
-    script = (HERE / "flubuild-request.py").read_text()
-    remote_cmd = f"python3 -c {shlex.quote(script)} {shlex.quote(str(timeout_s))}"
+def _parse_flubuild_response(raw: str):
+    d = json.loads(raw)
+    answer = d["choices"][0]["message"]["content"].strip()
+    note = d.get("fm_context_note")
+    return answer + ("\n\n*" + note + "*" if note else "")
+
+
+def call_flubuild(turns, system, user_turn, timeout):
+    """POST the conversation to the flubuild remote brain; return (reply, error_message)."""
+    import shlex
+    msgs = []
+    if system:
+        msgs.append({"role": "system", "content": system})
+    kept, budget = [], FLUBUILD_BUDGET
+    for role, text in reversed(turns):
+        budget -= len(text)
+        if budget < 0:
+            break
+        kept.append({"role": role, "content": text})
+    msgs.extend(reversed(kept))
+    msgs.append({"role": "user", "content": user_turn})
     try:
-        proc = subprocess.run(["ssh", FLUBUILD_SSH_HOST, remote_cmd], input=body,
-                              capture_output=True, timeout=timeout_s + 10)
-    except subprocess.TimeoutExpired:
-        return "", f"Flubuild timed out after {timeout_s + 10:.0f}s"
-    if proc.returncode:
-        return "", f"Flubuild failed rc={proc.returncode}: {proc.stderr.decode(errors='replace').strip()[-1200:]}"
-    try:
-        data = json.loads(proc.stdout.decode(errors="replace"))
-        answer = data["choices"][0]["message"]["content"].strip()
-        note = data.get("fm_context_note")
-        if note:
-            answer += "\n\n*" + note + "*"
-        return answer, None
-    except Exception as error:
-        return "", f"Flubuild returned an unreadable response: {error}"
+        text, _model = brain_routes.call_flubuild(
+            msgs, host=FLUBUILD_SSH_HOST, model=FLUBUILD_MODEL,
+            max_tokens=FLUBUILD_MAX_TOKENS, timeout=timeout)
+        return text, None
+    except brain_routes.BrainRouteError as exc:
+        return "", str(exc)
 
 
 def main() -> int:
@@ -447,13 +631,9 @@ def main() -> int:
         return subprocess.run(cmd, capture_output=True, text=True)
 
     if use_flubuild:
-        messages = []
-        if state.get("system"):
-            messages.append({"role": "system", "content": state["system"]})
-        messages.append({"role": "user", "content": user_turn})
-        reply, flubuild_err = call_flubuild(messages, float(timeout))
+        reply, flubuild_err = call_flubuild(state["turns"], state.get("system", ""), user_turn, timeout)
         if not reply:
-            print(f"[Flubuild] {flubuild_err or 'no reply'}")
+            print(f"[flubuild] {flubuild_err or 'no reply'}")
             return 1
     elif use_mlx:
         # MLX brain: send the real multi-turn message history to the Mini's mlx_lm.server.
@@ -495,7 +675,31 @@ def main() -> int:
     state["turns"].append(["assistant", reply])
     save(key, state)
 
+    did_capture, capture_dir = _append_capture_turn(
+        key=key,
+        state=state,
+        raw_prompt=prompt,
+        user_turn=user_turn,
+        reply=reply,
+        use_mlx=use_mlx,
+        filename=filename,
+        use_flubuild=use_flubuild,
+    )
+    if did_capture:
+        _publish_capture_session(capture_dir, state)
+
     emit_reply(reply)
+
+    if sys.stdout.isatty():
+        friendly_session_path = str(capture_dir).replace(str(Path.home()), "~")
+        sys.stderr.write(f"  [captured to {friendly_session_path}]\n")
+        scaff_repo = Path(os.environ.get("FM_CONVERSE_SCAFF_REPO")
+                          or os.environ.get("CONVERSE_SCAFF_REPO")
+                          or str(Path.home() / "work" / "scaff")).expanduser()
+        if (scaff_repo / "Package.swift").exists():
+            friendly_scaff_path = str(scaff_repo / "ConverseInbox").replace(str(Path.home()), "~")
+            sys.stderr.write(f"  [pushed to {friendly_scaff_path}]\n")
+
     return 0
 
 

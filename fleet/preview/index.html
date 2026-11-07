@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fleet.app — Icon Candidates Preview</title>
+<style>
+  :root {
+    --bg: #1c1c1e;
+    --card-bg: #2c2c2e;
+    --text: #f2f2f7;
+    --subtext: #8e8e93;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #0a84ff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 40px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  header {
+    text-align: center;
+    max-width: 760px;
+    margin-bottom: 36px;
+  }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.5px; }
+  p.subtitle { color: var(--subtext); font-size: 15px; line-height: 1.5; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    width: 100%;
+    max-width: 1200px;
+    margin-bottom: 48px;
+  }
+  .candidate-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.15s ease, border-color 0.15s ease;
+  }
+  .candidate-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+  .icon-preview-hero {
+    width: 210px;
+    height: 210px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    filter: drop-shadow(0 12px 24px rgba(0,0,0,0.45));
+  }
+  .icon-preview-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(10, 132, 255, 0.18);
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .candidate-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .candidate-desc {
+    font-size: 13px;
+    color: var(--subtext);
+    text-align: center;
+    line-height: 1.45;
+    margin-bottom: 16px;
+    min-height: 40px;
+  }
+
+  .scales {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    width: 100%;
+    justify-content: center;
+  }
+  .scale-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .scale-label { font-size: 10px; color: var(--subtext); }
+
+  /* Dock Simulation */
+  .section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 32px 0 16px;
+    align-self: flex-start;
+    max-width: 1200px;
+    width: 100%;
+  }
+  .dock-shelf {
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 24px;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    margin-bottom: 40px;
+  }
+  .dock-app {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+  }
+  .dock-app img {
+    width: 64px;
+    height: 64px;
+    transition: transform 0.15s ease;
+  }
+  .dock-app:hover img {
+    transform: scale(1.15) translateY(-8px);
+  }
+  .dock-app span {
+    font-size: 10px;
+    color: #fff;
+    margin-top: 4px;
+    font-weight: 500;
+  }
+  .dock-dot {
+    width: 4px;
+    height: 4px;
+    background: #fff;
+    border-radius: 50%;
+    margin-top: 3px;
+  }
+  .dock-divider {
+    width: 1px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Fleet.app — Icon Design Candidates</h1>
+  <p class="subtitle">
+    Programmatic AppKit render following <code>wiki/concepts/macos-app-icon-sizing.md</code>:<br>
+    824×824 squircle on 1024×1024 canvas (inset 0.098, corner radius 0.2237 of shape), soft contact shadow, and pixel-tested legibility.
+  </p>
+</header>
+
+<div class="grid">
+  <!-- Candidate A -->
+  <div class="candidate-card">
+    <span class="badge">Option A</span>
+    <div class="icon-preview-hero">
+      <img src="candidate_a_fleet_formation_512.png" alt="Candidate A">
+    </div>
+    <div class="candidate-title">Fleet Formation</div>
+    <div class="candidate-desc">Three Macs in tiered formation linked via an illuminated network rail, with an active emerald connection beacon.</div>
+    <div class="scales">
+      <div class="scale-item">
+        <img src="candidate_a_fleet_formation_128.png" width="64" height="64" alt="64px">
+        <span class="scale-label">64px</span>
+      </div>
+      <div class="scale-item">
+        <img src="candidate_a_fleet_formation_32.png" width="32" height="32" alt="32px">
+        <span class="scale-label">32px</span>
+      </div>
+      <div class="scale-item">
+        <img src="candidate_a_fleet_formation_16.png" width="16" height="16" alt="16px">
+        <span class="scale-label">16px</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Candidate B -->
+  <div class="candidate-card">
+    <span class="badge">Option B</span>
+    <div class="icon-preview-hero">
+      <img src="candidate_b_machine_cards_512.png" alt="Candidate B">
+    </div>
+    <div class="candidate-title">Side-by-Side Cards</div>
+    <div class="candidate-desc">Direct reflection of Fleet's UI: three Machine Cards (telemetry, load, thermal) standing side-by-side on the bus.</div>
+    <div class="scales">
+      <div class="scale-item">
+        <img src="candidate_b_machine_cards_128.png" width="64" height="64" alt="64px">
+        <span class="scale-label">64px</span>
+      </div>
+      <div class="scale-item">
+        <img src="candidate_b_machine_cards_32.png" width="32" height="32" alt="32px">
+        <span class="scale-label">32px</span>
+      </div>
+      <div class="scale-item">
+        <img src="candidate_b_machine_cards_16.png" width="16" height="16" alt="16px">
+        <span class="scale-label">16px</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Candidate C -->
+  <div class="candidate-card">
+    <span class="badge">Option C</span>
+    <div class="icon-preview-hero">
+      <img src="candidate_c_header_symbol_512.png" alt="Candidate C">
+    </div>
+    <div class="candidate-title">Symbol Elevation</div>
+    <div class="candidate-desc">High-contrast elevation of Fleet's official in-app symbol (<code>rectangle.connected.to.line.below</code>) with terminal nodes.</div>
+    <div class="scales">
+      <div class="scale-item">
+        <img src="candidate_c_header_symbol_128.png" width="64" height="64" alt="64px">
+        <span class="scale-label">64px</span>
+      </div>
+      <div class="scale-item">
+        <img src="candidate_c_header_symbol_32.png" width="32" height="32" alt="32px">
+        <span class="scale-label">32px</span>
+      </div>
+      <div class="scale-item">
+        <img src="candidate_c_header_symbol_16.png" width="16" height="16" alt="16px">
+        <span class="scale-label">16px</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Candidate D -->
+  <div class="candidate-card">
+    <span class="badge">Option D</span>
+    <div class="icon-preview-hero">
+      <img src="candidate_d_bonjour_radar_512.png" alt="Candidate D">
+    </div>
+    <div class="candidate-title">Bonjour Radar</div>
+    <div class="candidate-desc">Concentric Bonjour discovery sonar rings sweeping the LAN and locking onto peer Macs as live satellite nodes.</div>
+    <div class="scales">
+      <div class="scale-item">
+        <img src="candidate_d_bonjour_radar_128.png" width="64" height="64" alt="64px">
+        <span class="scale-label">64px</span>
+      </div>
+      <div class="scale-item">
+        <img src="candidate_d_bonjour_radar_32.png" width="32" height="32" alt="32px">
+        <span class="scale-label">32px</span>
+      </div>
+      <div class="scale-item">
+        <img src="candidate_d_bonjour_radar_16.png" width="16" height="16" alt="16px">
+        <span class="scale-label">16px</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-title">Dock Context Comparison</div>
+<div class="dock-shelf">
+  <div class="dock-app">
+    <img src="../../icons/finder.png" alt="Finder">
+    <span>Finder</span>
+    <div class="dock-dot"></div>
+  </div>
+  <div class="dock-app">
+    <img src="../../icons/safari.png" alt="Safari">
+    <span>Safari</span>
+  </div>
+  <div class="dock-divider"></div>
+  <div class="dock-app">
+    <img src="candidate_a_fleet_formation_128.png" alt="Fleet A">
+    <span>Fleet (A)</span>
+    <div class="dock-dot"></div>
+  </div>
+  <div class="dock-app">
+    <img src="candidate_b_machine_cards_128.png" alt="Fleet B">
+    <span>Fleet (B)</span>
+    <div class="dock-dot"></div>
+  </div>
+  <div class="dock-app">
+    <img src="candidate_c_header_symbol_128.png" alt="Fleet C">
+    <span>Fleet (C)</span>
+    <div class="dock-dot"></div>
+  </div>
+  <div class="dock-app">
+    <img src="candidate_d_bonjour_radar_128.png" alt="Fleet D">
+    <span>Fleet (D)</span>
+    <div class="dock-dot"></div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -16,7 +16,7 @@ Feature: Free Energy documents retain the complete editorial format across entry
     Given a document routed to free-energy
     When inbound mail, compose or recovery asks for its analysis
     Then pass the Free Energy viewpoint and material mode to the existing editor
-    And require Russell, Bearden, Prigogine, Hilarion and the skeptical engineer
+    And require Russell, Bearden, Prigogine, Hilarion, Steinmetz, Don Smith and the skeptical engineer
     And require summary, key points, quotes, entities, what holds up, verification table and assessment
 
   @built @sim-verified

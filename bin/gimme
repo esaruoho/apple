@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# gimme — thin shim to the canonical `convey gimme` verb (single source of truth
+# lives in convey/convey/cli.py: cmd_gimme). Kept so `gimme 611` works as a bare
+# word in the terminal, same as `convey gimme 611`. Zero-token, zero-roundtrip.
+exec convey gimme "$@"

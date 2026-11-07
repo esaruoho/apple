@@ -12,7 +12,7 @@ It uses the same Cloudcity freellmapi + optional MLX lesser take + AgentMail sen
 import argparse, base64, json, mimetypes, os, re, sys, time, html as _html, urllib.parse, urllib.request, urllib.error
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared"))
-from format_email import md_to_html, source_attachments
+from format_email import md_to_html, wrap_email_html, source_attachments
 from free_energy_analysis import MAIN_SYS, LENS_SYS, LESSER_SYS
 
 HOME = Path.home()
@@ -138,19 +138,14 @@ def attachment_payload(paths):
 
 
 def send_email(subject, text, html, attachments=None):
-    k = key("AGENTMAIL_API_KEY", "~/.agentmail.key")
-    if not k:
-        raise SystemExit("no AgentMail key")
-    url = "%s/inboxes/%s/messages/send" % (AM_BASE, urllib.parse.quote(INBOX, safe="@"))
-    msg = {"to": [TO], "subject": subject, "text": text, "html": html}
-    msg["attachments"] = list(attachments or [])
-    present = {a.get("filename") for a in msg["attachments"]}
-    msg["attachments"].extend(a for a in source_attachments(text, "analysis") if a["filename"] not in present)
-    body = json.dumps(msg).encode()
-    req = urllib.request.Request(url, data=body, method="POST",
-                                 headers={"Content-Type": "application/json", "Authorization": "Bearer " + k})
-    with urllib.request.urlopen(req, timeout=120) as r:
-        return json.load(r)
+    from agentmail_send import agentmail_send
+    attachments=list(attachments or [])
+    present={a.get("filename") for a in attachments}
+    attachments.extend(a for a in source_attachments(text,"analysis") if a["filename"] not in present)
+    result = agentmail_send(subject, text, TO, inbox=INBOX, html=html,
+                            attachments=attachments, timeout=120)
+    if result is None: raise RuntimeError("AgentMail delivery failed")
+    return result
 
 
 def main():
@@ -186,15 +181,15 @@ def main():
     attachments = attachment_payload(args.attach)
     attach_note = ""
     if attachments:
-        names = "".join("<li>%s</li>" % _html.escape(a["filename"]) for a in attachments)
-        attach_note = "<h3>Attached Source Images</h3><ul>%s</ul>" % names
-    html = (
-        "<div style='font-family:-apple-system,Segoe UI,sans-serif;max-width:720px'>"
-        f"<p style='color:#888;font-size:12px'>Free-energy analysis · freellmapi {FM_MODEL} + qwen lesser {MLX_LABEL}</p>"
-        f"<h2>{_html.escape(title)}</h2>{attach_note}{md_to_html(main_an)}"
-        + (f"<hr><h3 style='color:#888'>qwen lesser take</h3>{md_to_html(lesser)}" if lesser else "")
-        + "<p style='color:#aaa;font-size:11px'>Generated on Cloudcity Mac Mini. Grounded in supplied material; not independently verified.</p></div>"
+        names = "".join("<li style='margin-bottom:6px;'>%s</li>" % _html.escape(a["filename"]) for a in attachments)
+        attach_note = "<h3 style='color:#e6edf3;margin-top:16px;'>Attached Source Images</h3><ul style='color:#c9d1d9;'>%s</ul>" % names
+    inner = (
+        f"<p style='color:#8b949e;font-size:12px;margin-bottom:12px;'>Free-energy analysis · freellmapi {FM_MODEL} + qwen lesser {MLX_LABEL}</p>"
+        f"<h1 style='color:#f0f6fc;border-bottom:2px solid #30363d;padding-bottom:8px;margin-top:12px;font-size:22px;'>{_html.escape(title)}</h1>{attach_note}{md_to_html(main_an)}"
+        + (f"<hr style='border:0;border-top:1px solid #30363d;margin:20px 0;'><h3 style='color:#8b949e'>qwen lesser take</h3>{md_to_html(lesser)}" if lesser else "")
+        + "<p style='color:#8b949e;font-size:11px;margin-top:24px;'>Generated on Cloudcity Mac Mini. Grounded in supplied material; not independently verified.</p>"
     )
+    html = wrap_email_html(inner, title=subject)
     res = send_email(subject, text_body, html, attachments=attachments)
     print("sent %.1fs msg=%s" % (time.time() - t0, (res or {}).get("message_id", "?")), flush=True)
 

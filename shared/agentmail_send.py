@@ -1,109 +1,120 @@
-"""THE one AgentMail send primitive. Import this; never hand-roll another POST to /messages/send.
-
-Why this exists (2026-11-01): cloudcity-llm@agentmail.to was being driven by ELEVEN different
-scripts that each re-implemented the AgentMail POST — different timeouts, different (or missing)
-HTML rendering, and only ONE of them (freellmask-mail's threaded reply) had the HTTP-413
-"payload too large" fallback. Each copy was independently flaky. This module is the single
-fresh-send implementation. The one sanctioned exception is a THREADED REPLY to an inbound
-message, which is freellmask-mail's `send_inbox_reply` (the reply endpoint + attachment
-reconciliation). Everything else — digests, eval reports, proofs, one-shots — calls `agentmail_send`.
-
-See convey/bin/EMAILER-RULE.md and docs/cloudcity-llm-silent-since-2026-10-30-diagnosis.md.
+"""Shared AgentMail send/reply policy. Never retry ambiguous network failures.
+REPORT-CARD >> ~/work/convey/features/mail-consolidation.feature
 """
 from __future__ import annotations
-import html as _html
 import json
 import os
 import urllib.error
 import urllib.parse
 import urllib.request
 from pathlib import Path
+from html.parser import HTMLParser
+from dataclasses import replace
+from format_email import MailContent
 
 DEFAULT_INBOX = "cloudcity-llm@agentmail.to"
 AM_BASE = "https://api.agentmail.to/v0"
 
 
-def _key() -> str | None:
-    """AgentMail key from AGENTMAIL_API_KEY, else ~/.agentmail.key. None if neither is present."""
+def _key():
     env = os.environ.get("AGENTMAIL_API_KEY")
-    if env:
-        return env.strip()
     kp = Path.home() / ".agentmail.key"
-    return kp.read_text(encoding="utf-8").strip() if kp.exists() else None
+    return env.strip() if env else kp.read_text().strip() if kp.exists() else None
 
 
-def _default_html(text: str) -> str:
-    """Render plain text as safe HTML. If apple/shared/format_email is importable, use its richer
-    Markdown renderer; otherwise fall back to an escaped <pre> so we never ship raw markup."""
-    try:
-        from format_email import md_to_html  # type: ignore
-        return md_to_html(text)
-    except Exception:
-        return ("<html><body style='font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif'>"
-                f"<pre style='white-space:pre-wrap'>{_html.escape(text)}</pre></body></html>")
+def _default_html(text):
+    from format_email import render_email
+    return render_email(text)
 
 
-def agentmail_send(subject: str, text: str, to, *, cc=None, inbox: str | None = None,
-                   html: str | None = None, attachments: list | None = None,
-                   timeout: int = 60, quiet: bool = False):
-    """Send one fresh email from an AgentMail inbox.
+class _Document(HTMLParser):
+    def __init__(self):
+        super().__init__(); self.html = self.body = self.theme = 0; self.closed = False
+    def handle_starttag(self, tag, attrs):
+        if self.closed: raise ValueError("content after HTML closure")
+        data = dict(attrs)
+        if tag == "html": self.html += 1
+        if tag == "body": self.body += 1
+        if tag == "meta" and data.get("name") == "color-scheme" and data.get("content") == "dark": self.theme += 1
+        if tag in {"script", "iframe", "object"} or any(k.startswith("on") for k in data):
+            raise ValueError("active HTML is not supported")
+        for key in ("href", "src"):
+            if key in data and urllib.parse.urlsplit(data[key]).scheme.lower() not in {"http", "https", "mailto", "cid"}:
+                raise ValueError("unsafe HTML URL")
+    def handle_endtag(self, tag):
+        if tag == "html": self.closed = True
+    def handle_data(self, data):
+        if self.closed and data.strip(): raise ValueError("content after HTML closure")
 
-    Returns the parsed AgentMail response dict on success (TRUTHY — so `if agentmail_send(...)`
-    still reads as a boolean, and callers that need threading can read `.get("message_id")` /
-    `.get("thread_id")`), or None on failure.
 
-    to          : a single address (str) or a list of addresses.
-    cc          : optional single address or list.
-    inbox       : sending inbox; defaults to AGENTMAIL_INBOX env or cloudcity-llm@agentmail.to.
-    html        : explicit HTML body; if None it is rendered from `text`.
-    attachments : optional AgentMail attachment dicts. On HTTP 413 they are DROPPED and the
-                  message is retried text-only (the one place every caller used to get wrong).
+def canonical_document(document):
+    """Compatibility hatch for source-owned canonical wrappers, never inbound HTML.
+
+    New callers should supply MailContent. Existing complex report components retain
+    their canonical document until migrated; bare fragments/documents fail closed.
     """
-    key = _key()
-    if not key:
-        if not quiet:
-            print("agentmail_send: no AGENTMAIL_API_KEY and no ~/.agentmail.key — not sending")
-        return None
+    check = _Document(); check.feed(document); check.close()
+    if (check.html, check.body, check.theme, check.closed) != (1, 1, 1, True) or "max-width:760px" not in document:
+        raise ValueError("explicit HTML must use the canonical email wrapper")
+    return document
+
+
+def _post(url, key, payload, timeout):
+    req = urllib.request.Request(url, data=json.dumps(payload).encode(), method="POST",
+          headers={"Authorization": "Bearer "+key, "Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as response:
+        if response.status not in (200,201,202): raise RuntimeError("AgentMail status "+str(response.status))
+        raw = response.read().decode()
+        result = json.loads(raw) if raw.strip() else {}
+        if not isinstance(result, dict): raise ValueError("invalid AgentMail response")
+        return result
+
+
+def send_message(content, *, subject="", to=None, cc=None, bcc=None, inbox=None,
+                 message_id=None, key=None, base=None, timeout=60, canonical_html=None):
+    """Raises on failure; returns only the actual endpoint response on success.
+
+    /reply intentionally omits /send-only subject/to fields. Only an explicit 413
+    permits one reduction attempt. All omitted filenames are reported in both bodies.
+    Original content/attachments are never mutated. No retry for ambiguous failures.
+    """
+    key = key or _key()
+    if not key: raise RuntimeError("no AgentMail key")
     inbox = inbox or os.environ.get("AGENTMAIL_INBOX") or DEFAULT_INBOX
-    to_list = [to] if isinstance(to, str) else list(to)
-    body = {"to": to_list, "subject": subject, "text": text, "html": html or _default_html(text)}
-    if cc:
-        body["cc"] = [cc] if isinstance(cc, str) else list(cc)
-    if attachments:
-        body["attachments"] = list(attachments)
-    url = f"{AM_BASE}/inboxes/{urllib.parse.quote(inbox, safe='')}/messages/send"
-
-    def _post(payload: dict):
-        req = urllib.request.Request(
-            url, data=json.dumps(payload).encode("utf-8"),
-            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-            method="POST")
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw = resp.read().decode("utf-8", "replace") if resp.status in (200, 201, 202) else ""
-            if resp.status not in (200, 201, 202):
-                return None
-            try:
-                return json.loads(raw) if raw.strip() else {}
-            except json.JSONDecodeError:
-                return {}
-
+    prefix = (base or AM_BASE)+"/inboxes/"+urllib.parse.quote(inbox,safe="")+"/messages/"
+    url = prefix+(urllib.parse.quote(message_id,safe="")+"/reply" if message_id else "send")
+    metadata = {} if message_id else {"subject":subject,"to":[to] if isinstance(to,str) else list(to or [])}
+    for name, value in (("cc",cc),("bcc",bcc)):
+        if value: metadata[name] = [value] if isinstance(value,str) else list(value)
+    for attachment in content.attachments:
+        if not attachment.get("filename") or not attachment.get("content"):
+            raise ValueError("missing attachment filename or content")
+    payload = {**metadata, **content.payload()}
+    if canonical_html is not None: payload["html"] = canonical_document(canonical_html)
     try:
-        return _post(body)
-    except urllib.error.HTTPError as e:
-        if e.code == 413 and body.get("attachments"):
-            if not quiet:
-                print("agentmail_send: 413 too large — retrying without attachments")
-            body.pop("attachments", None)
-            try:
-                return _post(body)
-            except Exception as e2:
-                if not quiet:
-                    print(f"agentmail_send: retry failed: {e2}")
-                return None
-        if not quiet:
-            print(f"agentmail_send: HTTP {e.code}: {e}")
-        return None
-    except Exception as e:
-        if not quiet:
-            print(f"agentmail_send: send failed: {e}")
+        return _post(url,key,payload,timeout)
+    except urllib.error.HTTPError as error:
+        if error.code != 413 or not content.attachments: raise
+    names = ", ".join(a["filename"] for a in content.attachments)
+    warning = "Delivery warning: the email service rejected the payload size. Attachments omitted: "+names+". Original inbound attachments remain in the original email, where applicable."
+    # This exact generated receipt is the only attachment-success claim we own.
+    markdown = content.markdown.replace("Here's the printable one-pager of the previous answer — attached. Same content, just formatted.",
+                                        "The printable PDF could not be attached because of the email service size limit.")
+    reduced = replace(content, markdown=markdown, attachments=[], notices=[*content.notices,warning])
+    return _post(url,key,{**metadata, **reduced.payload()},timeout)
+
+
+def reply_to_message(message_id, content, **kwargs):
+    return send_message(content,message_id=message_id,**kwargs)
+
+
+def agentmail_send(subject, text, to, *, cc=None, bcc=None, inbox=None, html=None,
+                   attachments=None, timeout=60, quiet=False, content=None):
+    """Backward-compatible fresh sender: dict on success, None on explicit failure."""
+    try:
+        return send_message(content or MailContent(text,attachments=list(attachments or []),title=subject),
+                            subject=subject,to=to,cc=cc,bcc=bcc,inbox=inbox,
+                            canonical_html=html,timeout=timeout)
+    except Exception as error:
+        if not quiet: print("agentmail_send: delivery failed:",error)
         return None

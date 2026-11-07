@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# mono — switch macOS accessibility audio to play stereo audio as mono
+# Usage: mono [--status|-s]
+#
+# Switches "Play stereo audio as mono" ON in System Settings > Accessibility > Audio.
+# Also registered as an apple-do capability: `apple-do mono`
+
+set -euo pipefail
+
+HERE="$(cd "$(dirname "$0")" && pwd)"
+REPO_DIR="$(cd "$HERE/.." && pwd)"
+SCRIPT="$REPO_DIR/scripts/workflows/accessibility/ax-system-settings-mono.applescript"
+
+if [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+  echo "usage: mono [--status|-s]"
+  echo "Switch macOS accessibility audio to play stereo audio as mono."
+  exit 0
+fi
+
+if [ "${1:-}" = "-s" ] || [ "${1:-}" = "--status" ]; then
+  osascript "$SCRIPT" status
+  exit 0
+fi
+
+osascript "$SCRIPT" mono

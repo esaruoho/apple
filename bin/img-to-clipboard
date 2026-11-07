@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# img-to-clipboard — Apple-native image-to-clipboard pipeline
+# Usage: img-to-clipboard <path_to_image>
+
+set -e
+
+IMG_PATH="$1"
+
+if [ -z "$IMG_PATH" ]; then
+    echo "Usage: img-to-clipboard <path_to_image>"
+    exit 1
+fi
+
+if [ ! -f "$IMG_PATH" ]; then
+    echo "Error: File not found: $IMG_PATH"
+    exit 1
+fi
+
+TMP_TIFF="${TMPDIR:-/tmp}/pasteboard_img_$$.tif"
+
+# Use sips (ships native with macOS) to convert any image format (PNG, JPG, WEBP, GIF, BMP) to TIFF
+sips -s format tiff "$IMG_PATH" --out "$TMP_TIFF" >/dev/null 2>&1
+
+# Use osascript to set the clipboard to the TIFF picture
+osascript -e "set the clipboard to (read (POSIX file \"$TMP_TIFF\") as TIFF picture)"
+
+# Cleanup
+rm -f "$TMP_TIFF"
+
+# Verify clipboard state
+CLIP_INFO=$(osascript -e 'clipboard info')
+echo "✅ Image copied to macOS clipboard!"
+echo "   Source: $IMG_PATH"
+echo "   Clipboard Info: $CLIP_INFO"

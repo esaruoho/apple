@@ -1,0 +1,10 @@
+[mcp_servers.loom]
+command = "uvx"
+args = [
+    "--from",
+    "git+https://github.com/karbassi/loom-mcp.git",
+    "loom-mcp",
+]
+
+[mcp_servers.loom.env]
+LOOM_COOKIE = "connect.sid=s%3A3qoK8T0mVYqUwPTFvojz1Lot_p5dmqkf.roKjWmCAP8F%2FwylAKVuAk%2FUyjpaIAeRQg56O8aUTXLE"

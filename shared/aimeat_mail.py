@@ -26,8 +26,6 @@ sys.path.insert(0, str(ROOT/'shared'))
 import cloud_assets
 from format_email import email_payload
 from free_energy_analysis import MAIN_SYS, LENS_SYS
-from aimeat_email_template import (build_dossier, clean_source, contains_keelynet_boilerplate,
-                                   source_metadata, titled_roundtable, validate_dossier)
 
 
 
@@ -105,14 +103,13 @@ def enqueue(message, queue=None):
 
 
 # REPORT-CARD >> convey/features/substack-analysis-mail.feature
-TEXT_PIPELINE = "aimeat-source-text/3"
+TEXT_PIPELINE = "aimeat-source-text/2"
 SOURCE_ANALYSIS_INSTRUCTIONS = (
     "Analyze the supplied passage specifically, with short source quotations and explicit archive connections. "
     "Use the archive's open-system lens: identify the proposed external reservoir and the wheel/coupling "
     "that could receive energy from it before discussing measurement evidence. If the author does not "
     "name a reservoir, say so and label any reservoir you propose as a hypothesis. Distinguish the "
     "author's claims, archive interpretation, simulation behavior, and demonstrated hardware results. "
-    "Never reproduce KeelyNet distribution boilerplate, word-processing parameters, BBS contact/sponsorship details, or duplication notices; the original source attachment remains unchanged. "
     "Do not replace mechanism analysis with generic 'no free lunch', 'reactive power is useless', "
     "or 'conservation forbids it' dismissal. Do not invent a demonstrated reservoir, net output, "
     "experiment or quotation. Put device-specific real-power or calorimetry questions after the "
@@ -128,97 +125,13 @@ def is_substack_source(message):
     return message.get('kind', '').startswith('aimeat-source-text/')
 
 
-def strip_keelynet_distribution_boilerplate(markdown):
-    """Use the one KeelyNet cleaner while retaining the dossier's own title."""
-    return clean_source(markdown, strip_frontmatter=False, strip_duplicate_title=False)
-
-
-def free_energy_headings(agent):
-    headings = ['Core Take', 'Chapter-by-Chapter Signal', 'Mechanism Map',
-                'Strongest Communication Moves', 'Gaps / Follow-up Questions',
-                'Cross-Connections', 'Visual / Animation Treatment']
-    if agent.lens_voices_enabled():
-        headings.append('Cross-Lens Reads')
-    return headings
-
-
-def usable_brain_analysis(agent, candidate):
-    return (bool(candidate.strip()) and not agent._has_leak(candidate)
-            and not agent._is_reasoning_dump(candidate)
-            and all(re.search(r'(?m)^## ' + re.escape(heading) + r'\s*$', candidate)
-                    for heading in free_energy_headings(agent)))
-
-
-def free_energy_material(state, folder):
-    if state.get('source_analysis_material'):
-        return state['source_analysis_material']
-    return '\n\n'.join(
-        f"{read['source']} part {read['part']}\n{read['analysis']}"
-        for read in state.get('reads', []))
-
-
-def store_brain_output(job, folder, state, brain, suffix, answer, model):
-    source_name = state.get('assets', [{}])[0].get('source_name', 'source.txt')
-    stem = re.sub(r'[^A-Za-z0-9_-]+', '-', Path(source_name).stem)[:70] or 'source'
-    filename = f'{stem}.{suffix}.md'
-    atomic(folder/filename, answer.strip()+'\n')
-    outputs = state.setdefault('brain_outputs', {})
-    outputs[brain] = {'file': filename, 'model': model}
-    if filename not in state['files']:
-        state['files'].append(filename)
-    return filename
-
-
-def display_asset_name(name, state):
-    for asset in state.get('assets', []):
-        source = asset.get('text', '')
-        original = asset.get('source_name', source)
-        if name == source:
-            return Path(original).name
-        if name == source+'.roundtable.md':
-            return Path(original).stem+'.roundtable.md'
-        if name == source+'.roundtable.json':
-            return Path(original).stem+'.roundtable.json'
-        internal_stem = Path(source).stem
-        if internal_stem and name.startswith(internal_stem):
-            return Path(original).stem + name[len(internal_stem):]
-    return name
-
-
-def dossier_summary(message, asset):
-    meta = message.get('source_metadata') or {}
-    fields = [f"**Title:** {message.get('subject') or asset.get('source_name', 'Source')}"]
-    for key, label in [('description', 'Description'), ('source', 'Primary source'),
-                       ('file_name', 'Original filename'), ('online_date', 'Source date'),
-                       ('category', 'Category')]:
-        if meta.get(key):
-            fields.append(f"**{label}:** {meta[key]}")
-    for key, label in [('persons', 'Named persons'), ('related_files', 'Related archive files')]:
-        values = meta.get(key) or []
-        if values:
-            fields.append(f"**{label}:** " + ', '.join(str(value) for value in values))
-    fields.extend([
-        f"**Source file:** `{asset.get('source_name', asset['text'])}`",
-        f"**Original source SHA-256:** `{asset.get('source_sha256_original', asset['sha256'])}`",
-        f"**Analyzed text:** {asset.get('source_chars', 0)} characters after removal of KeelyNet distribution masthead.",
-    ])
-    return '\n\n'.join(fields)
-
-
 def enqueue_text(text, *, source_url, title, recipient, queue=None):
     """Adopt immutable article text into the existing full mail-analysis pipeline."""
     mini()
-    source_ref = source_url.startswith(('https://', 'http://', 'keelynet://'))
-    if not text.strip() or not source_ref:
-        raise ValueError('An HTTP(S) or keelynet:// source reference and nonempty text are required')
+    if not text.strip() or not source_url.startswith(('https://', 'http://')):
+        raise ValueError('A source URL and nonempty text are required')
     if not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', recipient):
         raise ValueError('Invalid analysis recipient')
-    original_text = text
-    metadata = source_metadata(text) if source_url.startswith('keelynet://') else {}
-    if source_url.startswith('keelynet://'):
-        text = clean_source(text)
-    if not text.strip():
-        raise ValueError('Source cleanup left no analyzable text')
     identity = sha(json.dumps([TEXT_PIPELINE, source_url, sha(text.encode()), recipient]).encode())[:24]
     job = (queue or QUEUE) / identity
     job.mkdir(parents=True, exist_ok=True)
@@ -231,26 +144,19 @@ def enqueue_text(text, *, source_url, title, recipient, queue=None):
         message = {'kind': TEXT_PIPELINE, 'message_id': 'source-'+identity,
                    'from': recipient, 'recipient': recipient, 'subject': title,
                    'source_url': source_url,
-                   'source_metadata': metadata,
-                   'source_sha256_original': sha(original_text.encode()),
-                   'text': SOURCE_ANALYSIS_INSTRUCTIONS+' Give a full free-energy archive-grounded analysis of this source, '
-                           'including all supplied text or transcript. Identify the external reservoir and coupling '
+                   'text': SOURCE_ANALYSIS_INSTRUCTIONS+' Give a full free-energy archive-grounded analysis of this Substack post, '
+                           'including its transcript. Identify the external reservoir and coupling '
                            'mechanism first; distinguish source claims, archive connections, and '
                            'device-specific measurement evidence. Source: '+source_url}
         save(job/'email.json', message)
         assets, files, offset = [], [], 0
-        source_name = Path(urllib.parse.urlsplit(source_url).path).name or title or 'source.txt'
-        source_stem = re.sub('[^A-Za-z0-9_-]+', '-', Path(source_name).stem)[:70] or 'source'
         # The shared roundtable accepts at most 1 MiB; every character is retained.
         for number, part in enumerate(chunks(text, 200000), 1):
-            name = f'{source_stem}-{identity}-{number:04}.txt'
+            name = f'substack-{identity}-{number:04}.txt'
             atomic(folder/name, part)
             assets.append({'text': name, 'sha256': sha(part.encode()),
-                           'source_sha256_original': sha(original_text.encode()),
-                           'source_name': source_name,
                            'range': [offset, offset+len(part)], 'source_url': source_url,
-                           'source_kind': 'text', 'source_chars': len(text),
-                           'source_chars_original': len(original_text)})
+                           'source_kind': 'text', 'source_chars': len(text)})
             files.append(name)
             offset += len(part)
         email_name = 'email-'+identity+'.json'
@@ -290,15 +196,12 @@ def bounded_source_step(state):
 
 def send_source_email(agent, key, message, payload):
     """One send attempt: ambiguous acceptance is retained for manual reconciliation."""
-    body = dict(payload, to=[message['recipient']], subject=message['subject'])
-    url = f"{agent.AM_BASE}/inboxes/{agent.INBOX}/messages/send"
-    request = urllib.request.Request(url, data=json.dumps(body).encode(), method='POST',
-              headers={'Authorization': 'Bearer '+key, 'Content-Type': 'application/json'})
-    with urllib.request.urlopen(request, timeout=120) as response:
-        return json.load(response)
-
-
-
+    from agentmail_send import send_message
+    from format_email import MailContent
+    return send_message(MailContent(payload.get("text", ""),
+                        attachments=list(payload.get("attachments") or []), title=message['subject']),
+                        to=message['recipient'], subject=message['subject'], inbox=agent.INBOX,
+                        key=key, base=agent.AM_BASE, canonical_html=payload.get("html"), timeout=120)
 
 
 
@@ -313,14 +216,6 @@ def require_complete_analysis(job, state, folder):
     analysis = analysis_path.read_text() if analysis_path.is_file() else ''
     if not analysis.strip():
         raise RuntimeError('Completed analysis Markdown is empty; email delivery withheld')
-    if state.get('kind') == TEXT_PIPELINE and state.get('space') == 'free-energy':
-        outputs = state.get('brain_outputs') or {}
-        if any(not (outputs.get(name) or {}).get('file')
-               for name in ('freellmapi', 'qwen_mlx', 'flubuild', 'comparative_synthesis')):
-            raise RuntimeError('The canonical three-brain dossier is incomplete; email delivery withheld')
-        if any(not (folder/(outputs[name]['file'])).is_file() for name in outputs):
-            raise RuntimeError('A canonical brain output attachment is missing; email delivery withheld')
-        validate_dossier(analysis)
 
     for asset in state.get('assets', []):
         source_name = asset.get('text', '')
@@ -335,24 +230,17 @@ def require_complete_analysis(job, state, folder):
             raise RuntimeError(f'{source_name}: completed roundtable is missing; email delivery withheld')
         result = json.loads(sidecar.read_text())
         transcript_text = transcript.read_text()
-        expected_transcript = transcript_text
-        if state.get('space') == 'free-energy' and state.get('kind') == TEXT_PIPELINE:
-            expected_transcript = titled_roundtable(transcript_text)
-            display_title = asset.get('source_name', source_name)
-            expected_transcript = re.sub(r'(?m)^# Roundtable — .*$',
-                                         f'# Roundtable — {display_title}', expected_transcript, count=1)
         if (result.get('status') != 'complete' or result.get('sha256') != asset.get('sha256')
                 or not transcript_text.strip()
                 or sha(transcript.read_bytes()) != result.get('result_sha256')
-                or expected_transcript not in analysis):
+                or transcript_text not in analysis):
             raise RuntimeError(f'{source_name}: roundtable completion could not be verified; email delivery withheld')
         for kind in ('wordcloud', 'sentencecloud', 'ideacloud'):
             for artifact in cloud_assets.artifacts(source, kind):
                 if (not artifact.is_file() or not artifact.stat().st_size
                         or artifact.name not in state.get('files', [])):
                     raise RuntimeError(f'{source_name}: {kind} artifacts are incomplete; email delivery withheld')
-                display_artifact = display_asset_name(artifact.name, state)
-                if display_artifact not in analysis:
+                if artifact.name not in analysis:
                     raise RuntimeError(f'{source_name}: {kind} artifacts are not recorded in the analysis; email delivery withheld')
 
 
@@ -433,30 +321,23 @@ def chunks(text, size=8000):
 def merge_mail_inputs(paths, stable_seconds=5, queue=None):
     """Let the existing Mini roundtable pane process email while the laptop sleeps."""
     sources = []
-    mail_identities = set()
     for state_path in (queue or QUEUE).glob('*/state.json'):
         try:
             state = json.loads(state_path.read_text())
+            if state.get('quality_hold') or (state_path.parent/'quality-hold.json').exists():
+                continue
             for asset in state.get('assets', []):
                 name = asset['text']
                 if Path(name).name != name:
                     continue
                 source = state_path.parent/'workspace'/name
-                if not source.is_file() or source.is_symlink():
-                    continue
-                identity = (source.name, sha(source.read_bytes()))
-                mail_identities.add(identity)
-                if (state.get('status') == 'roundtable' and not state.get('quality_hold')
-                        and not (state_path.parent/'quality-hold.json').exists()
-                        and time.time()-source.stat().st_mtime >= stable_seconds):
-                    sources.append((state.get('created', 0), source))
+                if source.is_file() and not source.is_symlink() and time.time()-source.stat().st_mtime >= stable_seconds:
+                    sources.append(source)
         except (OSError, ValueError, KeyError, TypeError):
             continue
-    # Exclude every mail-job archive duplicate, including held/unfinished jobs. Otherwise
-    # the archive scan can bypass the mail stage gate and occupy the single Sages worker.
-    archive_paths = [p for p in paths if (p.name, sha(p.read_bytes())) not in mail_identities]
-    ordered_mail_sources = [path for _, path in sorted(sources, key=lambda item: item[0])]
-    return ordered_mail_sources + archive_paths
+    # A later Syncthing copy in the archive is the same input, not a second job.
+    identities = {(p.name, sha(p.read_bytes())) for p in sources}
+    return [p for p in paths if (p.name, sha(p.read_bytes())) not in identities]+sources
 
 
 def advance(agent, key, job, state, folder, returns):
@@ -540,22 +421,11 @@ def advance(agent, key, job, state, folder, returns):
         index = state['next_part']
         if index < len(parts):
             asset, number, part = parts[index]
-            is_source = is_text_source(message)
-            call_options = {'max_tokens': 1800, 'temperature': 0.2}
-            def usable_read(candidate):
-                opening = re.match(r'^(?:\*\*What this part covers\*\*|this (?:part|section) is (?:front matter|a table of contents|boilerplate))',
-                                   candidate.lstrip(), re.I)
-                return (bool(candidate.strip()) and not agent._has_leak(candidate)
-                        and not agent._is_reasoning_dump(candidate)
-                        and (not is_source or bool(opening)))
-            call_options['validate'] = usable_read
             answer, model = agent._fm_call([
-                {'role': 'system', 'content': agent.CHAPTER_SYSTEM + ('\n'+SOURCE_ANALYSIS_INSTRUCTIONS if is_source else '')},
-                {'role': 'user', 'content': f"{asset['text']} — part {number}\n\n{part}"}], **call_options)
-            canonical_opening = re.match(r'^(?:\*\*What this part covers\*\*|this (?:part|section) is (?:front matter|a table of contents|boilerplate))',
-                                         answer.lstrip(), re.I)
-            if (not answer.strip() or agent._has_leak(answer) or agent._is_reasoning_dump(answer)
-                    or (is_source and not canonical_opening)):
+                {'role': 'system', 'content': agent.CHAPTER_SYSTEM + ('\n'+SOURCE_ANALYSIS_INSTRUCTIONS if is_text_source(message) else '')},
+                {'role': 'user', 'content': f"{asset['text']} — part {number}\n\n{part}"}],
+                max_tokens=1800, temperature=0.2)
+            if not answer.strip() or agent._has_leak(answer) or agent._is_reasoning_dump(answer):
                 raise RuntimeError(f'Unusable read for part {index+1}; will retry')
             state['reads'].append({'source': asset['text'], 'part': number, 'analysis': answer, 'model': model})
             state['next_part'] += 1
@@ -569,13 +439,9 @@ def advance(agent, key, job, state, folder, returns):
             level = state.setdefault('reduce', {'parts': chunks(text), 'done': []})
             index = len(level['done'])
             if index < len(level['parts']):
-                def usable_reduction(candidate):
-                    return (bool(candidate.strip()) and not agent._has_leak(candidate)
-                            and not agent._is_reasoning_dump(candidate))
                 answer, model = agent._fm_call([
                     {'role': 'system', 'content': agent.ACROSS_SYSTEM},
-                    {'role': 'user', 'content': level['parts'][index]}], max_tokens=1000,
-                    temperature=0.2, validate=usable_reduction)
+                    {'role': 'user', 'content': level['parts'][index]}], max_tokens=1000, temperature=0.2)
                 if not answer.strip() or agent._has_leak(answer) or agent._is_reasoning_dump(answer):
                     raise RuntimeError('Unusable synthesis; will retry')
                 level['done'].append(answer)
@@ -598,79 +464,40 @@ def advance(agent, key, job, state, folder, returns):
                 options.update(tries=2, honour_tries=True)
             if space == 'free-energy':
                 system = MAIN_SYS + (LENS_SYS if agent.lens_voices_enabled() else '') + '\n\n' + SOURCE_ANALYSIS_INSTRUCTIONS
-                material = free_energy_material(state, folder)
-                prompt = f"TITLE: {message.get('subject') or question}\n\nSUPPLIED MATERIAL:\n{material}"
-                def usable_synthesis(candidate):
-                    return usable_brain_analysis(agent, candidate)
+                prompt = f"TITLE: {message.get('subject') or question}\n\nSUPPLIED MATERIAL:\n{text[:60000]}"
                 answer, model = agent._fm_call([{'role': 'system', 'content': system},
                                                 {'role': 'user', 'content': prompt}],
-                                               max_tokens=2600, temperature=0.2,
-                                               validate=usable_synthesis)
-                if not usable_brain_analysis(agent, answer):
-                    raise RuntimeError('FreeLLMAPI analysis failed the canonical section gate')
-                store_brain_output(job, folder, state, 'freellmapi', 'freellmapi', answer, model)
-                state['space'] = 'free-energy'
-                state['status'] = 'qwen-analysis'
+                                               max_tokens=2600, temperature=0.2)
+                headings = ['Core Take', 'Chapter-by-Chapter Signal', 'Mechanism Map',
+                            'Strongest Communication Moves', 'Gaps / Follow-up Questions',
+                            'Cross-Connections', 'Visual / Animation Treatment']
+                if agent.lens_voices_enabled():
+                    headings.append('Cross-Lens Reads')
+                missing = [heading for heading in headings
+                           if not re.search(r'(?m)^## ' + re.escape(heading) + r'\s*$', answer)]
+                if not answer.strip() or missing or agent._has_leak(answer) or agent._is_reasoning_dump(answer):
+                    raise RuntimeError('Canonical mail-free-energy-analysis sections incomplete; primary reads retained: '
+                                       + ', '.join(missing))
             else:
                 answer, model = agent.research_email_material(question, '', text, **options)
                 if agent._is_requeue(answer):
                     raise RuntimeError('Final analysis not sendable; primary reads retained')
-                details = '\n\n'.join(f"## {r['source']} · part {r['part']}\n\n{r['analysis']}" for r in state['reads'])
-                body = f"# Source analysis\n\n## Synthesis\n\n{answer}\n\n# Section readings\n\n{details}"
-                name = f"email-{state['id']}.analysis.md"
-                atomic(folder/name, body)
-                atomic(job/'base-analysis.md', body)
-                state.update(analysis=name, model=model, space=space, status='roundtable')
-                state['files'].append(name)
-    elif state['status'] == 'qwen-analysis':
-        material = free_energy_material(state, folder)
-        system = MAIN_SYS + (LENS_SYS if agent.lens_voices_enabled() else '') + '\n\n' + SOURCE_ANALYSIS_INSTRUCTIONS
-        prompt = f"TITLE: {message.get('subject') or 'Free Energy source'}\n\nSUPPLIED MATERIAL:\n{material}"
-        answer, model = agent._mlx_call([{'role': 'system', 'content': system},
-                                         {'role': 'user', 'content': prompt}],
-                                        max_tokens=2600, temperature=0.2, timeout=900)
-        if not usable_brain_analysis(agent, answer):
-            raise RuntimeError('Qwen MLX analysis failed the canonical section gate')
-        store_brain_output(job, folder, state, 'qwen_mlx', 'qwen-mlx', answer, model)
-        state['status'] = 'flubuild-analysis'
-    elif state['status'] == 'flubuild-analysis':
-        material = free_energy_material(state, folder)
-        system = MAIN_SYS + (LENS_SYS if agent.lens_voices_enabled() else '') + '\n\n' + SOURCE_ANALYSIS_INSTRUCTIONS
-        prompt = f"TITLE: {message.get('subject') or 'Free Energy source'}\n\nSUPPLIED MATERIAL:\n{material}"
-        session = f"aimeat-flubuild-{state['id']}-try{state.get('attempts', 0)}"
-        command = [sys.executable, str(ROOT/'bin/fm-converse'), '--session', session, '--flubuild',
-                   '--timeout', '900', '--system', system, prompt]
-        result = subprocess.run(command, capture_output=True, text=True, timeout=930)
-        if result.returncode != 0:
-            raise RuntimeError('Flubuild analysis failed: '+(result.stderr or result.stdout).strip()[-1200:])
-        answer = (result.stdout or '').strip()
-        model = os.environ.get('FM_FLUBUILD_MODEL', 'Qwen/Qwen2.5-7B-Instruct-AWQ')
-        if not usable_brain_analysis(agent, answer):
-            raise RuntimeError('Flubuild analysis failed the canonical section gate')
-        store_brain_output(job, folder, state, 'flubuild', 'flubuild', answer, model)
-        state['status'] = 'comparative-synthesis'
-    elif state['status'] == 'comparative-synthesis':
-        outputs = state.get('brain_outputs') or {}
-        names = [('FreeLLMAPI', 'freellmapi'), ('Qwen MLX', 'qwen_mlx'), ('Flubuild', 'flubuild')]
-        panels = '\n\n'.join(f"## {label}\n\n{(folder/outputs[key]['file']).read_text()}" for label, key in names)
-        system = ("Compare the three independent analyses against their shared source readings. "
-                  "Do not invent facts. Keep disagreement visible. Return exactly these sections: "
-                  "## Comparative Matrix (a Markdown table with columns: Claim or mechanism, FreeLLMAPI, Qwen MLX, Flubuild, source support); "
-                  "## Shared findings; ## Divergent readings; ## Evidence still needed.")
-        prompt = f"SOURCE TITLE: {message.get('subject')}\n\n{panels}"
-        def usable_comparison(candidate):
-            required = ['Comparative Matrix', 'Shared findings', 'Divergent readings', 'Evidence still needed']
-            return (bool(candidate.strip()) and '|' in candidate
-                    and all(re.search(r'(?m)^## '+re.escape(h)+r'\s*$', candidate) for h in required)
-                    and not agent._has_leak(candidate) and not agent._is_reasoning_dump(candidate))
-        answer, model = agent._fm_call([{'role': 'system', 'content': system},
-                                        {'role': 'user', 'content': prompt}],
-                                       max_tokens=1800, temperature=0.2,
-                                       validate=usable_comparison)
-        if not usable_comparison(answer):
-            raise RuntimeError('Tri-brain comparison failed its section gate')
-        store_brain_output(job, folder, state, 'comparative_synthesis', 'tri-brain-synthesis', answer, model)
-        state['status'] = 'roundtable'
+            details = '\n\n'.join(f"## {r['source']} · part {r['part']}\n\n{r['analysis']}" for r in state['reads'])
+            coverage = '\n'.join(
+                f"- {a.get('source_name', a['text'])}: source characters {a['range'][0]}–{a['range'][1]} of {a['source_chars']}" + (f"; {a['source_url']}" if a.get('source_url') else '')
+                if a.get('source_kind') == 'text' else
+                f"- {a['pdf']}: {a['page_count']} pages; pages with no recognized text: {a['empty_pages']}"
+                for a in state['assets'])
+            body = ('# Source analysis\n\nAnalysis types: full-text section readings; archive-grounded synthesis; '
+                    'nine-person Qwen/MLX roundtable (separate transcript); wordcloud, sentencecloud and ideacloud '
+                    '(PNGs plus exact Markdown/JSON rendering sources).\n\n'
+                    'AI-generated interpretations are separate from source evidence.\n\n'
+                    f'## Extraction coverage\n\n{coverage}\n\n## Synthesis\n\n{answer}\n\n# Section readings\n\n{details}')
+            name = f"email-{state['id']}.analysis.md"
+            atomic(folder/name, body)
+            atomic(job/'base-analysis.md', body)
+            state.update(analysis=name, model=model, space=space, status='roundtable')
+            state['files'].append(name)
     elif state['status'] == 'roundtable':
         transcripts = []
         for asset in state['assets']:
@@ -708,115 +535,39 @@ def advance(agent, key, job, state, folder, returns):
                 atomic(transcript, data)
                 status_path = Path(str(source)+'.roundtable.json')
                 save(status_path, result)
-            if state.get('space') == 'free-energy' and state.get('kind') == TEXT_PIPELINE:
-                transcript_text = titled_roundtable(transcript.read_text())
-                transcript_text = re.sub(r'(?m)^# Roundtable — .*$',
-                                         f"# Roundtable — {asset.get('source_name', source.name)}",
-                                         transcript_text, count=1)
-                display_transcript = Path(asset.get('source_name', source.name)).stem+'.roundtable.md'
-                display_status = Path(asset.get('source_name', source.name)).stem+'.roundtable.json'
-                atomic(folder/display_transcript, transcript_text)
-                atomic(folder/display_status, json.dumps(result, indent=2)+'\n')
-                transcripts.append(transcript_text)
-                for internal in (transcript.name, status_path.name):
-                    if internal in state['files']:
-                        state['files'].remove(internal)
-                for display in (display_transcript, display_status):
-                    if display not in state['files']:
-                        state['files'].append(display)
-            else:
-                transcripts.append(transcript.read_text())
-                for path in (transcript, status_path):
-                    if path.name not in state['files']:
-                        state['files'].append(path.name)
+            transcripts.append(transcript)
+            for path in (transcript, status_path):
+                if path.name not in state['files']:
+                    state['files'].append(path.name)
             cloud_files, errors = cloud_assets.generate(source)
             for name in cloud_files:
                 if name not in state['files']:
                     state['files'].append(name)
             if errors:
                 state.setdefault('cloud_errors', {})[source.name] = errors
-        if state.get('space') == 'free-energy' and state.get('kind') == TEXT_PIPELINE:
-            asset = state['assets'][0]
-            outputs = state.get('brain_outputs') or {}
-            metadata = message.get('source_metadata') or {}
-            source_name = Path(asset.get('source_name', asset['text'])).name
-            source_stem = Path(source_name).stem
-            cloud_files = [display_asset_name(name, state) for name in state['files']
-                           if name.endswith(('.png', '.source.md', '.render.json', '.ideacloud.md'))]
-            analysis = build_dossier(
-                title=message.get('subject') or source_stem,
-                filename=metadata.get('file_name') or source_name,
-                source_name=source_name,
-                source_date=metadata.get('online_date') or '',
-                source_sha=asset.get('source_sha256_original', asset['sha256']),
-                summary=dossier_summary(message, asset),
-                freellmapi=(folder/outputs['freellmapi']['file']).read_text(),
-                qwen=(folder/outputs['qwen_mlx']['file']).read_text(),
-                flubuild=(folder/outputs['flubuild']['file']).read_text(),
-                roundtable='\n\n'.join(transcripts),
-                synthesis=(folder/outputs['comparative_synthesis']['file']).read_text(),
-                source_attachment=source_name,
-                freellmapi_model=outputs['freellmapi']['model'],
-                qwen_model=outputs['qwen_mlx']['model'],
-                flubuild_model=outputs['flubuild']['model'],
-                aimeat_key=f"research/keelynet/energy/{source_stem}" if asset.get('source_url', '').startswith('keelynet://') else f"research/papers/{source_stem}",
-                cloud_artifacts=cloud_files)
-            validate_dossier(analysis)
-            name = f'{source_stem}.dossier.md'
-            state['analysis'] = name
-            if name not in state['files']:
-                state['files'].append(name)
-        else:
-            analysis = (job/'base-analysis.md').read_text()
-            analysis += '\n\n# Roundtables\n\n'+'\n\n'.join(transcripts)
-            cloud_files = [name for name in state['files'] if name.endswith(('.png', '.source.md', '.render.json', '.ideacloud.md'))]
-            analysis += '\n\n## Cloud artifacts\n\n'+ '\n'.join('- `'+name+'`' for name in cloud_files)
-            if state.get('cloud_errors'):
-                analysis += '\n\nCloud generation issues (no missing artifact is claimed as complete):\n'+json.dumps(state['cloud_errors'], indent=2)
-            name = f"email-{state['id']}.analysis.md"
-            state['analysis'] = name
-        atomic(folder/name, analysis)
-        atomic(job/'base-analysis.md', analysis)
+        analysis = (job/'base-analysis.md').read_text()
+        analysis += '\n\n# Roundtables\n\n'+'\n\n'.join(p.read_text() for p in transcripts)
+        cloud_files = [name for name in state['files'] if name.endswith(('.png', '.source.md', '.render.json', '.ideacloud.md'))]
+        analysis += '\n\n## Cloud artifacts\n\n'+ '\n'.join('- `'+name+'`' for name in cloud_files)
+        if state.get('cloud_errors'):
+            analysis += '\n\nCloud generation issues (no missing artifact is claimed as complete):\n'+json.dumps(state['cloud_errors'], indent=2)
+        atomic(folder/state['analysis'], analysis)
         state['status'] = 'ready-to-send'
     elif state['status'] == 'ready-to-send':
         require_complete_analysis(job, state, folder)
         body = (folder/state['analysis']).read_text()
-        body = strip_keelynet_distribution_boilerplate(body)
-        if message.get('source_url', '').startswith('keelynet://') and contains_keelynet_boilerplate(body):
-            raise RuntimeError('KeelyNet boilerplate remains in the outgoing dossier; email delivery withheld')
-        atomic(folder/state['analysis'], body)
-        atomic(job/'base-analysis.md', body)
         title = message.get('subject', 'AIMEAT analysis')
         payload = email_payload(body, title=message.get('subject', 'AIMEAT analysis'), filename=state.get('analysis', 'analysis'))
         for name in state['files']:
-            display_name = display_asset_name(name, state)
-            if name.startswith('email-') and name.endswith('.json'):
-                continue
-            if name.endswith('.roundtable.json'):
-                continue
-            if any(a.get('filename') in {name, display_name} for a in payload['attachments']):
+            if any(a.get('filename') == name for a in payload['attachments']):
                 continue
             if name.endswith(('.pdf', '.txt', '.md', '.csv', '.json', '.xml', '.analysis.md', '.png', '.source.md', '.render.json', '.ideacloud.md')):
-                path = folder/name
-                data = path.read_bytes()
-                if (message.get('source_url', '').startswith('keelynet://')
-                        and name.endswith(('.txt', '.md', '.markdown', '.csv', '.xml'))):
-                    data = clean_source(data.decode('utf-8'), strip_frontmatter=False,
-                                        strip_duplicate_title=False).encode('utf-8')
-                    if contains_keelynet_boilerplate(data.decode('utf-8')):
-                        raise RuntimeError(f'KeelyNet boilerplate remains in attachment {display_name}; email delivery withheld')
+                data = (folder/name).read_bytes()
                 if len(data) <= 15*1024*1024:
                     kind = ('application/pdf' if name.endswith('.pdf') else 'image/png' if name.endswith('.png')
-                            else 'application/json' if name.endswith('.json') else 'text/plain' if display_name.endswith('.txt') else 'text/markdown')
-                    payload['attachments'].append({'filename': display_name, 'content_type': kind,
+                            else 'application/json' if name.endswith('.json') else 'text/plain' if name.endswith('.txt') else 'text/markdown')
+                    payload['attachments'].append({'filename': name, 'content_type': kind,
                                                    'content': base64.b64encode(data).decode()})
-        if message.get('source_url', '').startswith('keelynet://'):
-            for attachment in payload['attachments']:
-                if attachment.get('content_type') not in ('text/plain', 'text/markdown', 'text/csv', 'application/xml'):
-                    continue
-                attached_text = base64.b64decode(attachment['content']).decode('utf-8', errors='replace')
-                if contains_keelynet_boilerplate(attached_text):
-                    raise RuntimeError(f"KeelyNet boilerplate remains in outgoing {attachment.get('filename')}; email delivery withheld")
         # A timeout can mean AgentMail accepted the message. Never resend automatically.
         state['status'] = 'sending-unconfirmed'
         publish(job, state, folder, returns)
@@ -841,14 +592,7 @@ def process_pending(agent, key, queue=None, folder=None, returns=None):
 def _process_pending(agent, key, queue, folder, returns):
     returns = returns or RETURNS
     paths = list(queue.glob('*/state.json'))
-    def schedule_key(path):
-        state = json.loads(path.read_text())
-        if state.get('kind') == TEXT_PIPELINE:
-            # Batch source articles end-to-end so the earliest one can be mailed
-            # without waiting for every sibling to finish the same checkpoint.
-            return (0, state.get('created', 0))
-        return (1, state.get('serviced', 0))
-    for path in sorted(paths, key=schedule_key):
+    for path in sorted(paths, key=lambda p: json.loads(p.read_text()).get('serviced', 0)):
         state = json.loads(path.read_text())
         if (path.parent/'quality-hold.json').exists():
             state.update(status='held', quality_hold=json.loads((path.parent/'quality-hold.json').read_text()))

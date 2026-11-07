@@ -12,6 +12,12 @@ Used by:
 """
 
 import base64
+from dataclasses import dataclass, field
+from html.parser import HTMLParser
+from urllib.parse import urlsplit
+from dataclasses import dataclass, field
+from html.parser import HTMLParser
+from urllib.parse import urlsplit
 import html
 from pathlib import Path
 import re
@@ -99,6 +105,11 @@ class LatexHTML:
         if command in {'overline', 'bar', 'underline'}:
             decoration = 'underline' if command == 'underline' else 'overline'
             return f'<span style="text-decoration:{decoration}">{self.group(depth+1)}</span>'
+        # KRON-MATH-ACCENTS v1: native email text, including K with a tilde.
+        if command in {'tilde', 'widetilde', 'hat', 'widehat', 'dot', 'ddot'}:
+            accent = {'tilde': '&#771;', 'widetilde': '&#771;', 'hat': '&#770;',
+                      'widehat': '&#770;', 'dot': '&#775;', 'ddot': '&#776;'}[command]
+            return self.group(depth+1) + accent
         if command == 'vec':
             return ('<span style="display:inline-block;text-align:center">'
                     '<span style="display:block;font-size:70%;line-height:0.6">→</span>'
@@ -154,7 +165,7 @@ def math_spans(text):
             continue
         closer = {'\\[': '\\]', '\\(': '\\)', '$$': '$$', '$': '$'}[opener]
         start = i+len(opener)
-        if opener == '$' and (start == len(text) or text[start].isspace()):
+        if opener == '$' and start == len(text):
             i += 1
             continue
         end = text.find(closer, start)
@@ -163,10 +174,15 @@ def math_spans(text):
         if end < 0:
             i += len(opener)
             continue
-        if opener == '$' and ('\n' in text[start:end] or not text[start:end] or text[end-1].isspace()):
+        # SPACED-INLINE-MATH v1: model output commonly uses $ \varphi $ and $ K $.
+        formula = text[start:end].strip()
+        currency_pair = (opener == '$' and end+1 < len(text) and text[end+1].isdigit())
+        prose_pair = (opener == '$' and not any(c in formula for c in '_^=+*/<>') and not re.search(r'\\[A-Za-z]+', formula)
+                      and any(len(word) > 1 for word in re.findall(r'[A-Za-z]+', formula)))
+        if opener == '$' and ('\n' in text[start:end] or not formula or currency_pair or prose_pair or '`' in formula):
             i += 1
             continue
-        spans.append((i, end+len(closer), text[start:end], opener in {'\\[', '$$'}))
+        spans.append((i, end+len(closer), formula, opener in {'\\[', '$$'}))
         i = end+len(closer)
     return spans
 
@@ -178,10 +194,10 @@ def render_math(source, display=False):
     except (UnsupportedMath, RecursionError):
         content = '<code>'+html.escape(source)+'</code>'
         fallback = True
-    style = "font-family:'Cambria Math','Times New Roman',serif;font-size:17px;"
+    style = "font-family:'Cambria Math','Times New Roman',serif;font-size:17px;color:#f0f6fc;"
     if display:
-        style += 'display:block;overflow-x:auto;white-space:normal;padding:12px;margin:12px 0;background:#f8fafc;border-left:3px solid #2563eb;'
-    label = 'Unrendered LaTeX preserved: ' if fallback else ''
+        style += 'display:block;overflow-x:auto;white-space:normal;padding:12px;margin:12px 0;background:#0d1117;border:1px solid #30363d;border-left:4px solid #388bfd;border-radius:6px;'
+    label = ''  # Preserve unknown notation without injecting diagnostics into prose.
     return f'<span class="aimeat-math" style="{style}" aria-label="{html.escape(source, quote=True)}">{label}{content}</span>'
 
 
@@ -207,12 +223,18 @@ def clean_latex(source, display=False):
 def inline_format(t):
     t = html.escape(t)
     # Bold & Italic
-    t = re.sub(r'\*\*([^*]+)\*\*', r'<strong style="color:#0f172a;">\1</strong>', t)
+    t = re.sub(r'\*\*([^*]+)\*\*', r'<strong style="color:#ffffff;">\1</strong>', t)
     t = re.sub(r'(?<!\*)\*([^*\n]+)\*(?!\*)', r'<em>\1</em>', t)
     # Inline code
-    t = re.sub(r'`([^`]+)`', r'<code style="background:#f1f5f9; color:#0f172a; padding:2px 5px; border-radius:4px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px;">\1</code>', t)
+    t = re.sub(r'`([^`]+)`', r'<code style="background:#21262d; color:#f0f6fc; padding:2px 5px; border-radius:4px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; border:1px solid #30363d;">\1</code>', t)
     # Links
-    t = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', r'<a href="\2" style="color:#2563eb; text-decoration:none;">\1</a>', t)
+    def link(match):
+        label, url = match.groups()
+        decoded = html.unescape(url)
+        if urlsplit(decoded).scheme.lower() not in {"https", "http", "mailto"}:
+            return label + " (" + url + ")"
+        return '<a href="' + url + '" style="color:#58a6ff; text-decoration:none;">' + label + '</a>'
+    t = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', link, t)
     return t
 
 def md_to_html(md_text, title=""):
@@ -230,7 +252,7 @@ def md_to_html(md_text, title=""):
     def close_para():
         nonlocal para
         if para:
-            out.append(f'<p style="margin: 10px 0; line-height: 1.6; color: #334155;">{"<br>".join(inline_format(x) for x in para)}</p>')
+            out.append(f'<p style="margin: 10px 0; line-height: 1.6; color: #c9d1d9;">{"<br>".join(inline_format(x) for x in para)}</p>')
             para = []
 
     def close_lists():
@@ -246,7 +268,7 @@ def md_to_html(md_text, title=""):
         nonlocal in_quote, quote_block
         if in_quote:
             content = "<br>".join(inline_format(x) for x in quote_block)
-            out.append(f'<blockquote style="border-left: 4px solid #3b82f6; background: #eff6ff; padding: 12px 16px; margin: 14px 0; border-radius: 0 6px 6px 0; color: #1e40af; font-size: 14px; line-height: 1.5;">{content}</blockquote>')
+            out.append(f'<blockquote style="border-left: 4px solid #388bfd; background: #162235; padding: 12px 16px; margin: 14px 0; border-radius: 0 6px 6px 0; color: #a5d6ff; font-size: 14px; line-height: 1.5;">{content}</blockquote>')
             in_quote = False
             quote_block = []
 
@@ -266,7 +288,7 @@ def md_to_html(md_text, title=""):
                 in_code = True; code_block = []
             else:
                 code_text = html.escape("\n".join(code_block))
-                out.append(f'<pre style="background: #0f172a; color: #f8fafc; padding: 14px; border-radius: 6px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; overflow-x: auto; line-height: 1.45;"><code>{code_text}</code></pre>')
+                out.append(f'<pre style="background: #0d1117; color: #f0f6fc; padding: 14px; border-radius: 6px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; overflow-x: auto; line-height: 1.45; border: 1px solid #30363d;"><code>{code_text}</code></pre>')
                 in_code = False; code_block = []
             i += 1
             continue
@@ -291,7 +313,7 @@ def md_to_html(md_text, title=""):
             close_para(); close_lists(); close_quote()
             eq_inner = s[2:-2].strip()
             formatted_eq = clean_latex(eq_inner, display=True)
-            out.append(f'<div style="background:#f8fafc; border:1px solid #cbd5e1; border-left:4px solid #2563eb; padding:12px 18px; margin:16px 0; border-radius:6px; font-family:\'Cambria Math\',\'Times New Roman\',Georgia,serif; font-size:17px; text-align:center; color:#0f172a; overflow-x:auto;">{formatted_eq}</div>')
+            out.append(f'<div style="background:#0d1117; border:1px solid #30363d; border-left:4px solid #388bfd; padding:12px 18px; margin:16px 0; border-radius:6px; font-family:\'Cambria Math\',\'Times New Roman\',Georgia,serif; font-size:17px; text-align:center; color:#f0f6fc; overflow-x:auto;">{formatted_eq}</div>')
             i += 1
             continue
 
@@ -299,10 +321,10 @@ def md_to_html(md_text, title=""):
         if s.startswith("|") and i + 1 < len(lines) and re.match(r"^\s*\|?[\s:|-]+\|?\s*$", lines[i + 1]) and "-" in lines[i + 1]:
             close_para(); close_lists(); close_quote()
             head = cells(line)
-            out.append('<table style="border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#ffffff; box-shadow:0 1px 3px rgba(0,0,0,0.05); border-radius:6px; overflow:hidden;">')
+            out.append('<table style="border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; background:#161b22; border:1px solid #30363d; box-shadow:0 1px 3px rgba(0,0,0,0.3); border-radius:6px; overflow:hidden;">')
             out.append('<thead><tr>')
             for cell in head:
-                out.append(f'<th style="background:#f1f5f9; border:1px solid #cbd5e1; padding:8px 12px; font-weight:600; color:#0f172a; text-align:left;">{inline_format(cell)}</th>')
+                out.append(f'<th style="background:#21262d; border:1px solid #30363d; padding:8px 12px; font-weight:600; color:#f0f6fc; text-align:left;">{inline_format(cell)}</th>')
             out.append('</tr></thead><tbody>')
             i += 2
             row_idx = 0
@@ -310,10 +332,10 @@ def md_to_html(md_text, title=""):
                 row = cells(lines[i])
                 width = max(len(head), len(row))
                 row += [""] * (width - len(row))
-                bg_col = "#ffffff" if row_idx % 2 == 0 else "#f8fafc"
+                bg_col = "#161b22" if row_idx % 2 == 0 else "#0d1117"
                 out.append(f'<tr style="background:{bg_col};">')
                 for cell in row[:width]:
-                    out.append(f'<td style="border:1px solid #cbd5e1; padding:8px 12px; vertical-align:top; color:#334155;">{inline_format(cell)}</td>')
+                    out.append(f'<td style="border:1px solid #30363d; padding:8px 12px; vertical-align:top; color:#c9d1d9;">{inline_format(cell)}</td>')
                 out.append('</tr>')
                 i += 1
                 row_idx += 1
@@ -327,20 +349,20 @@ def md_to_html(md_text, title=""):
             lvl = len(h.group(1))
             txt = inline_format(h.group(2))
             if lvl == 1:
-                out.append(f'<h1 style="color:#0f172a; border-bottom:2px solid #e2e8f0; padding-bottom:8px; margin-top:24px; font-size:22px; font-weight:700;">{txt}</h1>')
+                out.append(f'<h1 style="color:#f0f6fc; border-bottom:2px solid #30363d; padding-bottom:8px; margin-top:24px; font-size:22px; font-weight:700;">{txt}</h1>')
             elif lvl == 2:
-                out.append(f'<h2 style="color:#1e293b; border-bottom:1px solid #e2e8f0; padding-bottom:6px; margin-top:20px; font-size:18px; font-weight:600;">{txt}</h2>')
+                out.append(f'<h2 style="color:#f0f6fc; border-bottom:1px solid #30363d; padding-bottom:6px; margin-top:20px; font-size:18px; font-weight:600;">{txt}</h2>')
             elif lvl == 3:
-                out.append(f'<h3 style="color:#334155; margin-top:16px; font-size:16px; font-weight:600;">{txt}</h3>')
+                out.append(f'<h3 style="color:#e6edf3; margin-top:16px; font-size:16px; font-weight:600;">{txt}</h3>')
             else:
-                out.append(f'<h4 style="color:#475569; margin-top:14px; font-size:14px; font-weight:600;">{txt}</h4>')
+                out.append(f'<h4 style="color:#8b949e; margin-top:14px; font-size:14px; font-weight:600;">{txt}</h4>')
             i += 1
             continue
 
         # Horizontal Rule
         if re.match(r"^\s*---+\s*$", s):
             close_para(); close_lists(); close_quote()
-            out.append('<hr style="border:0; border-top:1px solid #e2e8f0; margin:20px 0;">')
+            out.append('<hr style="border:0; border-top:1px solid #30363d; margin:20px 0;">')
             i += 1
             continue
 
@@ -352,7 +374,7 @@ def md_to_html(md_text, title=""):
             if in_ol:
                 out.append('</ol>'); in_ol = False
             if not in_ul:
-                out.append('<ul style="margin:10px 0; padding-left:24px; color:#334155; line-height:1.6;">')
+                out.append('<ul style="margin:10px 0; padding-left:24px; color:#c9d1d9; line-height:1.6;">')
                 in_ul = True
             out.append(f'<li style="margin-bottom:6px;">{inline_format(ul.group(1))}</li>')
             i += 1
@@ -362,7 +384,7 @@ def md_to_html(md_text, title=""):
             if in_ul:
                 out.append('</ul>'); in_ul = False
             if not in_ol:
-                out.append(f'<ol start="{int(ol.group(1))}" style="margin:10px 0; padding-left:24px; color:#334155; line-height:1.6;">')
+                out.append(f'<ol start="{int(ol.group(1))}" style="margin:10px 0; padding-left:24px; color:#c9d1d9; line-height:1.6;">')
                 in_ol = True
             out.append(f'<li style="margin-bottom:6px;">{inline_format(ol.group(2))}</li>')
             i += 1
@@ -375,26 +397,102 @@ def md_to_html(md_text, title=""):
             para.append(line)
         i += 1
 
+    if in_code:
+        out.append('<pre><code>'+html.escape("\n".join(code_block))+'</code></pre>')
+    if in_code:
+        out.append('<pre><code>'+html.escape("\n".join(code_block))+'</code></pre>')
     close_para(); close_lists(); close_quote()
     body_html = "\n".join(out)
     for token, markup in math_replacements:
         body_html = body_html.replace(token, markup)
     return body_html
 
-def wrap_email_html(inner_html, title="AIMEAT Research Ingest"):
+def render_provenance_badge(prov):
+    if not prov:
+        return ""
+    if isinstance(prov, str):
+        prov = html.escape(prov)
+        return f'<div style="background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:10px 14px; margin:0 0 20px 0; font-size:12px; line-height:1.6; color:#8b949e;">{prov}</div>'
+    if not isinstance(prov, dict):
+        return ""
+
+    lines = []
+    trigger = prov.get("trigger") or prov.get("origin")
+    if trigger:
+        lines.append(f'<div><strong style="color:#c9d1d9;">Trigger / Origin:</strong> {html.escape(str(trigger))}</div>')
+
+    mid = prov.get("message_id")
+    if mid:
+        lines.append(f'<div><strong style="color:#c9d1d9;">Message-ID:</strong> <code style="background:#21262d; color:#f0f6fc; padding:1px 5px; border-radius:3px; font-size:11px;">{html.escape(str(mid))}</code></div>')
+
+    space = prov.get("space")
+    why = prov.get("why") or prov.get("route_reason")
+    model = prov.get("model") or prov.get("engine")
+    space_part = f'<strong style="color:#c9d1d9;">Space:</strong> <code style="background:#21262d; color:#58a6ff; padding:1px 5px; border-radius:3px; font-size:11px;">{html.escape(str(space))}</code>' if space else ""
+    if why:
+        space_part += f' <em>({html.escape(str(why))})</em>'
+    engine_part = f'<strong style="color:#c9d1d9;">Engine:</strong> {html.escape(str(model))}' if model else ""
+    row = " · ".join(p for p in (space_part, engine_part) if p)
+    if row:
+        lines.append(f'<div>{row}</div>')
+
+    sources = prov.get("sources")
+    if sources:
+        if isinstance(sources, list):
+            src_str = ", ".join(str(s) for s in sources[:6])
+            if len(sources) > 6:
+                src_str += f" (+{len(sources)-6} more)"
+        else:
+            src_str = str(sources)
+        lines.append(f'<div><strong style="color:#c9d1d9;">Context Sources:</strong> {html.escape(src_str)}</div>')
+
+    host = prov.get("host")
+    ts = prov.get("timestamp")
+    footer_bits = []
+    if host:
+        footer_bits.append(f"Host: {html.escape(str(host))}")
+    if ts:
+        footer_bits.append(f"Dispatched: {html.escape(str(ts))}")
+    if footer_bits:
+        lines.append('<div style="margin-top:4px; font-size:11px; color:#6e7681;">' + " · ".join(footer_bits) + '</div>')
+
+    content = "\n    ".join(lines)
+    return f"""<div style="background:#0d1117; border:1px solid #30363d; border-radius:6px; padding:10px 14px; margin:0 0 20px 0; font-size:12px; line-height:1.6; color:#8b949e;">
+    <div style="font-weight:600; color:#58a6ff; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">Provenance & Origin</div>
+    {content}
+  </div>"""
+
+def wrap_email_html(inner_html, title="AIMEAT Research Ingest", provenance=None):
+    prov_badge = render_provenance_badge(provenance)
     return f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="dark">
+<meta name="supported-color-schemes" content="dark">
 <title>{html.escape(title)}</title>
+<style>
+  :root {{ color-scheme: dark; supported-color-schemes: dark; }}
+  body {{ background-color: #0d1117 !important; color: #c9d1d9 !important; }}
+  a {{ color: #58a6ff !important; }}
+  h1, h2, h3, h4 {{ color: #f0f6fc !important; }}
+  blockquote {{ background: #162235 !important; color: #a5d6ff !important; border-left-color: #388bfd !important; }}
+  code {{ background: #21262d !important; color: #f0f6fc !important; }}
+  pre {{ background: #0d1117 !important; color: #f0f6fc !important; border-color: #30363d !important; }}
+  table {{ background: #161b22 !important; border-color: #30363d !important; }}
+  th {{ background: #21262d !important; border-color: #30363d !important; color: #f0f6fc !important; }}
+  td {{ border-color: #30363d !important; color: #c9d1d9 !important; }}
+  hr {{ border-top-color: #30363d !important; }}
+</style>
 </head>
-<body style="margin:0; padding:16px; background-color:#f8fafc; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <div style="max-width:760px; margin:0 auto; background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; padding:24px 32px; box-shadow:0 2px 4px rgba(0,0,0,0.04);">
-    <div style="font-size:12px; color:#64748b; margin-bottom:12px; border-bottom:1px solid #f1f5f9; padding-bottom:8px;">
+<body style="margin:0; padding:16px; background-color:#0d1117; color:#c9d1d9; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <div style="max-width:760px; margin:0 auto; background:#161b22; border:1px solid #30363d; border-radius:8px; padding:24px 32px; box-shadow:0 4px 16px rgba(0,0,0,0.4); color:#c9d1d9;">
+    <div style="font-size:12px; color:#8b949e; margin-bottom:12px; border-bottom:1px solid #21262d; padding-bottom:8px;">
       AIMEAT Research Ingest · Fleet Multi-Brain Synthesis
     </div>
-    {inner_html}
-    <div style="margin-top:32px; padding-top:12px; border-top:1px solid #f1f5f9; font-size:11px; color:#94a3b8; text-align:center;">
+    {prov_badge}
+    <main id="mail-content">{inner_html}</main>
+    <div style="margin-top:32px; padding-top:12px; border-top:1px solid #21262d; font-size:11px; color:#8b949e; text-align:center;">
       AIMEAT · Cloudcity · Original Markdown and equations retained
     </div>
   </div>
@@ -419,11 +517,118 @@ def source_attachments(markdown, filename="analysis"):
     return result
 
 
-def email_payload(markdown, title="AIMEAT Research Ingest", filename="analysis"):
-    return dict(text=markdown, html=render_email(markdown, title=title),
+def email_payload(markdown, title="AIMEAT Research Ingest", filename="analysis", provenance=None):
+    return dict(text=markdown, html=render_email(markdown, title=title, provenance=provenance),
                 attachments=source_attachments(markdown, filename))
 
 
-def render_email(markdown, title="AIMEAT Research Ingest"):
+def render_email(markdown, title="AIMEAT Research Ingest", provenance=None):
     """Full HTML document; the body, mathematics and wrapper all live here."""
-    return wrap_email_html(md_to_html(markdown), title=title)
+    return wrap_email_html(md_to_html(markdown), title=title, provenance=provenance)
+
+
+# REPORT-CARD >> ~/work/convey/features/mail-consolidation.feature
+@dataclass
+class MailContent:
+    """All semantic material is assembled before document finalization."""
+    markdown: str = ""
+    notices: list[str] = field(default_factory=list)
+    attachments: list[dict] = field(default_factory=list)
+    provenance: dict | None = None
+    title: str = "AIMEAT Research Ingest"
+    text_prefix: str = ""
+
+    def text(self):
+        return "\n\n".join([self.markdown] + [str(n) for n in self.notices if n])
+
+    def payload(self):
+        text = self.text()
+        return {"text": self.text_prefix + text, "html": render_email(text, title=self.title, provenance=self.provenance),
+                **({"attachments": list(self.attachments)} if self.attachments else {})}
+
+
+class _PrintSemantics(HTMLParser):
+    """Share the Markdown parser; discard email presentation at the semantic boundary."""
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.parts = []
+    def handle_starttag(self, tag, attrs):
+        # Math layout properties are semantic; email colors/backgrounds never cross.
+        keep = []
+        for key, value in attrs:
+            if key in {"href", "src", "alt", "start", "colspan", "rowspan"}:
+                keep.append((key, value))
+            elif key == "style" and tag == "span":
+                style = ";".join(rule for rule in value.split(";")
+                                 if rule.strip().split(":")[0] in
+                                 {"display", "vertical-align", "text-align", "border-bottom", "border-top", "padding"})
+                if style: keep.append((key, style))
+        self.parts.append("<"+tag+"".join(' '+k+'="'+html.escape(v, quote=True)+'"' for k,v in keep)+">")
+    def handle_endtag(self, tag): self.parts.append("</"+tag+">")
+    def handle_data(self, data): self.parts.append(data)
+    def handle_entityref(self, name): self.parts.append("&"+name+";")
+    def handle_charref(self, name): self.parts.append("&#"+name+";")
+
+
+def render_print(markdown, css=""):
+    parser = _PrintSemantics()
+    parser.feed(md_to_html(markdown))
+    return ('<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
+            'body{background:white;color:#111;font:12pt sans-serif;margin:24pt}'
+            'pre{white-space:pre-wrap;background:#eee;color:#111;padding:10pt}'
+            'table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:5pt}'
+            'a{color:#0645ad}h1,h2,h3{break-after:avoid}pre,tr{break-inside:avoid}'
+            '@page{margin:18mm}'+css+'</style></head><body>'+''.join(parser.parts)+'</body></html>')
+
+
+# REPORT-CARD >> ~/work/convey/features/mail-consolidation.feature
+@dataclass
+class MailContent:
+    """All semantic material is assembled before document finalization."""
+    markdown: str = ""
+    notices: list[str] = field(default_factory=list)
+    attachments: list[dict] = field(default_factory=list)
+    provenance: dict | None = None
+    title: str = "AIMEAT Research Ingest"
+
+    def text(self):
+        return "\n\n".join([self.markdown] + [str(n) for n in self.notices if n])
+
+    def payload(self):
+        text = self.text()
+        return {"text": text, "html": render_email(text, title=self.title, provenance=self.provenance),
+                **({"attachments": list(self.attachments)} if self.attachments else {})}
+
+
+class _PrintSemantics(HTMLParser):
+    """Share the Markdown parser; discard email presentation at the semantic boundary."""
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.parts = []
+    def handle_starttag(self, tag, attrs):
+        # Math layout properties are semantic; email colors/backgrounds never cross.
+        keep = []
+        for key, value in attrs:
+            if key in {"href", "src", "alt", "start", "colspan", "rowspan"}:
+                keep.append((key, value))
+            elif key == "style" and tag == "span":
+                style = ";".join(rule for rule in value.split(";")
+                                 if rule.strip().split(":")[0] in
+                                 {"display", "vertical-align", "text-align", "border-bottom", "border-top", "padding"})
+                if style: keep.append((key, style))
+        self.parts.append("<"+tag+"".join(' '+k+'="'+html.escape(v, quote=True)+'"' for k,v in keep)+">")
+    def handle_endtag(self, tag): self.parts.append("</"+tag+">")
+    def handle_data(self, data): self.parts.append(data)
+    def handle_entityref(self, name): self.parts.append("&"+name+";")
+    def handle_charref(self, name): self.parts.append("&#"+name+";")
+
+
+def render_print(markdown, css=""):
+    parser = _PrintSemantics()
+    parser.feed(md_to_html(markdown))
+    return ('<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
+            'body{background:white;color:#111;font:12pt sans-serif;margin:24pt}'
+            'pre{white-space:pre-wrap;background:#eee;color:#111;padding:10pt}'
+            'table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:5pt}'
+            'a{color:#0645ad}h1,h2,h3{break-after:avoid}pre,tr{break-inside:avoid}'
+            '@page{margin:18mm}'+css+'</style></head><body>'+''.join(parser.parts)+'</body></html>')

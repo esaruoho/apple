@@ -37,7 +37,7 @@ class RendererTests(unittest.TestCase):
     def test_unknown_or_malformed_tex_is_preserved_not_stripped(self):
         for expression in (r'\futurecommand{Q}', r'\frac{1}{2'):
             output = f.md_to_html('\\[\n'+expression+'\n\\]')
-            self.assertIn('Unrendered LaTeX preserved:', output)
+            self.assertNotIn('Unrendered LaTeX preserved:', output)
             self.assertIn(expression, output)
 
     def test_html_is_escaped_in_formula(self):
@@ -60,5 +60,27 @@ class RendererTests(unittest.TestCase):
         self.assertIn('<strong ', output)
         self.assertIn('<b>E</b><sub>1</sub>', output)
         self.assertIn('<b>E</b><sub>s</sub>', output)
+
+    def test_provenance_badge_renders_cleanly(self):
+        prov = {
+            'origin': 'inbound-email',
+            'trigger': 'Reactive power question from test@example.com',
+            'message_id': '<test-mid@amazonses.com>',
+            'space': 'free-energy',
+            'why': 'keywords:free-energy(3)',
+            'model': 'models/gemini-flash-lite-latest',
+            'sources': ['wiki:reactive-power', 'attachment.pdf'],
+            'host': 'CloudcityMacMini',
+            'timestamp': '2026-10-30 09:00:00 UTC',
+        }
+        output = f.render_email('# Test Analysis\n\nBody content.', title='Test Title', provenance=prov)
+        self.assertIn('Provenance & Origin', output)
+        self.assertIn('Reactive power question', output)
+        self.assertIn('&lt;test-mid@amazonses.com&gt;', output)
+        self.assertIn('free-energy', output)
+        self.assertIn('keywords:free-energy(3)', output)
+        self.assertIn('models/gemini-flash-lite-latest', output)
+        self.assertIn('wiki:reactive-power', output)
+        self.assertIn('CloudcityMacMini', output)
 
 if __name__ == '__main__': unittest.main()

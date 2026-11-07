@@ -54,7 +54,7 @@ Regression coverage exercises legacy failure states, three repeated analysis fai
 
 The hand-built `batch_ingest_keelynet_10.py` was reviewed, copied to `aimeat/shelved/`, and its active entry point replaced with an inert refusal. `process_zpe_corpus.py` was likewise made inert so it cannot dispatch that batch. The attempted Mini invocation failed during import of the legacy renderer shim before analysis or email delivery; the Mini outbox confirms exit 1, and the process inspection found no running batch.
 
-The existing `mail-free-energy-analysis` system prompt (`MAIN_SYS`, `LENS_SYS`) is now the shared prompt source for Free Energy AIMEAT synthesis. Its existing FreeLLMAPI model chain already includes Gemini models, so the shelved direct-Gemini fallback is not imported. Owner UTF-8 text attachments join the existing durable AIMEAT path used by PDFs: hash-keyed intake, full source reads, the existing roundtable, artifact gates, and the shared `format_email.py` renderer. The same `enqueue_text` entry accepts `keelynet://` provenance references for locally archived text, and its new-email subject is the source title without a generated prefix.
+The existing `mail-free-energy-analysis` system prompt (`MAIN_SYS`, `LENS_SYS`) is now the shared prompt source for Free Energy AIMEAT synthesis. Its existing FreeLLMAPI model chain already includes Gemini models, so the shelved direct-Gemini fallback is not imported. Owner UTF-8 text attachments join the existing durable AIMEAT path used by PDFs: hash-keyed intake, full source reads, the existing roundtable, artifact gates, and the shared `format_email.py` renderer.
 
 ### How to get back
 
@@ -63,58 +63,3 @@ The existing `mail-free-energy-analysis` system prompt (`MAIN_SYS`, `LENS_SYS`) 
 - Resume command: unavailable until a session ID is assigned.
 - Date: 2026-10-23 from the active environment; turn timestamps were not present in a transcript.
 - User request: this follow-up asks to shelve the custom batch and make owner PDF/text email analysis use one established Free Energy output source.
-
-
-## Follow-up: preserve KeelyNet source names and block reasoning leaks
-
-A ZPE1 queue attempt showed a model returning a private thinking-process preamble. That attempt had not emailed; it exposed a gap in the existing leak detector. The detector and chapter prompt now reject that preamble shape. The shared `enqueue_text` path now derives a display filename from its source reference, so KeelyNet jobs do not surface with a fabricated `substack-` filename. The in-flight ZPE1 job will be reset to remove the rejected read and reprocessed after the updated Mini handler is active. No tests or live emails have been run for these changes.
-
-
-The shared analysis instructions also exclude the KeelyNet word-processing, contact, sponsorship, and distribution-permission boilerplate from generated email content. The source attachment itself remains byte-for-byte unchanged.
-
-The prompt request alone did not prevent the model from repeating the contact line. The send gate now strips the known word-processing, BBS contact, sponsorship, and permission notice before rendering both email body and Markdown attachment; the original source remains unchanged.
-
-The section-reader gate now requires the canonical source-read heading and pins those source reads to the configured FreeLLMAPI default model, while using that same shared pipeline and renderer. This blocks analysis-plan text from being saved as a section result.
-
-The single-model pin made one source read remain in the gateway call for several minutes. It is removed; the established FreeLLMAPI fallback chain handles endpoint availability, while the canonical opening-heading guard still rejects reasoning dumps.
-
-## Follow-up: require the complete Phase Conjugation dossier for every Free Energy source
-
-Esa reported that delivered messages still had untitled roundtable speakers, omitted standalone Qwen MLX and FreeLLMAPI analyses, and included KeelyNet masthead/contact/distribution text from the source attachment. The previous `complete` receipt only proved that the send API accepted the message; it did not prove the content matched the requested package.
-
-The mailer now builds the same seven-section dossier map as the saved Phase Conjugation package, using one Markdown content builder and the existing `format_email.py` rich-text/math renderer. A send gate requires separate FreeLLMAPI, Qwen MLX, and Flubuild outputs, the comparative synthesis, all nine canonical Sage names and titles, and the source/artifact manifest. The source cleaner removes the word-processor line, distribution notice, sponsorship/address, and split contact banners from the analyzed text and mailed attachment while retaining source files and useful `See also` filenames in the archive. The original source digest remains recorded.
-
-Inspection also found the checked-in `fm-converse` did not yet accept `--flubuild`, although the current local working copy has that capability uncommitted. The minimal CLI route and tokenizer-aware Flubuild helper are included here; the helper refuses requests that exceed the model context instead of shortening the article and sending a partial audit. Delivery remains runtime-untested until a generated dossier passes the gate and the actual recipient package is inspected. This turn had no retrievable session transcript or session ID; none is fabricated.
-
-The Mini worker advances only one checkpoint per poll. With ten articles queued together, its previous `serviced` ordering made every article wait through the whole batch for each next checkpoint. Free Energy source jobs now sort by their original enqueue time and continue end-to-end, so the first article can clear every model and artifact gate before the next begins. Other AIMEAT jobs retain the prior serviced-time order. This is deployed for the active batch; delivery is still pending verification.
-
-The first article completed FreeLLMAPI and Qwen MLX. Its Flubuild attempt found that invoking `fm-converse` via its shebang selected an older Python than the already-running mail worker, failing on modern type-annotation syntax. The subprocess now uses `sys.executable` from the mail worker. The job retains both completed brain outputs and will retry Flubuild after the code reload; no partial email was sent.
-
-## Follow-up: gate roundtable inputs to the active mail job
-
-The Sages bridge scanned every stable text file in the AIMEAT mail queue. That let it begin ZPE3's long roundtable while the mailer was still finishing ZPE1, blocking the single roundtable worker. `merge_mail_inputs` now includes queue-backed sources only when their durable mail state is `roundtable`, orders them by original enqueue time, and continues to deduplicate identical archive copies. The mailer remains the sole owner of stage progression and delivery. Syntax and whitespace checks passed; deployment and live email formatting still require runtime verification.
-
-The first filter was insufficient because the same generated source can also exist under the archive root and arrive through the bridge's ordinary `paths` list. The merger now records identities for every mail-job workspace source and excludes matching archive copies regardless of whether the mail is held, failed, or still in an earlier stage. Only a stable, non-held source whose state is exactly `roundtable` is placed at the front of the input list; eligible queue items remain in enqueue order, ahead of unrelated archive backlog.
-
-A focused local probe verified that an archived duplicate stays out while its mail job is reading, then the workspace source becomes the first input once the state reaches `roundtable`. Syntax compilation and `git diff --check` passed.
-
-The first completed roundtable artifacts then exposed a title-normalization bug: the Sages output uses the surnames `Bearden`, `Prigogine`, and `Russell`, while the canonical role map only recognized `Tom`, `Ilya`, and `Walter`. Those valid speakers were falsely reported as missing and blocked the first four dossiers. The alias map now recognizes all three surname-only forms and writes the canonical full name and role title. A focused probe covering those headers passed. The already-produced transcripts remain unchanged; the mailer can now render them with the correct Sage titles.
-
-The first corrected dossier reached `ready-to-send`, and its complete-content gate correctly withheld the email because artifact validation compared internal generated filenames against the human-readable names written into the dossier manifest. The validator now maps each artifact to the same display name before checking the dossier. This preserves the integrity check and aligns it with the canonical email output. The job remains at the send gate and will retry after deployment.
-
-## Follow-up: remove KeelyNet banners from the entire outgoing package
-
-Esa supplied two examples of boilerplate still visible in the output: the wrapped Jerry/Ron service banner and phone numbers, plus the word-processor parameters, KeelyNet source/sponsor/address lines, duplication notice, and Tom Albion contact footer. The shared cleaner now removes those forms even when they occur after article content, handles wrapped contact numbers and the `If` lead-in, and preserves the page's `See also` archive filenames while dropping its page counter. Before sending, the same cleaner now runs over every KeelyNet text attachment, and the sender withholds the email if the dossier body or any text attachment still contains a known marker or contact phone. A direct probe using both supplied screenshot text shapes passed; Python compilation and `git diff --check` passed. Live delivery remains pending inspection of a complete email package.
-
-## Follow-up: quality failures also need model fallback (2026-10-23)
-
-Esa reported that no ZPE or Zenneck emails had arrived after an hour. Inspection found that the Mini mailer retried queued source jobs, but `_fm_call` advanced to another configured model only for transport/provider exceptions. A response that arrived successfully and then failed the source-read leak/opening check was rejected after the call, so the same first model was selected again on the next poll. Several jobs showed this failure; none had reached email delivery. I queued ZPE1, ZPE2PT1–3, ZPE3–7, and ZENNECK through the existing `enqueue_text` pipeline, preserving the existing canonical synthesis, roundtable, artifact checks, renderer, and send gate.
-
-The code change makes `_fm_call` accept a caller quality validator and continue through the same configured model chain when a candidate's content fails that validator. Source reads, synthesis reductions, and the canonical sectioned analysis use this path. It does not weaken completion gates or add another sender/template. Runtime delivery remains unverified until job receipts report `complete`.
-
-### How to get back
-
-- Transcript: no local session JSONL was available in the configured Codex project paths during this turn.
-- Session ID / `Codex --resume`: unavailable; not fabricated.
-- Date: 2026-10-23 from the active environment; transcript timestamps unavailable.
-- User request: send the queued ZPE1/ZPE2/Zenneck analyses through the existing definitive AIMEAT email template.

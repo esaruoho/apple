@@ -22,10 +22,14 @@ import atexit, base64, json, os, re, shutil, subprocess, sys, tempfile, time, ur
 import socket
 # REPORT-CARD >> ~/work/convey/features/sage-email-socket-fix.feature
 from pathlib import Path
+# MAIL-RUNTIME-PYTHON v1: Boot's inherited PATH can select Xcode Python 3.9.
+# Re-exec in the SAME Boot pane, never spawn a worker or daemon.
+if __name__ == "__main__" and sys.version_info < (3, 10):
+    os.execv("/opt/homebrew/bin/python3", ["/opt/homebrew/bin/python3", str(Path(__file__).resolve())] + sys.argv[1:])
 import types
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'shared'))
 import aimeat_mail
-from format_email import md_to_html as md_to_inner_html, render_email as md_to_html, source_attachments
+from format_email import render_email as _render_email, source_attachments, MailContent, render_print
 # REPORT-CARD >> features/email-math-renderer.feature
 
 # REPORT-CARD >> features/aimeat-email-pdf.feature
@@ -58,6 +62,17 @@ def format_text_provenance(prov):
         lines.append(f"• Host: {host or ''} · Dispatched: {ts or ''}")
     lines.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
     return "\n".join(lines)
+
+# MAIL-RENDER-COMPAT v1: preserve provenance with both deployed renderer versions.
+def md_to_html(markdown, title="", provenance=None):
+    import inspect
+    supported = "provenance" in inspect.signature(_render_email).parameters
+    if provenance and not supported:
+        markdown = format_text_provenance(provenance) + markdown
+    kwargs = {"title": title}
+    if supported:
+        kwargs["provenance"] = provenance
+    return _render_email(markdown, **kwargs)
 
 AM_BASE   = "https://api.agentmail.to/v0"
 INBOX     = os.environ.get("AGENTMAIL_INBOX", "cloudcity-llm@agentmail.to")
@@ -128,7 +143,48 @@ def fm_key():
     if not k: sys.exit("freellmask-mail: no FreeLLMAPI key (~/.fm-free.key)")
     return k
 
+# MAIL-LANGUAGE-GUARD v1
+# REPORT-CARD >> ~/work/convey/features/mail-language-guard.feature
+sys.path.insert(0, str(Path.home()/"work/convey"))
+from convey import mail_language
+
+def _rewrite_report_language(prompt):
+    return _fm_call([{"role":"system", "content":"Translate reports faithfully. " +
+                     mail_language.instruction(mail_language.ACTIVE_LANGUAGE.get() or "en")},
+                     {"role":"user", "content":prompt}], max_tokens=16000)[0]
+
+def _guard_outgoing_payload(body, target=None):
+    payload = dict(body)
+    target = target or payload.pop("_report_language", None) or "en"
+    payload.pop("_report_language", None)
+    if payload.get("text"):
+        checked = mail_language.enforce(payload["text"], target, _rewrite_report_language)
+        if checked != payload["text"]:
+            payload["text"] = checked
+            payload["html"] = md_to_html(checked, title=payload.get("subject", ""))
+    return payload
+
 def http(url, key, method="GET", body=None):
+    # Final send boundary: every compose, inbound reply and forwarding path.
+    if method == "POST" and (url.endswith("/messages/send") or url.endswith("/reply")):
+        body = _guard_outgoing_payload(body)
+        if url.endswith("/messages/send"):
+            from agentmail_send import agentmail_send
+            response = agentmail_send(body.get("subject", ""), body.get("text", ""), body.get("to", []),
+                                      inbox=urllib.parse.unquote(url.split("/inboxes/",1)[1].split("/messages/",1)[0]), cc=body.get("cc"), bcc=body.get("bcc"),
+                                      html=body.get("html"), attachments=body.get("attachments"), timeout=120, key=key)
+            if response is None:
+                raise RuntimeError("canonical AgentMail sender failed; delivery remains pending")
+            return response
+
+        from agentmail_send import reply_to_message
+        mid = urllib.parse.unquote(url.rsplit("/messages/", 1)[1][:-len("/reply")])
+        return reply_to_message(mid, MailContent(body.get("text", ""),
+                               attachments=list(body.get("attachments") or [])),
+                               canonical_html=body.get("html"), inbox=urllib.parse.unquote(url.split("/inboxes/",1)[1].split("/messages/",1)[0]), key=key,
+                               cc=body.get("cc"), bcc=body.get("bcc"), to=body.get("to"),
+                               reply_all=body.get("reply_all"), timeout=120)
+
     data=json.dumps(body).encode() if body is not None else None
     req=urllib.request.Request(url, data=data, method=method,
         headers={"Authorization":f"Bearer {key}","Content-Type":"application/json"})
@@ -168,21 +224,11 @@ def send_inbox_reply(key, mid, reply):
     The source attachments remain accessible in the original email thread.
     """
     reply = dict(reply)
-    reply['attachments'] = list(reply.get('attachments', []))
-    present = {a.get('filename') for a in reply['attachments']}
-    reply['attachments'].extend(a for a in source_attachments(reply.get('text', ''), 'analysis') if a['filename'] not in present)
-    url=f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply"
-    try:
-        return http(url, key, "POST", reply)
-    except urllib.error.HTTPError as error:
-        if error.code != 413 or not reply.get("attachments"):
-            raise
-    fallback={k: v for k, v in reply.items() if k != "attachments"}
-    note="Original attachments remain in your original email; the email service rejected their inclusion in this reply because of its size limit."
-    fallback["text"]=fallback.get("text", "")+"\n\n"+note
-    if "html" in fallback:
-        fallback["html"]+="<p>"+note+"</p>"
-    return http(url, key, "POST", fallback)
+    attachments = list(reply.get('attachments', []))
+    present = {a.get('filename') for a in attachments}
+    attachments.extend(a for a in source_attachments(reply.get('text', ''), 'analysis') if a['filename'] not in present)
+    reply['attachments'] = attachments
+    return http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}/reply", key, "POST", reply)
 
 # ── attachments: text/markdown read directly; PDF + images via on-Mini Apple Vision OCR ──
 def _att_bytes(k, mid, att_id):
@@ -203,11 +249,6 @@ def _extract_one(k, mid, att):
     # text / markdown / json / xml → decode directly (no OCR)
     if ct.startswith("text/") or low.endswith((".md",".txt",".markdown",".csv")) or ct in ("application/json","application/xml"):
         _txt = raw.decode("utf-8","ignore")
-        if len(_txt) > MAX_CHARS:
-            print(f"    ⚠️ {name}: {len(_txt):,} chars — reading first {MAX_CHARS:,}, "
-                  f"{len(_txt)-MAX_CHARS:,} NOT read", flush=True)
-            _txt = _txt[:MAX_CHARS] + f"\n\n[TRUNCATED: {len(_txt)-MAX_CHARS:,} further characters "
-            _txt += "of this attachment were not read.]"
         return name, _txt
     # pdf / image → Apple Vision OCR on the Mini (synchronous; handles text PDFs AND scans/images)
     if ct=="application/pdf" or ct.startswith("image/") or low.endswith((".pdf",".png",".jpg",".jpeg",".heic",".tiff",".tif",".gif",".bmp",".webp")):
@@ -294,33 +335,23 @@ def _has_across_shape(text):
                                   "what is never resolved"))
 
 
+# SHARED-BRAIN-ROUTING v1
+# REPORT-CARD >> ~/work/convey/features/shared-brain-routing.feature
+sys.path.insert(0, str(Path.home()/"work/convey"))
+from convey import brain_routes, document_brains
+
+def _shared_mlx_call(messages, max_tokens=2200, temperature=.3, timeout=120):
+    if not _mlx_alive(timeout=min(timeout, 8)):
+        raise RuntimeError("Mini MLX is not generating")
+    return _mlx_call(messages, max_tokens=max_tokens, temperature=temperature, timeout=timeout)
+
 def _fm_call(messages, max_tokens=3000, temperature=0.3, model=None, validate=None):
-    """One FreeLLMAPI /chat/completions call. Walks FM_MODEL_CHAIN: a model answering 429/502/503 is an
-    UNAVAILABLE ENDPOINT, so move to the next one in seconds rather than waiting out a window on a
-    provider that is simply down. Only the LAST model in the chain gets the patient backoff treatment.
-    Returns (text, model_used)."""
-    chain = [model] if model else list(FM_MODEL_CHAIN)
-    last = None
-    for i, cand in enumerate(chain):
-        is_last = (i == len(chain) - 1)
-        try:
-            result = _fm_call_one(messages, max_tokens, temperature, cand, patient=is_last)
-            if validate is not None and not validate(result[0]):
-                raise ValueError("response failed the caller's quality gate")
-            return result
-        except urllib.error.HTTPError as e:
-            last = e
-            if e.code in FM_DEAD_CODES and not is_last:
-                print(f"        ⇢ {cand} unavailable (HTTP {e.code}) — next model", flush=True)
-                continue
-            raise
-        except Exception as e:
-            last = e
-            if not is_last:
-                print(f"        ⇢ {cand} {type(e).__name__} — next model", flush=True)
-                continue
-            raise
-    raise last if last else RuntimeError("no model in the chain")
+    return brain_routes.complete(
+        messages, gateway_models=FM_MODEL_CHAIN, preferred=model,
+        gateway=_fm_call_one, mlx=_shared_mlx_call, max_tokens=max_tokens,
+        temperature=temperature,
+        timeout=int(os.environ.get("FREELLMASK_MAIL_BRAIN_TIMEOUT", "120")),
+        validate=validate)
 
 
 def _fm_call_one(messages, max_tokens=3000, temperature=0.3, model=None, patient=True):
@@ -346,7 +377,8 @@ def _fm_call_one(messages, max_tokens=3000, temperature=0.3, model=None, patient
             # 429 = free-tier per-minute cap (Gemini) or provider throttle. DON'T fail — WAIT for the
             # window to clear (≈40s, or the server's Retry-After if longer), then retry. This is the
             # "delayed" automatic pacing: the call is deferred, never pushed past the free tier.
-            if e.code==429 and attempt<5 and patient:
+            # MAIL-THROTTLE-LIMIT v1: at most three throttled calls, then fail over.
+            if e.code==429 and attempt<2 and patient:
                 ra=e.headers.get("Retry-After") if e.headers else None
                 try: wait=max(RL_WAIT, int(ra)) if ra else RL_WAIT
                 except (ValueError, TypeError): wait=RL_WAIT
@@ -361,14 +393,15 @@ def _fm_call_one(messages, max_tokens=3000, temperature=0.3, model=None, patient
             # so a transient 502 killed the attempt outright — and since every rejection path was
             # silent, twelve attempts of pure gateway noise were reported as "the model would not
             # produce the required shape". The model never got the chance to produce anything.
-            if e.code in (500, 502, 503, 504) and attempt < 5 and patient:
+            if e.code in (500, 502, 503, 504) and attempt < 2 and patient:
                 w = min(60, 5 * (2 ** attempt))
                 print(f"        ⏸ gateway {e.code}, retry {attempt+1}/6 in {w}s", flush=True)
                 time.sleep(w); continue
             raise
         except (urllib.error.URLError, TimeoutError) as e:
             # A dropped connection or a read timeout is the same class of event: the gateway, not us.
-            if attempt < 5:
+            # MAIL-NETWORK-FAILOVER v1: unavailable nonfinal providers fail over immediately.
+            if attempt < 2 and patient:
                 w = min(60, 5 * (2 ** attempt))
                 print(f"        ⏸ {type(e).__name__}, retry {attempt+1}/6 in {w}s", flush=True)
                 time.sleep(w); continue
@@ -541,6 +574,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "confirm, even if you label it 'example'. Show ONLY the bare verified command (e.g. `xcrun agent skills "
           "export`) and tell the user to run `<command> --help` for the actual flags. Zero invented flags, not "
           "plausible-looking ones.")
+    base += "\n\n" + mail_language.instruction(mail_language.ACTIVE_LANGUAGE.get() or "en")
     voices_on = lens_voices_enabled()
     if viewpoint and voices_on:   # in-corpus (free-energy) → think out loud + speak in four voices, ONE call, no extra roundtrip
         # The promised count must MATCH what the template actually asks for: material mode injects four
@@ -736,7 +770,8 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             # much is still outstanding rather than always paying for the maximum.
             _need = len([h for h in required if h not in have]) or len(required) or 1
             _budget = 1400 + 620 * min(_need, len(required) or 1)
-            ans, used = _fm_call(cur, model=chosen_model, max_tokens=max(3000, min(_budget, 12000)))
+            # MAIL-ROUTING-FALLBACK v1: pin only an explicit override or big-context model.
+            ans, used = _fm_call(cur, model=(chosen_model if (big or model_override) else None), max_tokens=max(3000, min(_budget, 12000)), validate=lambda t: bool(t) and not _looks_garbage(t) and not _has_leak(t))
         except Exception as e:
             why.append(f"call failed: {e}"); print(f"      ↻ {_attempt}/{eff_tries} call failed: {e}", flush=True); continue
         if not ans:
@@ -789,36 +824,37 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
         # arrived while the gateway sections vanished — the resource was there the whole time.
         miss = [h for h in required if h not in have]
         from_local = []
-        if miss and _mlx_alive():
+        completion_models = {}
+        if miss:
             for lattempt in (1, 2):
                 try:
-                    print(f"      🖥️ local brain fills {len(miss)} section(s), try {lattempt}/2",
+                    print(f"      🖥️ shared brain route fills {len(miss)} section(s), try {lattempt}/2",
                           flush=True)
                     lnudge = ("\n\nWRITE ONLY THESE SECTIONS, nothing else:\n"
                               + "\n".join(f"## {x}" for x in miss)
                               + "\n\nEmit each heading verbatim, in that order. No other heading, "
                                 "no apology, no explanation.")
-                    lans, _lu = _mlx_call([{"role":"system","content":sysm+lnudge},
-                                           {"role":"user","content":cur[1]["content"]}])
+                    lans, _lu = _fm_call([{"role":"system","content":sysm+lnudge},
+                                           {"role":"user","content":cur[1]["content"]}], max_tokens=3000, validate=lambda t: bool(t) and not _has_leak(t))
                 except Exception as e:
-                    print(f"      ✗ local brain: {e}", flush=True); break
+                    print(f"      ✗ shared brain route: {e}", flush=True); break
                 if not lans or _has_leak(lans):
                     continue
                 for h, bodytxt in _sections(lans).items():
                     if h not in have and _substantive(h, bodytxt):
-                        have[h] = bodytxt; from_local.append(h)
+                        have[h] = bodytxt; from_local.append(h); completion_models[h] = _lu
                 miss = [h for h in required if h not in have]
                 if not miss:
                     break
             if from_local:
-                print(f"      🖥️ local brain supplied: {', '.join(from_local)}", flush=True)
+                print(f"      🖥️ shared brain route supplied: {', '.join(from_local)}", flush=True)
         if not miss:
             # Say WHICH sections the smaller brain wrote. A reader must be able to tell the 120b
             # analysis from the 14b one; silently mixing them would misrepresent both.
             body = _assemble(have)
             if from_local:
-                body += ("\n\n---\n\n_Written by the local brain (" + MLX_MODEL + ") after the "
-                         "gateway rate-limited: " + ", ".join(from_local) + "._")
+                body += ("\n\n---\n\n_Completed through shared brain routing: " +
+                         ", ".join(h + " [" + completion_models[h] + "]" for h in from_local) + "._")
             return body, used
         if have.get("Thought about it") and have.get("Answer") and len(have) >= (2 * len(required)) // 3:
             print(f"      🧩 sending partial mosaic: {len(have)}/{len(required)} sections", flush=True)
@@ -836,19 +872,45 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
     # Silence that self-heals beats a polite failure in the inbox (2026-08-12).
     return (REQUEUE_FAILED + "\x00" + " | ".join(why[-3:]) if why else REQUEUE_FAILED, used)
 
+# The common researcher covers direct emails, material, model fallbacks and mosaics.
+fm_research = mail_language.guard_research(fm_research, _rewrite_report_language, REQUEUE_FAILED)
+
 # REPORT-CARD >> features/mail-material-editor-contract.feature
+# REQUIRED-DUAL-SOURCE-ANALYSES v1
+def _required_mlx(text, title, language=None):
+    return document_brains.ensure_mlx(text, title=title, language=language)
+
+def _required_bluefield(text, title, language=None):
+    return document_brains.ensure_flubuild(text, title=title, language=language,
+        validate=lambda t: not _looks_garbage(t) and not _has_leak(t) and not _is_reasoning_dump(t))
+
 def research_email_material(question, context, text, *, space, wiki_ctx="", lens="",
-                            tries=6, honour_tries=False, model_override=""):
+                            tries=6, honour_tries=False, model_override="", required_bluefield=None, required_mlx=None):
     """One document editor contract for inbound mail, compose and recovery clients."""
+    try:
+        required_mlx = required_mlx or _required_mlx(text, title=(question or "Document")[:120])
+        required_bluefield = required_bluefield or _required_bluefield(
+            text, title=(question or "Document")[:120])
+    except document_brains.ContributionPending as exc:
+        return REQUEUE_FAILED+"\x00"+str(exc), "bluefield-required-pending"
     viewpoint=VIEWPOINT if space == "free-energy" else ""
-    answer, model=fm_research(question, context, text, tries=tries, wiki_ctx=wiki_ctx,
-                             viewpoint=viewpoint, lens=lens, honour_tries=honour_tries,
-                             model_override=model_override, material=True)
+    primary_text = text + "\n\nSECONDARY INPUT: independent MLX/Qwen analysis. Treat it as interpretation, not source evidence.\n\n" + required_mlx["markdown"] + "\n\nSECONDARY INPUT: independent Bluefield analysis. Treat it as model interpretation; ground conclusions in the source above.\n\n" + required_bluefield["markdown"]
+    token = mail_language.ACTIVE_LANGUAGE.set(required_bluefield["language"])
+    try:
+        answer, model=fm_research(question, context, primary_text, tries=tries, wiki_ctx=wiki_ctx,
+                                 viewpoint=viewpoint, lens=lens, honour_tries=honour_tries,
+                                 model_override=model_override, material=True)
+    finally:
+        mail_language.ACTIVE_LANGUAGE.reset(token)
     if viewpoint and lens_voices_enabled() and not _is_requeue(answer):
         required=["Thought about it", "Answer"]+MATERIAL_HEADINGS+TONE_HEADINGS
         missing=[h for h in required if not re.search(r"(?m)^## " + re.escape(h) + r"\s*$", answer)]
         if missing:
             return REQUEUE_NO_THINKING+"\x00missing document sections: "+", ".join(missing), model
+    if not _is_requeue(answer):
+        answer = (required_mlx["markdown"] + "\n\n---\n\n" + required_bluefield["markdown"]
+                  + "\n\n---\n\n## Cloudcity-LLM analysis and viewpoints\n\n" + answer)
+        model += "; independent MLX/" + required_mlx["model"] + "; independent Bluefield/" + required_bluefield["model"]
     return answer, model
 
 
@@ -1304,19 +1366,35 @@ def prior_bot_answer(k, msgs, thread_id):
         if len(t)>200: return t
     return None
 
+# REPORT-CARD >> ~/work/convey/features/mail-consolidation.feature
+def pdf_content(prior, *, attach=None):
+    """Generation and attachment assembly are distinct; neither failure claims success."""
+    b64=make_pdf_b64(prior)
+    if not b64:
+        return MailContent("PDF generation failed. Please retry.")
+    try:
+        attachment={"filename":pdf_filename(prior),"content_type":"application/pdf","content":b64}
+        if attach is not None: attachment=attach(attachment)
+        if not attachment or not attachment.get("content"): raise ValueError("missing PDF attachment")
+    except Exception as exc:
+        return MailContent("PDF attachment failed: "+str(exc)+". Please retry.")
+    return MailContent("Here's the printable one-pager of the previous answer — attached. Same content, just formatted.",
+                       attachments=[attachment])
+
+def pdf_notice(prior, *, attach=None):
+    return pdf_content(prior, attach=attach).payload()
+
+
 def make_pdf_b64(markdown, title="freellmask"):
     """Render the answer to a PROPERLY-FORMATTED PDF (real headings/tables/fonts) via the
     on-Mini html-to-pdf (WKWebView). Returns base64 or None."""
     # No injected subject-title — the answer's own first heading IS the document title.
-    doc=(f"<!doctype html><html><head><meta charset='utf-8'><style>{_PDF_CSS}</style></head><body>"
-         f"{md_to_inner_html(markdown)}"
-         f"<hr><p style='color:#888;font-size:9px'>Generated by freellmask · FreeLLMAPI on cloudcity ($0)</p>"
-         f"</body></html>")
+    doc=render_print(markdown, _PDF_CSS)
     td=tempfile.mkdtemp()
     try:
         src=os.path.join(td,"a.html"); pdf=os.path.join(td,"a.pdf")
         open(src,"w").write(doc)
-        subprocess.run([str(HTML_TO_PDF), src, pdf], capture_output=True, timeout=60, check=True)
+        subprocess.run([str(HTML_TO_PDF), src, pdf, "--paginate"], capture_output=True, timeout=60, check=True)
         with open(pdf,"rb") as f: data=f.read()
         if len(data)<800 or len(data)>8_000_000:   # sanity: not empty, not the 520MB blowup
             print(f"  pdf size out of range: {len(data)}"); return None
@@ -1561,19 +1639,15 @@ def _parse_owner_approval(body):
 
 def _email_owner_approval(k, sender_frm, sender_em, space, subj, preview, pend_id):
     """Ask Esa to approve an unknown sender who hit a gated space."""
+    quoted_preview="\n".join("> "+line for line in preview[:600].splitlines())
     txt=(f"A new sender emailed cloudcity-llm and routed to your '{space}' space (gated).\n\n"
-         f"From: {sender_frm}\nSpace: {space}\nSubject: {subj}\n\nPreview:\n{preview[:600]}\n\n"
+         f"From: {sender_frm}\nSpace: {space}\nSubject: {subj}\n\n## Untrusted sender preview\n\n{quoted_preview}\n\n## Owner decision\n\n"
          f"To APPROVE (whitelist them + answer their message), reply with:  approve {sender_em}\n"
          f"  (or just reply 'approve' / 'yes' to this email).\n"
          f"To DECLINE, ignore this (or reply 'deny {sender_em}').\n\n"
          f"PENDING-FROM: {sender_em}\nPENDING-ID: {pend_id}\n")
-    html=("<p>A new sender emailed cloudcity-llm and routed to your <b>"+_htmlmod.escape(space)+
-          "</b> space (gated).</p>"
-          f"<p><b>From:</b> {_htmlmod.escape(sender_frm)}<br><b>Subject:</b> {_htmlmod.escape(subj)}</p>"
-          f"<pre style='white-space:pre-wrap;background:#f6f6f6;padding:8px'>{_htmlmod.escape(preview[:600])}</pre>"
-          "<p>To <b>approve</b> (whitelist + answer), reply <code>approve "+_htmlmod.escape(sender_em)+
-          "</code> — or just <code>approve</code>/<code>yes</code>. To decline, ignore this.</p>"
-          f"<p style='color:#888;font-size:12px'>PENDING-FROM: {_htmlmod.escape(sender_em)} · PENDING-ID: {pend_id}</p>")
+    # Incoming preview is quoted as text, never interpreted as sender HTML.
+    html = MailContent(txt).payload()["html"]
     try:
         http(f"{AM_BASE}/inboxes/{INBOX}/messages/send", k, "POST",
              {"to":[FORWARD_TO],"subject":f"Approve? {sender_em} → {space} space","text":txt,"html":html})
@@ -1674,18 +1748,26 @@ def space_mem_read(ns):
 
 def _uid(): return uuid.uuid4().hex[:16]
 
-def inbound_atts_b64(k, mid, atts):
+def inbound_atts_b64(k, mid, atts, warnings=None):
     """Re-download each inbound attachment via its AgentMail signed URL and return them as
     AgentMail send-attachments [{filename, content_type, content(base64)}] — so the original files
     can ride along on a reply or a forward. Skips files over MAX_ATT. Best-effort per file."""
     out=[]
+    def warn(name, reason):
+        note=f"Attachment unavailable: {name} ({reason}). Original remains in the inbound email."
+        print(note)
+        if warnings is not None: warnings.append(note)
     for att in (atts or []):
         aid=att.get("attachment_id"); name=att.get("filename","attachment"); sz=att.get("size") or 0
         if not aid or sz>MAX_ATT:
+            warn(name, "missing attachment identifier" if not aid else "exceeds attachment size limit")
             continue
         try: raw=_att_bytes(k, mid, aid)
-        except Exception: raw=None
+        except Exception as exc:
+            warn(name, "download failed: "+str(exc))
+            continue
         if not raw:
+            warn(name, "no downloadable content")
             continue
         out.append({"filename":name,
                     "content_type":att.get("content_type") or "application/octet-stream",
@@ -1701,16 +1783,19 @@ def forward_to_esa(k, full, mid, question, answer, atts):
         return False
     sender=(full.get("from") or "").strip()
     subj=full.get("subject") or "(no subject)"
-    out_atts=inbound_atts_b64(k, mid, atts)
-    text=(f"Forwarded from {sender}\nSubject: {subj}\n\n"
-          f"--- Their message ---\n{question or '(no body)'}\n\n"
-          f"--- FreeLLMAPI answer ---\n{answer}\n"
-          + (f"\n({len(out_atts)} attachment(s) re-attached.)\n" if out_atts else ""))
-    html=(f"<p><b>Forwarded from {sender}</b><br>Subject: {subj}</p>"
-          f"<h3>Their message</h3><pre style='white-space:pre-wrap'>{(question or '(no body)')}</pre>"
-          f"<h3>FreeLLMAPI answer</h3>{md_to_inner_html(answer)}"
-          + (f"<p style='color:#888'>{len(out_atts)} attachment(s) re-attached.</p>" if out_atts else ""))
-    body={"to":[FORWARD_TO],"subject":f"Fwd: {subj}","text":text,"html":html}
+    warnings=[]
+    out_atts=inbound_atts_b64(k, mid, atts, warnings=warnings)
+    # ATTACHMENT-FORWARD-UNIFIED v1
+    # REPORT-CARD >> ~/work/convey/features/attachment-forward-theme.feature
+    # One Markdown source; the canonical sender owns full HTML rendering.
+    from html import escape
+    quoted_question = "\n".join("> " + escape(line) for line in (question or "(no body)").splitlines())
+    text = (f"Forwarded from {escape(sender)}\n\nSubject: {escape(subj)}\n\n"
+            f"## Their message\n\n{quoted_question}\n\n"
+            f"## FreeLLMAPI answer\n\n{answer}"
+            + ("\n\nOriginal source files: "+", ".join(a["filename"] for a in out_atts)+".\n" if out_atts else "")
+            + "\n\n".join(warnings))
+    body={"to":[FORWARD_TO],"subject":f"Fwd: {subj}","text":text}
     if out_atts:
         body["attachments"]=out_atts
     try:
@@ -1809,48 +1894,27 @@ def youtube_metadata(u):
         pass
     return meta
 
-def youtube_receipt(urls, subject="", queued=0):
+def youtube_content(urls, subject="", queued=0):
     """Code-composed response for bare YouTube shares: direct URL + title + description + embed.
     This intentionally does NOT analyse the video; transcript-grounded analysis is a later mail."""
     metas=[youtube_metadata(u) for u in (urls or [])]
     if not metas:
         metas=[{"url":"", "title":subject or "YouTube video", "description":"", "author":"", "embed_url":""}]
-    text_parts=[]; html_parts=[]
+    parts=[]
     for m in metas:
-        title=m.get("title") or subject or m.get("url") or "YouTube video"
-        desc=m.get("description") or ""
-        if len(desc)>4000: desc=desc[:3997].rstrip()+"..."
-        author=m.get("author") or ""
+        title=m.get("title") or subject or "YouTube video"
         url=m.get("url") or ""
-        embed=m.get("embed_url") or ""
-        text_parts.append("\n".join(x for x in (
-            f"YouTube video: {title}",
-            f"Channel: {author}" if author else "",
-            f"URL: {url}" if url else "",
-            f"Embed: {embed}" if embed else "",
-            "",
-            "Description:",
-            desc or "(no description found)",
-        ) if x is not None))
-        html_parts.append(
-            "<hr>"
-            f"<h2>{_htmlmod.escape(title)}</h2>"
-            + (f"<p><b>Channel:</b> {_htmlmod.escape(author)}</p>" if author else "")
-            + (f'<p><b>URL:</b> <a href="{_htmlmod.escape(url)}">{_htmlmod.escape(url)}</a></p>' if url else "")
-            + (f'<iframe width="560" height="315" src="{_htmlmod.escape(embed)}" '
-               'title="YouTube video player" frameborder="0" '
-               'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" '
-               'allowfullscreen></iframe>' if embed else "")
-            + "<h3>Description</h3>"
-            + f'<pre style="white-space:pre-wrap;font-family:-apple-system,Segoe UI,sans-serif">{_htmlmod.escape(desc or "(no description found)")}</pre>'
-        )
+        parts.append("\n\n".join(["YouTube video: "+title,
+            "Channel: "+(m.get("author") or "(unknown)"),
+            "[Watch on YouTube]("+url+")" if url else "", "Description:",
+            (m.get("description") or "(no description found)")[:4000]]))
     status=("Queued for transcript analysis; a separate transcript-grounded analysis email will follow when whisp finishes."
-            if queued else
-            "Transcript analysis is pending; if this video is already transcribed, the transcript mailer will send the grounded analysis.")
-    text=status+"\n\n"+"\n\n---\n".join(text_parts)
-    html=('<div style="font-family:-apple-system,Segoe UI,sans-serif;line-height:1.5;font-size:14px">'
-          f"<p>{_htmlmod.escape(status)}</p>"+"".join(html_parts)+"</div>")
-    return text, html
+            if queued else "Transcript analysis is pending; the transcript mailer will send the grounded analysis.")
+    return MailContent("\n\n".join(parts), notices=[status])
+
+def youtube_receipt(urls, subject="", queued=0):
+    payload=youtube_content(urls, subject, queued).payload()
+    return payload["text"], payload["html"]
 
 _GD_RE = re.compile(r'https?://(?:drive|docs)\.google\.com/[^\s<>"\')\]]+', re.I)
 def gdrive_urls(text):
@@ -2232,6 +2296,13 @@ def poll_once(verbose=True):
                            + "\n".join(f"- {r}" for r in _rules_added) if _rules_added else "")
                         + "\n\n---\n## The answer, with your adjustment in it\n\n" + _cur)
                 reply = {"text": note, "html": md_to_html(note)}
+                try:
+                    reply = _guard_outgoing_payload(reply, mail_language.target_language(extra or question))
+                    reply["_report_language"] = mail_language.target_language(extra or question)
+                except mail_language.LanguageGuardError as exc:
+                    debug_log("language-hold", mid, full.get("subject", ""), note=str(exc))
+                    replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
+                    continue
                 seen.add(mid)
                 st["seen"] = list(seen)[-SEEN_CAP:]; st["last_poll"] = time.strftime("%Y-%m-%dT%H:%M:%S")
                 save_state(st)
@@ -2266,26 +2337,24 @@ def poll_once(verbose=True):
                 if verbose: print(f"  📝 pending video-analysis email → {_to} for {len(yt_urls)} video(s); metadata receipt now")
             except Exception as _e:
                 if verbose: print(f"  pending-write error: {_e}")
-            text, html = youtube_receipt(yt_urls, full.get("subject",""), queued=q_n)
-            reply={"text":text, "html":html}
+            content = youtube_content(yt_urls, full.get("subject",""), queued=q_n)
+            reply={}
             used="youtube metadata receipt (no LLM)"
             yt_note=""
         elif gdrive_only:
             note=(f"📁 On it — **fetching your Google Drive** ({len(gd_urls)} link{'s' if len(gd_urls)>1 else ''}). "
                   f"The Mini is downloading now; I won't guess at the contents. Once the files land I'll OCR "
                   f"and analyse them and email you the writeup.")
-            reply={"text":note,"html":md_to_inner_html(note)}
+            content=MailContent(note, notices=["[Google Drive source]("+url+")" for url in gd_urls])
+            reply={}
             used="gdrive (fetching — analysis from the real files)"
             gd_note=""
         elif prior:
             if verbose: print("  → rendering the PRIOR thread answer to PDF (no regeneration)")
-            note="Here's the printable one-pager of the previous answer — attached. Same content, just formatted."
-            reply={"text": note, "html": f"<p>{note}</p>"}; used="reused prior answer"
-            b64=make_pdf_b64(prior)
-            if b64:
-                reply["attachments"]=[{"filename":pdf_filename(prior),"content_type":"application/pdf","content":b64}]
-            else:
-                reply["text"]="Sorry — couldn't render the PDF this time. Please retry."
+            content=pdf_content(prior)
+            reply={}
+            used="reused prior answer"
+
         else:
             # WIKI AUGMENTS, never gates: pull relevant wiki pages as CONTEXT (no LLM, no refusal),
             # apply the free-energy VIEWPOINT only for in-corpus topics, then ALWAYS research fully.
@@ -2327,8 +2396,10 @@ def poll_once(verbose=True):
                               + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else "")
                               + (f" [+skill:{len(sslugs)}]" if sslugs else "") + (" [+lens]" if lens else ""))
             try:
-                if extra:
-                    answer, used = research_email_material(question, ctx, extra, space=space,
+                # FORWARDED-DOCUMENT-BLUEFIELD v1: forwarded body is a document too.
+                forwarded_document = full.get("subject", "").lower().startswith(("fwd:", "fw:"))
+                if extra or forwarded_document:
+                    answer, used = research_email_material(question, ctx, extra or question, space=space,
                                                           wiki_ctx=wctx, lens=lens,
                                                           model_override=card.get("model",""))
                 else:
@@ -2371,28 +2442,37 @@ def poll_once(verbose=True):
                 "host": socket.gethostname().split(".")[0],
                 "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
             }
-            reply={"text": format_text_provenance(prov) + answer,
-                   "html": md_to_html(answer, title=full.get("subject", ""), provenance=prov)}
+            content=MailContent(answer, provenance=prov, title=full.get("subject", ""),
+                                text_prefix=format_text_provenance(prov))
+            reply={}
             if WANT_PDF.search(question or ""):     # a NEW question that also wants a PDF
                 b64=make_pdf_b64(answer)
                 if b64:
-                    reply["attachments"]=[{"filename":pdf_filename(answer, full.get("subject")),
+                    content.attachments=[{"filename":pdf_filename(answer, full.get("subject")),
                                            "content_type":"application/pdf","content":b64}]
+                else:
+                    content.notices.append("PDF generation failed; no PDF is attached. The answer remains below.")
         # Append the transcription-belt + gdrive-fetch + chatgpt-hoover notes to whichever reply path built it.
         for _n in (yt_note, gd_note, cg_note):
             if _n:
-                reply["text"]=reply.get("text","")+_n
-                reply["html"]=reply.get("html","")+"<hr>"+md_to_inner_html(_n)
+                content.notices.append(_n)
         # Attach the hoovered ChatGPT conversation.md + analysis.md to the reply.
         if cg_atts:
-            reply.setdefault("attachments", []).extend(cg_atts)
+            content.attachments.extend(cg_atts)
         # SELF-CONTAINED REPLY: if the sender attached files (a cool PDF), send them RIGHT BACK on the
         # reply alongside the analysis — so 'email a PDF in → analysis + the PDF back out' just works
         # for ANYONE, including Esa mailing himself. (Reusable: rides on the same reply.)
         if atts and not reformat:
-            reattach=inbound_atts_b64(k, mid, atts)
-            if reattach:
-                reply.setdefault("attachments", []).extend(reattach)
+            reattach=inbound_atts_b64(k, mid, atts, warnings=content.notices)
+            content.attachments.extend(reattach)
+        reply=content.payload()
+        try:
+            reply = _guard_outgoing_payload(reply, mail_language.target_language(extra or question))
+            reply["_report_language"] = mail_language.target_language(extra or question)
+        except mail_language.LanguageGuardError as exc:
+            debug_log("language-hold", mid, full.get("subject", ""), note=str(exc))
+            replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
+            continue
         # Esa visibility. Two paths:
         #  • inbound attachments from a non-Esa sender → also FORWARD the exchange + files to Esa, so
         #    he gets a copy of a friend's 'hot stuff' (the BCC alone wouldn't carry it); skip the BCC.
@@ -2642,6 +2722,15 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
     if not body_text:
         return False, "nothing to answer"
     analyzed_text = body_text
+    report_language = mail_language.target_language(analyzed_text)
+    # REQUIRED-DOCUMENT-BLUEFIELD v1: execute against raw input, before any chapter digest.
+    try:
+        required_mlx = _required_mlx(analyzed_text, title=subject, language=report_language)
+        required_bluefield = _required_bluefield(analyzed_text, title=subject,
+                                                           language=report_language)
+    except document_brains.ContributionPending as exc:
+        return False, str(exc)
+
     question = (f"Read the material below and answer it as you would an email asking about it: what "
                 f"it says, what holds up, what is worth checking."
                 + (f"\n\nSOURCE: {source}" if source else ""))
@@ -2696,7 +2785,7 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
     _floor, TRY_FLOOR = TRY_FLOOR, max(1, tries)          # bounded for the belt, restored after
     try:
         answer, used = research_email_material(question, "", body_text, space=space,
-                                              wiki_ctx=wctx, tries=tries, honour_tries=True)         # there is always material in a compose
+                                              wiki_ctx=wctx, tries=tries, honour_tries=True, required_bluefield=required_bluefield, required_mlx=required_mlx)         # there is always material in a compose
     finally:
         TRY_FLOOR = _floor
     if _is_requeue(answer):
@@ -2745,9 +2834,7 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
         except Exception as e:
             if verbose: print(f"  machine-legs error: {e}")
     note = ""
-    if chapter_md:
-        note += ("\n\n---\n## Chapter by chapter\n\n_Each part of the document read on its own, "
-                 "in order — the answer above is written over these._\n\n" + chapter_md)
+    # KRON-PRIVATE-CHAPTER-NOTES v1: chapter notes feed synthesis, never outgoing prose.
     if legs_md:
         note += ("\n\n---\n## Appendix · machine legs\n\n_The two cheap machine reads, kept beside "
                  "the source as well. They are the record, not the payoff._" + legs_md)
@@ -2765,21 +2852,20 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
         "host": socket.gethostname().split(".")[0],
         "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
     }
-    text = answer + note
-    payload = {"to": [to], "subject": subject, "text": format_text_provenance(prov) + text,
-               "html": md_to_html(text, title=subject, provenance=prov)}
-    # ATTACH the material itself — the first mailer always did, and losing it would lose a feature.
-    if attach and Path(attach).exists():
+    text = mail_language.enforce(answer + note, report_language, _rewrite_report_language)
+    content=MailContent(text, provenance=prov, title=subject, text_prefix=format_text_provenance(prov))
+    # Attachment state is known before rendering; missing material is never silent.
+    if attach:
         try:
-            import base64 as _b64
             ap_ = Path(attach)
-            if ap_.stat().st_size <= 20 * 1024 * 1024:
-                payload["attachments"] = [{"filename": ap_.name,
-                                           "content_type": "text/plain" if ap_.suffix in (".txt", ".md")
-                                           else "application/octet-stream",
-                                           "content": _b64.b64encode(ap_.read_bytes()).decode()}]
-        except Exception as e:
-            if verbose: print(f"  attach error: {e}")
+            if not ap_.is_file(): raise FileNotFoundError("source file does not exist")
+            if ap_.stat().st_size > 20 * 1024 * 1024: raise ValueError("exceeds 20 MB local attachment limit")
+            content.attachments=[{"filename":ap_.name,
+                                  "content_type":"text/plain" if ap_.suffix in (".txt", ".md") else "application/octet-stream",
+                                  "content":base64.b64encode(ap_.read_bytes()).decode()}]
+        except Exception as exc:
+            content.notices.append("Attachment unavailable: "+str(attach)+" ("+str(exc)+").")
+    payload = dict(content.payload(), _report_language=report_language, to=[to], subject=subject)
     if BCC and BCC.lower() != (to or "").lower():
         payload["bcc"] = [BCC]
     # REPORT-CARD >> features/transcript-vault-email-analysis.feature
@@ -2928,7 +3014,11 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
         print(f"🎢 belt[{tag}] stale lock ({int(age/3600)}h) — taking it over", flush=True)
         lock.touch()
     atexit.register(lambda: shutil.rmtree(lock, ignore_errors=True))
+    code_version = Path(__file__).stat().st_mtime_ns
     while True:
+        if Path(__file__).stat().st_mtime_ns != code_version:
+            shutil.rmtree(lock, ignore_errors=True)
+            os.execv(sys.executable, [sys.executable, str(Path(__file__).resolve())] + sys.argv[1:])
         done = belt_done_keys(tag)
         all_found = [p for p in sorted(folder.rglob(pattern))
                      if p.is_file() and str(p.resolve()) not in done]
@@ -2948,6 +3038,9 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
             time.sleep(every)
             continue
         for p in todo:
+            if Path(__file__).stat().st_mtime_ns != code_version:
+                shutil.rmtree(lock, ignore_errors=True)
+                os.execv(sys.executable, [sys.executable, str(Path(__file__).resolve())] + sys.argv[1:])
             if limit and sent >= limit:
                 if verbose: print(f"🎢 limit {limit} reached", flush=True)
                 return sent, failed
@@ -2956,7 +3049,7 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
             if verbose:
                 print(f"\n🎢 [{time.strftime('%H:%M:%S')}] {p.name} → {to}\n   “{subj}”", flush=True)
             try:
-                body = p.read_text(errors="replace")[:120000]
+                body = p.read_text(errors="replace")
                 ok, info = compose_and_send(to, subj, body, source=str(p), tries=tries,
                                             legs_from=("" if no_legs else str(p)),
                                             attach=str(p), chapters=chapters,
@@ -3028,7 +3121,7 @@ def main():
         ap.add_argument("--text", help="raw text instead of a file")
         ap.add_argument("--source", default="", help="the URL or origin, printed under the answer")
         ap.add_argument("--label", default="", help="a line noting the artifact (e.g. the transcript path)")
-        ap.add_argument("--max-chars", type=int, default=120000)
+        ap.add_argument("--max-chars", type=int, default=None)
         ap.add_argument("--space", default="", help="force a space (e.g. free-energy); otherwise "
                                                     "archive provenance, then the router, decides")
         ap.add_argument("--chapters", action="store_true",
@@ -3058,7 +3151,7 @@ def main():
                       f"(licence/lockfile/etc — nothing to learn, and it costs a real call)")
                 return 1
             body = Path(a.file).expanduser().read_text(errors="replace")
-        ok, info = compose_and_send(a.to, a.subject, body[:a.max_chars], source=a.source,
+        ok, info = compose_and_send(a.to, a.subject, (body[:a.max_chars] if a.max_chars else body), source=a.source,
                                     label=a.label, tries=a.tries,
                                     legs_from=("" if a.no_legs else
                                                (a.legs_from or (a.file if a.file else ""))),
@@ -3073,7 +3166,8 @@ def main():
         print(f"FreeLLMAPI key: {'set' if _read_key('FM_FREE_KEY','~/.fm-free.key') else 'MISSING'}")
     elif cmd=="loop":
         print(f"freellmask-mail loop: polling {INBOX} every {POLL_SEC}s")
-        watched = [Path(__file__), Path(aimeat_mail.__file__), Path(aimeat_mail.cloud_assets.__file__),
+        # MAIL-GUARD-WATCH v1: reload a changed guard inside the same Boot pane.
+        watched = [Path.home()/"work/convey/convey/document_brains.py", Path.home()/"work/convey/convey/brain_routes.py", Path.home()/"work/convey/convey/mail_language.py", Path(__file__), Path(aimeat_mail.__file__), Path(aimeat_mail.cloud_assets.__file__),
                    Path(__file__).resolve().parent.parent/'shared/cloud_source.py',
                    Path(__file__).resolve().parent.parent/'shared/format_email.py']
         versions = [p.stat().st_mtime_ns for p in watched]
