@@ -10,7 +10,10 @@ import urllib.request
 from pathlib import Path
 from html.parser import HTMLParser
 from dataclasses import replace
-from format_email import MailContent
+try:
+    from format_email import MailContent
+except ImportError:
+    from shared.format_email import MailContent
 
 DEFAULT_INBOX = "cloudcity-llm@agentmail.to"
 AM_BASE = "https://api.agentmail.to/v0"
@@ -23,16 +26,18 @@ def _key():
 
 
 def _default_html(text):
+    # CANONICAL-FULL-EMAIL v1 (retained for old installer idempotency)
     from format_email import render_email
     return render_email(text)
 
 
 class _Document(HTMLParser):
     def __init__(self):
-        super().__init__(); self.html = self.body = self.theme = 0; self.closed = False
+        super().__init__(); self.html = self.body = self.theme = 0; self.closed = False; self.content = 0
     def handle_starttag(self, tag, attrs):
         if self.closed: raise ValueError("content after HTML closure")
         data = dict(attrs)
+        if tag == "main" and data.get("id") == "mail-content": self.content += 1
         if tag == "html": self.html += 1
         if tag == "body": self.body += 1
         if tag == "meta" and data.get("name") == "color-scheme" and data.get("content") == "dark": self.theme += 1
@@ -54,7 +59,7 @@ def canonical_document(document):
     their canonical document until migrated; bare fragments/documents fail closed.
     """
     check = _Document(); check.feed(document); check.close()
-    if (check.html, check.body, check.theme, check.closed) != (1, 1, 1, True) or "max-width:760px" not in document:
+    if (check.html, check.body, check.theme, check.content, check.closed) != (1, 1, 1, 1, True):
         raise ValueError("explicit HTML must use the canonical email wrapper")
     return document
 
@@ -71,10 +76,10 @@ def _post(url, key, payload, timeout):
 
 
 def send_message(content, *, subject="", to=None, cc=None, bcc=None, inbox=None,
-                 message_id=None, key=None, base=None, timeout=60, canonical_html=None):
+                 message_id=None, key=None, base=None, timeout=60, canonical_html=None, reply_all=None):
     """Raises on failure; returns only the actual endpoint response on success.
 
-    /reply intentionally omits /send-only subject/to fields. Only an explicit 413
+    /reply omits subject and preserves optional explicit recipients/reply_all. Only an explicit 413
     permits one reduction attempt. All omitted filenames are reported in both bodies.
     Original content/attachments are never mutated. No retry for ambiguous failures.
     """
@@ -84,18 +89,28 @@ def send_message(content, *, subject="", to=None, cc=None, bcc=None, inbox=None,
     prefix = (base or AM_BASE)+"/inboxes/"+urllib.parse.quote(inbox,safe="")+"/messages/"
     url = prefix+(urllib.parse.quote(message_id,safe="")+"/reply" if message_id else "send")
     metadata = {} if message_id else {"subject":subject,"to":[to] if isinstance(to,str) else list(to or [])}
+    if message_id and to is not None:
+        metadata["to"] = [to] if isinstance(to,str) else list(to)
+    if message_id and reply_all is not None: metadata["reply_all"] = bool(reply_all)
     for name, value in (("cc",cc),("bcc",bcc)):
         if value: metadata[name] = [value] if isinstance(value,str) else list(value)
     for attachment in content.attachments:
-        if not attachment.get("filename") or not attachment.get("content"):
-            raise ValueError("missing attachment filename or content")
-    payload = {**metadata, **content.payload()}
-    if canonical_html is not None: payload["html"] = canonical_document(canonical_html)
+        if not attachment.get("content") and not attachment.get("url"):
+            raise ValueError("missing attachment content or URL")
+        if attachment.get("url") and urllib.parse.urlsplit(attachment["url"]).scheme not in {"https", "http"}:
+            raise ValueError("unsafe attachment URL")
+    if canonical_html is None:
+        payload = {**metadata, **content.payload()}
+    else:
+        # Source-owned canonical compatibility documents have already been finalized.
+        payload = {**metadata, "text":content.text_prefix+content.text(),
+                   "html":canonical_document(canonical_html)}
+        if content.attachments: payload["attachments"] = list(content.attachments)
     try:
         return _post(url,key,payload,timeout)
     except urllib.error.HTTPError as error:
         if error.code != 413 or not content.attachments: raise
-    names = ", ".join(a["filename"] for a in content.attachments)
+    names = ", ".join(a.get("filename") or "attachment "+str(i) for i,a in enumerate(content.attachments,1))
     warning = "Delivery warning: the email service rejected the payload size. Attachments omitted: "+names+". Original inbound attachments remain in the original email, where applicable."
     # This exact generated receipt is the only attachment-success claim we own.
     markdown = content.markdown.replace("Here's the printable one-pager of the previous answer — attached. Same content, just formatted.",
@@ -109,12 +124,12 @@ def reply_to_message(message_id, content, **kwargs):
 
 
 def agentmail_send(subject, text, to, *, cc=None, bcc=None, inbox=None, html=None,
-                   attachments=None, timeout=60, quiet=False, content=None):
+                   attachments=None, timeout=60, quiet=False, content=None, key=None):
     """Backward-compatible fresh sender: dict on success, None on explicit failure."""
     try:
         return send_message(content or MailContent(text,attachments=list(attachments or []),title=subject),
                             subject=subject,to=to,cc=cc,bcc=bcc,inbox=inbox,
-                            canonical_html=html,timeout=timeout)
+                            canonical_html=html,timeout=timeout,key=key)
     except Exception as error:
         if not quiet: print("agentmail_send: delivery failed:",error)
         return None
