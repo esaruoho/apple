@@ -34,6 +34,7 @@
 # WATCH: apple-harness fmremote Ledger seed commit run_asset extract tag_entities embed judge Config resolve describe CapabilityUnavailable local_preflight fleet_heartbeat
 #
 # RESULT-LOG >> (auto-maintained by the report-card hooks — newest below)
+#   2026-11-08  direct-commit  touched: resolve
 #   2026-11-08  direct-commit  touched: apple-harness fmremote seed commit extract embed resolve
 #   2026-11-08  direct-commit  touched: apple-harness fmremote seed commit extract embed resolve
 #   2026-11-08  direct-commit  touched: fmremote resolve

@@ -3028,6 +3028,31 @@ def belt_done_keys(tag="default"):
     return keys
 
 
+def belt_failed_recent(tag="default", hours=6.0):
+    """Keys that failed within `hours` — backed off, so one bad file can't monopolise a newest-first belt."""
+    keys, cutoff = set(), time.time() - hours * 3600
+    p = _belt_ledger(f"{tag}-failed")
+    if p.is_file():
+        for line in p.read_text(errors="replace").splitlines():
+            try:
+                r = json.loads(line)
+                if time.mktime(time.strptime(r["at"], "%Y-%m-%d %H:%M:%S")) >= cutoff:
+                    keys.add(r["key"])
+            except Exception:
+                pass
+    return keys
+
+
+def belt_sleep(seconds, folder, done):
+    """Pace between items, but wake at once when a new unsent file lands in now/ (≤30 s latency)."""
+    end = time.time() + seconds
+    now_dir = Path(folder) / "now"
+    while time.time() < end:
+        time.sleep(min(30, max(0, end - time.time())))
+        if now_dir.is_dir() and any(str(x.resolve()) not in done for x in now_dir.rglob("*.txt")):
+            return
+
+
 def belt_record(tag, key, path, ok, info):
     rec = {"key": key, "path": str(path), "ok": bool(ok), "info": str(info)[:400],
            "at": time.strftime("%Y-%m-%d %H:%M:%S")}
@@ -3045,6 +3070,29 @@ def belt_subject(p: Path) -> str:
     except Exception:
         pass
     return re.sub(r"[_-]+", " ", p.stem).strip()[:120] or p.name
+
+
+def code_digest():
+    """Content hash of every module loaded from ~/work (+ this file). Syncthing preserves mtimes, so
+    mtime checks miss real changes — this is what both the inbox loop and the belt reload on."""
+    root = str(Path.home()/"work")
+    fs = {Path(__file__).resolve()} | {Path(m.__file__) for m in list(sys.modules.values())
+          if getattr(m, "__file__", None) and str(m.__file__).startswith(root) and str(m.__file__).endswith(".py")}
+    out = {}
+    for f in sorted(fs):
+        try: out[str(f)] = __import__("hashlib").sha256(f.read_bytes()).hexdigest()
+        except Exception: out[str(f)] = None
+    return out
+
+
+def belt_priority(p: Path, folder: Path):
+    """now/ first (fresh transcripts, emoji requests), then NEWEST first: a fresh transcript must never
+    wait behind a 577-file OCR backlog sorted alphabetically."""
+    try: rel = p.relative_to(folder).parts
+    except Exception: rel = ()
+    try: mt = p.stat().st_mtime
+    except Exception: mt = 0
+    return (0 if rel[:1] == ("now",) else 1, -mt)
 
 
 def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", chapters=False,
@@ -3070,15 +3118,17 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
         print(f"🎢 belt[{tag}] stale lock ({int(age/3600)}h) — taking it over", flush=True)
         lock.touch()
     atexit.register(lambda: shutil.rmtree(lock, ignore_errors=True))
-    code_version = Path(__file__).stat().st_mtime_ns
+    code_version = code_digest()
     while True:
-        if Path(__file__).stat().st_mtime_ns != code_version:
+        if code_digest() != code_version:
             shutil.rmtree(lock, ignore_errors=True)
             os.execv(sys.executable, [sys.executable, str(Path(__file__).resolve())] + sys.argv[1:])
         done = belt_done_keys(tag)
+        backoff = belt_failed_recent(tag)
         all_found = [p for p in sorted(folder.rglob(pattern))
-                     if p.is_file() and str(p.resolve()) not in done]
-        todo = [p for p in all_found if not is_boilerplate(p)]
+                     if p.is_file() and str(p.resolve()) not in done and str(p.resolve()) not in backoff]
+        todo = sorted((p for p in all_found if not is_boilerplate(p)),
+                      key=lambda p: belt_priority(p, folder))
         skipped = [p for p in all_found if is_boilerplate(p)]
         if skipped and verbose:
             # Say what was skipped — a silent skip is how a belt starts quietly dropping real work.
@@ -3091,10 +3141,10 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
         if not todo:
             if once:
                 break
-            time.sleep(every)
+            belt_sleep(every, folder, done)
             continue
-        for p in todo:
-            if Path(__file__).stat().st_mtime_ns != code_version:
+        for p in (todo if once else todo[:1]):          # loop mode: ONE item, then rescan (priority stays live)
+            if code_digest() != code_version:
                 shutil.rmtree(lock, ignore_errors=True)
                 os.execv(sys.executable, [sys.executable, str(Path(__file__).resolve())] + sys.argv[1:])
             if limit and sent >= limit:
@@ -3124,8 +3174,9 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
             if once and limit and sent >= limit:
                 return sent, failed
             if verbose:
-                print(f"   ⏳ next in {every}s", flush=True)
-            time.sleep(every)
+                print(f"   ⏳ next in {every}s (sooner if something lands in now/)", flush=True)
+            if not once:
+                belt_sleep(every, folder, belt_done_keys(tag))
         if once:
             break
     return sent, failed

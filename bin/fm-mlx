@@ -79,11 +79,16 @@ if [ "$curl_rc" -ne 0 ] || [ -z "$raw_reply" ]; then
   # The Mini's supervised folder roundtable uses localhost and must fail boundedly
   # rather than attempting an SSH fallback when its local inference server is down.
   # REPORT-CARD >> features/aimeat-roundtable.feature
+  # On the Mini itself the SSH fallback only SSHes to ourselves — same dead server, plus a hang risk.
+  case "$(hostname -s)" in *[Mm]ini*|*[Cc]loudcity*) FM_MLX_NO_SSH=1 ;; esac
   if [ "${FM_MLX_NO_SSH:-0}" = "1" ]; then
     echo "fm-mlx: MLX HTTP endpoint unavailable (SSH fallback disabled)" >&2
     exit 1
   fi
-  raw_reply=$(printf '%s' "$body" | ssh "$SSH_HOST" \
+  # BOUNDED (2026-11-08): an unbounded ssh here hung 18h+ and froze the FE mail belt. BatchMode never
+  # prompts; ConnectTimeout bounds the handshake; ServerAlive kills a dead link in ~60s.
+  raw_reply=$(printf '%s' "$body" | ssh -o BatchMode=yes -o ConnectTimeout=10 \
+    -o ServerAliveInterval=15 -o ServerAliveCountMax=4 "$SSH_HOST" \
     "curl -sS -m 180 -X POST http://127.0.0.1:8080/v1/chat/completions -H 'Content-Type: application/json' --data-binary @-")
 fi
 
