@@ -19,3 +19,9 @@
 ## RESULT
 - Commit: see `git log -- bin/notes-new` (direct-push, no PR)
 - Files: bin/notes-new, commands/notes-new.md, features/notes-new.feature, features/notes-new.session.md
+
+## Round 2 — tables / blockquotes / rules
+5. Esa asked whether markdown becomes rich text, using the Bearden letter. Dry run showed raw `>`, `---` and `|` table rows.
+6. Added table_html/split_row, blockquote and hr handling. Posted the letter → note id …/ICNote/p13470.
+   Read back the stored body: 1 table, 15 td, 35 bold, 33 italic, 1 list, 0 leftover markers.
+   Notes rewrites <h2> as bold 18px and drops <blockquote> indentation (italic remains).

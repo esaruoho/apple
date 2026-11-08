@@ -984,15 +984,16 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/notes-new.feature` · [session](notes-new.session.md)
 
-**Behaviour (5 scenarios):**
+**Behaviour (6 scenarios):**
 
 - Creates a note in an explicit account/folder and verifies it — `@built @hw-verified`
 - Refuses bad targets instead of guessing — `@built @hw-verified`
 - Content cannot inject AppleScript or break HTML — `@built @hw-verified`
 - Never edits, moves, deletes, keystrokes, or writes NoteStore SQLite — `@designed`
 - Google (IMAP) Notes account behaves like iCloud — `@untested`
+- Tables, blockquotes and rules become rich text (proved 2026-11-08) — `@built @hw-verified`
 
-**Grade:** @built ×3 · @designed ×1 · @hw-verified ×3 · @untested ×1
+**Grade:** @built ×4 · @designed ×1 · @hw-verified ×4 · @untested ×1
 
 
 <a id="rec-audio"></a>

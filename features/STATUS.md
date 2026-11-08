@@ -50,7 +50,7 @@
 | me-address | 6 | ✗ | — | — | @built @note @verified |
 | me-location | 9 | ✗ | — | — | @built @note @verified |
 | mlx-agent-tool-loop | 10 | ✗ | — | ✓ | @built @hw-verified @sim-verified |
-| notes-new | 5 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
+| notes-new | 6 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
 | rec-audio | 4 | ✗ | — | ✓ | @hw-verified |
 | rec-subtitle | 18 | ✗ | — | ✓ | @built @hw-verified |
 | recburn-abort | 9 | ✗ | — | ✓ | @built @hw-verified @note |

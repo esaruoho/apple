@@ -24,3 +24,12 @@ Feature: notes-new creates exactly one new Apple Note without touching anything 
 
   @untested
   Scenario: Google (IMAP) Notes account behaves like iCloud
+
+  @built @hw-verified
+  Scenario: Tables, blockquotes and rules become rich text (proved 2026-11-08)
+    Given the Bearden-voice Wachsmuth/Dollard letter (merlib-dump/articles/2026-11-08-…)
+    When it is posted with notes-new
+    Then Notes stores a native <table> with 15 cells (header + 4 rows × 3) — table_html()
+    And blockquotes keep bold/italic (indent is dropped by Notes; italic marks the quote)
+    And --- becomes a ──── divider, ## becomes Notes' bold 18px heading
+    And zero raw "|", "> " or "---" markers remain in the stored body
