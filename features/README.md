@@ -47,6 +47,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [Where am I right now — device-presence geolocation for a desktop Mac](#me-location) — `me-location.feature`
 - [The on-device agentic tool-calling loop on the Mini's MLX brain](#mlx-agent-tool-loop) — `mlx-agent-tool-loop.feature`
 - [notes-new creates exactly one new Apple Note without touching anything else](#notes-new) — `notes-new.feature`
+- [a #process tag in a note gets an LLM reply appended, then is marked #done](#notes-process) — `notes-process.feature`
 - [Post-process a screen recording's audio (split / flatten)](#rec-audio) — `rec-audio.feature`
 - [Subtitle a screen recording (.srt sidecar + burn-in)](#rec-subtitle) — `rec-subtitle.feature`
 - [Two presses of the same key always get the shell back](#recburn-abort) — `recburn-abort.feature`
@@ -994,6 +995,23 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Tables, blockquotes and rules become rich text (proved 2026-11-08) — `@built @hw-verified`
 
 **Grade:** @built ×4 · @designed ×1 · @hw-verified ×4 · @untested ×1
+
+
+<a id="notes-process"></a>
+## a #process tag in a note gets an LLM reply appended, then is marked #done
+
+`features/notes-process.feature` · [session](notes-process.session.md)
+
+**Behaviour (6 scenarios):**
+
+- Inline trigger line is answered and closed (2026-11-08, note p13471) — `@built @hw-verified`
+- No feedback loop — `@built @hw-verified`
+- Trigger parsing (test_notes_process.py) — `@built @sim-verified`
+- Guards before any write — `@built @designed`
+- A tag typed by hand in Notes.app (real Notes tag object) is detected and rewritten — `@untested`
+- Notes on the Mini (iCloud-synced) running under Cloudcity-Boot via systems.yaml — `@untested`
+
+**Grade:** @built ×4 · @designed ×1 · @hw-verified ×2 · @sim-verified ×1 · @untested ×2
 
 
 <a id="rec-audio"></a>

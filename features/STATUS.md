@@ -51,6 +51,7 @@
 | me-location | 9 | ✗ | — | — | @built @note @verified |
 | mlx-agent-tool-loop | 10 | ✗ | — | ✓ | @built @hw-verified @sim-verified |
 | notes-new | 6 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
+| notes-process | 6 | ✗ | — | ✓ | @built @designed @hw-verified @sim-verified @untested |
 | rec-audio | 4 | ✗ | — | ✓ | @hw-verified |
 | rec-subtitle | 18 | ✗ | — | ✓ | @built @hw-verified |
 | recburn-abort | 9 | ✗ | — | ✓ | @built @hw-verified @note |
@@ -73,8 +74,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 61
+- Cards: 62
 - Build-verified: 9
 - Runtime-verified: 9 full + 5 partial
-- **Hardware-verified: 22**  ·  hardware-untested: 0
+- **Hardware-verified: 23**  ·  hardware-untested: 0
 

@@ -1,0 +1,247 @@
+#!/usr/bin/env python3
+"""notes-process — #process hashtag in Apple Notes → Cloudcity LLM reply appended in the note.
+
+Report card: features/notes-process.feature
+
+Type   hello world #process   anywhere in a note. On the next pass:
+  1. the text of that line (minus the tag) is sent VERBATIM to the LLM
+     (default `fmremote` = Cloudcity Mac Mini FoundationModels; override --llm);
+     a line that is ONLY the tag sends the whole note text above it;
+  2. the reply is APPENDED to the end of the note (original content untouched);
+  3. the trigger tag is rewritten to the done tag (#process → #done), so it never
+     re-fires. The reply is sanitised so it can never contain the trigger tag.
+
+Safety (it edits existing notes, so it is paranoid):
+  * read-only search; only notes whose plaintext contains the tag are touched
+  * skips: password-protected notes, notes with attachments (Notes' `set body`
+    can drop them), notes in Recently Deleted, notes edited < --settle seconds ago
+  * backs up the full body HTML before every write (~/.local/share/notes-process/backups)
+  * after the write, verifies every original text line is still present;
+    if not → restores the backup immediately and reports
+  * ledger of processed (note id, line) pairs → never double-processes even if
+    the tag rewrite somehow fails
+  * Notes scripting dictionary only: no keystrokes, no NoteStore SQLite writes
+
+Usage:
+  notes-process --once            one pass (default tag #process → #done)
+  notes-process --once --dry-run  show what would be sent, change nothing
+  notes-process --watch 60        loop (run it under Cloudcity-Boot, never nohup)
+  notes-process --tag '#ask' --done-tag '#answered' --llm 'bin/fmremote -' --once
+"""
+import argparse, datetime, hashlib, html, json, os, re, shlex, subprocess, sys, time
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+STATE = Path(os.environ.get('NOTES_PROCESS_HOME', Path.home() / '.local/share/notes-process'))
+SEP = '\x1f'  # unit separator between fields from AppleScript
+
+
+def osa(script: str, *args, timeout=60) -> str:
+    r = subprocess.run(['osascript', '-', *args], input=script, capture_output=True,
+                       text=True, timeout=timeout)
+    if r.returncode != 0:
+        raise RuntimeError(r.stderr.strip())
+    return r.stdout.rstrip('\n')
+
+
+FIND = r'''
+on run argv
+  set tagText to item 1 of argv
+  set out to ""
+  tell application "Notes"
+    repeat with n in (every note whose plaintext contains tagText)
+      set out to out & (id of n) & linefeed
+    end repeat
+  end tell
+  return out
+end run
+'''
+
+INFO = r'''
+on run argv
+  set sep to ASCII character 31
+  tell application "Notes"
+    set n to note id (item 1 of argv)
+    set c to container of n
+    set fname to name of c
+    set pw to password protected of n
+    set ac to count of attachments of n
+    set md to modification date of n
+    set age to ((current date) - md) as integer
+    return (name of n) & sep & fname & sep & (pw as text) & sep & (ac as text) & sep & (age as text) & sep & (plaintext of n)
+  end tell
+end run
+'''
+
+BODY = 'on run argv\ntell application "Notes" to return body of note id (item 1 of argv)\nend run'
+SETBODY = ('on run argv\ntell application "Notes" to set body of note id (item 1 of argv) '
+           'to (item 2 of argv)\nreturn "ok"\nend run')
+
+
+def tag_re(tag):
+    return re.compile(re.escape(tag) + r'(?![\w-])', re.IGNORECASE)
+
+
+def find_triggers(plain: str, tag: str):
+    """Return [(line_text_without_tag, prompt)] for each line carrying the tag."""
+    lines = plain.splitlines()
+    out, rx = [], tag_re(tag)
+    for i, line in enumerate(lines):
+        if not rx.search(line):
+            continue
+        stripped = rx.sub('', line).strip()
+        if stripped:
+            prompt = stripped
+        else:  # bare tag line → whole note above it (skip the title line)
+            prompt = '\n'.join(l for l in lines[1:i] if not rx.search(l)).strip()
+        if prompt:
+            out.append((line.strip(), prompt))
+    return out
+
+
+def sanitize(reply: str, tag: str) -> str:
+    # Insert a zero-width joiner after '#' so the reply can never re-trigger.
+    return tag_re(tag).sub(lambda m: '#⁠' + m.group(0)[1:], reply)
+
+
+def reply_html(reply: str, llm_name: str) -> str:
+    stamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M')
+    parts = ['<div><br></div>', '<div>────────────</div>',
+             f'<div><b>🤖 {html.escape(llm_name)} · {stamp}</b></div>']
+    for line in reply.strip().splitlines():
+        parts.append(f'<div>{html.escape(line) or "<br>"}</div>')
+    return '\n'.join(parts)
+
+
+def norm(s):
+    return re.sub(r'\s+', ' ', s).strip()
+
+
+def ledger_key(note_id, line):
+    return hashlib.sha256(f'{note_id}\n{norm(line)}'.encode()).hexdigest()
+
+
+def load_ledger():
+    p = STATE / 'ledger.jsonl'
+    if not p.exists():
+        return set()
+    return {json.loads(l)['key'] for l in p.read_text().splitlines() if l.strip()}
+
+
+def append_ledger(rec):
+    STATE.mkdir(parents=True, exist_ok=True)
+    with open(STATE / 'ledger.jsonl', 'a') as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + '\n')
+
+
+def call_llm(cmd: str, prompt: str, timeout: int) -> str:
+    r = subprocess.run(shlex.split(cmd), input=prompt, capture_output=True, text=True,
+                       timeout=timeout, cwd=str(HERE.parent))
+    if r.returncode != 0 or not r.stdout.strip():
+        raise RuntimeError(f'llm failed rc={r.returncode}: {r.stderr.strip()[-300:]}')
+    return r.stdout.strip()
+
+
+def process_note(nid, a, ledger, log):
+    name, folder, pw, natt, age, plain = osa(INFO, nid).split(SEP, 5)
+    label = f'"{name}" [{folder}]'
+    if folder.lower() == 'recently deleted':
+        return log(f'skip {label}: in Recently Deleted')
+    if pw == 'true':
+        return log(f'skip {label}: password-protected')
+    if int(natt) > 0:
+        return log(f'skip {label}: has {natt} attachment(s) — rewrite could drop them')
+    if int(age) < a.settle:
+        return log(f'wait {label}: edited {age}s ago (< {a.settle}s settle)')
+    triggers = [t for t in find_triggers(plain, a.tag) if ledger_key(nid, t[0]) not in ledger]
+    if not triggers:
+        return log(f'skip {label}: tag present but every line already in ledger')
+
+    replies = []
+    for line, prompt in triggers:
+        if a.dry_run:
+            log(f'DRY {label}: would send {prompt!r}')
+            continue
+        log(f'send {label}: {prompt[:80]!r}')
+        replies.append((line, sanitize(call_llm(a.llm, prompt, a.llm_timeout), a.tag)))
+    if a.dry_run or not replies:
+        return
+
+    # Re-read right before writing: abort if the note changed while the LLM thought.
+    body = osa(BODY, nid)
+    now_plain = osa(INFO, nid).split(SEP, 5)[5]
+    if norm(now_plain) != norm(plain):
+        return log(f'abort {label}: note changed during LLM call — will retry next pass')
+
+    STATE.joinpath('backups').mkdir(parents=True, exist_ok=True)
+    ts = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    backup = STATE / 'backups' / f'{ts}-{nid.rsplit("/", 1)[-1]}.html'
+    backup.write_text(body, encoding='utf-8')
+
+    new_body = tag_re(a.tag).sub(a.done_tag, body)
+    llm_name = Path(shlex.split(a.llm)[0]).name
+    for _line, reply in replies:
+        new_body += '\n' + reply_html(reply, llm_name)
+    osa(SETBODY, nid, new_body)
+
+    # Verify: every original line (with tag → done tag) must survive.
+    after = osa(INFO, nid).split(SEP, 5)[5]
+    after_n = norm(after)
+    rx = tag_re(a.tag)
+    missing = [l for l in plain.splitlines()
+               if l.strip() and norm(rx.sub(a.done_tag, l)) not in after_n]
+    if missing:
+        osa(SETBODY, nid, body)
+        return log(f'RESTORED {label}: {len(missing)} original line(s) missing after write; '
+                   f'backup {backup}')
+    for line, reply in replies:
+        k = ledger_key(nid, line)
+        ledger.add(k)
+        append_ledger({'key': k, 'note': nid, 'title': name, 'line': line,
+                       'at': ts, 'backup': str(backup), 'reply_chars': len(reply)})
+    log(f'done {label}: {len(replies)} repl{"y" if len(replies) == 1 else "ies"} appended, '
+        f'{a.tag} → {a.done_tag}')
+
+
+def one_pass(a):
+    log = lambda m: print(f'[{datetime.datetime.now():%H:%M:%S}] {m}', flush=True)
+    ids = [i for i in osa(FIND, a.tag, timeout=120).splitlines() if i.strip()]
+    if not ids:
+        return log(f'no notes contain {a.tag}')
+    ledger = load_ledger()
+    for nid in ids:
+        try:
+            process_note(nid, a, ledger, log)
+        except Exception as e:  # one bad note never stops the pass
+            log(f'error {nid}: {e}')
+
+
+def main():
+    ap = argparse.ArgumentParser(description='#process hashtag in Notes → LLM reply appended.')
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument('--once', action='store_true')
+    g.add_argument('--watch', type=int, metavar='SECONDS')
+    ap.add_argument('--tag', default='#process')
+    ap.add_argument('--done-tag', default='#done')
+    ap.add_argument('--llm', default=f'{HERE}/fmremote --timeout 180 -',
+                    help='command reading the prompt on stdin, answer on stdout')
+    ap.add_argument('--llm-timeout', type=int, default=240)
+    ap.add_argument('--settle', type=int, default=15,
+                    help='skip notes edited less than N seconds ago (still typing)')
+    ap.add_argument('--dry-run', action='store_true')
+    a = ap.parse_args()
+    if not a.tag.startswith('#') or a.tag.lower() == a.done_tag.lower():
+        sys.exit('tag must start with # and differ from --done-tag')
+    if tag_re(a.tag).search(a.done_tag):
+        sys.exit('done tag must not contain the trigger tag (feedback loop)')
+    if a.watch is not None and a.watch < 30:
+        sys.exit('--watch must be >= 30 seconds')
+    if a.once:
+        one_pass(a); return
+    while True:
+        one_pass(a)
+        time.sleep(a.watch)
+
+
+if __name__ == '__main__':
+    main()
