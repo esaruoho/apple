@@ -3,7 +3,7 @@ name: Home address from the Contacts me-card
 slug: home-address-from-the-contacts-me-card
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

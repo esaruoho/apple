@@ -3,7 +3,7 @@ name: The master session list is bootable with one word
 slug: the-master-session-list-is-bootable-with-one-word
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

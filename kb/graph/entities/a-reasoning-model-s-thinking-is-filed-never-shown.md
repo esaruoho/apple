@@ -3,7 +3,7 @@ name: A reasoning model's thinking is filed, never shown
 slug: a-reasoning-model-s-thinking-is-filed-never-shown
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

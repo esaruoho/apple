@@ -3,7 +3,7 @@ name: iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone 
 slug: iphonemirror-live-auto-oriented-auto-cropped-mirror-of-a-usb-iphone-screen
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

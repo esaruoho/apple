@@ -3,7 +3,7 @@ name: The only thing that ends a take is the person making it
 slug: the-only-thing-that-ends-a-take-is-the-person-making-it
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

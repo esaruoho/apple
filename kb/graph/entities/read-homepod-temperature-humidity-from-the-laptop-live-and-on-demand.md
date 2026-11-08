@@ -3,7 +3,7 @@ name: Read HomePod temperature + humidity from the laptop, live and on demand
 slug: read-homepod-temperature-humidity-from-the-laptop-live-and-on-demand
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

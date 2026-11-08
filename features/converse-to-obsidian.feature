@@ -25,6 +25,7 @@
 # WATCH: converse-to-obsidian resolve_session turns_from_events turns_from_cache render_session_note render_turn_note converse-publish publish_scaff publish_vault
 #
 # RESULT-LOG >> (auto-maintained by the report-card hooks — newest below)
+#   2026-11-08  direct-commit  touched: converse-to-obsidian
 # =============================================================================
 
 Feature: converse-to-obsidian — linked Markdown views of Converse sessions

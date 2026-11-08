@@ -3,7 +3,7 @@ name: image-playground — on-device pictures, locally, as the prose's twin
 slug: image-playground-on-device-pictures-locally-as-the-prose-s-twin
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

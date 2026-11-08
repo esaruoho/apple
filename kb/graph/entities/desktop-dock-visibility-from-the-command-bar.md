@@ -3,7 +3,7 @@ name: Desktop & Dock visibility from the command bar
 slug: desktop-dock-visibility-from-the-command-bar
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

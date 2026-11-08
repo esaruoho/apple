@@ -3,7 +3,7 @@ name: converse-to-obsidian — linked Markdown views of Converse sessions
 slug: converse-to-obsidian-linked-markdown-views-of-converse-sessions
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

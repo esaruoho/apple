@@ -3,7 +3,7 @@ name: One button for "Claude talks to me" (server + speech together)
 slug: one-button-for-claude-talks-to-me-server-speech-together
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

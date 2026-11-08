@@ -3,7 +3,7 @@ name: voicebox-worker — a TTS queue that survives the worker dying mid-job
 slug: voicebox-worker-a-tts-queue-that-survives-the-worker-dying-mid-job
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

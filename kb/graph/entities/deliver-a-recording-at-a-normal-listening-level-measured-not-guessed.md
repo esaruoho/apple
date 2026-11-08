@@ -3,7 +3,7 @@ name: Deliver a recording at a normal listening level, measured not guessed
 slug: deliver-a-recording-at-a-normal-listening-level-measured-not-guessed
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

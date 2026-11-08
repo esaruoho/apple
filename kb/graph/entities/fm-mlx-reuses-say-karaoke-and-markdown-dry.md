@@ -3,7 +3,7 @@ name: fm-mlx reuses Say, Karaoke, and Markdown (DRY)
 slug: fm-mlx-reuses-say-karaoke-and-markdown-dry
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

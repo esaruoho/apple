@@ -50,6 +50,7 @@
 | me-address | 6 | ✗ | — | — | @built @note @verified |
 | me-location | 9 | ✗ | — | — | @built @note @verified |
 | mlx-agent-tool-loop | 10 | ✗ | — | ✓ | @built @hw-verified @sim-verified |
+| notes-append-images | 3 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
 | notes-new | 6 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
 | notes-process | 6 | ✗ | — | ✓ | @built @designed @hw-verified @sim-verified @untested |
 | rec-audio | 4 | ✗ | — | ✓ | @hw-verified |
@@ -74,8 +75,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 62
+- Cards: 63
 - Build-verified: 9
 - Runtime-verified: 9 full + 5 partial
-- **Hardware-verified: 23**  ·  hardware-untested: 0
+- **Hardware-verified: 24**  ·  hardware-untested: 0
 

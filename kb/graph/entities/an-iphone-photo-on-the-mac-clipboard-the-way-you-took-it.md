@@ -3,7 +3,7 @@ name: An iPhone photo, on the Mac clipboard, the way you took it
 slug: an-iphone-photo-on-the-mac-clipboard-the-way-you-took-it
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

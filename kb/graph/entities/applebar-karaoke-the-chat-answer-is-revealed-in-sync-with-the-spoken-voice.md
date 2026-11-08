@@ -3,7 +3,7 @@ name: AppleBar karaoke — the chat answer is revealed in sync with the spoken v
 slug: applebar-karaoke-the-chat-answer-is-revealed-in-sync-with-the-spoken-voice
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

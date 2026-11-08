@@ -3,7 +3,7 @@ name: Redact a region of a finished recburn video without re-rendering it
 slug: redact-a-region-of-a-finished-recburn-video-without-re-rendering-it
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

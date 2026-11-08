@@ -3,7 +3,7 @@ name: Post-process a screen recording's audio (split / flatten)
 slug: post-process-a-screen-recording-s-audio-split-flatten
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

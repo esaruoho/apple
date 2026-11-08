@@ -3,7 +3,7 @@ name: Install and verify compatible Whisper dependencies
 slug: install-and-verify-compatible-whisper-dependencies
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

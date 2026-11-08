@@ -3,7 +3,7 @@ name: Two presses of the same key always get the shell back
 slug: two-presses-of-the-same-key-always-get-the-shell-back
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

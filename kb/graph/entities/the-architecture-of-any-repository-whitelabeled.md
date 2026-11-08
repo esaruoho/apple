@@ -3,7 +3,7 @@ name: The architecture of any repository, whitelabeled
 slug: the-architecture-of-any-repository-whitelabeled
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

@@ -3,7 +3,7 @@ name: principles/0007-fm-converse/verify/steps.py
 slug: principles-0007-fm-converse-verify-steps-py
 kind: module
 confidence: 0.5
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

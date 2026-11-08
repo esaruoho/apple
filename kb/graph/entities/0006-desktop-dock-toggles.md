@@ -3,7 +3,7 @@ name: 0006-desktop-dock-toggles
 slug: 0006-desktop-dock-toggles
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

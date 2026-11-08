@@ -3,7 +3,7 @@ name: Live Spotlight-style suggestions in AppleBar
 slug: live-spotlight-style-suggestions-in-applebar
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

@@ -3,7 +3,7 @@ name: A Voice Memo tagged #audio becomes a .wav sample on disk
 slug: a-voice-memo-tagged-audio-becomes-a-wav-sample-on-disk
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

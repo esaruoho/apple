@@ -3,7 +3,7 @@ name: Research emails share one renderer and retain equation source
 slug: research-emails-share-one-renderer-and-retain-equation-source
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

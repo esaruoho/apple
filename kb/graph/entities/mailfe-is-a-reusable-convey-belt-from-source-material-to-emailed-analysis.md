@@ -3,7 +3,7 @@ name: mailfe is a reusable Convey belt from source material to emailed analysis
 slug: mailfe-is-a-reusable-convey-belt-from-source-material-to-emailed-analysis
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

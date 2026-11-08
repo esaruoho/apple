@@ -3,7 +3,7 @@ name: Arm the Apple skill into the Mini's on-device chat brain
 slug: arm-the-apple-skill-into-the-mini-s-on-device-chat-brain
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

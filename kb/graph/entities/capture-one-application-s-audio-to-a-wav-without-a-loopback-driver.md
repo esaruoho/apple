@@ -3,7 +3,7 @@ name: Capture one application's audio to a .wav without a loopback driver
 slug: capture-one-application-s-audio-to-a-wav-without-a-loopback-driver
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

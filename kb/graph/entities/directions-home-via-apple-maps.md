@@ -3,7 +3,7 @@ name: Directions home via Apple Maps
 slug: directions-home-via-apple-maps
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

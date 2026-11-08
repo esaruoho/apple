@@ -3,7 +3,7 @@ name: Give a folder a voice — the per-folder sidecar triad
 slug: give-a-folder-a-voice-the-per-folder-sidecar-triad
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

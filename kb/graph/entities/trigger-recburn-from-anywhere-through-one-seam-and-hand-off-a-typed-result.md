@@ -3,7 +3,7 @@ name: Trigger recburn from anywhere through one seam, and hand off a typed resul
 slug: trigger-recburn-from-anywhere-through-one-seam-and-hand-off-a-typed-result
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

@@ -3,7 +3,7 @@ name: Copy iCloud Drive files and folders to external storage without Finder err
 slug: copy-icloud-drive-files-and-folders-to-external-storage-without-finder-errors
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

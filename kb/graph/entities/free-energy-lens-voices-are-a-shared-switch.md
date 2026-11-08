@@ -3,7 +3,7 @@ name: Free-energy lens voices are a shared switch
 slug: free-energy-lens-voices-are-a-shared-switch
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

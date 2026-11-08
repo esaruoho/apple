@@ -3,7 +3,7 @@ name: A folder's files are boxes on a screen
 slug: a-folder-s-files-are-boxes-on-a-screen
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

@@ -46,6 +46,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [Home address from the Contacts me-card](#me-address) — `me-address.feature`
 - [Where am I right now — device-presence geolocation for a desktop Mac](#me-location) — `me-location.feature`
 - [The on-device agentic tool-calling loop on the Mini's MLX brain](#mlx-agent-tool-loop) — `mlx-agent-tool-loop.feature`
+- [notes-append-images — append images to an Apple Note, rendered once each](#notes-append-images) — `notes-append-images.feature`
 - [notes-new creates exactly one new Apple Note without touching anything else](#notes-new) — `notes-new.feature`
 - [a #process tag in a note gets an LLM reply appended, then is marked #done](#notes-process) — `notes-process.feature`
 - [Post-process a screen recording's audio (split / flatten)](#rec-audio) — `rec-audio.feature`
@@ -978,6 +979,20 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - the final answer is shown via the ONE shared presenter (DRY) — `@built @sim-verified`
 
 **Grade:** @built ×10 · @hw-verified ×7 · @sim-verified ×3
+
+
+<a id="notes-append-images"></a>
+## notes-append-images — append images to an Apple Note, rendered once each
+
+`features/notes-append-images.feature`
+
+**Behaviour (3 scenarios):**
+
+- clipboard-paste path renders images inline, once — `@hw-verified`
+- script reports a count mismatch — `@built @untested`
+- rejected methods are documented, not used — `@designed`
+
+**Grade:** @built ×1 · @designed ×1 · @hw-verified ×1 · @untested ×1
 
 
 <a id="notes-new"></a>

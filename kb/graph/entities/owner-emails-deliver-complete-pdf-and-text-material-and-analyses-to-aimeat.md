@@ -3,7 +3,7 @@ name: Owner emails deliver complete PDF and text material and analyses to AIMEAT
 slug: owner-emails-deliver-complete-pdf-and-text-material-and-analyses-to-aimeat
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

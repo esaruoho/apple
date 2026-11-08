@@ -3,7 +3,7 @@ name: Free Energy documents retain the complete editorial format across entry po
 slug: free-energy-documents-retain-the-complete-editorial-format-across-entry-points
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

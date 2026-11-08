@@ -3,7 +3,7 @@ name: Recover a wedged USB-C port without losing the work on the machine
 slug: recover-a-wedged-usb-c-port-without-losing-the-work-on-the-machine
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

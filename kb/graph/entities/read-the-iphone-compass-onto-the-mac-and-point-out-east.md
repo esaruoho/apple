@@ -3,7 +3,7 @@ name: Read the iPhone Compass onto the Mac and point out East
 slug: read-the-iphone-compass-onto-the-mac-and-point-out-east
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

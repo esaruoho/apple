@@ -3,7 +3,7 @@ name: Read macOS energy & power telemetry from the command line
 slug: read-macos-energy-power-telemetry-from-the-command-line
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

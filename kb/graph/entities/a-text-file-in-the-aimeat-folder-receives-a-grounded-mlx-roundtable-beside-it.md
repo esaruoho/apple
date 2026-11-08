@@ -3,7 +3,7 @@ name: A text file in the AIMEAT folder receives a grounded MLX roundtable beside
 slug: a-text-file-in-the-aimeat-folder-receives-a-grounded-mlx-roundtable-beside-it
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

@@ -3,7 +3,7 @@ name: 0003-on-device-dictation
 slug: 0003-on-device-dictation
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

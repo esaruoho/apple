@@ -3,7 +3,7 @@ name: One selected archive folder gets a reviewed preparation before paid whiteb
 slug: one-selected-archive-folder-gets-a-reviewed-preparation-before-paid-whiteboard-g
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

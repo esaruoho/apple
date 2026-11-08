@@ -3,7 +3,7 @@ name: freellmask-mail answers each email once, and never speaks for an untranscr
 slug: freellmask-mail-answers-each-email-once-and-never-speaks-for-an-untranscribed-vi
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

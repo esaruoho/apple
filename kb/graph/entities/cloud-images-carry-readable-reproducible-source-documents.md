@@ -3,7 +3,7 @@ name: Cloud images carry readable reproducible source documents
 slug: cloud-images-carry-readable-reproducible-source-documents
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

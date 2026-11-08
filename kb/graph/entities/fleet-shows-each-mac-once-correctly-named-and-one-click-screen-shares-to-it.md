@@ -3,7 +3,7 @@ name: Fleet shows each Mac once, correctly named, and one click screen-shares to
 slug: fleet-shows-each-mac-once-correctly-named-and-one-click-screen-shares-to-it
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

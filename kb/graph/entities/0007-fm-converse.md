@@ -3,7 +3,7 @@ name: 0007-fm-converse
 slug: 0007-fm-converse
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

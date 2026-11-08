@@ -3,7 +3,7 @@ name: Record screen + system audio to one .mov with no loopback driver
 slug: record-screen-system-audio-to-one-mov-with-no-loopback-driver
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

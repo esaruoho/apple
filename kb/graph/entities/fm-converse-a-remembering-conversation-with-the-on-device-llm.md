@@ -3,7 +3,7 @@ name: fm-converse — a remembering conversation with the on-device LLM
 slug: fm-converse-a-remembering-conversation-with-the-on-device-llm
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

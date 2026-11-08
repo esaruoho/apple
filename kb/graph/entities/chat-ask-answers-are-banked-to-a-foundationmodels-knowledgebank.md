@@ -3,7 +3,7 @@ name: chat/ask answers are banked to a FoundationModels Knowledgebank
 slug: chat-ask-answers-are-banked-to-a-foundationmodels-knowledgebank
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

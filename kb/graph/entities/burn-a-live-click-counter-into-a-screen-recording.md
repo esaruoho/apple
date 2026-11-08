@@ -3,7 +3,7 @@ name: Burn a live click counter into a screen recording
 slug: burn-a-live-click-counter-into-a-screen-recording
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

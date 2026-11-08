@@ -3,7 +3,7 @@ name: 0002-applebar-suggestions
 slug: 0002-applebar-suggestions
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

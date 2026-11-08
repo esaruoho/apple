@@ -3,7 +3,7 @@ name: Lift the voice against the app audio, measured not guessed
 slug: lift-the-voice-against-the-app-audio-measured-not-guessed
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

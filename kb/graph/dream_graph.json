@@ -55,6 +55,12 @@
       "claims": 16
     },
     {
+      "id": "a-process-tag-in-a-note-gets-an-llm-reply-appended-then-is-marked-done",
+      "kind": "feature",
+      "name": "a #process tag in a note gets an LLM reply appended, then is marked #done",
+      "claims": 6
+    },
+    {
       "id": "a-reasoning-model-s-thinking-is-filed-never-shown",
       "kind": "feature",
       "name": "A reasoning model's thinking is filed, never shown",
@@ -913,6 +919,12 @@
       "claims": 1
     },
     {
+      "id": "notes-new-creates-exactly-one-new-apple-note-without-touching-anything-else",
+      "kind": "feature",
+      "name": "notes-new creates exactly one new Apple Note without touching anything else",
+      "claims": 6
+    },
+    {
       "id": "on-device-dictation-button",
       "kind": "feature",
       "name": "On-device dictation button",
@@ -1165,6 +1177,12 @@
       "claims": 1
     },
     {
+      "id": "shared-mail-architecture-guard-py",
+      "kind": "module",
+      "name": "shared/mail_architecture_guard.py",
+      "claims": 1
+    },
+    {
       "id": "shortcuts-exporter-scripts-shortcuts-exporter-py",
       "kind": "module",
       "name": "shortcuts-exporter/scripts/shortcuts_exporter.py",
@@ -1249,6 +1267,12 @@
       "claims": 1
     },
     {
+      "id": "test-mail-architecture-py",
+      "kind": "module",
+      "name": "test_mail_architecture.py",
+      "claims": 1
+    },
+    {
       "id": "test-mail-material-editor-py",
       "kind": "module",
       "name": "test_mail_material_editor.py",
@@ -1258,6 +1282,12 @@
       "id": "test-mail-reply-attachment-fallback-py",
       "kind": "module",
       "name": "test_mail_reply_attachment_fallback.py",
+      "claims": 1
+    },
+    {
+      "id": "test-notes-process-py",
+      "kind": "module",
+      "name": "test_notes_process.py",
       "claims": 1
     },
     {
@@ -1320,14 +1350,19 @@
       "name": "hashlib"
     },
     {
+      "id": "re",
+      "kind": "entity",
+      "name": "re"
+    },
+    {
+      "id": "argparse",
+      "kind": "entity",
+      "name": "argparse"
+    },
+    {
       "id": "datetime",
       "kind": "entity",
       "name": "datetime"
-    },
-    {
-      "id": "pathlib",
-      "kind": "entity",
-      "name": "pathlib"
     },
     {
       "id": "json",
@@ -1345,14 +1380,14 @@
       "name": "base64"
     },
     {
-      "id": "os",
-      "kind": "entity",
-      "name": "os"
-    },
-    {
       "id": "sys",
       "kind": "entity",
       "name": "sys"
+    },
+    {
+      "id": "pathlib",
+      "kind": "entity",
+      "name": "pathlib"
     },
     {
       "id": "plistlib",
@@ -1360,24 +1395,19 @@
       "name": "plistlib"
     },
     {
-      "id": "argparse",
+      "id": "os",
       "kind": "entity",
-      "name": "argparse"
-    },
-    {
-      "id": "re",
-      "kind": "entity",
-      "name": "re"
-    },
-    {
-      "id": "dataclasses",
-      "kind": "entity",
-      "name": "dataclasses"
+      "name": "os"
     },
     {
       "id": "subprocess",
       "kind": "entity",
       "name": "subprocess"
+    },
+    {
+      "id": "dataclasses",
+      "kind": "entity",
+      "name": "dataclasses"
     },
     {
       "id": "typing",
@@ -1390,14 +1420,14 @@
       "name": "xml"
     },
     {
-      "id": "time",
-      "kind": "entity",
-      "name": "time"
-    },
-    {
       "id": "calendar",
       "kind": "entity",
       "name": "calendar"
+    },
+    {
+      "id": "time",
+      "kind": "entity",
+      "name": "time"
     },
     {
       "id": "glob",
@@ -1465,24 +1495,19 @@
       "name": "tempfile"
     },
     {
-      "id": "atexit",
-      "kind": "entity",
-      "name": "atexit"
-    },
-    {
       "id": "sqlite3",
       "kind": "entity",
       "name": "sqlite3"
     },
     {
+      "id": "atexit",
+      "kind": "entity",
+      "name": "atexit"
+    },
+    {
       "id": "socket",
       "kind": "entity",
       "name": "socket"
-    },
-    {
-      "id": "torch",
-      "kind": "entity",
-      "name": "torch"
     },
     {
       "id": "transformers",
@@ -1493,6 +1518,11 @@
       "id": "coremltools",
       "kind": "entity",
       "name": "coremltools"
+    },
+    {
+      "id": "torch",
+      "kind": "entity",
+      "name": "torch"
     },
     {
       "id": "html",
@@ -1515,24 +1545,24 @@
       "name": "difflib"
     },
     {
-      "id": "appkit",
-      "kind": "entity",
-      "name": "appkit"
-    },
-    {
-      "id": "random",
-      "kind": "entity",
-      "name": "random"
-    },
-    {
       "id": "pil",
       "kind": "entity",
       "name": "pil"
     },
     {
+      "id": "appkit",
+      "kind": "entity",
+      "name": "appkit"
+    },
+    {
       "id": "tkinter",
       "kind": "entity",
       "name": "tkinter"
+    },
+    {
+      "id": "random",
+      "kind": "entity",
+      "name": "random"
     },
     {
       "id": "zoneinfo",
@@ -1560,11 +1590,6 @@
       "name": "mimetypes"
     },
     {
-      "id": "signal",
-      "kind": "entity",
-      "name": "signal"
-    },
-    {
       "id": "struct",
       "kind": "entity",
       "name": "struct"
@@ -1573,6 +1598,11 @@
       "id": "threading",
       "kind": "entity",
       "name": "threading"
+    },
+    {
+      "id": "signal",
+      "kind": "entity",
+      "name": "signal"
     },
     {
       "id": "http",
@@ -1615,14 +1645,14 @@
       "name": "logging"
     },
     {
-      "id": "fcntl",
-      "kind": "entity",
-      "name": "fcntl"
-    },
-    {
       "id": "asyncio",
       "kind": "entity",
       "name": "asyncio"
+    },
+    {
+      "id": "fcntl",
+      "kind": "entity",
+      "name": "fcntl"
     },
     {
       "id": "ast",
@@ -1640,6 +1670,11 @@
       "name": "csv"
     },
     {
+      "id": "shared",
+      "kind": "entity",
+      "name": "shared"
+    },
+    {
       "id": "email",
       "kind": "entity",
       "name": "email"
@@ -1648,11 +1683,6 @@
       "id": "unittest",
       "kind": "entity",
       "name": "unittest"
-    },
-    {
-      "id": "shared",
-      "kind": "entity",
-      "name": "shared"
     }
   ],
   "edges": [
@@ -1663,12 +1693,17 @@
     },
     {
       "from": "apps-exporter-scripts-apps-exporter-py",
-      "to": "datetime",
+      "to": "re",
       "type": "depends_on"
     },
     {
       "from": "apps-exporter-scripts-apps-exporter-py",
-      "to": "pathlib",
+      "to": "argparse",
+      "type": "depends_on"
+    },
+    {
+      "from": "apps-exporter-scripts-apps-exporter-py",
+      "to": "datetime",
       "type": "depends_on"
     },
     {
@@ -1688,72 +1723,27 @@
     },
     {
       "from": "apps-exporter-scripts-apps-exporter-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "apps-exporter-scripts-apps-exporter-py",
       "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "apps-exporter-scripts-apps-exporter-py",
-      "to": "plistlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "apps-exporter-scripts-apps-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "apps-exporter-scripts-apps-exporter-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
-      "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
-      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
-      "to": "json",
+      "from": "apps-exporter-scripts-apps-exporter-py",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
-      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
-      "to": "future",
-      "type": "depends_on"
-    },
-    {
-      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
-      "to": "dataclasses",
-      "type": "depends_on"
-    },
-    {
-      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
+      "from": "apps-exporter-scripts-apps-exporter-py",
       "to": "os",
       "type": "depends_on"
     },
     {
       "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
-      "to": "plistlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
-      "to": "argparse",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -1763,27 +1753,52 @@
     },
     {
       "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
-      "to": "re",
+      "to": "dataclasses",
       "type": "depends_on"
     },
     {
-      "from": "bin-app-plist-probe-py",
+      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
+      "to": "argparse",
+      "type": "depends_on"
+    },
+    {
+      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
+      "to": "datetime",
+      "type": "depends_on"
+    },
+    {
+      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
       "to": "json",
       "type": "depends_on"
     },
     {
-      "from": "bin-app-plist-probe-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-app-plist-probe-py",
+      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
       "to": "future",
       "type": "depends_on"
     },
     {
+      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
+      "to": "plistlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "audio-midi-exporter-scripts-audio-midi-exporter-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
       "from": "bin-app-plist-probe-py",
-      "to": "typing",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -1793,17 +1808,7 @@
     },
     {
       "from": "bin-app-plist-probe-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-app-plist-probe-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-app-plist-probe-py",
-      "to": "plistlib",
+      "to": "typing",
       "type": "depends_on"
     },
     {
@@ -1813,7 +1818,42 @@
     },
     {
       "from": "bin-app-plist-probe-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-app-plist-probe-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-app-plist-probe-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-app-plist-probe-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-app-plist-probe-py",
+      "to": "plistlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-app-plist-probe-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-app-probe-py",
       "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-app-probe-py",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -1823,7 +1863,17 @@
     },
     {
       "from": "bin-app-probe-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-app-probe-py",
       "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-app-probe-py",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
@@ -1837,33 +1887,13 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-app-probe-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-app-probe-py",
-      "to": "plistlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-app-probe-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-app-probe-py",
+      "from": "bin-apple-energy-py",
       "to": "re",
       "type": "depends_on"
     },
     {
       "from": "bin-apple-energy-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-apple-energy-py",
-      "to": "time",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -1873,7 +1903,12 @@
     },
     {
       "from": "bin-apple-energy-py",
-      "to": "os",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-apple-energy-py",
+      "to": "time",
       "type": "depends_on"
     },
     {
@@ -1883,17 +1918,12 @@
     },
     {
       "from": "bin-apple-energy-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-apple-energy-py",
-      "to": "re",
+      "to": "os",
       "type": "depends_on"
     },
     {
       "from": "bin-arm-apple-py",
-      "to": "pathlib",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -1903,27 +1933,17 @@
     },
     {
       "from": "bin-arm-apple-py",
-      "to": "math",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-arm-apple-py",
       "to": "future",
       "type": "depends_on"
     },
     {
       "from": "bin-arm-apple-py",
-      "to": "os",
+      "to": "math",
       "type": "depends_on"
     },
     {
       "from": "bin-arm-apple-py",
       "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-arm-apple-py",
-      "to": "re",
       "type": "depends_on"
     },
     {
@@ -1932,23 +1952,18 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-auto-gen-py",
+      "from": "bin-arm-apple-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
-      "from": "bin-auto-gen-py",
-      "to": "yaml",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-auto-gen-py",
+      "from": "bin-arm-apple-py",
       "to": "os",
       "type": "depends_on"
     },
     {
       "from": "bin-auto-gen-py",
-      "to": "sys",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -1958,17 +1973,42 @@
     },
     {
       "from": "bin-auto-gen-py",
-      "to": "re",
+      "to": "yaml",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-auto-gen-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-auto-gen-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-auto-gen-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-avs-prefs-write-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-avs-prefs-write-py",
+      "to": "argparse",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-avs-prefs-write-py",
+      "to": "shutil",
       "type": "depends_on"
     },
     {
       "from": "bin-avs-prefs-write-py",
       "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-avs-prefs-write-py",
-      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -1988,27 +2028,17 @@
     },
     {
       "from": "bin-avs-prefs-write-py",
-      "to": "shutil",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-avs-prefs-write-py",
       "to": "plistlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-avs-prefs-write-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-avs-prefs-write-py",
-      "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "bin-build-delete-now-shortcut-py",
-      "to": "plistlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2018,7 +2048,7 @@
     },
     {
       "from": "bin-build-delete-now-shortcut-py",
-      "to": "subprocess",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
@@ -2028,7 +2058,7 @@
     },
     {
       "from": "bin-build-hey-sal-shortcut-py",
-      "to": "pathlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2043,17 +2073,17 @@
     },
     {
       "from": "bin-build-hey-sal-shortcut-py",
-      "to": "plistlib",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-build-hey-sal-shortcut-py",
-      "to": "subprocess",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
       "from": "bin-build-hey-sal-type-shortcut-py",
-      "to": "pathlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2068,17 +2098,17 @@
     },
     {
       "from": "bin-build-hey-sal-type-shortcut-py",
-      "to": "plistlib",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-build-hey-sal-type-shortcut-py",
-      "to": "subprocess",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
       "from": "bin-build-notify-iphone-shortcut-py",
-      "to": "pathlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2093,12 +2123,17 @@
     },
     {
       "from": "bin-build-notify-iphone-shortcut-py",
-      "to": "plistlib",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-build-notify-iphone-shortcut-py",
-      "to": "subprocess",
+      "to": "plistlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-build-paketti-verbs-py",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -2108,7 +2143,7 @@
     },
     {
       "from": "bin-build-paketti-verbs-py",
-      "to": "pathlib",
+      "to": "stat",
       "type": "depends_on"
     },
     {
@@ -2118,7 +2153,7 @@
     },
     {
       "from": "bin-build-paketti-verbs-py",
-      "to": "stat",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -2132,13 +2167,8 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-build-paketti-verbs-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
       "from": "bin-build-pin-in-appletoolbox-shortcut-py",
-      "to": "plistlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2148,7 +2178,7 @@
     },
     {
       "from": "bin-build-pin-in-appletoolbox-shortcut-py",
-      "to": "subprocess",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
@@ -2158,12 +2188,17 @@
     },
     {
       "from": "bin-build-sal-demo-guide-py",
-      "to": "plistlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "bin-build-sal-demo-guide-py",
       "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-build-sal-demo-guide-py",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
@@ -2172,13 +2207,8 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-build-sal-demo-guide-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
       "from": "bin-build-sal-demo-shortcuts-py",
-      "to": "pathlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2193,22 +2223,27 @@
     },
     {
       "from": "bin-build-sal-demo-shortcuts-py",
-      "to": "plistlib",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-build-sal-demo-shortcuts-py",
+      "to": "plistlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-build-sal-vacation-demo-py",
       "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "bin-build-sal-vacation-demo-py",
-      "to": "plistlib",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-build-sal-vacation-demo-py",
-      "to": "pathlib",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
@@ -2217,13 +2252,8 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-build-sal-vacation-demo-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
       "from": "bin-build-send-to-ocr-shortcut-py",
-      "to": "plistlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2233,7 +2263,7 @@
     },
     {
       "from": "bin-build-send-to-ocr-shortcut-py",
-      "to": "subprocess",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
@@ -2243,7 +2273,7 @@
     },
     {
       "from": "bin-build-tag-process-shortcut-py",
-      "to": "plistlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2253,7 +2283,7 @@
     },
     {
       "from": "bin-build-tag-process-shortcut-py",
-      "to": "subprocess",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
@@ -2263,7 +2293,7 @@
     },
     {
       "from": "bin-build-take-my-picture-shortcut-py",
-      "to": "plistlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2273,7 +2303,7 @@
     },
     {
       "from": "bin-build-take-my-picture-shortcut-py",
-      "to": "subprocess",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
@@ -2283,7 +2313,7 @@
     },
     {
       "from": "bin-build-turn-into-voice-shortcut-py",
-      "to": "plistlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2293,22 +2323,22 @@
     },
     {
       "from": "bin-build-turn-into-voice-shortcut-py",
-      "to": "subprocess",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
       "from": "bin-build-turn-into-voice-shortcut-py",
       "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-capture-vocal-shortcut-schemas-py",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "bin-capture-vocal-shortcut-schemas-py",
       "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-capture-vocal-shortcut-schemas-py",
-      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -2328,11 +2358,21 @@
     },
     {
       "from": "bin-capture-vocal-shortcut-schemas-py",
-      "to": "plistlib",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-capture-vocal-shortcut-schemas-py",
+      "to": "plistlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-claude-sessions-py",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-claude-sessions-py",
       "to": "subprocess",
       "type": "depends_on"
     },
@@ -2343,17 +2383,7 @@
     },
     {
       "from": "bin-claude-sessions-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-claude-sessions-py",
       "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-claude-sessions-py",
-      "to": "os",
       "type": "depends_on"
     },
     {
@@ -2363,11 +2393,16 @@
     },
     {
       "from": "bin-claude-sessions-py",
-      "to": "subprocess",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-claude-sessions-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-compass-py",
       "to": "re",
       "type": "depends_on"
     },
@@ -2377,13 +2412,8 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-compass-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
       "from": "bin-dictation-commands-port-audit-py",
-      "to": "collections",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -2403,12 +2433,12 @@
     },
     {
       "from": "bin-dictation-commands-port-audit-py",
-      "to": "re",
+      "to": "collections",
       "type": "depends_on"
     },
     {
       "from": "bin-dictation-commands-to-shortcuts-py",
-      "to": "json",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -2418,12 +2448,12 @@
     },
     {
       "from": "bin-dictation-commands-to-shortcuts-py",
-      "to": "re",
+      "to": "json",
       "type": "depends_on"
     },
     {
       "from": "bin-dictation-commands-vocal-shortcuts-import-py",
-      "to": "json",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -2433,17 +2463,7 @@
     },
     {
       "from": "bin-dictation-commands-vocal-shortcuts-import-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-flubuild-request-py",
       "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-flubuild-request-py",
-      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -2452,23 +2472,18 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-fm-render-py",
-      "to": "pathlib",
+      "from": "bin-flubuild-request-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
-      "from": "bin-fm-render-py",
-      "to": "textwrap",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-fm-render-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-fm-render-py",
+      "from": "bin-flubuild-request-py",
       "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-fm-render-py",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -2478,26 +2493,21 @@
     },
     {
       "from": "bin-fm-render-py",
-      "to": "re",
+      "to": "textwrap",
       "type": "depends_on"
     },
     {
-      "from": "bin-fm-think-py",
-      "to": "json",
+      "from": "bin-fm-render-py",
+      "to": "sys",
       "type": "depends_on"
     },
     {
-      "from": "bin-fm-think-py",
+      "from": "bin-fm-render-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
-      "from": "bin-fm-think-py",
-      "to": "time",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-fm-think-py",
+      "from": "bin-fm-render-py",
       "to": "os",
       "type": "depends_on"
     },
@@ -2507,12 +2517,22 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-gen-features-index-py",
+      "from": "bin-fm-think-py",
       "to": "json",
       "type": "depends_on"
     },
     {
-      "from": "bin-gen-features-index-py",
+      "from": "bin-fm-think-py",
+      "to": "time",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-fm-think-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-fm-think-py",
       "to": "os",
       "type": "depends_on"
     },
@@ -2527,13 +2547,13 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-gen-skill-indexes-py",
-      "to": "pathlib",
+      "from": "bin-gen-features-index-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
-      "from": "bin-gen-skill-indexes-py",
-      "to": "future",
+      "from": "bin-gen-features-index-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -2542,18 +2562,13 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-lib-apple-sqlite-snapshot-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-lib-apple-sqlite-snapshot-py",
+      "from": "bin-gen-skill-indexes-py",
       "to": "future",
       "type": "depends_on"
     },
     {
-      "from": "bin-lib-apple-sqlite-snapshot-py",
-      "to": "typing",
+      "from": "bin-gen-skill-indexes-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -2563,7 +2578,7 @@
     },
     {
       "from": "bin-lib-apple-sqlite-snapshot-py",
-      "to": "tempfile",
+      "to": "typing",
       "type": "depends_on"
     },
     {
@@ -2573,7 +2588,12 @@
     },
     {
       "from": "bin-lib-apple-sqlite-snapshot-py",
-      "to": "atexit",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-lib-apple-sqlite-snapshot-py",
+      "to": "tempfile",
       "type": "depends_on"
     },
     {
@@ -2582,13 +2602,23 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-lib-sfl3-resolver-py",
-      "to": "json",
+      "from": "bin-lib-apple-sqlite-snapshot-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-lib-apple-sqlite-snapshot-py",
+      "to": "atexit",
       "type": "depends_on"
     },
     {
       "from": "bin-lib-sfl3-resolver-py",
-      "to": "pathlib",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-lib-sfl3-resolver-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -2598,22 +2628,27 @@
     },
     {
       "from": "bin-lib-sfl3-resolver-py",
-      "to": "plistlib",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-lib-sfl3-resolver-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-list-vocal-shortcuts-py",
-      "to": "json",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
       "from": "bin-list-vocal-shortcuts-py",
       "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-list-vocal-shortcuts-py",
+      "to": "plistlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-list-vocal-shortcuts-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -2622,18 +2657,18 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-list-vocal-shortcuts-py",
-      "to": "plistlib",
+      "from": "bin-live-data-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-live-data-py",
+      "to": "socket",
       "type": "depends_on"
     },
     {
       "from": "bin-live-data-py",
       "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-live-data-py",
-      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -2648,27 +2683,27 @@
     },
     {
       "from": "bin-live-data-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-live-data-py",
       "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "bin-live-data-py",
-      "to": "socket",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-live-data-py",
-      "to": "subprocess",
+      "to": "os",
       "type": "depends_on"
     },
     {
       "from": "bin-loupedeck-import-dictation-commands-py",
-      "to": "json",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-loupedeck-import-dictation-commands-py",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2678,12 +2713,7 @@
     },
     {
       "from": "bin-loupedeck-import-dictation-commands-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-loupedeck-import-dictation-commands-py",
-      "to": "re",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -2693,17 +2723,7 @@
     },
     {
       "from": "bin-minilm-convert-py",
-      "to": "torch",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-minilm-convert-py",
       "to": "transformers",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-minilm-convert-py",
-      "to": "os",
       "type": "depends_on"
     },
     {
@@ -2717,13 +2737,33 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-mlx-agent-core-py",
-      "to": "json",
+      "from": "bin-minilm-convert-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-minilm-convert-py",
+      "to": "torch",
       "type": "depends_on"
     },
     {
       "from": "bin-mlx-agent-core-py",
-      "to": "pathlib",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-mlx-agent-core-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-mlx-agent-core-py",
+      "to": "urllib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-mlx-agent-core-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -2738,47 +2778,22 @@
     },
     {
       "from": "bin-mlx-agent-core-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-mlx-agent-core-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-mlx-agent-core-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-mlx-agent-core-py",
-      "to": "urllib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-paketti-faq-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-paketti-faq-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
-      "from": "bin-paketti-faq-py",
-      "to": "math",
+      "from": "bin-mlx-agent-core-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
       "from": "bin-paketti-faq-py",
-      "to": "time",
+      "to": "re",
       "type": "depends_on"
     },
     {
       "from": "bin-paketti-faq-py",
-      "to": "uuid",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -2788,7 +2803,37 @@
     },
     {
       "from": "bin-paketti-faq-py",
+      "to": "uuid",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-paketti-faq-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-paketti-faq-py",
+      "to": "time",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-paketti-faq-py",
       "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-paketti-faq-py",
+      "to": "math",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-paketti-faq-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-paketti-faq-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -2797,18 +2842,8 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-paketti-faq-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-paketti-faq-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-paketti-faq-py",
-      "to": "re",
+      "from": "bin-relay-core-py",
+      "to": "future",
       "type": "depends_on"
     },
     {
@@ -2818,22 +2853,7 @@
     },
     {
       "from": "bin-relay-core-py",
-      "to": "future",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-relay-core-py",
       "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-7-purpose-audit-py",
-      "to": "collections",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-7-purpose-audit-py",
-      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -2842,23 +2862,18 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-sal-archive-status-py",
+      "from": "bin-sal-7-purpose-audit-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-7-purpose-audit-py",
       "to": "collections",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-archive-status-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-archive-status-py",
-      "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-archive-status-py",
-      "to": "future",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -2868,7 +2883,42 @@
     },
     {
       "from": "bin-sal-archive-status-py",
+      "to": "datetime",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-archive-status-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-archive-status-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-archive-status-py",
+      "to": "collections",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-discover-interviews-py",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-discover-interviews-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-discover-interviews-py",
       "to": "argparse",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-discover-interviews-py",
+      "to": "html",
       "type": "depends_on"
     },
     {
@@ -2878,12 +2928,12 @@
     },
     {
       "from": "bin-sal-discover-interviews-py",
-      "to": "pathlib",
+      "to": "json",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-discover-interviews-py",
-      "to": "json",
+      "to": "urllib",
       "type": "depends_on"
     },
     {
@@ -2898,52 +2948,17 @@
     },
     {
       "from": "bin-sal-discover-interviews-py",
-      "to": "html",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-discover-interviews-py",
       "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-discover-interviews-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-discover-interviews-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-discover-interviews-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-discover-interviews-py",
-      "to": "urllib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-extract-inline-applescript-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-extract-inline-applescript-py",
-      "to": "unicodedata",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-extract-inline-applescript-py",
-      "to": "future",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-extract-inline-applescript-py",
-      "to": "html",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -2958,12 +2973,7 @@
     },
     {
       "from": "bin-sal-extract-inline-applescript-py",
-      "to": "hashlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-extract-inline-applescript-py",
-      "to": "re",
+      "to": "html",
       "type": "depends_on"
     },
     {
@@ -2972,13 +2982,43 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-sal-index-download-targets-py",
-      "to": "collections",
+      "from": "bin-sal-extract-inline-applescript-py",
+      "to": "unicodedata",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-extract-inline-applescript-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-extract-inline-applescript-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-extract-inline-applescript-py",
+      "to": "hashlib",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-index-download-targets-py",
-      "to": "pathlib",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-index-download-targets-py",
+      "to": "yaml",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-index-download-targets-py",
+      "to": "html",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-index-download-targets-py",
+      "to": "urllib",
       "type": "depends_on"
     },
     {
@@ -2993,57 +3033,27 @@
     },
     {
       "from": "bin-sal-index-download-targets-py",
-      "to": "html",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-index-download-targets-py",
-      "to": "yaml",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-index-download-targets-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-index-download-targets-py",
-      "to": "urllib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-mirror-py",
-      "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-mirror-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
+      "from": "bin-sal-index-download-targets-py",
+      "to": "collections",
+      "type": "depends_on"
+    },
+    {
       "from": "bin-sal-mirror-py",
-      "to": "future",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-mirror-py",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-mirror-py",
       "to": "yaml",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-mirror-py",
-      "to": "tempfile",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-mirror-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-mirror-py",
-      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -3053,42 +3063,32 @@
     },
     {
       "from": "bin-sal-mirror-py",
-      "to": "argparse",
+      "to": "datetime",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-mirror-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-recover-downloads-py",
-      "to": "collections",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-recover-downloads-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-recover-downloads-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-recover-downloads-py",
-      "to": "time",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-recover-downloads-py",
       "to": "future",
       "type": "depends_on"
     },
     {
-      "from": "bin-sal-recover-downloads-py",
-      "to": "yaml",
+      "from": "bin-sal-mirror-py",
+      "to": "tempfile",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-mirror-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-mirror-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-mirror-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -3098,12 +3098,7 @@
     },
     {
       "from": "bin-sal-recover-downloads-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-recover-downloads-py",
-      "to": "ssl",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -3113,7 +3108,7 @@
     },
     {
       "from": "bin-sal-recover-downloads-py",
-      "to": "argparse",
+      "to": "yaml",
       "type": "depends_on"
     },
     {
@@ -3122,18 +3117,43 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-sal-resolve-podcast-mp3s-py",
+      "from": "bin-sal-recover-downloads-py",
       "to": "json",
       "type": "depends_on"
     },
     {
-      "from": "bin-sal-resolve-podcast-mp3s-py",
+      "from": "bin-sal-recover-downloads-py",
+      "to": "ssl",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-recover-downloads-py",
+      "to": "time",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-recover-downloads-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-recover-downloads-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-recover-downloads-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
+      "from": "bin-sal-recover-downloads-py",
+      "to": "collections",
+      "type": "depends_on"
+    },
+    {
       "from": "bin-sal-resolve-podcast-mp3s-py",
-      "to": "time",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -3143,62 +3163,52 @@
     },
     {
       "from": "bin-sal-resolve-podcast-mp3s-py",
-      "to": "future",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-resolve-podcast-mp3s-py",
-      "to": "xml",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-resolve-podcast-mp3s-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-resolve-podcast-mp3s-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-resolve-podcast-mp3s-py",
       "to": "urllib",
       "type": "depends_on"
     },
     {
-      "from": "bin-sal-siri-list-phrases-py",
+      "from": "bin-sal-resolve-podcast-mp3s-py",
       "to": "json",
       "type": "depends_on"
     },
     {
-      "from": "bin-sal-siri-list-phrases-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-siri-match-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-siri-match-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-siri-match-py",
+      "from": "bin-sal-resolve-podcast-mp3s-py",
       "to": "time",
       "type": "depends_on"
     },
     {
-      "from": "bin-sal-siri-match-py",
-      "to": "os",
+      "from": "bin-sal-resolve-podcast-mp3s-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-resolve-podcast-mp3s-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-resolve-podcast-mp3s-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-resolve-podcast-mp3s-py",
+      "to": "xml",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-siri-list-phrases-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-siri-list-phrases-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-siri-match-py",
-      "to": "sys",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -3208,12 +3218,32 @@
     },
     {
       "from": "bin-sal-siri-match-py",
-      "to": "re",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-siri-match-py",
+      "to": "time",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-siri-match-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-siri-match-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-siri-match-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-siri-on-mac-rebuild-py",
-      "to": "json",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -3223,17 +3253,12 @@
     },
     {
       "from": "bin-sal-siri-on-mac-rebuild-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sal-siri-read-recent-turns-py",
       "to": "json",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-siri-read-recent-turns-py",
-      "to": "pathlib",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -3243,17 +3268,37 @@
     },
     {
       "from": "bin-sal-siri-read-recent-turns-py",
-      "to": "os",
+      "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "bin-sal-siri-read-recent-turns-py",
-      "to": "sys",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sal-siri-read-recent-turns-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sdef-extract-py",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sdef-extract-py",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "bin-sdef-extract-py",
       "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-sdef-extract-py",
+      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -3272,17 +3317,7 @@
       "type": "depends_on"
     },
     {
-      "from": "bin-sdef-extract-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sdef-extract-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sdef-extract-py",
+      "from": "bin-sdef-to-jxa-py",
       "to": "re",
       "type": "depends_on"
     },
@@ -3294,11 +3329,6 @@
     {
       "from": "bin-sdef-to-jxa-py",
       "to": "xml",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-sdef-to-jxa-py",
-      "to": "re",
       "type": "depends_on"
     },
     {
@@ -3308,7 +3338,7 @@
     },
     {
       "from": "bin-seed-script-triggers-py",
-      "to": "pathlib",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -3318,12 +3348,12 @@
     },
     {
       "from": "bin-seed-script-triggers-py",
-      "to": "re",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-shortcut-gen-py",
-      "to": "pathlib",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -3333,12 +3363,12 @@
     },
     {
       "from": "bin-shortcut-gen-py",
-      "to": "os",
+      "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "bin-shortcut-gen-py",
-      "to": "sys",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -3348,17 +3378,7 @@
     },
     {
       "from": "bin-shortcut-gen-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-slideshow-py",
-      "to": "appkit",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-slideshow-py",
-      "to": "random",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -3368,17 +3388,12 @@
     },
     {
       "from": "bin-slideshow-py",
-      "to": "os",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "bin-slideshow-py",
-      "to": "glob",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-slideshow-py",
-      "to": "sys",
+      "to": "appkit",
       "type": "depends_on"
     },
     {
@@ -3393,12 +3408,22 @@
     },
     {
       "from": "bin-slideshow-py",
-      "to": "subprocess",
+      "to": "random",
       "type": "depends_on"
     },
     {
-      "from": "bin-test-guidance-session-limit-py",
-      "to": "datetime",
+      "from": "bin-slideshow-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-slideshow-py",
+      "to": "glob",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-slideshow-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -3417,23 +3442,13 @@
       "type": "depends_on"
     },
     {
+      "from": "bin-test-guidance-session-limit-py",
+      "to": "datetime",
+      "type": "depends_on"
+    },
+    {
       "from": "bin-test-mail-free-energy-markdown-py",
       "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-test-wav-paths-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-test-wav-paths-py",
-      "to": "importlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-test-wav-paths-py",
-      "to": "io",
       "type": "depends_on"
     },
     {
@@ -3443,12 +3458,27 @@
     },
     {
       "from": "bin-test-wav-paths-py",
-      "to": "tempfile",
+      "to": "json",
       "type": "depends_on"
     },
     {
       "from": "bin-test-wav-paths-py",
-      "to": "os",
+      "to": "io",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-test-wav-paths-py",
+      "to": "types",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-test-wav-paths-py",
+      "to": "importlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-test-wav-paths-py",
+      "to": "tempfile",
       "type": "depends_on"
     },
     {
@@ -3458,17 +3488,12 @@
     },
     {
       "from": "bin-test-wav-paths-py",
-      "to": "types",
+      "to": "os",
       "type": "depends_on"
     },
     {
       "from": "bin-thought-archive-py",
-      "to": "collections",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-thought-archive-py",
-      "to": "pathlib",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -3483,37 +3508,32 @@
     },
     {
       "from": "bin-thought-archive-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-thought-archive-py",
       "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "bin-thought-archive-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-transcript-analysis-delivery-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-transcript-analysis-delivery-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
-      "from": "bin-transcript-analysis-delivery-py",
+      "from": "bin-thought-archive-py",
       "to": "os",
       "type": "depends_on"
     },
     {
+      "from": "bin-thought-archive-py",
+      "to": "collections",
+      "type": "depends_on"
+    },
+    {
       "from": "bin-transcript-analysis-delivery-py",
-      "to": "hashlib",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-transcript-analysis-delivery-py",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -3523,27 +3543,47 @@
     },
     {
       "from": "bin-transcript-analysis-delivery-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-transcript-analysis-delivery-py",
       "to": "shlex",
       "type": "depends_on"
     },
     {
       "from": "bin-transcript-analysis-delivery-py",
-      "to": "argparse",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "bin-transcript-analysis-delivery-py",
+      "to": "hashlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-transcript-analysis-delivery-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-vocal-shortcuts-router-verify-py",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-vocal-shortcuts-router-verify-py",
       "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "bin-vocal-shortcuts-router-verify-py",
-      "to": "datetime",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
       "from": "bin-vocal-shortcuts-router-verify-py",
-      "to": "pathlib",
+      "to": "datetime",
       "type": "depends_on"
     },
     {
@@ -3563,17 +3603,22 @@
     },
     {
       "from": "bin-vocal-shortcuts-router-verify-py",
-      "to": "argparse",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
-      "from": "bin-vocal-shortcuts-router-verify-py",
+      "from": "bin-vocal-shortcuts-suggest-py",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-vocal-shortcuts-suggest-py",
       "to": "subprocess",
       "type": "depends_on"
     },
     {
-      "from": "bin-vocal-shortcuts-router-verify-py",
-      "to": "re",
+      "from": "bin-vocal-shortcuts-suggest-py",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -3583,22 +3628,7 @@
     },
     {
       "from": "bin-vocal-shortcuts-suggest-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-vocal-shortcuts-suggest-py",
       "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-vocal-shortcuts-suggest-py",
-      "to": "plistlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-vocal-shortcuts-suggest-py",
-      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -3608,32 +3638,17 @@
     },
     {
       "from": "bin-vocal-shortcuts-suggest-py",
-      "to": "argparse",
+      "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "bin-vocal-shortcuts-suggest-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-vocal-shortcuts-suggest-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-voicebox-clone-worker-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-voicebox-clone-worker-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
-      "from": "bin-voicebox-clone-worker-py",
-      "to": "time",
+      "from": "bin-vocal-shortcuts-suggest-py",
+      "to": "plistlib",
       "type": "depends_on"
     },
     {
@@ -3643,17 +3658,12 @@
     },
     {
       "from": "bin-voicebox-clone-worker-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-voicebox-clone-worker-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-voicebox-clone-worker-py",
       "to": "socket",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-voicebox-clone-worker-py",
+      "to": "mimetypes",
       "type": "depends_on"
     },
     {
@@ -3663,32 +3673,32 @@
     },
     {
       "from": "bin-voicebox-clone-worker-py",
-      "to": "mimetypes",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-voicebox-worker-py",
       "to": "json",
       "type": "depends_on"
     },
     {
-      "from": "bin-voicebox-worker-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-voicebox-worker-py",
+      "from": "bin-voicebox-clone-worker-py",
       "to": "time",
       "type": "depends_on"
     },
     {
-      "from": "bin-voicebox-worker-py",
+      "from": "bin-voicebox-clone-worker-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-voicebox-clone-worker-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-voicebox-clone-worker-py",
       "to": "os",
       "type": "depends_on"
     },
     {
       "from": "bin-voicebox-worker-py",
-      "to": "sys",
+      "to": "socket",
       "type": "depends_on"
     },
     {
@@ -3698,12 +3708,32 @@
     },
     {
       "from": "bin-voicebox-worker-py",
-      "to": "socket",
+      "to": "urllib",
       "type": "depends_on"
     },
     {
       "from": "bin-voicebox-worker-py",
-      "to": "urllib",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-voicebox-worker-py",
+      "to": "time",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-voicebox-worker-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-voicebox-worker-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-voicebox-worker-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -3728,16 +3758,16 @@
     },
     {
       "from": "bin-workflow-gen-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-workflow-gen-py",
       "to": "datetime",
       "type": "depends_on"
     },
     {
       "from": "bin-workflow-gen-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-workflow-gen-py",
       "to": "os",
       "type": "depends_on"
     },
@@ -3748,22 +3778,7 @@
     },
     {
       "from": "bin-xpc-probe-py",
-      "to": "collections",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-xpc-probe-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-xpc-probe-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "bin-xpc-probe-py",
-      "to": "sys",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -3773,47 +3788,27 @@
     },
     {
       "from": "bin-xpc-probe-py",
-      "to": "re",
+      "to": "sys",
       "type": "depends_on"
     },
     {
-      "from": "books-exporter-scripts-books-exporter-py",
+      "from": "bin-xpc-probe-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-xpc-probe-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "bin-xpc-probe-py",
       "to": "collections",
       "type": "depends_on"
     },
     {
       "from": "books-exporter-scripts-books-exporter-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "books-exporter-scripts-books-exporter-py",
-      "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "books-exporter-scripts-books-exporter-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "books-exporter-scripts-books-exporter-py",
-      "to": "future",
-      "type": "depends_on"
-    },
-    {
-      "from": "books-exporter-scripts-books-exporter-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "books-exporter-scripts-books-exporter-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "books-exporter-scripts-books-exporter-py",
-      "to": "bin-lib-apple-sqlite-snapshot-py",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -3823,7 +3818,27 @@
     },
     {
       "from": "books-exporter-scripts-books-exporter-py",
-      "to": "re",
+      "to": "datetime",
+      "type": "depends_on"
+    },
+    {
+      "from": "books-exporter-scripts-books-exporter-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "books-exporter-scripts-books-exporter-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "books-exporter-scripts-books-exporter-py",
+      "to": "bin-lib-apple-sqlite-snapshot-py",
+      "type": "depends_on"
+    },
+    {
+      "from": "books-exporter-scripts-books-exporter-py",
+      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -3832,28 +3847,28 @@
       "type": "depends_on"
     },
     {
-      "from": "calendar-exporter-scripts-calendar-exporter-py",
+      "from": "books-exporter-scripts-books-exporter-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "books-exporter-scripts-books-exporter-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "books-exporter-scripts-books-exporter-py",
       "to": "collections",
       "type": "depends_on"
     },
     {
       "from": "calendar-exporter-scripts-calendar-exporter-py",
-      "to": "pathlib",
+      "to": "re",
       "type": "depends_on"
     },
     {
       "from": "calendar-exporter-scripts-calendar-exporter-py",
-      "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "calendar-exporter-scripts-calendar-exporter-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "calendar-exporter-scripts-calendar-exporter-py",
-      "to": "future",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -3863,12 +3878,22 @@
     },
     {
       "from": "calendar-exporter-scripts-calendar-exporter-py",
-      "to": "os",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
       "from": "calendar-exporter-scripts-calendar-exporter-py",
-      "to": "sys",
+      "to": "datetime",
+      "type": "depends_on"
+    },
+    {
+      "from": "calendar-exporter-scripts-calendar-exporter-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "calendar-exporter-scripts-calendar-exporter-py",
+      "to": "future",
       "type": "depends_on"
     },
     {
@@ -3878,22 +3903,27 @@
     },
     {
       "from": "calendar-exporter-scripts-calendar-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "calendar-exporter-scripts-calendar-exporter-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "calendar-exporter-scripts-calendar-exporter-py",
-      "to": "re",
+      "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "calendar-exporter-scripts-calendar-exporter-py",
       "to": "sqlite3",
+      "type": "depends_on"
+    },
+    {
+      "from": "calendar-exporter-scripts-calendar-exporter-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "calendar-exporter-scripts-calendar-exporter-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "calendar-exporter-scripts-calendar-exporter-py",
+      "to": "collections",
       "type": "depends_on"
     },
     {
@@ -3908,27 +3938,12 @@
     },
     {
       "from": "console-exporter-scripts-console-exporter-py",
-      "to": "collections",
+      "to": "re",
       "type": "depends_on"
     },
     {
       "from": "console-exporter-scripts-console-exporter-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "console-exporter-scripts-console-exporter-py",
-      "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "console-exporter-scripts-console-exporter-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "console-exporter-scripts-console-exporter-py",
-      "to": "future",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -3938,12 +3953,7 @@
     },
     {
       "from": "console-exporter-scripts-console-exporter-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "console-exporter-scripts-console-exporter-py",
-      "to": "sys",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -3953,27 +3963,47 @@
     },
     {
       "from": "console-exporter-scripts-console-exporter-py",
-      "to": "argparse",
+      "to": "datetime",
       "type": "depends_on"
     },
     {
       "from": "console-exporter-scripts-console-exporter-py",
-      "to": "subprocess",
+      "to": "json",
       "type": "depends_on"
     },
     {
       "from": "console-exporter-scripts-console-exporter-py",
-      "to": "re",
+      "to": "future",
       "type": "depends_on"
     },
     {
-      "from": "contacts-exporter-scripts-contacts-exporter-py",
+      "from": "console-exporter-scripts-console-exporter-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "console-exporter-scripts-console-exporter-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "console-exporter-scripts-console-exporter-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "console-exporter-scripts-console-exporter-py",
       "to": "collections",
       "type": "depends_on"
     },
     {
       "from": "contacts-exporter-scripts-contacts-exporter-py",
-      "to": "pathlib",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "contacts-exporter-scripts-contacts-exporter-py",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -3988,7 +4018,7 @@
     },
     {
       "from": "contacts-exporter-scripts-contacts-exporter-py",
-      "to": "os",
+      "to": "bin-lib-apple-sqlite-snapshot-py",
       "type": "depends_on"
     },
     {
@@ -3998,22 +4028,22 @@
     },
     {
       "from": "contacts-exporter-scripts-contacts-exporter-py",
-      "to": "bin-lib-apple-sqlite-snapshot-py",
-      "type": "depends_on"
-    },
-    {
-      "from": "contacts-exporter-scripts-contacts-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "contacts-exporter-scripts-contacts-exporter-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "contacts-exporter-scripts-contacts-exporter-py",
       "to": "sqlite3",
+      "type": "depends_on"
+    },
+    {
+      "from": "contacts-exporter-scripts-contacts-exporter-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "contacts-exporter-scripts-contacts-exporter-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "contacts-exporter-scripts-contacts-exporter-py",
+      "to": "collections",
       "type": "depends_on"
     },
     {
@@ -4038,12 +4068,22 @@
     },
     {
       "from": "finder-exporter-scripts-finder-exporter-py",
-      "to": "collections",
+      "to": "re",
       "type": "depends_on"
     },
     {
       "from": "finder-exporter-scripts-finder-exporter-py",
-      "to": "pathlib",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "finder-exporter-scripts-finder-exporter-py",
+      "to": "dataclasses",
+      "type": "depends_on"
+    },
+    {
+      "from": "finder-exporter-scripts-finder-exporter-py",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -4063,17 +4103,12 @@
     },
     {
       "from": "finder-exporter-scripts-finder-exporter-py",
-      "to": "dataclasses",
-      "type": "depends_on"
-    },
-    {
-      "from": "finder-exporter-scripts-finder-exporter-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "finder-exporter-scripts-finder-exporter-py",
       "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "finder-exporter-scripts-finder-exporter-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -4083,47 +4118,17 @@
     },
     {
       "from": "finder-exporter-scripts-finder-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "finder-exporter-scripts-finder-exporter-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "finder-exporter-scripts-finder-exporter-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "fleet-fleet-serve-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "fleet-fleet-serve-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "fleet-fleet-serve-py",
-      "to": "signal",
-      "type": "depends_on"
-    },
-    {
-      "from": "fleet-fleet-serve-py",
       "to": "os",
       "type": "depends_on"
     },
     {
-      "from": "fleet-fleet-serve-py",
-      "to": "sys",
+      "from": "finder-exporter-scripts-finder-exporter-py",
+      "to": "collections",
       "type": "depends_on"
     },
     {
       "from": "fleet-fleet-serve-py",
-      "to": "struct",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -4138,7 +4143,17 @@
     },
     {
       "from": "fleet-fleet-serve-py",
-      "to": "subprocess",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "fleet-fleet-serve-py",
+      "to": "struct",
+      "type": "depends_on"
+    },
+    {
+      "from": "fleet-fleet-serve-py",
+      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -4147,8 +4162,18 @@
       "type": "depends_on"
     },
     {
-      "from": "github-watcher-dashboard-server-py",
-      "to": "json",
+      "from": "fleet-fleet-serve-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "fleet-fleet-serve-py",
+      "to": "signal",
+      "type": "depends_on"
+    },
+    {
+      "from": "fleet-fleet-serve-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -4158,6 +4183,11 @@
     },
     {
       "from": "github-watcher-dashboard-server-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "github-watcher-dashboard-server-py",
       "to": "os",
       "type": "depends_on"
     },
@@ -4168,22 +4198,7 @@
     },
     {
       "from": "github-watcher-prbuild-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "github-watcher-prbuild-py",
-      "to": "time",
-      "type": "depends_on"
-    },
-    {
-      "from": "github-watcher-prbuild-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "github-watcher-prbuild-py",
-      "to": "sys",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -4193,37 +4208,32 @@
     },
     {
       "from": "github-watcher-prbuild-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "github-watcher-props-py",
       "to": "json",
       "type": "depends_on"
     },
     {
-      "from": "github-watcher-props-py",
+      "from": "github-watcher-prbuild-py",
       "to": "time",
       "type": "depends_on"
     },
     {
-      "from": "github-watcher-props-py",
+      "from": "github-watcher-prbuild-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "github-watcher-prbuild-py",
       "to": "os",
       "type": "depends_on"
     },
     {
       "from": "github-watcher-props-py",
-      "to": "threading",
-      "type": "depends_on"
-    },
-    {
-      "from": "github-watcher-props-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "github-watcher-props-py",
       "to": "curses",
+      "type": "depends_on"
+    },
+    {
+      "from": "github-watcher-props-py",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -4238,7 +4248,37 @@
     },
     {
       "from": "github-watcher-props-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "github-watcher-props-py",
+      "to": "time",
+      "type": "depends_on"
+    },
+    {
+      "from": "github-watcher-props-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "github-watcher-props-py",
+      "to": "threading",
+      "type": "depends_on"
+    },
+    {
+      "from": "github-watcher-props-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "github-watcher-prwhy-py",
       "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "github-watcher-prwhy-py",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
@@ -4248,27 +4288,17 @@
     },
     {
       "from": "github-watcher-prwhy-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "github-watcher-prwhy-py",
       "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "github-watcher-prwhy-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "github-watcher-prwhy-py",
-      "to": "re",
+      "to": "os",
       "type": "depends_on"
     },
     {
       "from": "harness-lib-harness-capabilities-py",
-      "to": "subprocess",
+      "to": "future",
       "type": "depends_on"
     },
     {
@@ -4283,7 +4313,17 @@
     },
     {
       "from": "harness-lib-harness-capabilities-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "harness-lib-harness-config-py",
       "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "harness-lib-harness-config-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -4293,27 +4333,12 @@
     },
     {
       "from": "harness-lib-harness-config-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "harness-lib-harness-config-py",
       "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "harness-lib-harness-config-py",
-      "to": "future",
       "type": "depends_on"
     },
     {
       "from": "harness-lib-harness-ledger-py",
       "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "harness-lib-harness-ledger-py",
-      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -4328,7 +4353,7 @@
     },
     {
       "from": "harness-lib-harness-ledger-py",
-      "to": "os",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -4337,33 +4362,23 @@
       "type": "depends_on"
     },
     {
-      "from": "harness-lib-harness-loop-py",
-      "to": "pathlib",
+      "from": "harness-lib-harness-ledger-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
       "from": "harness-lib-harness-loop-py",
       "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "harness-lib-harness-loop-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "harness-lib-harness-loop-py",
       "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "harness-lib-harness-oracle-py",
-      "to": "collections",
-      "type": "depends_on"
-    },
-    {
-      "from": "harness-lib-harness-oracle-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "harness-lib-harness-oracle-py",
-      "to": "future",
       "type": "depends_on"
     },
     {
@@ -4372,6 +4387,26 @@
       "type": "depends_on"
     },
     {
+      "from": "harness-lib-harness-oracle-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "harness-lib-harness-oracle-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "harness-lib-harness-oracle-py",
+      "to": "collections",
+      "type": "depends_on"
+    },
+    {
+      "from": "harness-lib-harness-organs-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
       "from": "harness-lib-harness-organs-py",
       "to": "json",
       "type": "depends_on"
@@ -4383,16 +4418,26 @@
     },
     {
       "from": "harness-lib-harness-organs-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "harness-lib-harness-organs-py",
       "to": "shlex",
       "type": "depends_on"
     },
     {
       "from": "harness-lib-harness-organs-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "harness-lib-harness-reasoning-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "harness-lib-harness-reasoning-py",
+      "to": "shlex",
+      "type": "depends_on"
+    },
+    {
+      "from": "harness-lib-harness-reasoning-py",
       "to": "subprocess",
       "type": "depends_on"
     },
@@ -4402,58 +4447,18 @@
       "type": "depends_on"
     },
     {
-      "from": "harness-lib-harness-reasoning-py",
-      "to": "shlex",
+      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
+      "to": "re",
       "type": "depends_on"
     },
     {
-      "from": "harness-lib-harness-reasoning-py",
+      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
       "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "harness-lib-harness-reasoning-py",
-      "to": "future",
-      "type": "depends_on"
-    },
-    {
-      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
-      "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
-      "to": "future",
       "type": "depends_on"
     },
     {
       "from": "image-capture-exporter-scripts-image-capture-exporter-py",
       "to": "dataclasses",
-      "type": "depends_on"
-    },
-    {
-      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
-      "to": "plistlib",
       "type": "depends_on"
     },
     {
@@ -4463,37 +4468,52 @@
     },
     {
       "from": "image-capture-exporter-scripts-image-capture-exporter-py",
-      "to": "subprocess",
+      "to": "datetime",
       "type": "depends_on"
     },
     {
       "from": "image-capture-exporter-scripts-image-capture-exporter-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
+      "to": "plistlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "image-capture-exporter-scripts-image-capture-exporter-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "imessage-exporter-scripts-imessage-exporter-py",
       "to": "re",
       "type": "depends_on"
     },
     {
       "from": "imessage-exporter-scripts-imessage-exporter-py",
-      "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "imessage-exporter-scripts-imessage-exporter-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "imessage-exporter-scripts-imessage-exporter-py",
-      "to": "json",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
       "from": "imessage-exporter-scripts-imessage-exporter-py",
       "to": "traceback",
-      "type": "depends_on"
-    },
-    {
-      "from": "imessage-exporter-scripts-imessage-exporter-py",
-      "to": "sqlite3",
       "type": "depends_on"
     },
     {
@@ -4503,12 +4523,17 @@
     },
     {
       "from": "imessage-exporter-scripts-imessage-exporter-py",
-      "to": "os",
+      "to": "datetime",
       "type": "depends_on"
     },
     {
       "from": "imessage-exporter-scripts-imessage-exporter-py",
-      "to": "sys",
+      "to": "urllib",
+      "type": "depends_on"
+    },
+    {
+      "from": "imessage-exporter-scripts-imessage-exporter-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -4518,27 +4543,47 @@
     },
     {
       "from": "imessage-exporter-scripts-imessage-exporter-py",
-      "to": "argparse",
+      "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "imessage-exporter-scripts-imessage-exporter-py",
+      "to": "sqlite3",
+      "type": "depends_on"
+    },
+    {
+      "from": "imessage-exporter-scripts-imessage-exporter-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "imessage-exporter-scripts-imessage-exporter-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "iwork-exporter-scripts-iwork-exporter-py",
       "to": "re",
       "type": "depends_on"
     },
     {
-      "from": "imessage-exporter-scripts-imessage-exporter-py",
-      "to": "urllib",
+      "from": "iwork-exporter-scripts-iwork-exporter-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "iwork-exporter-scripts-iwork-exporter-py",
+      "to": "dataclasses",
+      "type": "depends_on"
+    },
+    {
+      "from": "iwork-exporter-scripts-iwork-exporter-py",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
       "from": "iwork-exporter-scripts-iwork-exporter-py",
       "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "iwork-exporter-scripts-iwork-exporter-py",
-      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -4553,17 +4598,12 @@
     },
     {
       "from": "iwork-exporter-scripts-iwork-exporter-py",
-      "to": "dataclasses",
-      "type": "depends_on"
-    },
-    {
-      "from": "iwork-exporter-scripts-iwork-exporter-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "iwork-exporter-scripts-iwork-exporter-py",
       "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "iwork-exporter-scripts-iwork-exporter-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -4573,27 +4613,22 @@
     },
     {
       "from": "iwork-exporter-scripts-iwork-exporter-py",
-      "to": "argparse",
+      "to": "os",
       "type": "depends_on"
     },
     {
-      "from": "iwork-exporter-scripts-iwork-exporter-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "iwork-exporter-scripts-iwork-exporter-py",
+      "from": "mail-exporter-scripts-mail-exporter-py",
       "to": "re",
       "type": "depends_on"
     },
     {
       "from": "mail-exporter-scripts-mail-exporter-py",
-      "to": "collections",
+      "to": "dataclasses",
       "type": "depends_on"
     },
     {
       "from": "mail-exporter-scripts-mail-exporter-py",
-      "to": "pathlib",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -4603,7 +4638,27 @@
     },
     {
       "from": "mail-exporter-scripts-mail-exporter-py",
+      "to": "urllib",
+      "type": "depends_on"
+    },
+    {
+      "from": "mail-exporter-scripts-mail-exporter-py",
       "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "mail-exporter-scripts-mail-exporter-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "mail-exporter-scripts-mail-exporter-py",
+      "to": "bin-lib-apple-sqlite-snapshot-py",
+      "type": "depends_on"
+    },
+    {
+      "from": "mail-exporter-scripts-mail-exporter-py",
+      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -4613,7 +4668,7 @@
     },
     {
       "from": "mail-exporter-scripts-mail-exporter-py",
-      "to": "future",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -4623,52 +4678,37 @@
     },
     {
       "from": "mail-exporter-scripts-mail-exporter-py",
-      "to": "dataclasses",
-      "type": "depends_on"
-    },
-    {
-      "from": "mail-exporter-scripts-mail-exporter-py",
       "to": "os",
       "type": "depends_on"
     },
     {
       "from": "mail-exporter-scripts-mail-exporter-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "mail-exporter-scripts-mail-exporter-py",
-      "to": "bin-lib-apple-sqlite-snapshot-py",
-      "type": "depends_on"
-    },
-    {
-      "from": "mail-exporter-scripts-mail-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "mail-exporter-scripts-mail-exporter-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "mail-exporter-scripts-mail-exporter-py",
-      "to": "urllib",
-      "type": "depends_on"
-    },
-    {
-      "from": "music-exporter-scripts-music-exporter-py",
       "to": "collections",
       "type": "depends_on"
     },
     {
       "from": "music-exporter-scripts-music-exporter-py",
-      "to": "datetime",
+      "to": "re",
       "type": "depends_on"
     },
     {
       "from": "music-exporter-scripts-music-exporter-py",
-      "to": "pathlib",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "music-exporter-scripts-music-exporter-py",
+      "to": "dataclasses",
+      "type": "depends_on"
+    },
+    {
+      "from": "music-exporter-scripts-music-exporter-py",
+      "to": "argparse",
+      "type": "depends_on"
+    },
+    {
+      "from": "music-exporter-scripts-music-exporter-py",
+      "to": "datetime",
       "type": "depends_on"
     },
     {
@@ -4683,7 +4723,12 @@
     },
     {
       "from": "music-exporter-scripts-music-exporter-py",
-      "to": "dataclasses",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "music-exporter-scripts-music-exporter-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -4693,37 +4738,22 @@
     },
     {
       "from": "music-exporter-scripts-music-exporter-py",
-      "to": "sys",
+      "to": "collections",
       "type": "depends_on"
     },
     {
-      "from": "music-exporter-scripts-music-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "music-exporter-scripts-music-exporter-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "music-exporter-scripts-music-exporter-py",
+      "from": "notes-exporter-scripts-notes-exporter-py",
       "to": "re",
       "type": "depends_on"
     },
     {
       "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "datetime",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "json",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -4733,7 +4763,12 @@
     },
     {
       "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "base64",
+      "to": "shutil",
+      "type": "depends_on"
+    },
+    {
+      "from": "notes-exporter-scripts-notes-exporter-py",
+      "to": "datetime",
       "type": "depends_on"
     },
     {
@@ -4743,22 +4778,12 @@
     },
     {
       "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "os",
+      "to": "json",
       "type": "depends_on"
     },
     {
       "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "hashlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "shutil",
-      "type": "depends_on"
-    },
-    {
-      "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "sys",
+      "to": "base64",
       "type": "depends_on"
     },
     {
@@ -4768,17 +4793,7 @@
     },
     {
       "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "notes-exporter-scripts-notes-exporter-py",
-      "to": "re",
+      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -4787,18 +4802,18 @@
       "type": "depends_on"
     },
     {
-      "from": "notes-exporter-scripts-transcribe-py",
-      "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "notes-exporter-scripts-transcribe-py",
+      "from": "notes-exporter-scripts-notes-exporter-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
-      "from": "notes-exporter-scripts-transcribe-py",
-      "to": "json",
+      "from": "notes-exporter-scripts-notes-exporter-py",
+      "to": "hashlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "notes-exporter-scripts-notes-exporter-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -4808,12 +4823,22 @@
     },
     {
       "from": "notes-exporter-scripts-transcribe-py",
-      "to": "sys",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
       "from": "notes-exporter-scripts-transcribe-py",
-      "to": "argparse",
+      "to": "datetime",
+      "type": "depends_on"
+    },
+    {
+      "from": "notes-exporter-scripts-transcribe-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "notes-exporter-scripts-transcribe-py",
+      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -4822,18 +4847,23 @@
       "type": "depends_on"
     },
     {
-      "from": "notes-exporter-scripts-watch-py",
+      "from": "notes-exporter-scripts-transcribe-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "notes-exporter-scripts-watch-py",
-      "to": "time",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "notes-exporter-scripts-watch-py",
-      "to": "signal",
+      "to": "argparse",
+      "type": "depends_on"
+    },
+    {
+      "from": "notes-exporter-scripts-watch-py",
+      "to": "time",
       "type": "depends_on"
     },
     {
@@ -4848,27 +4878,32 @@
     },
     {
       "from": "notes-exporter-scripts-watch-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "notes-exporter-scripts-watch-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "notes-exporter-scripts-watch-py",
       "to": "notes-export",
       "type": "depends_on"
     },
     {
-      "from": "photos-exporter-scripts-photos-exporter-py",
-      "to": "collections",
+      "from": "notes-exporter-scripts-watch-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "notes-exporter-scripts-watch-py",
+      "to": "signal",
       "type": "depends_on"
     },
     {
       "from": "photos-exporter-scripts-photos-exporter-py",
-      "to": "pathlib",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "photos-exporter-scripts-photos-exporter-py",
+      "to": "dataclasses",
+      "type": "depends_on"
+    },
+    {
+      "from": "photos-exporter-scripts-photos-exporter-py",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -4888,12 +4923,7 @@
     },
     {
       "from": "photos-exporter-scripts-photos-exporter-py",
-      "to": "dataclasses",
-      "type": "depends_on"
-    },
-    {
-      "from": "photos-exporter-scripts-photos-exporter-py",
-      "to": "os",
+      "to": "bin-lib-apple-sqlite-snapshot-py",
       "type": "depends_on"
     },
     {
@@ -4903,32 +4933,37 @@
     },
     {
       "from": "photos-exporter-scripts-photos-exporter-py",
-      "to": "bin-lib-apple-sqlite-snapshot-py",
-      "type": "depends_on"
-    },
-    {
-      "from": "photos-exporter-scripts-photos-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "photos-exporter-scripts-photos-exporter-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "photos-exporter-scripts-photos-exporter-py",
       "to": "sqlite3",
       "type": "depends_on"
     },
     {
-      "from": "preview-exporter-scripts-preview-exporter-py",
+      "from": "photos-exporter-scripts-photos-exporter-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "photos-exporter-scripts-photos-exporter-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "photos-exporter-scripts-photos-exporter-py",
       "to": "collections",
       "type": "depends_on"
     },
     {
       "from": "preview-exporter-scripts-preview-exporter-py",
-      "to": "pathlib",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "preview-exporter-scripts-preview-exporter-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "preview-exporter-scripts-preview-exporter-py",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -4948,27 +4983,22 @@
     },
     {
       "from": "preview-exporter-scripts-preview-exporter-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "preview-exporter-scripts-preview-exporter-py",
       "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "preview-exporter-scripts-preview-exporter-py",
-      "to": "argparse",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "preview-exporter-scripts-preview-exporter-py",
-      "to": "subprocess",
+      "to": "os",
       "type": "depends_on"
     },
     {
       "from": "preview-exporter-scripts-preview-exporter-py",
-      "to": "re",
+      "to": "collections",
       "type": "depends_on"
     },
     {
@@ -5008,12 +5038,17 @@
     },
     {
       "from": "references-xcode27-agent-skills-audit-xcode-security-settings-scripts-filter-bui",
-      "to": "json",
+      "to": "re",
       "type": "depends_on"
     },
     {
       "from": "references-xcode27-agent-skills-audit-xcode-security-settings-scripts-filter-bui",
       "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "references-xcode27-agent-skills-audit-xcode-security-settings-scripts-filter-bui",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -5022,18 +5057,28 @@
       "type": "depends_on"
     },
     {
-      "from": "references-xcode27-agent-skills-audit-xcode-security-settings-scripts-filter-bui",
+      "from": "reminders-exporter-scripts-reminders-exporter-py",
       "to": "re",
       "type": "depends_on"
     },
     {
       "from": "reminders-exporter-scripts-reminders-exporter-py",
-      "to": "datetime",
+      "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "reminders-exporter-scripts-reminders-exporter-py",
-      "to": "pathlib",
+      "to": "dataclasses",
+      "type": "depends_on"
+    },
+    {
+      "from": "reminders-exporter-scripts-reminders-exporter-py",
+      "to": "argparse",
+      "type": "depends_on"
+    },
+    {
+      "from": "reminders-exporter-scripts-reminders-exporter-py",
+      "to": "datetime",
       "type": "depends_on"
     },
     {
@@ -5048,7 +5093,12 @@
     },
     {
       "from": "reminders-exporter-scripts-reminders-exporter-py",
-      "to": "dataclasses",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "reminders-exporter-scripts-reminders-exporter-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -5057,23 +5107,28 @@
       "type": "depends_on"
     },
     {
-      "from": "reminders-exporter-scripts-reminders-exporter-py",
+      "from": "roundtable-bridge-py",
       "to": "sys",
       "type": "depends_on"
     },
     {
-      "from": "reminders-exporter-scripts-reminders-exporter-py",
+      "from": "roundtable-bridge-py",
+      "to": "shared-aimeat-mail-py",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-bridge-py",
       "to": "argparse",
       "type": "depends_on"
     },
     {
-      "from": "reminders-exporter-scripts-reminders-exporter-py",
-      "to": "subprocess",
+      "from": "roundtable-bridge-py",
+      "to": "socket",
       "type": "depends_on"
     },
     {
-      "from": "reminders-exporter-scripts-reminders-exporter-py",
-      "to": "re",
+      "from": "roundtable-bridge-py",
+      "to": "urllib",
       "type": "depends_on"
     },
     {
@@ -5083,17 +5138,7 @@
     },
     {
       "from": "roundtable-bridge-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-bridge-py",
       "to": "convey",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-bridge-py",
-      "to": "fcntl",
       "type": "depends_on"
     },
     {
@@ -5108,27 +5153,7 @@
     },
     {
       "from": "roundtable-bridge-py",
-      "to": "signal",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-bridge-py",
       "to": "tempfile",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-bridge-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-bridge-py",
-      "to": "hashlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-bridge-py",
-      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -5138,37 +5163,52 @@
     },
     {
       "from": "roundtable-bridge-py",
-      "to": "socket",
+      "to": "fcntl",
       "type": "depends_on"
     },
     {
       "from": "roundtable-bridge-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-bridge-py",
+      "to": "hashlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-bridge-py",
+      "to": "signal",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-bridge-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-install-mail-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-install-mail-py",
       "to": "argparse",
       "type": "depends_on"
     },
     {
-      "from": "roundtable-bridge-py",
-      "to": "shared-aimeat-mail-py",
+      "from": "roundtable-install-mail-py",
+      "to": "socket",
       "type": "depends_on"
     },
     {
-      "from": "roundtable-bridge-py",
-      "to": "urllib",
+      "from": "roundtable-install-mail-py",
+      "to": "shutil",
       "type": "depends_on"
     },
     {
       "from": "roundtable-install-mail-py",
       "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-mail-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-mail-py",
-      "to": "socket",
       "type": "depends_on"
     },
     {
@@ -5183,17 +5223,7 @@
     },
     {
       "from": "roundtable-install-mail-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-mail-py",
-      "to": "hashlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-mail-py",
-      "to": "shutil",
+      "to": "shlex",
       "type": "depends_on"
     },
     {
@@ -5203,67 +5233,27 @@
     },
     {
       "from": "roundtable-install-mail-py",
-      "to": "shlex",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "roundtable-install-mail-py",
-      "to": "argparse",
+      "to": "hashlib",
       "type": "depends_on"
     },
     {
       "from": "roundtable-install-mail-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-install-py",
       "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "roundtable-install-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-py",
-      "to": "convey",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-py",
-      "to": "time",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-py",
-      "to": "shlex",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-py",
-      "to": "ast",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-py",
-      "to": "tempfile",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-py",
-      "to": "hashlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-py",
-      "to": "shutil",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-install-py",
-      "to": "sys",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -5273,12 +5263,17 @@
     },
     {
       "from": "roundtable-install-py",
-      "to": "argparse",
+      "to": "shutil",
       "type": "depends_on"
     },
     {
       "from": "roundtable-install-py",
-      "to": "subprocess",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-install-py",
+      "to": "convey",
       "type": "depends_on"
     },
     {
@@ -5287,18 +5282,63 @@
       "type": "depends_on"
     },
     {
-      "from": "roundtable-verify-mail-py",
-      "to": "json",
+      "from": "roundtable-install-py",
+      "to": "time",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-install-py",
+      "to": "ast",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-install-py",
+      "to": "shlex",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-install-py",
+      "to": "tempfile",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-install-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-install-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-install-py",
+      "to": "hashlib",
       "type": "depends_on"
     },
     {
       "from": "roundtable-verify-mail-py",
-      "to": "pathlib",
+      "to": "pil",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-verify-mail-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-verify-mail-py",
+      "to": "socket",
       "type": "depends_on"
     },
     {
       "from": "roundtable-verify-mail-py",
       "to": "shared-cloud-assets-py",
+      "type": "depends_on"
+    },
+    {
+      "from": "roundtable-verify-mail-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -5309,11 +5349,6 @@
     {
       "from": "roundtable-verify-mail-py",
       "to": "importlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-verify-mail-py",
-      "to": "pil",
       "type": "depends_on"
     },
     {
@@ -5328,22 +5363,27 @@
     },
     {
       "from": "roundtable-verify-mail-py",
-      "to": "socket",
-      "type": "depends_on"
-    },
-    {
-      "from": "roundtable-verify-mail-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "safari-exporter-scripts-safari-exporter-py",
-      "to": "collections",
-      "type": "depends_on"
-    },
-    {
-      "from": "safari-exporter-scripts-safari-exporter-py",
       "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "safari-exporter-scripts-safari-exporter-py",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "safari-exporter-scripts-safari-exporter-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "safari-exporter-scripts-safari-exporter-py",
+      "to": "dataclasses",
+      "type": "depends_on"
+    },
+    {
+      "from": "safari-exporter-scripts-safari-exporter-py",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -5353,7 +5393,22 @@
     },
     {
       "from": "safari-exporter-scripts-safari-exporter-py",
+      "to": "urllib",
+      "type": "depends_on"
+    },
+    {
+      "from": "safari-exporter-scripts-safari-exporter-py",
       "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "safari-exporter-scripts-safari-exporter-py",
+      "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "safari-exporter-scripts-safari-exporter-py",
+      "to": "bin-lib-apple-sqlite-snapshot-py",
       "type": "depends_on"
     },
     {
@@ -5368,17 +5423,7 @@
     },
     {
       "from": "safari-exporter-scripts-safari-exporter-py",
-      "to": "future",
-      "type": "depends_on"
-    },
-    {
-      "from": "safari-exporter-scripts-safari-exporter-py",
-      "to": "dataclasses",
-      "type": "depends_on"
-    },
-    {
-      "from": "safari-exporter-scripts-safari-exporter-py",
-      "to": "os",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -5388,37 +5433,22 @@
     },
     {
       "from": "safari-exporter-scripts-safari-exporter-py",
-      "to": "sys",
+      "to": "os",
       "type": "depends_on"
     },
     {
       "from": "safari-exporter-scripts-safari-exporter-py",
-      "to": "bin-lib-apple-sqlite-snapshot-py",
-      "type": "depends_on"
-    },
-    {
-      "from": "safari-exporter-scripts-safari-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "safari-exporter-scripts-safari-exporter-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "safari-exporter-scripts-safari-exporter-py",
-      "to": "urllib",
-      "type": "depends_on"
-    },
-    {
-      "from": "scripts-cloud-source-sidecars-py",
-      "to": "pathlib",
+      "to": "collections",
       "type": "depends_on"
     },
     {
       "from": "scripts-cloud-source-sidecars-py",
       "to": "shutil",
+      "type": "depends_on"
+    },
+    {
+      "from": "scripts-cloud-source-sidecars-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -5433,22 +5463,7 @@
     },
     {
       "from": "shared-agentmail-send-py",
-      "to": "shared-format-email-py",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-agentmail-send-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-agentmail-send-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-agentmail-send-py",
-      "to": "future",
+      "to": "dataclasses",
       "type": "depends_on"
     },
     {
@@ -5458,17 +5473,37 @@
     },
     {
       "from": "shared-agentmail-send-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-agentmail-send-py",
       "to": "urllib",
       "type": "depends_on"
     },
     {
-      "from": "shared-aimeat-email-template-py",
+      "from": "shared-agentmail-send-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-agentmail-send-py",
+      "to": "shared-format-email-py",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-agentmail-send-py",
       "to": "future",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-agentmail-send-py",
+      "to": "shared",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-agentmail-send-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-agentmail-send-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -5477,13 +5512,13 @@
       "type": "depends_on"
     },
     {
-      "from": "shared-aimeat-mail-py",
-      "to": "fcntl",
+      "from": "shared-aimeat-email-template-py",
+      "to": "future",
       "type": "depends_on"
     },
     {
       "from": "shared-aimeat-mail-py",
-      "to": "time",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -5493,7 +5528,17 @@
     },
     {
       "from": "shared-aimeat-mail-py",
-      "to": "re",
+      "to": "base64",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-aimeat-mail-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-aimeat-mail-py",
+      "to": "shared-cloud-assets-py",
       "type": "depends_on"
     },
     {
@@ -5503,17 +5548,17 @@
     },
     {
       "from": "shared-aimeat-mail-py",
-      "to": "email",
+      "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "shared-aimeat-mail-py",
-      "to": "signal",
+      "to": "hashlib",
       "type": "depends_on"
     },
     {
       "from": "shared-aimeat-mail-py",
-      "to": "socket",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -5523,27 +5568,42 @@
     },
     {
       "from": "shared-aimeat-mail-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-aimeat-mail-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-aimeat-mail-py",
       "to": "shared-format-email-py",
       "type": "depends_on"
     },
     {
       "from": "shared-aimeat-mail-py",
-      "to": "pathlib",
+      "to": "fcntl",
       "type": "depends_on"
     },
     {
       "from": "shared-aimeat-mail-py",
-      "to": "shared-cloud-assets-py",
+      "to": "email",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-aimeat-mail-py",
+      "to": "shared-agentmail-send-py",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-aimeat-mail-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-aimeat-mail-py",
+      "to": "socket",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-aimeat-mail-py",
+      "to": "time",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-aimeat-mail-py",
+      "to": "tempfile",
       "type": "depends_on"
     },
     {
@@ -5553,42 +5613,37 @@
     },
     {
       "from": "shared-aimeat-mail-py",
-      "to": "base64",
+      "to": "signal",
       "type": "depends_on"
     },
     {
-      "from": "shared-aimeat-mail-py",
-      "to": "tempfile",
+      "from": "shared-cloud-assets-py",
+      "to": "re",
       "type": "depends_on"
     },
     {
-      "from": "shared-aimeat-mail-py",
-      "to": "hashlib",
+      "from": "shared-cloud-assets-py",
+      "to": "pil",
       "type": "depends_on"
     },
     {
-      "from": "shared-aimeat-mail-py",
+      "from": "shared-cloud-assets-py",
       "to": "subprocess",
       "type": "depends_on"
     },
     {
       "from": "shared-cloud-assets-py",
-      "to": "collections",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
       "from": "shared-cloud-assets-py",
-      "to": "pathlib",
+      "to": "socket",
       "type": "depends_on"
     },
     {
       "from": "shared-cloud-assets-py",
       "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-cloud-assets-py",
-      "to": "math",
       "type": "depends_on"
     },
     {
@@ -5603,7 +5658,7 @@
     },
     {
       "from": "shared-cloud-assets-py",
-      "to": "pil",
+      "to": "math",
       "type": "depends_on"
     },
     {
@@ -5613,27 +5668,27 @@
     },
     {
       "from": "shared-cloud-assets-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-cloud-assets-py",
       "to": "hashlib",
       "type": "depends_on"
     },
     {
       "from": "shared-cloud-assets-py",
-      "to": "socket",
+      "to": "collections",
       "type": "depends_on"
     },
     {
-      "from": "shared-cloud-assets-py",
-      "to": "argparse",
+      "from": "shared-cloud-source-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
-      "from": "shared-cloud-assets-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-cloud-assets-py",
-      "to": "re",
+      "from": "shared-cloud-source-py",
+      "to": "hashlib",
       "type": "depends_on"
     },
     {
@@ -5642,23 +5697,8 @@
       "type": "depends_on"
     },
     {
-      "from": "shared-cloud-source-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-cloud-source-py",
-      "to": "hashlib",
-      "type": "depends_on"
-    },
-    {
       "from": "shared-email-analysis-py",
       "to": "datetime",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-email-analysis-py",
-      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -5678,7 +5718,7 @@
     },
     {
       "from": "shared-email-analysis-py",
-      "to": "os",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -5687,18 +5727,33 @@
       "type": "depends_on"
     },
     {
+      "from": "shared-email-analysis-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-email-renderer-install-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-email-renderer-install-py",
+      "to": "argparse",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-email-renderer-install-py",
+      "to": "socket",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-email-renderer-install-py",
+      "to": "shutil",
+      "type": "depends_on"
+    },
+    {
       "from": "shared-email-renderer-install-py",
       "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-email-renderer-install-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-email-renderer-install-py",
-      "to": "shared-format-email-py",
       "type": "depends_on"
     },
     {
@@ -5708,27 +5763,17 @@
     },
     {
       "from": "shared-email-renderer-install-py",
-      "to": "importlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-email-renderer-install-py",
       "to": "ast",
       "type": "depends_on"
     },
     {
       "from": "shared-email-renderer-install-py",
-      "to": "os",
+      "to": "shared-format-email-py",
       "type": "depends_on"
     },
     {
       "from": "shared-email-renderer-install-py",
-      "to": "hashlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "shared-email-renderer-install-py",
-      "to": "shutil",
+      "to": "importlib",
       "type": "depends_on"
     },
     {
@@ -5738,22 +5783,32 @@
     },
     {
       "from": "shared-email-renderer-install-py",
-      "to": "socket",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "shared-email-renderer-install-py",
-      "to": "argparse",
+      "to": "hashlib",
       "type": "depends_on"
     },
     {
       "from": "shared-email-renderer-install-py",
-      "to": "subprocess",
+      "to": "os",
       "type": "depends_on"
     },
     {
       "from": "shared-format-email-py",
-      "to": "pathlib",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-format-email-py",
+      "to": "dataclasses",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-format-email-py",
+      "to": "typing",
       "type": "depends_on"
     },
     {
@@ -5763,7 +5818,22 @@
     },
     {
       "from": "shared-format-email-py",
+      "to": "urllib",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-format-email-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-format-email-py",
       "to": "base64",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-format-email-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -5772,18 +5842,28 @@
       "type": "depends_on"
     },
     {
-      "from": "shared-format-email-py",
+      "from": "shared-mail-architecture-guard-py",
+      "to": "ast",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-mail-architecture-guard-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "shared-mail-architecture-guard-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
       "to": "re",
       "type": "depends_on"
     },
     {
       "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
-      "to": "collections",
-      "type": "depends_on"
-    },
-    {
-      "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
-      "to": "pathlib",
+      "to": "argparse",
       "type": "depends_on"
     },
     {
@@ -5799,16 +5879,6 @@
     {
       "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
       "to": "future",
-      "type": "depends_on"
-    },
-    {
-      "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
-      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -5818,12 +5888,7 @@
     },
     {
       "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
-      "to": "re",
+      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -5832,13 +5897,48 @@
       "type": "depends_on"
     },
     {
-      "from": "stickies-exporter-scripts-stickies-exporter-py",
-      "to": "datetime",
+      "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "shortcuts-exporter-scripts-shortcuts-exporter-py",
+      "to": "collections",
       "type": "depends_on"
     },
     {
       "from": "stickies-exporter-scripts-stickies-exporter-py",
-      "to": "pathlib",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "stickies-exporter-scripts-stickies-exporter-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "stickies-exporter-scripts-stickies-exporter-py",
+      "to": "dataclasses",
+      "type": "depends_on"
+    },
+    {
+      "from": "stickies-exporter-scripts-stickies-exporter-py",
+      "to": "argparse",
+      "type": "depends_on"
+    },
+    {
+      "from": "stickies-exporter-scripts-stickies-exporter-py",
+      "to": "shutil",
+      "type": "depends_on"
+    },
+    {
+      "from": "stickies-exporter-scripts-stickies-exporter-py",
+      "to": "datetime",
       "type": "depends_on"
     },
     {
@@ -5853,57 +5953,17 @@
     },
     {
       "from": "stickies-exporter-scripts-stickies-exporter-py",
-      "to": "dataclasses",
-      "type": "depends_on"
-    },
-    {
-      "from": "stickies-exporter-scripts-stickies-exporter-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "stickies-exporter-scripts-stickies-exporter-py",
       "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "stickies-exporter-scripts-stickies-exporter-py",
-      "to": "shutil",
-      "type": "depends_on"
-    },
-    {
-      "from": "stickies-exporter-scripts-stickies-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "stickies-exporter-scripts-stickies-exporter-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "stickies-exporter-scripts-stickies-exporter-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-aimeat-mail-py",
-      "to": "json",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-aimeat-mail-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
-      "from": "test-aimeat-mail-py",
-      "to": "tempfile",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-aimeat-mail-py",
-      "to": "hashlib",
+      "from": "stickies-exporter-scripts-stickies-exporter-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -5913,7 +5973,7 @@
     },
     {
       "from": "test-aimeat-mail-py",
-      "to": "shared",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -5922,18 +5982,38 @@
       "type": "depends_on"
     },
     {
-      "from": "test-aimeat-roundtable-py",
-      "to": "json",
+      "from": "test-aimeat-mail-py",
+      "to": "shared",
       "type": "depends_on"
     },
     {
-      "from": "test-aimeat-roundtable-py",
+      "from": "test-aimeat-mail-py",
+      "to": "tempfile",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-aimeat-mail-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
+      "from": "test-aimeat-mail-py",
+      "to": "hashlib",
+      "type": "depends_on"
+    },
+    {
       "from": "test-aimeat-roundtable-py",
-      "to": "importlib",
+      "to": "shared-aimeat-mail-py",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-aimeat-roundtable-py",
+      "to": "unittest",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-aimeat-roundtable-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -5943,22 +6023,12 @@
     },
     {
       "from": "test-aimeat-roundtable-py",
+      "to": "importlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-aimeat-roundtable-py",
       "to": "tempfile",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-aimeat-roundtable-py",
-      "to": "hashlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-aimeat-roundtable-py",
-      "to": "unittest",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-aimeat-roundtable-py",
-      "to": "sys",
       "type": "depends_on"
     },
     {
@@ -5968,7 +6038,27 @@
     },
     {
       "from": "test-aimeat-roundtable-py",
-      "to": "shared-aimeat-mail-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-aimeat-roundtable-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-aimeat-roundtable-py",
+      "to": "hashlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-aimeat-source-py",
+      "to": "unittest",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-aimeat-source-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -5978,12 +6068,12 @@
     },
     {
       "from": "test-aimeat-source-py",
-      "to": "pathlib",
+      "to": "types",
       "type": "depends_on"
     },
     {
       "from": "test-aimeat-source-py",
-      "to": "json",
+      "to": "shared",
       "type": "depends_on"
     },
     {
@@ -5998,27 +6088,12 @@
     },
     {
       "from": "test-aimeat-source-py",
-      "to": "unittest",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-aimeat-source-py",
-      "to": "shared",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "test-aimeat-source-py",
       "to": "hashlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-aimeat-source-py",
-      "to": "types",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-cloud-assets-wordcloud-fallback-py",
-      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -6028,12 +6103,12 @@
     },
     {
       "from": "test-cloud-assets-wordcloud-fallback-py",
-      "to": "tempfile",
+      "to": "unittest",
       "type": "depends_on"
     },
     {
       "from": "test-cloud-assets-wordcloud-fallback-py",
-      "to": "unittest",
+      "to": "types",
       "type": "depends_on"
     },
     {
@@ -6043,17 +6118,27 @@
     },
     {
       "from": "test-cloud-assets-wordcloud-fallback-py",
+      "to": "tempfile",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-cloud-assets-wordcloud-fallback-py",
       "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "test-cloud-assets-wordcloud-fallback-py",
-      "to": "types",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "test-cloud-sources-py",
-      "to": "pathlib",
+      "to": "unittest",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-cloud-sources-py",
+      "to": "test-mail-reply-attachment-fallback-py",
       "type": "depends_on"
     },
     {
@@ -6078,22 +6163,47 @@
     },
     {
       "from": "test-cloud-sources-py",
-      "to": "unittest",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-cloud-sources-py",
       "to": "sys",
       "type": "depends_on"
     },
     {
       "from": "test-cloud-sources-py",
-      "to": "test-mail-reply-attachment-fallback-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-email-analysis-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-email-analysis-py",
+      "to": "unittest",
       "type": "depends_on"
     },
     {
       "from": "test-email-analysis-py",
       "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-email-analysis-py",
+      "to": "importlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-email-analysis-py",
+      "to": "tempfile",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-email-analysis-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-email-analysis-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -6107,48 +6217,8 @@
       "type": "depends_on"
     },
     {
-      "from": "test-email-analysis-py",
-      "to": "importlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-email-analysis-py",
-      "to": "tempfile",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-email-analysis-py",
-      "to": "os",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-email-analysis-py",
-      "to": "unittest",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-email-analysis-py",
-      "to": "sys",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-email-analysis-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-email-renderer-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
       "from": "test-email-renderer-py",
       "to": "html",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-email-renderer-py",
-      "to": "base64",
       "type": "depends_on"
     },
     {
@@ -6162,23 +6232,18 @@
       "type": "depends_on"
     },
     {
-      "from": "test-fm-chat-py",
-      "to": "json",
+      "from": "test-email-renderer-py",
+      "to": "base64",
       "type": "depends_on"
     },
     {
-      "from": "test-fm-chat-py",
+      "from": "test-email-renderer-py",
       "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "test-fm-chat-py",
-      "to": "importlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-fm-chat-py",
-      "to": "tempfile",
+      "to": "re",
       "type": "depends_on"
     },
     {
@@ -6188,27 +6253,22 @@
     },
     {
       "from": "test-fm-chat-py",
-      "to": "re",
+      "to": "json",
       "type": "depends_on"
     },
     {
-      "from": "test-fm-converse-py",
-      "to": "pathlib",
-      "type": "depends_on"
-    },
-    {
-      "from": "test-fm-converse-py",
+      "from": "test-fm-chat-py",
       "to": "importlib",
       "type": "depends_on"
     },
     {
-      "from": "test-fm-converse-py",
+      "from": "test-fm-chat-py",
       "to": "tempfile",
       "type": "depends_on"
     },
     {
-      "from": "test-fm-converse-py",
-      "to": "sys",
+      "from": "test-fm-chat-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -6222,13 +6282,23 @@
       "type": "depends_on"
     },
     {
-      "from": "test-fm-render-py",
-      "to": "pathlib",
+      "from": "test-fm-converse-py",
+      "to": "importlib",
       "type": "depends_on"
     },
     {
-      "from": "test-fm-render-py",
-      "to": "importlib",
+      "from": "test-fm-converse-py",
+      "to": "tempfile",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-fm-converse-py",
+      "to": "sys",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-fm-converse-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
@@ -6242,13 +6312,23 @@
       "type": "depends_on"
     },
     {
-      "from": "test-fm-submit-py",
-      "to": "json",
+      "from": "test-fm-render-py",
+      "to": "importlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-fm-render-py",
+      "to": "pathlib",
       "type": "depends_on"
     },
     {
       "from": "test-fm-submit-py",
-      "to": "pathlib",
+      "to": "unittest",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-fm-submit-py",
+      "to": "json",
       "type": "depends_on"
     },
     {
@@ -6263,12 +6343,22 @@
     },
     {
       "from": "test-fm-submit-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-mail-architecture-py",
       "to": "unittest",
       "type": "depends_on"
     },
     {
-      "from": "test-mail-material-editor-py",
-      "to": "os",
+      "from": "test-mail-architecture-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-mail-architecture-py",
+      "to": "shared",
       "type": "depends_on"
     },
     {
@@ -6282,8 +6372,8 @@
       "type": "depends_on"
     },
     {
-      "from": "test-mail-reply-attachment-fallback-py",
-      "to": "importlib",
+      "from": "test-mail-material-editor-py",
+      "to": "os",
       "type": "depends_on"
     },
     {
@@ -6297,13 +6387,53 @@
       "type": "depends_on"
     },
     {
-      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
-      "to": "collections",
+      "from": "test-mail-reply-attachment-fallback-py",
+      "to": "json",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-mail-reply-attachment-fallback-py",
+      "to": "shared",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-mail-reply-attachment-fallback-py",
+      "to": "importlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-notes-process-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "test-notes-process-py",
+      "to": "importlib",
       "type": "depends_on"
     },
     {
       "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
-      "to": "pathlib",
+      "to": "re",
+      "type": "depends_on"
+    },
+    {
+      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
+      "to": "subprocess",
+      "type": "depends_on"
+    },
+    {
+      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
+      "to": "dataclasses",
+      "type": "depends_on"
+    },
+    {
+      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
+      "to": "argparse",
+      "type": "depends_on"
+    },
+    {
+      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
+      "to": "shutil",
       "type": "depends_on"
     },
     {
@@ -6323,12 +6453,7 @@
     },
     {
       "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
-      "to": "dataclasses",
-      "type": "depends_on"
-    },
-    {
-      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
-      "to": "os",
+      "to": "bin-lib-apple-sqlite-snapshot-py",
       "type": "depends_on"
     },
     {
@@ -6338,32 +6463,22 @@
     },
     {
       "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
-      "to": "shutil",
-      "type": "depends_on"
-    },
-    {
-      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
-      "to": "bin-lib-apple-sqlite-snapshot-py",
-      "type": "depends_on"
-    },
-    {
-      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
-      "to": "argparse",
-      "type": "depends_on"
-    },
-    {
-      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
-      "to": "subprocess",
-      "type": "depends_on"
-    },
-    {
-      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
-      "to": "re",
-      "type": "depends_on"
-    },
-    {
-      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
       "to": "sqlite3",
+      "type": "depends_on"
+    },
+    {
+      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
+      "to": "pathlib",
+      "type": "depends_on"
+    },
+    {
+      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
+      "to": "os",
+      "type": "depends_on"
+    },
+    {
+      "from": "voice-memos-exporter-scripts-voice-memos-exporter-py",
+      "to": "collections",
       "type": "depends_on"
     }
   ]

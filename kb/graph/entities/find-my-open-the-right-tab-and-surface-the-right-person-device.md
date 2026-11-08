@@ -3,7 +3,7 @@ name: Find My — open the right tab and surface the right person/device
 slug: find-my-open-the-right-tab-and-surface-the-right-person-device
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

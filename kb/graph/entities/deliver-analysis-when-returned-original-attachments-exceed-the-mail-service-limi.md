@@ -3,7 +3,7 @@ name: Deliver analysis when returned original attachments exceed the mail servic
 slug: deliver-analysis-when-returned-original-attachments-exceed-the-mail-service-limi
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

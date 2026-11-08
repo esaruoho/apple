@@ -3,7 +3,7 @@ name: On-device dictation button
 slug: on-device-dictation-button
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

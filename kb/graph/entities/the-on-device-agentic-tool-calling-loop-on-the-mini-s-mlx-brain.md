@@ -3,7 +3,7 @@ name: The on-device agentic tool-calling loop on the Mini's MLX brain
 slug: the-on-device-agentic-tool-calling-loop-on-the-mini-s-mlx-brain
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

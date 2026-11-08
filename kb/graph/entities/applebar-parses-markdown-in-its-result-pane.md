@@ -3,7 +3,7 @@ name: AppleBar parses markdown in its result pane
 slug: applebar-parses-markdown-in-its-result-pane
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

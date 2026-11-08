@@ -3,7 +3,7 @@ name: 0001-applebar
 slug: 0001-applebar
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

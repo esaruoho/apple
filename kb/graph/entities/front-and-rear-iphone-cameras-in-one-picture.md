@@ -3,7 +3,7 @@ name: Front and rear iPhone cameras in one picture
 slug: front-and-rear-iphone-cameras-in-one-picture
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

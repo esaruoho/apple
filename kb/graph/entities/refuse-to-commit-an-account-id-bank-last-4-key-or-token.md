@@ -3,7 +3,7 @@ name: Refuse to commit an account id, bank last-4, key or token
 slug: refuse-to-commit-an-account-id-bank-last-4-key-or-token
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

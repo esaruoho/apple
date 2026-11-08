@@ -3,7 +3,7 @@ name: Where am I right now — device-presence geolocation for a desktop Mac
 slug: where-am-i-right-now-device-presence-geolocation-for-a-desktop-mac
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

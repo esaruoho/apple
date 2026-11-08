@@ -3,7 +3,7 @@ name: A conveyed video yields a readable transcript and its analyses
 slug: a-conveyed-video-yields-a-readable-transcript-and-its-analyses
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

@@ -3,7 +3,7 @@ name: 0005-directions-home-maps
 slug: 0005-directions-home-maps
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary

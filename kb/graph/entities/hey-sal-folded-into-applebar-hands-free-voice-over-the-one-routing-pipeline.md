@@ -3,7 +3,7 @@ name: Hey Sal folded into AppleBar — hands-free voice over the one routing pip
 slug: hey-sal-folded-into-applebar-hands-free-voice-over-the-one-routing-pipeline
 kind: feature
 confidence: 0.6
-updated: 2026-11-02
+updated: 2026-11-08
 ---
 
 ## Summary
