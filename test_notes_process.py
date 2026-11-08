@@ -32,6 +32,10 @@ def test_no_set_body_anywhere():
     src = p.read_text()
     assert 'set body' not in src.lower().replace('`set body`', '')
 
+def test_reply_title_flattens_thread():
+    assert np.reply_title('Re: katsotaampa toimiiko tämä #process') == 'Re: katsotaampa toimiiko tämä'
+    assert np.reply_title('Re: Re: x #process #done') == 'Re: x'
+
 if __name__ == '__main__':
     for n, f in list(globals().items()):
         if n.startswith('test_'): f(); print('ok', n)

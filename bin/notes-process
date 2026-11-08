@@ -175,8 +175,18 @@ def append_via_shortcut(name, title, md):
         raise RuntimeError(f'shortcut failed: {r.stderr.strip()[-300:]}')
 
 
+def reply_title(title, tag='#process', done_tag='#done'):
+    """One clean thread title: 'Re: <root>' — never 'Re: Re:', never carrying the tags."""
+    t = title
+    while t.lower().startswith('re: '):
+        t = t[4:]
+    t = tag_re(tag).sub('', t)
+    t = tag_re(done_tag).sub('', t)
+    return 'Re: ' + (' '.join(t.split()) or 'note')
+
+
 def linked_note(title, md, account, folder):
-    r = subprocess.run([str(HERE / 'notes-new'), '--title', f'Re: {title}', '--account', account,
+    r = subprocess.run([str(HERE / 'notes-new'), '--title', reply_title(title), '--account', account,
                         '--folder', folder, '-'], input=md, capture_output=True, text=True,
                        timeout=90)
     if r.returncode != 0:
