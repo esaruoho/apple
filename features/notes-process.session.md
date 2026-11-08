@@ -18,3 +18,11 @@
 
 ## RESULT
 - direct-push, no PR. Files: bin/notes-process, test_notes_process.py, features/notes-process.*
+
+## Round 2 — Esa: "well it really didn't work, did it?" + "you're not supposed to rewrite a note but to safely append"
+6. No watcher was running; and a hand-typed orange #process is an inline object: U+FFFC in plaintext,
+   ABSENT from body HTML → v1's `set body` would have deleted it. The note was never touched (v1 found nothing).
+7. Notes AppleScript has no append verb. Esa chose "Both": Shortcut append when installed + unique title,
+   else linked note "Re: <title>".
+8. Rewrote notes-process: read-only SQLite discovery of hashtag objects, no `set body` anywhere,
+   ledger keyed by tag ZIDENTIFIER. Real run: p13544 → reply note p13583; 2nd pass no-op. 7 tests pass.

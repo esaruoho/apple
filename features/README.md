@@ -48,7 +48,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [The on-device agentic tool-calling loop on the Mini's MLX brain](#mlx-agent-tool-loop) — `mlx-agent-tool-loop.feature`
 - [notes-append-images — append images to an Apple Note, rendered once each](#notes-append-images) — `notes-append-images.feature`
 - [notes-new creates exactly one new Apple Note without touching anything else](#notes-new) — `notes-new.feature`
-- [a #process tag in a note gets an LLM reply appended, then is marked #done](#notes-process) — `notes-process.feature`
+- [a #process tag in a note gets an LLM reply added as rich text, never by rewriting the note](#notes-process) — `notes-process.feature`
 - [Post-process a screen recording's audio (split / flatten)](#rec-audio) — `rec-audio.feature`
 - [Subtitle a screen recording (.srt sidecar + burn-in)](#rec-subtitle) — `rec-subtitle.feature`
 - [Two presses of the same key always get the shell back](#recburn-abort) — `recburn-abort.feature`
@@ -1013,20 +1013,21 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 
 <a id="notes-process"></a>
-## a #process tag in a note gets an LLM reply appended, then is marked #done
+## a #process tag in a note gets an LLM reply added as rich text, never by rewriting the note
 
 `features/notes-process.feature` · [session](notes-process.session.md)
 
-**Behaviour (6 scenarios):**
+**Behaviour (7 scenarios):**
 
-- Inline trigger line is answered and closed (2026-11-08, note p13471) — `@built @hw-verified`
+- A real orange Notes tag is found (2026-11-08, note p13544) — `@built @hw-verified`
+- Fallback — reply as a linked rich-text note (note p13583) — `@built @hw-verified`
+- True append via Shortcut (wiki/concepts/notes-process-append-shortcut.md) — `@built @untested`
 - No feedback loop — `@built @hw-verified`
-- Trigger parsing (test_notes_process.py) — `@built @sim-verified`
-- Guards before any write — `@built @designed`
-- A tag typed by hand in Notes.app (real Notes tag object) is detected and rewritten — `@untested`
-- Notes on the Mini (iCloud-synced) running under Cloudcity-Boot via systems.yaml — `@untested`
+- Never rewrites a note (test_notes_process.py: 7 tests) — `@built @sim-verified`
+- Guards — `@built @designed`
+- Running on the Mini under Cloudcity-Boot via systems.yaml — `@untested`
 
-**Grade:** @built ×4 · @designed ×1 · @hw-verified ×2 · @sim-verified ×1 · @untested ×2
+**Grade:** @built ×6 · @designed ×1 · @hw-verified ×3 · @sim-verified ×1 · @untested ×2
 
 
 <a id="rec-audio"></a>

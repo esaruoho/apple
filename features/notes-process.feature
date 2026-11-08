@@ -1,34 +1,36 @@
-# Report card: bin/notes-process — #process hashtag in Apple Notes → Cloudcity LLM reply, non-destructive
-Feature: a #process tag in a note gets an LLM reply appended, then is marked #done
+# Report card: bin/notes-process — #process tag in Apple Notes → Cloudcity LLM reply, APPEND-ONLY
+Feature: a #process tag in a note gets an LLM reply added as rich text, never by rewriting the note
 
   @built @hw-verified
-  Scenario: Inline trigger line is answered and closed (2026-11-08, note p13471)
-    Given a note line "What is the capital of Finland? … #process"
-    When "notes-process --once" runs
-    Then the line text minus the tag is sent verbatim to fmremote (Mini FoundationModels)
-    And the reply is appended under a ──── divider with "🤖 fmremote · <time>"
-    And "#process" becomes "#done" and every original line is still present
+  Scenario: A real orange Notes tag is found (2026-11-08, note p13544)
+    Given Esa typed "hey i want you to tell me about electricity #process" in Notes.app
+    Then find_occurrences() finds it in NoteStore.sqlite opened read-only (hashtag UTI, ZALTTEXT)
+    And prompts_for() sends "hey i want you to tell me about electricity" verbatim to fmremote
+
+  @built @hw-verified
+  Scenario: Fallback — reply as a linked rich-text note (note p13583)
+    Given the Shortcut "notes-process-append" is not installed
+    Then the reply is created as "Re: <title>" via bin/notes-new (markdown → rich text)
+    And the original note is not modified at all
+
+  @built @untested
+  Scenario: True append via Shortcut (wiki/concepts/notes-process-append-shortcut.md)
+    Given the Shortcut is installed and the note title is unique (title_count() == 1)
+    Then the markdown reply is appended with Make Rich Text from Markdown + Append to Note
 
   @built @hw-verified
   Scenario: No feedback loop
-    Then a second pass reports "no notes contain #process"
-    And the reply is sanitised (sanitize()) so it can never contain the trigger tag
-    And a ledger (~/.local/share/notes-process/ledger.jsonl) blocks re-processing the same line
+    Then the second pass reports "nothing new for #process"
+    And the ledger is keyed by the tag object's ZIDENTIFIER
+    And the reply ends with "#done" and is sanitised so it never contains the trigger
 
   @built @sim-verified
-  Scenario: Trigger parsing (test_notes_process.py)
-    Then a bare "#process" line sends the note text above it, minus the title
-    And "#processed" / "#process-later" do not trigger
+  Scenario: Never rewrites a note (test_notes_process.py: 7 tests)
+    Then the source contains no "set body"
 
   @built @designed
-  Scenario: Guards before any write
-    Then password-protected notes, notes with attachments, Recently Deleted,
-      and notes edited < 15s ago are skipped
-    And the body HTML is backed up before writing
-    And the note is re-read before writing; if it changed during the LLM call the write is aborted
-    And if any original line is missing after the write, the backup is restored at once
+  Scenario: Guards
+    Then locked notes, Recently Deleted, and notes edited < 15s ago are skipped
 
   @untested
-  Scenario: A tag typed by hand in Notes.app (real Notes tag object) is detected and rewritten
-  @untested
-  Scenario: Notes on the Mini (iCloud-synced) running under Cloudcity-Boot via systems.yaml
+  Scenario: Running on the Mini under Cloudcity-Boot via systems.yaml
