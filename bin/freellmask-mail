@@ -27,6 +27,10 @@ from pathlib import Path
 if __name__ == "__main__" and sys.version_info < (3, 10):
     os.execv("/opt/homebrew/bin/python3", ["/opt/homebrew/bin/python3", str(Path(__file__).resolve())] + sys.argv[1:])
 import types
+# PRIVATE BYTECODE (2026-11-08): apple/ is Syncthing-shared INCLUDING __pycache__, and Syncthing keeps
+# source mtimes — so a .pyc compiled on the other machine could be trusted for a source it doesn't match.
+# That is how the Mini ran a MailContent without `text_prefix` all day. Keep our .pyc local, unshared.
+sys.pycache_prefix = str(Path.home()/"Library"/"Caches"/"freellmask-mail-pyc")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'shared'))
 import aimeat_mail
 from format_email import render_email as _render_email, source_attachments, MailContent, render_print
@@ -965,6 +969,9 @@ def replied_load():
             if r.get("retract"): recs.pop(mid, None)
             else: recs[mid]=r
     except Exception: pass
+    now=time.time()
+    recs={m:r for m,r in recs.items()
+          if r.get("state","answered")!="received" or now-float(r.get("t") or 0) < CLAIM_TTL}
     mids=set(recs); threads={}
     for r in recs.values():
         t=r.get("thread")
@@ -996,11 +1003,18 @@ def replied_seed(k, msgs):
     if n: print(f"  🌱 seeded replied-ledger with {n} already-answered message(s)")
     return n
 
-def replied_add(mid, thread, subject="", t=None):
+# MAIL LIFECYCLE (2026-11-08): every ledger row carries a state.
+#   received → claimed, being researched. Blocks re-answer only while fresh (< CLAIM_TTL): a stale
+#              "received" means the worker died/raised mid-work → retried, never "oh yeah I replied".
+#   sending  → reply POST has begun. Blocks forever (at-most-once: the POST may have gone out).
+#   answered → POST returned OK. Blocks forever.
+# Rows without a state are legacy (pre-lifecycle) and are treated as answered.
+CLAIM_TTL = int(os.environ.get("FREELLMASK_MAIL_CLAIM_TTL", str(2*3600)))
+def replied_add(mid, thread, subject="", t=None, state="answered"):
     try:
         REPLIED.parent.mkdir(parents=True, exist_ok=True)
         with REPLIED.open("a") as f:
-            f.write(json.dumps({"mid":mid,"thread":thread,"subj":(subject or "")[:120],
+            f.write(json.dumps({"mid":mid,"thread":thread,"subj":(subject or "")[:120],"state":state,
                                 "t":float(t if t is not None else time.time()),
                                 "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
     except Exception: pass
@@ -1021,6 +1035,10 @@ def replied_retract(mid, replied_mids=None, replied_threads=None, thread=None):
         if replied_threads is not None and thread and thread in replied_threads and replied_threads[thread]:
             replied_threads[thread].pop()
     except Exception: pass
+
+# Errors that mean "the code in memory doesn't match itself / the disk" → reload, don't keep failing.
+CODE_SKEW_ERRORS = (TypeError, AttributeError, ImportError, NameError)
+CODE_SKEW = []
 
 RELEASE = Path(os.environ.get("FREELLMASK_MAIL_RELEASE", Path.home()/"work"/"comms"/"queue"/"freellmask-mail-release.txt"))
 def release_requested(seen):
@@ -2126,7 +2144,7 @@ def poll_once(verbose=True):
                 save_state(st)
                 if verbose: print(f"  AIMEAT source queued: {full.get('subject', '')}")
                 continue
-            replied_add(mid, m.get("thread_id"), m.get("subject", "") or "")
+            replied_add(mid, m.get("thread_id"), m.get("subject", "") or "", state="received")
             replied_mids.add(mid); _claim=mid
             replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
             # body: prefer extracted/plain text; fall back to HTML (forwards are often HTML-only)
@@ -2329,7 +2347,7 @@ def poll_once(verbose=True):
                     seen.add(mid)
                     st["seen"] = list(seen)[-SEEN_CAP:]; st["last_poll"] = time.strftime("%Y-%m-%dT%H:%M:%S")
                     save_state(st)
-                    replied_add(mid, m.get("thread_id"), full.get("subject", ""))
+                    replied_add(mid, m.get("thread_id"), full.get("subject", ""), state="sending")
                     replied_mids.add(mid)
                     replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
                     if BCC and BCC.lower() not in (full.get("from") or "").lower():
@@ -2337,6 +2355,7 @@ def poll_once(verbose=True):
                     _claim=None
                     try:
                         send_inbox_reply(k, mid, reply)
+                        replied_add(mid, m.get("thread_id"), full.get("subject", ""), state="answered")
                         print(f"  ✎ adjusted {len(adjustments)} area(s); {len(_rules_added)} rule(s) banked")
                     except Exception as e:
                         debug_log("adjust-send-error", mid, full.get("subject", ""), note=str(e))
@@ -2514,11 +2533,12 @@ def poll_once(verbose=True):
             st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
             # Durable at-most-once record, written BEFORE the POST for the same reason `seen` is: a send
             # that errors on the client side may still have gone out. The ledger outlives the state file.
-            replied_add(mid, m.get("thread_id"), full.get("subject",""))
+            replied_add(mid, m.get("thread_id"), full.get("subject",""), state="sending")
             replied_mids.add(mid); replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
             _claim=None                                  # POST begins: at-most-once, never retract past here
             try:
                 send_inbox_reply(k, mid, reply)
+                replied_add(mid, m.get("thread_id"), full.get("subject",""), state="answered")
             except Exception as e:
                 debug_log("reply-send-error", mid, full.get("subject","(no subject)"),
                           question=question, answer=reply.get("text",""), note=str(e))
@@ -2531,6 +2551,7 @@ def poll_once(verbose=True):
             import traceback as _tb
             _mid=m.get("message_id")
             print(f"  ⚠ message failed before send ({_mid}): {_e}")
+            if isinstance(_e, CODE_SKEW_ERRORS): CODE_SKEW.append(repr(_e))
             if _claim:
                 replied_retract(_claim, replied_mids, replied_threads, m.get("thread_id"))
                 seen.discard(_claim)
@@ -3199,13 +3220,47 @@ def main():
         st=load_state(); print(f"inbox={INBOX}\nmodel={FM_MODEL} host={FM_HOST}\nseen={len(st.get('seen',[]))} last_poll={st.get('last_poll')}")
         print(f"AgentMail key: {'set' if _read_key('AGENTMAIL_API_KEY','~/.agentmail.key') else 'MISSING'}")
         print(f"FreeLLMAPI key: {'set' if _read_key('FM_FREE_KEY','~/.fm-free.key') else 'MISSING'}")
+        # lifecycle: latest state per mid; anything not "answered" is shown (received = in work / died)
+        last={}
+        try:
+            for line in REPLIED.read_text().splitlines():
+                try: r=json.loads(line)
+                except Exception: continue
+                if r.get("mid"): last[r["mid"]]=r
+        except Exception: pass
+        open_=[r for r in last.values() if not r.get("retract") and r.get("state","answered")!="answered"]
+        print(f"ledger: {len(last)} mids, {len(open_)} not answered")
+        for r in open_[-20:]:
+            age=int((time.time()-float(r.get("t") or 0))/60)
+            print(f"  {r.get('state'):9} {age:5}m  {r.get('mid')}  {r.get('subj','')[:60]}")
+        print(f"log: ~/work/comms/logs/freellmask-mail.log")
     elif cmd=="loop":
         print(f"freellmask-mail loop: polling {INBOX} every {POLL_SEC}s")
         # MAIL-GUARD-WATCH v1: reload a changed guard inside the same Boot pane.
         watched = [Path.home()/"work/convey/convey/document_brains.py", Path.home()/"work/convey/convey/brain_routes.py", Path.home()/"work/convey/convey/mail_language.py", Path(__file__), Path(aimeat_mail.__file__), Path(aimeat_mail.cloud_assets.__file__),
                    Path(__file__).resolve().parent.parent/'shared/cloud_source.py',
                    Path(__file__).resolve().parent.parent/'shared/format_email.py']
-        versions = [p.stat().st_mtime_ns for p in watched]
+        def _loaded_files():
+            # every module actually loaded from ~/work (apple/shared, convey/…) — not a hand-kept list
+            root=str(Path.home()/"work")
+            fs={Path(m.__file__) for m in list(sys.modules.values())
+                if getattr(m,"__file__",None) and str(m.__file__).startswith(root) and str(m.__file__).endswith(".py")}
+            return sorted(fs | {p for p in watched if p.exists()})
+        def _digest(files):
+            out={}
+            for f in files:
+                try: out[str(f)]=aimeat_mail.sha(f.read_bytes())
+                except Exception: out[str(f)]=None
+            return out
+        versions = _digest(_loaded_files())
+        def _reload(why):
+            last=float(os.environ.get("FREELLMASK_SKEW_RELOAD_AT","0") or 0)
+            if why.startswith("code-skew") and time.time()-last < 600:
+                print(f"  ⚠ {why} again within 10 min of a reload — NOT reloading (real bug, see debug log)", flush=True)
+                return
+            os.environ["FREELLMASK_SKEW_RELOAD_AT"]=str(time.time()) if why.startswith("code-skew") else os.environ.get("FREELLMASK_SKEW_RELOAD_AT","0")
+            print(f"Mail code reload ({why}); re-exec inside the existing Boot pane", flush=True)
+            os.execv(sys.executable, [sys.executable, str(Path(__file__).resolve()), 'loop'])
         while True:
             aimeat_mail.mini()
             aimeat_mail.save(aimeat_mail.QUEUE.parent/'aimeat-mail-heartbeat.json', {
@@ -3217,10 +3272,15 @@ def main():
                 if n: print(f"[{time.strftime('%H:%M:%S')}] answered {n} email(s)")
             except Exception as e:
                 print(f"[{time.strftime('%H:%M:%S')}] poll error: {e}")
+                if isinstance(e, CODE_SKEW_ERRORS): CODE_SKEW.append(repr(e))
+            if CODE_SKEW:
+                _reload("code-skew: " + CODE_SKEW[-1][:160])
+                CODE_SKEW.clear()
             time.sleep(POLL_SEC)
-            if [p.stat().st_mtime_ns for p in watched] != versions:
-                print('Mail code changed; reloading inside the existing Boot pane', flush=True)
-                os.execv(sys.executable, [sys.executable, str(Path(__file__).resolve()), 'loop'])
+            _now=_digest(_loaded_files())
+            if any(_now.get(f)!=h for f,h in versions.items()):
+                _changed=[Path(f).name for f,h in versions.items() if _now.get(f)!=h]
+                _reload("changed on disk: " + ", ".join(_changed[:6]))
     else:
         n=poll_once(); print(f"polled: answered {n} new email(s)")
 
