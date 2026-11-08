@@ -13,9 +13,11 @@ Used by:
 
 import base64
 from dataclasses import dataclass, field
+from typing import Optional
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
 from dataclasses import dataclass, field
+from typing import Optional
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
 import html
@@ -462,8 +464,30 @@ def render_provenance_badge(prov):
     {content}
   </div>"""
 
-def wrap_email_html(inner_html, title="AIMEAT Research Ingest", provenance=None):
+def mail_id(markdown):
+    """Stable, quotable id for one outgoing mail: the same body always yields the same id, so
+    "CC-1a2b3c4d worked" can be matched back to the exact text via the mail-id ledger."""
+    import hashlib
+    return "CC-" + hashlib.sha256((markdown or "").encode("utf-8", "ignore")).hexdigest()[:8]
+
+
+def record_mail_id(mid_, title="", markdown=""):
+    """Best-effort append to comms/queue/mail-ids.jsonl (Syncthing-synced); never raises."""
+    try:
+        import json, time
+        from pathlib import Path
+        led = Path.home()/"work"/"comms"/"queue"/"mail-ids.jsonl"
+        with led.open("a") as f:
+            f.write(json.dumps({"mail_id": mid_, "title": (title or "")[:160],
+                                "chars": len(markdown or ""), "head": (markdown or "")[:200],
+                                "ts": time.strftime("%Y-%m-%dT%H:%M:%S")}) + "\n")
+    except Exception:
+        pass
+
+
+def wrap_email_html(inner_html, title="AIMEAT Research Ingest", provenance=None, mail_id_=""):
     prov_badge = render_provenance_badge(provenance)
+    id_html = (" · Mail ID: <strong style=\"color:#c9d1d9;\">" + html.escape(mail_id_) + "</strong>") if mail_id_ else ""
     return f"""<!DOCTYPE html>
 <html>
 <head>
@@ -493,7 +517,7 @@ def wrap_email_html(inner_html, title="AIMEAT Research Ingest", provenance=None)
     {prov_badge}
     <main id="mail-content">{inner_html}</main>
     <div style="margin-top:32px; padding-top:12px; border-top:1px solid #21262d; font-size:11px; color:#8b949e; text-align:center;">
-      AIMEAT · Cloudcity · Original Markdown and equations retained
+      AIMEAT · Cloudcity · Original Markdown and equations retained{id_html}
     </div>
   </div>
 </body>
@@ -518,13 +542,14 @@ def source_attachments(markdown, filename="analysis"):
 
 
 def email_payload(markdown, title="AIMEAT Research Ingest", filename="analysis", provenance=None):
-    return dict(text=markdown, html=render_email(markdown, title=title, provenance=provenance),
+    mid_ = mail_id(markdown); record_mail_id(mid_, title, markdown)
+    return dict(text=markdown + "\n\n— Mail ID: " + mid_, html=render_email(markdown, title=title, provenance=provenance),
                 attachments=source_attachments(markdown, filename))
 
 
 def render_email(markdown, title="AIMEAT Research Ingest", provenance=None):
     """Full HTML document; the body, mathematics and wrapper all live here."""
-    return wrap_email_html(md_to_html(markdown), title=title, provenance=provenance)
+    return wrap_email_html(md_to_html(markdown), title=title, provenance=provenance, mail_id_=mail_id(markdown))
 
 
 # REPORT-CARD >> ~/work/convey/features/mail-consolidation.feature
@@ -534,7 +559,7 @@ class MailContent:
     markdown: str = ""
     notices: list[str] = field(default_factory=list)
     attachments: list[dict] = field(default_factory=list)
-    provenance: dict | None = None
+    provenance: Optional[dict] = None
     title: str = "AIMEAT Research Ingest"
     text_prefix: str = ""
 
@@ -543,60 +568,8 @@ class MailContent:
 
     def payload(self):
         text = self.text()
-        return {"text": self.text_prefix + text, "html": render_email(text, title=self.title, provenance=self.provenance),
-                **({"attachments": list(self.attachments)} if self.attachments else {})}
-
-
-class _PrintSemantics(HTMLParser):
-    """Share the Markdown parser; discard email presentation at the semantic boundary."""
-    def __init__(self):
-        super().__init__(convert_charrefs=False)
-        self.parts = []
-    def handle_starttag(self, tag, attrs):
-        # Math layout properties are semantic; email colors/backgrounds never cross.
-        keep = []
-        for key, value in attrs:
-            if key in {"href", "src", "alt", "start", "colspan", "rowspan"}:
-                keep.append((key, value))
-            elif key == "style" and tag == "span":
-                style = ";".join(rule for rule in value.split(";")
-                                 if rule.strip().split(":")[0] in
-                                 {"display", "vertical-align", "text-align", "border-bottom", "border-top", "padding"})
-                if style: keep.append((key, style))
-        self.parts.append("<"+tag+"".join(' '+k+'="'+html.escape(v, quote=True)+'"' for k,v in keep)+">")
-    def handle_endtag(self, tag): self.parts.append("</"+tag+">")
-    def handle_data(self, data): self.parts.append(data)
-    def handle_entityref(self, name): self.parts.append("&"+name+";")
-    def handle_charref(self, name): self.parts.append("&#"+name+";")
-
-
-def render_print(markdown, css=""):
-    parser = _PrintSemantics()
-    parser.feed(md_to_html(markdown))
-    return ('<!DOCTYPE html><html><head><meta charset="utf-8"><style>'
-            'body{background:white;color:#111;font:12pt sans-serif;margin:24pt}'
-            'pre{white-space:pre-wrap;background:#eee;color:#111;padding:10pt}'
-            'table{border-collapse:collapse;width:100%}td,th{border:1px solid #888;padding:5pt}'
-            'a{color:#0645ad}h1,h2,h3{break-after:avoid}pre,tr{break-inside:avoid}'
-            '@page{margin:18mm}'+css+'</style></head><body>'+''.join(parser.parts)+'</body></html>')
-
-
-# REPORT-CARD >> ~/work/convey/features/mail-consolidation.feature
-@dataclass
-class MailContent:
-    """All semantic material is assembled before document finalization."""
-    markdown: str = ""
-    notices: list[str] = field(default_factory=list)
-    attachments: list[dict] = field(default_factory=list)
-    provenance: dict | None = None
-    title: str = "AIMEAT Research Ingest"
-
-    def text(self):
-        return "\n\n".join([self.markdown] + [str(n) for n in self.notices if n])
-
-    def payload(self):
-        text = self.text()
-        return {"text": text, "html": render_email(text, title=self.title, provenance=self.provenance),
+        mid_ = mail_id(text); record_mail_id(mid_, self.title, text)
+        return {"text": self.text_prefix + text + "\n\n— Mail ID: " + mid_, "html": render_email(text, title=self.title, provenance=self.provenance),
                 **({"attachments": list(self.attachments)} if self.attachments else {})}
 
 

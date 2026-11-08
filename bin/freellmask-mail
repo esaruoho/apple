@@ -1022,6 +1022,22 @@ def replied_retract(mid, replied_mids=None, replied_threads=None, thread=None):
             replied_threads[thread].pop()
     except Exception: pass
 
+RELEASE = Path(os.environ.get("FREELLMASK_MAIL_RELEASE", Path.home()/"work"/"comms"/"queue"/"freellmask-mail-release.txt"))
+def release_requested(seen):
+    """Re-answer silently dropped mail: one message-id per line in queue/freellmask-mail-release.txt
+    (Syncthing-synced, so it works from the laptop). Each mid is retracted from the replied-ledger and
+    un-seen, then the file is consumed. Lines starting with # are ignored."""
+    try:
+        if not RELEASE.exists(): return []
+        mids=[l.strip() for l in RELEASE.read_text().splitlines() if l.strip() and not l.strip().startswith("#")]
+        for mid in mids:
+            replied_retract(mid); seen.discard(mid)
+            print(f"  ↺ released for re-answer: {mid}")
+        RELEASE.unlink()
+        return mids
+    except Exception as e:
+        print(f"  release-file error: {e}"); return []
+
 def _epoch(ts):
     """AgentMail ISO timestamp → epoch seconds (0 if unparseable)."""
     try:
@@ -2058,450 +2074,469 @@ def poll_once(verbose=True):
     aimeat_mail.process_pending(types.SimpleNamespace(**globals()), k)
     listing=http(f"{AM_BASE}/inboxes/{INBOX}/messages?limit=50", k)
     replied_seed(k, listing.get("messages", listing if isinstance(listing,list) else []))
+    release_requested(seen)
     replied_mids, replied_threads = replied_load()
     msgs=listing.get("messages", listing if isinstance(listing,list) else [])
     new=0
     for m in msgs:
-        mid=m.get("message_id"); labels=m.get("labels",[]) or []
-        if not mid or mid in seen: continue
-        # only answer RECEIVED inbound mail — never our own sent replies (avoid loops)
-        if "sent" in labels or m.get("from","").lower().find(INBOX.lower())>=0:
-            seen.add(mid); continue
-        # ANTI-LOOP 1: already answered once, ever → never answer again, whatever `seen` says.
-        if mid in replied_mids:
-            print(f"  ⊘ already replied (ledger) — not answering again: mid={mid}")
-            seen.add(mid); continue
-        # ANTI-LOOP 2: per-thread ceiling. More than THREAD_MAX_PER_HOUR replies in this thread within
-        # the last hour = a storm, no matter the cause. Stop sending, log it, and mark handled.
-        _th=m.get("thread_id")
-        _recent=[t for t in replied_threads.get(_th, []) if time.time()-t < 3600]
-        if _th and len(_recent) >= THREAD_MAX_PER_HOUR:
-            print(f"  🛑 thread rate-limit ({len(_recent)}/h ≥ {THREAD_MAX_PER_HOUR}) — NOT replying: {(m.get('subject') or '')[:50]!r}")
-            debug_log("thread-rate-limit", mid, m.get("subject","") or "",
-                      note=f"{len(_recent)} replies to thread {_th} in the last hour; suppressed to stop a mail storm")
-            seen.add(mid)
-            st["seen"]=list(seen)[-SEEN_CAP:]; save_state(st)
-            continue
-        # CLAIM IT BEFORE DOING THE WORK. The ledger was only written AFTER a successful send, so the
-        # whole span between picking a message and finishing its reply was unguarded — and the poll
-        # runs every 45s. Generation used to take seconds; now the free gateway answers 429 with
-        # Retry-After up to 545s, so that window grew to many minutes and the next dozen polls each
-        # picked up the SAME message and answered it again. That is the Bifilar storm: one inbound
-        # message, twelve replies, each in a fresh thread — which is also why the per-thread ceiling
-        # never tripped, since every reply looked like a brand-new thread.
-        #
-        # The slower the brain gets, the wider the unguarded window: the storm was a race, and rate
-        # limiting is what widened it. Claiming up front closes it. A claimed message that then fails
-        # to send is a MISSED reply Esa can retrigger — strictly better than twelve duplicates.
-        full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
-        # Owner PDF/text attachments become durable AIMEAT jobs before the legacy reply claim.
-        # A crash cannot turn a partly read source into an answered-and-forgotten email.
-        if aimeat_mail.eligible(full, OWNER_ADDRS):
-            aimeat_mail.enqueue(full)
-            seen.add(mid)
-            st['seen']=list(seen)[-SEEN_CAP:]
-            save_state(st)
-            if verbose: print(f"  AIMEAT source queued: {full.get('subject', '')}")
-            continue
-        replied_add(mid, m.get("thread_id"), m.get("subject", "") or "")
-        replied_mids.add(mid)
-        replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
-        # body: prefer extracted/plain text; fall back to HTML (forwards are often HTML-only)
-        # AgentMail's `extracted_text` is USUALLY the clean body — but sometimes it extracts ONLY the
-        # signature (e.g. 26 chars "-- Esa Ruoho +358…" for a newsletter whose real body is in `text`).
-        # So DON'T blindly prefer it: use the full plain-text part when it's substantial, else take the
-        # RICHEST of {extracted_text, text, html→text, preview}. (This was the "Harmony with nature" drop.)
-        _et=full.get("extracted_text") or ""; _tx=full.get("text") or ""
-        _ht=html_to_text(full.get("html")); _pv=full.get("preview") or ""
-        raw_body=_tx if len(_tx)>=200 else max((_et,_tx,_ht,_pv), key=len)
-        if not raw_body.strip() and full.get("html"):          # html_to_text choked on odd HTML → crude strip
-            raw_body=re.sub(r'\s+',' ', _htmlmod.unescape(
-                re.sub(r'(?is)<(script|style|head).*?</\1>|<[^>]+>',' ', full.get("html")))).strip()
-        question=clean_forwarded_body(strip_signature(raw_body))  # drop sig + de-quote/de-noise forwards
-        answer=""                                               # defined for the forward path (reformat branch never sets it, but only fires with no atts)
-        atts=full.get("attachments") or []
-        att_text=extract_attachments(k, mid, atts, verbose) if atts else ""
-        # Same guard as the whisp belt below: an archive/mirror page mailed to OURSELVES has its
-        # content ATTACHED already — its outbound links are the site's navigation, not things to
-        # go fetch. Un-gated, one amasci index page means hundreds of web fetches plus PDF
-        # downloads and on-Mini OCR (same shape as the 2026-08-08 YouTube storm).
-        _block=whisp_blocked_reason(full.get("from"), full.get("subject"), raw_body)
-        if _block:
-            url_text=""
-            if verbose: print(f"  🔗 url-content fetch SKIPPED: {_block}")
-        else:
-            try: url_text=fetch_url_pdfs(raw_body, verbose)      # download + OCR any PDF linked by URL
-            except Exception as e: url_text=""; print(f"  url-pdf scan error: {e}")
-        extra="\n\n".join(x for x in (att_text, url_text) if x)
-        # AUTO-TRIGGER: any YouTube URL in the email → drop it on the convey→whisp transcript belt
-        # (deduped). This is the "figure it out and start the work" behaviour: an email mentioning
-        # USP/Russell videos should schedule their transcription, not just get summarised.
-        # …but an archive/mirror page we mailed to OURSELVES is content to READ, not a request to
-        # transcribe everything it links to (the 2026-08-08 amasci storm). Blocked BEFORE yt-dlp
-        # enumeration, so a link-dump page costs zero downloads.
-        yt_note=""
-        if _block:
-            if verbose:
-                _n=len(youtube_urls(raw_body))
-                print(f"  📼 whisp auto-queue SKIPPED ({_n} youtube link(s)): {_block}")
-            yt_urls=[]
-        else:
-            yt_urls=expand_playlists(youtube_urls(raw_body))   # a playlist/channel → its individual videos
-        if yt_urls:
-            q_n,seen_n=whisp_autosubmit(yt_urls, verbose)
-            if q_n:
-                yt_note=(f"\n\n---\n📼 **Auto-queued {q_n} of {seen_n} video(s) for transcription** onto the "
-                         f"convey→whisp belt (already-transcribed ones skipped, no re-whispering). "
-                         f"Transcripts land in the archive as they finish.")
-            elif verbose:
-                print(f"  📼 {seen_n} youtube url(s) already transcribed — nothing new to queue")
-        # AUTO-TRIGGER: a Google Drive link → fetch it (gdrive via the pakettibot bridge; files land in
-        # gdrive-results/<label>/), recorded PENDING. When the fetch lands, fa-gdrive-analysis-mailer OCRs
-        # + analyses the files and emails the requester — grounded in the REAL content, no guessing.
-        gd_urls=gdrive_urls(raw_body); gd_note=""
-        if gd_urls:
-            _who=full.get("from") or ""; _mm=re.search(r"<([^>]+)>", _who)
-            _to=(_mm.group(1) if _mm else _who).strip() or BCC
-            try:
-                _inbox=Path.home()/"work"/"comms"/"queue"/"pakettibot-inbox"
-                _gp=Path.home()/"work"/"comms"/"queue"/"fa-gdrive-pending.jsonl"; _n=0
-                with _gp.open("a") as _pf:
-                    for _u in gd_urls:
-                        _gid=gdrive_id(_u)
-                        (_inbox/f"gdrive-{_gid or _n}-{int(time.time())}.txt").write_text(f"gdrive {_u}\n")
-                        _pf.write(json.dumps({"url":_u,"id":_gid,"to":_to,"subj":full.get("subject",""),
-                                              "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
-                        _n+=1
-                gd_note=(f"\n\n---\n📁 **Fetching {_n} Google Drive item(s)** — the Mini is downloading "
-                         f"now. I'll OCR + analyse the files and email you when they land.")
-                if verbose: print(f"  📁 gdrive: triggered {_n} fetch(es), pending analysis-email → {_to}")
-            except Exception as _e:
-                if verbose: print(f"  gdrive trigger error: {_e}")
-        # AUTO-TRIGGER: a ChatGPT SHARE link → hoover the WHOLE conversation to markdown + analyse it
-        # across the three brains (convey chatgpt --analyze), fold it into the answer context (so this
-        # agent's own FreeLLMAPI reply is grounded in the real conversation), and attach both files.
-        # Unlike a video, there is NOTHING to wait for — the conversation is IN the page. No guessing.
-        cg_urls=chatgpt_urls(raw_body); cg_note=""; cg_atts=[]
-        if cg_urls:
-            try:
-                cg_ctx, cg_atts, cg_note, cg_done = convey_chatgpt(cg_urls, verbose)
-                if cg_ctx:
-                    extra="\n\n".join(x for x in (extra, cg_ctx) if x)
-                    # a bare "here's a chatgpt link" with no real question → make it an analyse request
-                    residue=re.sub(r'https?://\S+',' ', question or '')
-                    residue=re.sub(r'[^A-Za-z0-9]+',' ',residue).strip()
-                    if len(residue)<12:
-                        question="Summarise and analyse this ChatGPT conversation: the key ideas, decisions, and anything worth double-checking."
-                if verbose: print(f"  🤖 chatgpt: hoovered+analysed {cg_done}/{len(cg_urls)}")
-            except Exception as _e:
-                if verbose: print(f"  chatgpt trigger error: {_e}")
-        # Decide BARE-VIDEO from the BODY, *before* the thin-body fallback below can copy the SUBJECT
-        # into `question`. The subject of a shared YouTube mail IS the video title — never a question —
-        # and once the fallback made `question` = "Vapaan energian tuominen käytäntöön | Kanavoitu ohje
-        # Nikola Teslalta" the residue test saw a long "question" and dropped the bare-video gate. The
-        # model then answered a video it cannot watch, hedging "because we do not possess the full
-        # transcript…" — exactly the guess-reply the gate exists to prevent (2026-07-28).
-        body_is_bare = _bare_link_body(raw_body, full.get("subject"))
-        # NEVER vanish silently. If body extraction/stripping left nothing, fall back to the UNstripped
-        # body (strip_signature may have over-eaten it, the Jeane bug) then the SUBJECT ("Patent
-        # Us8901943" is itself a real request). Only skip when there is GENUINELY nothing — and LOG it,
-        # so a dropped email is never silent again.
-        if len((question or "").strip()) < 10 and not extra:   # empty OR a trivial stub like "--"
-            subj=re.sub(r'(?i)^\s*(re|fwd|fw):\s*','', full.get("subject") or "").strip()
-            rb=raw_body.strip()
-            fb = rb if len(rb)>=10 else subj                    # a "--" raw body is not usable → use subject
-            if fb and len(fb)>=3:
-                question=fb
-                print(f"  ↪ thin body — using {'raw body' if len(rb)>=10 else 'subject'}: {fb[:70]!r}")
-        if len((question or "").strip()) < 3 and not extra and not yt_urls:
-            print(f"  ⊘ SKIP — genuinely empty (no body/subject/attachments): mid={mid} subj={(full.get('subject') or '')!r}")
-            seen.add(mid); continue
-        ctx=thread_context(k, msgs, m.get("thread_id"), mid)
-        # ── OWNER APPROVAL + GATED-SPACE ACCESS ──────────────────────────────────────────────
-        frm_full = full.get("from") or ""
-        # (a) OWNER approves/denies a held sender → update the allowlist + release/drop the held msg(s)
-        if _is_owner(frm_full):
-            _act,_tgt = _parse_owner_approval(raw_body)
-            if _act and _tgt:
-                if _act=="approve":
-                    _add_allowlist(_tgt)
-                    _rel=[r.get("mid") for r in _pending_all() if r.get("sender_email")==_tgt and r.get("mid")]
-                    for _rm in _rel: seen.discard(_rm)          # un-see → next poll answers now they're allowed
-                    _pending_remove(lambda r: r.get("sender_email")==_tgt)
-                    print(f"  ✅ approved {_tgt} → whitelisted; released {len(_rel)} held message(s)")
-                else:
-                    _pending_remove(lambda r: r.get("sender_email")==_tgt)
-                    print(f"  ⛔ denied {_tgt} → dropped held message(s)")
-                seen.add(mid); new+=1; continue
-        # (b) GATED space + sender NOT allowed → HOLD, ask Esa, do not answer (no ack — don't confirm
-        #     liveness to spammers). Owner + whitelisted senders skip this and are answered normally.
-        if not _is_allowed(frm_full):
-            _gspace,_ = route_space(frm_full, full.get("subject"), raw_body, wslugs=None)
-            if _space_access(_gspace)!="open":
-                _sem=_sender_email(frm_full); _pid=_uid()
-                _pending_add({"id":_pid,"mid":mid,"sender_email":_sem,"sender":frm_full,"space":_gspace,
-                              "subject":full.get("subject",""),"ts":time.strftime("%Y-%m-%dT%H:%M:%S")})
-                _email_owner_approval(k, frm_full, _sem, _gspace, full.get("subject","(no subject)"),
-                                      (question or raw_body or ""), _pid)
-                print(f"  🚦 gated [{_gspace}] from {_sem} → held for approval (asked Esa)")
-                # Held ≠ replied. Un-claim the up-front claim, else a later `approve` un-sees the message
-                # but ANTI-LOOP 1 still blocks it on the replied-ledger and the approved sender is never
-                # answered. The approval-release discards `seen`; this discards the claim to match.
-                replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
-                seen.add(mid); new+=1; continue
-        # BARE VIDEO: an email that is essentially just a YouTube link is a "convey this video"
-        # request, NOT a question. The model CANNOT watch the video — answering it hallucinates the
-        # content from wiki context (the 2026-07-01 BrunoVK/Don-Smith/eclipse confabulation). So:
-        # convey it (queued above), reply with a CONFIRMATION only, and let the analysis follow LATER
-        # from the REAL transcript once it lands. No guessing at what a video says before transcription.
-        video_only = bool(yt_urls) and not extra and body_is_bare
-        gdrive_only=False
-        if gd_urls and not extra and not yt_urls:
-            gres=re.sub(r'https?://\S+',' ', question or '')
-            gres=re.sub(r'(?i)\b(fwd|fw|re|see|this|that|these|those|folder|file|files|drive|gdrive|google|docs?|link|url|please|pls|download|fetch|convey|ocr|analyse|analyze|thoughts?|check|out|the|a|an|and|for|to|hey|hi|hello|thanks?|cheers)\b',' ',gres)
-            gres=re.sub(r'[^A-Za-z0-9]+',' ',gres).strip()
-            if len(gres)<12: gdrive_only=True
-        # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
-        # answer (the immutable record), never regenerate. This is the Karpathy fix.
-        # ADJUSTMENT BY EMAIL: a reply that states `s/marked/better/` (or an ADJUST:/BETTER: block)
-        # is not a new question — it is an edit to a SPECIFIC AREA of what we already said. Send that
-        # area back to the voice, reply with the rewritten passage + what the voice says about it, and
-        # bank the substitution as a standing rule so no later answer needs the same correction.
-        adjustments = parse_adjustments(raw_body)
-        if adjustments:
-            _prior = prior_bot_answer(k, msgs, m.get("thread_id"))
-            if not _prior:
-                print(f"  ✎ adjustment(s) but no prior answer in this thread — answering normally")
+        # CLAIM GUARD (2026-11-08): an exception after the up-front claim used to escape to the loop's
+        # pane-only `poll error:` print, leaving the claim in the replied-ledger forever → every later poll
+        # said "already replied" and the mail was silently dropped (both Radiant-Energy mails that day).
+        # _claim = mid while claimed-but-not-yet-POSTed; an escaping exception retracts it + debug-logs.
+        _claim=None
+        try:
+            mid=m.get("message_id"); labels=m.get("labels",[]) or []
+            if not mid or mid in seen: continue
+            # only answer RECEIVED inbound mail — never our own sent replies (avoid loops)
+            if "sent" in labels or m.get("from","").lower().find(INBOX.lower())>=0:
+                seen.add(mid); continue
+            # ANTI-LOOP 1: already answered once, ever → never answer again, whatever `seen` says.
+            if mid in replied_mids:
+                print(f"  ⊘ already replied (ledger) — not answering again: mid={mid}")
+                seen.add(mid); continue
+            # ANTI-LOOP 2: per-thread ceiling. More than THREAD_MAX_PER_HOUR replies in this thread within
+            # the last hour = a storm, no matter the cause. Stop sending, log it, and mark handled.
+            _th=m.get("thread_id")
+            _recent=[t for t in replied_threads.get(_th, []) if time.time()-t < 3600]
+            if _th and len(_recent) >= THREAD_MAX_PER_HOUR:
+                print(f"  🛑 thread rate-limit ({len(_recent)}/h ≥ {THREAD_MAX_PER_HOUR}) — NOT replying: {(m.get('subject') or '')[:50]!r}")
+                debug_log("thread-rate-limit", mid, m.get("subject","") or "",
+                          note=f"{len(_recent)} replies to thread {_th} in the last hour; suppressed to stop a mail storm")
+                seen.add(mid)
+                st["seen"]=list(seen)[-SEEN_CAP:]; save_state(st)
+                continue
+            # CLAIM IT BEFORE DOING THE WORK. The ledger was only written AFTER a successful send, so the
+            # whole span between picking a message and finishing its reply was unguarded — and the poll
+            # runs every 45s. Generation used to take seconds; now the free gateway answers 429 with
+            # Retry-After up to 545s, so that window grew to many minutes and the next dozen polls each
+            # picked up the SAME message and answered it again. That is the Bifilar storm: one inbound
+            # message, twelve replies, each in a fresh thread — which is also why the per-thread ceiling
+            # never tripped, since every reply looked like a brand-new thread.
+            #
+            # The slower the brain gets, the wider the unguarded window: the storm was a race, and rate
+            # limiting is what widened it. Claiming up front closes it. A claimed message that then fails
+            # to send is a MISSED reply Esa can retrigger — strictly better than twelve duplicates.
+            full=http(f"{AM_BASE}/inboxes/{INBOX}/messages/{enc(mid)}", k)
+            # Owner PDF/text attachments become durable AIMEAT jobs before the legacy reply claim.
+            # A crash cannot turn a partly read source into an answered-and-forgotten email.
+            if aimeat_mail.eligible(full, OWNER_ADDRS):
+                aimeat_mail.enqueue(full)
+                seen.add(mid)
+                st['seen']=list(seen)[-SEEN_CAP:]
+                save_state(st)
+                if verbose: print(f"  AIMEAT source queued: {full.get('subject', '')}")
+                continue
+            replied_add(mid, m.get("thread_id"), m.get("subject", "") or "")
+            replied_mids.add(mid); _claim=mid
+            replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
+            # body: prefer extracted/plain text; fall back to HTML (forwards are often HTML-only)
+            # AgentMail's `extracted_text` is USUALLY the clean body — but sometimes it extracts ONLY the
+            # signature (e.g. 26 chars "-- Esa Ruoho +358…" for a newsletter whose real body is in `text`).
+            # So DON'T blindly prefer it: use the full plain-text part when it's substantial, else take the
+            # RICHEST of {extracted_text, text, html→text, preview}. (This was the "Harmony with nature" drop.)
+            _et=full.get("extracted_text") or ""; _tx=full.get("text") or ""
+            _ht=html_to_text(full.get("html")); _pv=full.get("preview") or ""
+            raw_body=_tx if len(_tx)>=200 else max((_et,_tx,_ht,_pv), key=len)
+            if not raw_body.strip() and full.get("html"):          # html_to_text choked on odd HTML → crude strip
+                raw_body=re.sub(r'\s+',' ', _htmlmod.unescape(
+                    re.sub(r'(?is)<(script|style|head).*?</\1>|<[^>]+>',' ', full.get("html")))).strip()
+            question=clean_forwarded_body(strip_signature(raw_body))  # drop sig + de-quote/de-noise forwards
+            answer=""                                               # defined for the forward path (reformat branch never sets it, but only fires with no atts)
+            atts=full.get("attachments") or []
+            att_text=extract_attachments(k, mid, atts, verbose) if atts else ""
+            # Same guard as the whisp belt below: an archive/mirror page mailed to OURSELVES has its
+            # content ATTACHED already — its outbound links are the site's navigation, not things to
+            # go fetch. Un-gated, one amasci index page means hundreds of web fetches plus PDF
+            # downloads and on-Mini OCR (same shape as the 2026-08-08 YouTube storm).
+            _block=whisp_blocked_reason(full.get("from"), full.get("subject"), raw_body)
+            if _block:
+                url_text=""
+                if verbose: print(f"  🔗 url-content fetch SKIPPED: {_block}")
             else:
-                _q = re.sub(r'(?i)^\s*(re|fwd|fw):\s*', '', full.get("subject") or "").strip()
-                _cur, _lines, _rules_added = _prior, [], []
-                for _mk, _bt in adjustments:
-                    _rev, _area, _vreply, _adopted, _err = apply_email_adjustment(
-                        _cur, _mk, _bt, _q, space_sys="")
-                    if _err:
-                        _lines.append(f"⚠ **{_mk[:70]}** — {_err}")
-                        continue
-                    _cur = _rev
-                    _r = adjust_bank(_mk, _bt, "cloudcity-llm", _q, _area, _vreply, _adopted)
-                    if _r: _rules_added.append(_r)
-                    _lines += [f"**You marked:** “{_mk}”",
-                               (f"**You wrote:** “{_bt}”" if _bt else "**You struck it.**"),
-                               f"**That area now reads:** {_area}", f"**I changed it because:** {_vreply}"]
-                    if _bt and not _adopted:
-                        _lines.append("⚠ I did not manage to use your exact wording there — say it again "
-                                      "and I'll take another pass.")
-                    _lines.append("")
-                note = ("## Adjusted\n\n" + "\n\n".join(_lines)
-                        + ("\n\n---\n**Standing rules now in force for every later answer:**\n"
-                           + "\n".join(f"- {r}" for r in _rules_added) if _rules_added else "")
-                        + "\n\n---\n## The answer, with your adjustment in it\n\n" + _cur)
-                reply = {"text": note, "html": md_to_html(note)}
+                try: url_text=fetch_url_pdfs(raw_body, verbose)      # download + OCR any PDF linked by URL
+                except Exception as e: url_text=""; print(f"  url-pdf scan error: {e}")
+            extra="\n\n".join(x for x in (att_text, url_text) if x)
+            # AUTO-TRIGGER: any YouTube URL in the email → drop it on the convey→whisp transcript belt
+            # (deduped). This is the "figure it out and start the work" behaviour: an email mentioning
+            # USP/Russell videos should schedule their transcription, not just get summarised.
+            # …but an archive/mirror page we mailed to OURSELVES is content to READ, not a request to
+            # transcribe everything it links to (the 2026-08-08 amasci storm). Blocked BEFORE yt-dlp
+            # enumeration, so a link-dump page costs zero downloads.
+            yt_note=""
+            if _block:
+                if verbose:
+                    _n=len(youtube_urls(raw_body))
+                    print(f"  📼 whisp auto-queue SKIPPED ({_n} youtube link(s)): {_block}")
+                yt_urls=[]
+            else:
+                yt_urls=expand_playlists(youtube_urls(raw_body))   # a playlist/channel → its individual videos
+            if yt_urls:
+                q_n,seen_n=whisp_autosubmit(yt_urls, verbose)
+                if q_n:
+                    yt_note=(f"\n\n---\n📼 **Auto-queued {q_n} of {seen_n} video(s) for transcription** onto the "
+                             f"convey→whisp belt (already-transcribed ones skipped, no re-whispering). "
+                             f"Transcripts land in the archive as they finish.")
+                elif verbose:
+                    print(f"  📼 {seen_n} youtube url(s) already transcribed — nothing new to queue")
+            # AUTO-TRIGGER: a Google Drive link → fetch it (gdrive via the pakettibot bridge; files land in
+            # gdrive-results/<label>/), recorded PENDING. When the fetch lands, fa-gdrive-analysis-mailer OCRs
+            # + analyses the files and emails the requester — grounded in the REAL content, no guessing.
+            gd_urls=gdrive_urls(raw_body); gd_note=""
+            if gd_urls:
+                _who=full.get("from") or ""; _mm=re.search(r"<([^>]+)>", _who)
+                _to=(_mm.group(1) if _mm else _who).strip() or BCC
                 try:
-                    reply = _guard_outgoing_payload(reply, mail_language.target_language(extra or question))
-                    reply["_report_language"] = mail_language.target_language(extra or question)
-                except mail_language.LanguageGuardError as exc:
-                    debug_log("language-hold", mid, full.get("subject", ""), note=str(exc))
+                    _inbox=Path.home()/"work"/"comms"/"queue"/"pakettibot-inbox"
+                    _gp=Path.home()/"work"/"comms"/"queue"/"fa-gdrive-pending.jsonl"; _n=0
+                    with _gp.open("a") as _pf:
+                        for _u in gd_urls:
+                            _gid=gdrive_id(_u)
+                            (_inbox/f"gdrive-{_gid or _n}-{int(time.time())}.txt").write_text(f"gdrive {_u}\n")
+                            _pf.write(json.dumps({"url":_u,"id":_gid,"to":_to,"subj":full.get("subject",""),
+                                                  "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
+                            _n+=1
+                    gd_note=(f"\n\n---\n📁 **Fetching {_n} Google Drive item(s)** — the Mini is downloading "
+                             f"now. I'll OCR + analyse the files and email you when they land.")
+                    if verbose: print(f"  📁 gdrive: triggered {_n} fetch(es), pending analysis-email → {_to}")
+                except Exception as _e:
+                    if verbose: print(f"  gdrive trigger error: {_e}")
+            # AUTO-TRIGGER: a ChatGPT SHARE link → hoover the WHOLE conversation to markdown + analyse it
+            # across the three brains (convey chatgpt --analyze), fold it into the answer context (so this
+            # agent's own FreeLLMAPI reply is grounded in the real conversation), and attach both files.
+            # Unlike a video, there is NOTHING to wait for — the conversation is IN the page. No guessing.
+            cg_urls=chatgpt_urls(raw_body); cg_note=""; cg_atts=[]
+            if cg_urls:
+                try:
+                    cg_ctx, cg_atts, cg_note, cg_done = convey_chatgpt(cg_urls, verbose)
+                    if cg_ctx:
+                        extra="\n\n".join(x for x in (extra, cg_ctx) if x)
+                        # a bare "here's a chatgpt link" with no real question → make it an analyse request
+                        residue=re.sub(r'https?://\S+',' ', question or '')
+                        residue=re.sub(r'[^A-Za-z0-9]+',' ',residue).strip()
+                        if len(residue)<12:
+                            question="Summarise and analyse this ChatGPT conversation: the key ideas, decisions, and anything worth double-checking."
+                    if verbose: print(f"  🤖 chatgpt: hoovered+analysed {cg_done}/{len(cg_urls)}")
+                except Exception as _e:
+                    if verbose: print(f"  chatgpt trigger error: {_e}")
+            # Decide BARE-VIDEO from the BODY, *before* the thin-body fallback below can copy the SUBJECT
+            # into `question`. The subject of a shared YouTube mail IS the video title — never a question —
+            # and once the fallback made `question` = "Vapaan energian tuominen käytäntöön | Kanavoitu ohje
+            # Nikola Teslalta" the residue test saw a long "question" and dropped the bare-video gate. The
+            # model then answered a video it cannot watch, hedging "because we do not possess the full
+            # transcript…" — exactly the guess-reply the gate exists to prevent (2026-07-28).
+            body_is_bare = _bare_link_body(raw_body, full.get("subject"))
+            # NEVER vanish silently. If body extraction/stripping left nothing, fall back to the UNstripped
+            # body (strip_signature may have over-eaten it, the Jeane bug) then the SUBJECT ("Patent
+            # Us8901943" is itself a real request). Only skip when there is GENUINELY nothing — and LOG it,
+            # so a dropped email is never silent again.
+            if len((question or "").strip()) < 10 and not extra:   # empty OR a trivial stub like "--"
+                subj=re.sub(r'(?i)^\s*(re|fwd|fw):\s*','', full.get("subject") or "").strip()
+                rb=raw_body.strip()
+                fb = rb if len(rb)>=10 else subj                    # a "--" raw body is not usable → use subject
+                if fb and len(fb)>=3:
+                    question=fb
+                    print(f"  ↪ thin body — using {'raw body' if len(rb)>=10 else 'subject'}: {fb[:70]!r}")
+            if len((question or "").strip()) < 3 and not extra and not yt_urls:
+                print(f"  ⊘ SKIP — genuinely empty (no body/subject/attachments): mid={mid} subj={(full.get('subject') or '')!r}")
+                seen.add(mid); continue
+            ctx=thread_context(k, msgs, m.get("thread_id"), mid)
+            # ── OWNER APPROVAL + GATED-SPACE ACCESS ──────────────────────────────────────────────
+            frm_full = full.get("from") or ""
+            # (a) OWNER approves/denies a held sender → update the allowlist + release/drop the held msg(s)
+            if _is_owner(frm_full):
+                _act,_tgt = _parse_owner_approval(raw_body)
+                if _act and _tgt:
+                    if _act=="approve":
+                        _add_allowlist(_tgt)
+                        _rel=[r.get("mid") for r in _pending_all() if r.get("sender_email")==_tgt and r.get("mid")]
+                        for _rm in _rel: seen.discard(_rm)          # un-see → next poll answers now they're allowed
+                        _pending_remove(lambda r: r.get("sender_email")==_tgt)
+                        print(f"  ✅ approved {_tgt} → whitelisted; released {len(_rel)} held message(s)")
+                    else:
+                        _pending_remove(lambda r: r.get("sender_email")==_tgt)
+                        print(f"  ⛔ denied {_tgt} → dropped held message(s)")
+                    seen.add(mid); new+=1; continue
+            # (b) GATED space + sender NOT allowed → HOLD, ask Esa, do not answer (no ack — don't confirm
+            #     liveness to spammers). Owner + whitelisted senders skip this and are answered normally.
+            if not _is_allowed(frm_full):
+                _gspace,_ = route_space(frm_full, full.get("subject"), raw_body, wslugs=None)
+                if _space_access(_gspace)!="open":
+                    _sem=_sender_email(frm_full); _pid=_uid()
+                    _pending_add({"id":_pid,"mid":mid,"sender_email":_sem,"sender":frm_full,"space":_gspace,
+                                  "subject":full.get("subject",""),"ts":time.strftime("%Y-%m-%dT%H:%M:%S")})
+                    _email_owner_approval(k, frm_full, _sem, _gspace, full.get("subject","(no subject)"),
+                                          (question or raw_body or ""), _pid)
+                    print(f"  🚦 gated [{_gspace}] from {_sem} → held for approval (asked Esa)")
+                    # Held ≠ replied. Un-claim the up-front claim, else a later `approve` un-sees the message
+                    # but ANTI-LOOP 1 still blocks it on the replied-ledger and the approved sender is never
+                    # answered. The approval-release discards `seen`; this discards the claim to match.
+                    replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
+                    seen.add(mid); new+=1; continue
+            # BARE VIDEO: an email that is essentially just a YouTube link is a "convey this video"
+            # request, NOT a question. The model CANNOT watch the video — answering it hallucinates the
+            # content from wiki context (the 2026-07-01 BrunoVK/Don-Smith/eclipse confabulation). So:
+            # convey it (queued above), reply with a CONFIRMATION only, and let the analysis follow LATER
+            # from the REAL transcript once it lands. No guessing at what a video says before transcription.
+            video_only = bool(yt_urls) and not extra and body_is_bare
+            gdrive_only=False
+            if gd_urls and not extra and not yt_urls:
+                gres=re.sub(r'https?://\S+',' ', question or '')
+                gres=re.sub(r'(?i)\b(fwd|fw|re|see|this|that|these|those|folder|file|files|drive|gdrive|google|docs?|link|url|please|pls|download|fetch|convey|ocr|analyse|analyze|thoughts?|check|out|the|a|an|and|for|to|hey|hi|hello|thanks?|cheers)\b',' ',gres)
+                gres=re.sub(r'[^A-Za-z0-9]+',' ',gres).strip()
+                if len(gres)<12: gdrive_only=True
+            # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
+            # answer (the immutable record), never regenerate. This is the Karpathy fix.
+            # ADJUSTMENT BY EMAIL: a reply that states `s/marked/better/` (or an ADJUST:/BETTER: block)
+            # is not a new question — it is an edit to a SPECIFIC AREA of what we already said. Send that
+            # area back to the voice, reply with the rewritten passage + what the voice says about it, and
+            # bank the substitution as a standing rule so no later answer needs the same correction.
+            adjustments = parse_adjustments(raw_body)
+            if adjustments:
+                _prior = prior_bot_answer(k, msgs, m.get("thread_id"))
+                if not _prior:
+                    print(f"  ✎ adjustment(s) but no prior answer in this thread — answering normally")
+                else:
+                    _q = re.sub(r'(?i)^\s*(re|fwd|fw):\s*', '', full.get("subject") or "").strip()
+                    _cur, _lines, _rules_added = _prior, [], []
+                    for _mk, _bt in adjustments:
+                        _rev, _area, _vreply, _adopted, _err = apply_email_adjustment(
+                            _cur, _mk, _bt, _q, space_sys="")
+                        if _err:
+                            _lines.append(f"⚠ **{_mk[:70]}** — {_err}")
+                            continue
+                        _cur = _rev
+                        _r = adjust_bank(_mk, _bt, "cloudcity-llm", _q, _area, _vreply, _adopted)
+                        if _r: _rules_added.append(_r)
+                        _lines += [f"**You marked:** “{_mk}”",
+                                   (f"**You wrote:** “{_bt}”" if _bt else "**You struck it.**"),
+                                   f"**That area now reads:** {_area}", f"**I changed it because:** {_vreply}"]
+                        if _bt and not _adopted:
+                            _lines.append("⚠ I did not manage to use your exact wording there — say it again "
+                                          "and I'll take another pass.")
+                        _lines.append("")
+                    note = ("## Adjusted\n\n" + "\n\n".join(_lines)
+                            + ("\n\n---\n**Standing rules now in force for every later answer:**\n"
+                               + "\n".join(f"- {r}" for r in _rules_added) if _rules_added else "")
+                            + "\n\n---\n## The answer, with your adjustment in it\n\n" + _cur)
+                    reply = {"text": note, "html": md_to_html(note)}
+                    try:
+                        reply = _guard_outgoing_payload(reply, mail_language.target_language(extra or question))
+                        reply["_report_language"] = mail_language.target_language(extra or question)
+                    except mail_language.LanguageGuardError as exc:
+                        debug_log("language-hold", mid, full.get("subject", ""), note=str(exc))
+                        replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
+                        continue
+                    seen.add(mid)
+                    st["seen"] = list(seen)[-SEEN_CAP:]; st["last_poll"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+                    save_state(st)
+                    replied_add(mid, m.get("thread_id"), full.get("subject", ""))
+                    replied_mids.add(mid)
+                    replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
+                    if BCC and BCC.lower() not in (full.get("from") or "").lower():
+                        reply["bcc"] = [BCC]
+                    _claim=None
+                    try:
+                        send_inbox_reply(k, mid, reply)
+                        print(f"  ✎ adjusted {len(adjustments)} area(s); {len(_rules_added)} rule(s) banked")
+                    except Exception as e:
+                        debug_log("adjust-send-error", mid, full.get("subject", ""), note=str(e))
+                    new += 1
+                    continue
+            # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
+            # answer (the immutable record), never regenerate. This is the Karpathy fix.
+            reformat = is_pure_reformat(question) and not extra
+            prior = prior_bot_answer(k, msgs, m.get("thread_id")) if reformat else None
+            if video_only:
+                # Bare YouTube mail gets a deterministic metadata receipt, never an LLM/RAG answer.
+                # The transcript-grounded analysis is still handled later by fa-video-analysis-mailer.
+                try:
+                    _who=full.get("from") or ""
+                    _mm=re.search(r"<([^>]+)>", _who); _to=(_mm.group(1) if _mm else _who).strip() or BCC
+                    _pend=Path.home()/"work"/"comms"/"queue"/"fa-video-pending.jsonl"
+                    _pend.parent.mkdir(parents=True, exist_ok=True)
+                    with _pend.open("a") as _pf:
+                        for _u in yt_urls:
+                            _pf.write(json.dumps({"url":_u,"to":_to,"subj":full.get("subject",""),
+                                                  "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
+                    if verbose: print(f"  📝 pending video-analysis email → {_to} for {len(yt_urls)} video(s); metadata receipt now")
+                except Exception as _e:
+                    if verbose: print(f"  pending-write error: {_e}")
+                content = youtube_content(yt_urls, full.get("subject",""), queued=q_n)
+                reply={}
+                used="youtube metadata receipt (no LLM)"
+                yt_note=""
+            elif gdrive_only:
+                note=(f"📁 On it — **fetching your Google Drive** ({len(gd_urls)} link{'s' if len(gd_urls)>1 else ''}). "
+                      f"The Mini is downloading now; I won't guess at the contents. Once the files land I'll OCR "
+                      f"and analyse them and email you the writeup.")
+                content=MailContent(note, notices=["[Google Drive source]("+url+")" for url in gd_urls])
+                reply={}
+                used="gdrive (fetching — analysis from the real files)"
+                gd_note=""
+            elif prior:
+                if verbose: print("  → rendering the PRIOR thread answer to PDF (no regeneration)")
+                content=pdf_content(prior)
+                reply={}
+                used="reused prior answer"
+
+            else:
+                # WIKI AUGMENTS, never gates: pull relevant wiki pages as CONTEXT (no LLM, no refusal),
+                # apply the free-energy VIEWPOINT only for in-corpus topics, then ALWAYS research fully.
+                # Route + retrieve on the FETCHED content too (a bare URL alone tells us nothing; the page
+                # text is what says "Apple xcrun agent skills" vs "eclipse gravity"). Without this a link
+                # was routed on its URL string alone → mis-routed to free-energy → confabulated.
+                route_text = "\n".join(x for x in (question, extra) if x)
+                wctx, wslugs = ("", [])
+                if route_text.strip():
+                    try: wctx, wslugs = wiki_context(route_text)
+                    except Exception as e: print(f"  wiki context error: {e}")
+                # ROUTE to a role-space; the free-energy VIEWPOINT (Russell/Bearden/Prigogine/Hilarion six-heading
+                # template) + free-energy RAG fire ONLY when the routed space IS free-energy. Every other
+                # space (dad/health/spirituality/finances/music/admin/general) gets a plain answer with the
+                # free-energy persona SUPPRESSED — so a parenting question never comes back as a Tesla coil.
+                space, why = route_space(full.get("from"), full.get("subject"), route_text, wslugs)
+                card = SPACECARDS.get(space, {})
+                in_fe = (space == "free-energy")
+                vp = VIEWPOINT if in_fe else ""
+                lens = ""; sslugs = []
+                if in_fe:
+                    pass                                    # free-energy: keep the wiki context (wctx) as-is
+                elif card.get("retrieval") == "skill" and card.get("skill_dir"):
+                    # SKILL-BACKED space (apple/health/hyp): retrieve from ~/work/<skill> + use its lens.
+                    # PRIVACY GATE: a `private` space (health/hyp) draws on Esa's PRIVATE corpus, so it only
+                    # serves the OWNER. A non-owner gets a plain answer with the private corpus SUPPRESSED —
+                    # no private diary/health data is ever emailed to a stranger from the public inbox.
+                    if card.get("private") and not _is_owner(full.get("from")):
+                        wctx=""; lens=""; sslugs=[]
+                        if verbose: print(f"  🔒 private space [{space}] + non-owner sender → corpus suppressed (plain answer)")
+                    else:
+                        try: wctx, sslugs, lens = skill_context(question, card["skill_dir"])
+                        except Exception as e:
+                            wctx=""; print(f"  skill context error [{space}]: {e}")
+                else:
+                    wctx = ""                               # plain space: no free-energy RAG leakage
+                if verbose: print(f"  → researching [{space}·{why}]: {full.get('subject','(no subject)')[:50]} from {full.get('from','?')}"
+                                  + (f" [+{len(atts)} att]" if atts else "") + (" [+url-pdf]" if url_text else "")
+                                  + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else "")
+                                  + (f" [+skill:{len(sslugs)}]" if sslugs else "") + (" [+lens]" if lens else ""))
+                try:
+                    # FORWARDED-DOCUMENT-BLUEFIELD v1: forwarded body is a document too.
+                    forwarded_document = full.get("subject", "").lower().startswith(("fwd:", "fw:"))
+                    if extra or forwarded_document:
+                        answer, used = research_email_material(question, ctx, extra or question, space=space,
+                                                              wiki_ctx=wctx, lens=lens,
+                                                              model_override=card.get("model",""))
+                    else:
+                        answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp, lens=lens,
+                                                   model_override=card.get("model",""))
+                except Exception as e:
+                    # fm_research threw BEFORE any send → un-claim (we claimed up front) so the next poll
+                    # retries, and DEBUG-LOG it to the synced file (a bare print vanished — that is why the
+                    # Nov-3 "Fwd: Next Energy Revolution" drop left no trace). Never silently burn a message.
+                    print(f"  research failed for {mid}: {e}")
+                    debug_log("research-exception", mid, full.get("subject","(no subject)"),
+                              question=question, note=f"fm_research raised (not sent); un-claimed, retries next poll: {e}")
                     replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
                     continue
-                seen.add(mid)
-                st["seen"] = list(seen)[-SEEN_CAP:]; st["last_poll"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-                save_state(st)
-                replied_add(mid, m.get("thread_id"), full.get("subject", ""))
-                replied_mids.add(mid)
-                replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
-                if BCC and BCC.lower() not in (full.get("from") or "").lower():
-                    reply["bcc"] = [BCC]
-                try:
-                    send_inbox_reply(k, mid, reply)
-                    print(f"  ✎ adjusted {len(adjustments)} area(s); {len(_rules_added)} rule(s) banked")
-                except Exception as e:
-                    debug_log("adjust-send-error", mid, full.get("subject", ""), note=str(e))
-                new += 1
+                if _is_requeue(answer):
+                    # Not sendable this pass → do NOT send, do NOT mark seen (next poll retries fresh), and
+                    # DEBUG-LOG it (flagged + saved) so the failure is visible, never silently emitted.
+                    # The message was CLAIMED up front (anti-storm); un-claim it here or ANTI-LOOP 1 would
+                    # see the claim on the next poll and block the retry forever — the silent-drop bug that
+                    # burned every 429'd forward Nov 2+ (claimed-but-never-sent). Retry is the whole intent.
+                    kind = ("no-thinking-heading" if _is_requeue(answer, REQUEUE_NO_THINKING)
+                            else "model-bailed")
+                    _why = _requeue_why(answer)
+                    subj = full.get("subject","(no subject)")
+                    print(f"  ↻ re-queued {mid} [{kind}]{' — ' + _why if _why else ''} "
+                          f"— will retry next poll")
+                    debug_log(kind, mid, subj, question=question,
+                              note=f"re-queued (not sent); will retry next poll. causes: {_why or 'n/a'}")
+                    replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
+                    continue
+                prov = {
+                    "origin": "inbound-email",
+                    "trigger": f"'{full.get('subject','(no subject)')}' from {full.get('from','?')}",
+                    "message_id": mid,
+                    "thread_id": m.get("thread_id"),
+                    "space": space,
+                    "why": why,
+                    "model": used,
+                    "sources": [f"wiki:{s}" for s in wslugs] + [a.get("filename", "attachment") for a in atts],
+                    "host": socket.gethostname().split(".")[0],
+                    "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
+                }
+                content=MailContent(answer, provenance=prov, title=full.get("subject", ""),
+                                    text_prefix=format_text_provenance(prov))
+                reply={}
+                if WANT_PDF.search(question or ""):     # a NEW question that also wants a PDF
+                    b64=make_pdf_b64(answer)
+                    if b64:
+                        content.attachments=[{"filename":pdf_filename(answer, full.get("subject")),
+                                               "content_type":"application/pdf","content":b64}]
+                    else:
+                        content.notices.append("PDF generation failed; no PDF is attached. The answer remains below.")
+            # Append the transcription-belt + gdrive-fetch + chatgpt-hoover notes to whichever reply path built it.
+            for _n in (yt_note, gd_note, cg_note):
+                if _n:
+                    content.notices.append(_n)
+            # Attach the hoovered ChatGPT conversation.md + analysis.md to the reply.
+            if cg_atts:
+                content.attachments.extend(cg_atts)
+            # SELF-CONTAINED REPLY: if the sender attached files (a cool PDF), send them RIGHT BACK on the
+            # reply alongside the analysis — so 'email a PDF in → analysis + the PDF back out' just works
+            # for ANYONE, including Esa mailing himself. (Reusable: rides on the same reply.)
+            if atts and not reformat:
+                reattach=inbound_atts_b64(k, mid, atts, warnings=content.notices)
+                content.attachments.extend(reattach)
+            reply=content.payload()
+            try:
+                reply = _guard_outgoing_payload(reply, mail_language.target_language(extra or question))
+                reply["_report_language"] = mail_language.target_language(extra or question)
+            except mail_language.LanguageGuardError as exc:
+                debug_log("language-hold", mid, full.get("subject", ""), note=str(exc))
+                replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
                 continue
-        # "make a printable/PDF of this" with no NEW question → compile the EXISTING thread
-        # answer (the immutable record), never regenerate. This is the Karpathy fix.
-        reformat = is_pure_reformat(question) and not extra
-        prior = prior_bot_answer(k, msgs, m.get("thread_id")) if reformat else None
-        if video_only:
-            # Bare YouTube mail gets a deterministic metadata receipt, never an LLM/RAG answer.
-            # The transcript-grounded analysis is still handled later by fa-video-analysis-mailer.
+            # Esa visibility. Two paths:
+            #  • inbound attachments from a non-Esa sender → also FORWARD the exchange + files to Esa, so
+            #    he gets a copy of a friend's 'hot stuff' (the BCC alone wouldn't carry it); skip the BCC.
+            #  • otherwise → BCC Esa on the reply so he sees answers sent to other senders.
+            from_esa = BCC and BCC.lower() in (full.get("from") or "").lower()
+            forwarded=False
+            if atts and not from_esa:                              # inbound attachments → full-forward the exchange to Esa
+                forwarded=forward_to_esa(k, full, mid, question, answer, atts)
+            if BCC and not from_esa and not forwarded:
+                reply["bcc"]=[BCC]
+            # Mark handled BEFORE the reply POST. AgentMail can accept/send the reply and still make
+            # the client see an HTTP/JSON/timeout error; retrying that same inbound message causes
+            # duplicate replies. Prefer at-most-once email replies over mail storms.
+            seen.add(mid)
+            st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
+            # Durable at-most-once record, written BEFORE the POST for the same reason `seen` is: a send
+            # that errors on the client side may still have gone out. The ledger outlives the state file.
+            replied_add(mid, m.get("thread_id"), full.get("subject",""))
+            replied_mids.add(mid); replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
+            _claim=None                                  # POST begins: at-most-once, never retract past here
             try:
-                _who=full.get("from") or ""
-                _mm=re.search(r"<([^>]+)>", _who); _to=(_mm.group(1) if _mm else _who).strip() or BCC
-                _pend=Path.home()/"work"/"comms"/"queue"/"fa-video-pending.jsonl"
-                _pend.parent.mkdir(parents=True, exist_ok=True)
-                with _pend.open("a") as _pf:
-                    for _u in yt_urls:
-                        _pf.write(json.dumps({"url":_u,"to":_to,"subj":full.get("subject",""),
-                                              "ts":time.strftime("%Y-%m-%dT%H:%M:%S")})+"\n")
-                if verbose: print(f"  📝 pending video-analysis email → {_to} for {len(yt_urls)} video(s); metadata receipt now")
-            except Exception as _e:
-                if verbose: print(f"  pending-write error: {_e}")
-            content = youtube_content(yt_urls, full.get("subject",""), queued=q_n)
-            reply={}
-            used="youtube metadata receipt (no LLM)"
-            yt_note=""
-        elif gdrive_only:
-            note=(f"📁 On it — **fetching your Google Drive** ({len(gd_urls)} link{'s' if len(gd_urls)>1 else ''}). "
-                  f"The Mini is downloading now; I won't guess at the contents. Once the files land I'll OCR "
-                  f"and analyse them and email you the writeup.")
-            content=MailContent(note, notices=["[Google Drive source]("+url+")" for url in gd_urls])
-            reply={}
-            used="gdrive (fetching — analysis from the real files)"
-            gd_note=""
-        elif prior:
-            if verbose: print("  → rendering the PRIOR thread answer to PDF (no regeneration)")
-            content=pdf_content(prior)
-            reply={}
-            used="reused prior answer"
-
-        else:
-            # WIKI AUGMENTS, never gates: pull relevant wiki pages as CONTEXT (no LLM, no refusal),
-            # apply the free-energy VIEWPOINT only for in-corpus topics, then ALWAYS research fully.
-            # Route + retrieve on the FETCHED content too (a bare URL alone tells us nothing; the page
-            # text is what says "Apple xcrun agent skills" vs "eclipse gravity"). Without this a link
-            # was routed on its URL string alone → mis-routed to free-energy → confabulated.
-            route_text = "\n".join(x for x in (question, extra) if x)
-            wctx, wslugs = ("", [])
-            if route_text.strip():
-                try: wctx, wslugs = wiki_context(route_text)
-                except Exception as e: print(f"  wiki context error: {e}")
-            # ROUTE to a role-space; the free-energy VIEWPOINT (Russell/Bearden/Prigogine/Hilarion six-heading
-            # template) + free-energy RAG fire ONLY when the routed space IS free-energy. Every other
-            # space (dad/health/spirituality/finances/music/admin/general) gets a plain answer with the
-            # free-energy persona SUPPRESSED — so a parenting question never comes back as a Tesla coil.
-            space, why = route_space(full.get("from"), full.get("subject"), route_text, wslugs)
-            card = SPACECARDS.get(space, {})
-            in_fe = (space == "free-energy")
-            vp = VIEWPOINT if in_fe else ""
-            lens = ""; sslugs = []
-            if in_fe:
-                pass                                    # free-energy: keep the wiki context (wctx) as-is
-            elif card.get("retrieval") == "skill" and card.get("skill_dir"):
-                # SKILL-BACKED space (apple/health/hyp): retrieve from ~/work/<skill> + use its lens.
-                # PRIVACY GATE: a `private` space (health/hyp) draws on Esa's PRIVATE corpus, so it only
-                # serves the OWNER. A non-owner gets a plain answer with the private corpus SUPPRESSED —
-                # no private diary/health data is ever emailed to a stranger from the public inbox.
-                if card.get("private") and not _is_owner(full.get("from")):
-                    wctx=""; lens=""; sslugs=[]
-                    if verbose: print(f"  🔒 private space [{space}] + non-owner sender → corpus suppressed (plain answer)")
-                else:
-                    try: wctx, sslugs, lens = skill_context(question, card["skill_dir"])
-                    except Exception as e:
-                        wctx=""; print(f"  skill context error [{space}]: {e}")
-            else:
-                wctx = ""                               # plain space: no free-energy RAG leakage
-            if verbose: print(f"  → researching [{space}·{why}]: {full.get('subject','(no subject)')[:50]} from {full.get('from','?')}"
-                              + (f" [+{len(atts)} att]" if atts else "") + (" [+url-pdf]" if url_text else "")
-                              + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else "")
-                              + (f" [+skill:{len(sslugs)}]" if sslugs else "") + (" [+lens]" if lens else ""))
-            try:
-                # FORWARDED-DOCUMENT-BLUEFIELD v1: forwarded body is a document too.
-                forwarded_document = full.get("subject", "").lower().startswith(("fwd:", "fw:"))
-                if extra or forwarded_document:
-                    answer, used = research_email_material(question, ctx, extra or question, space=space,
-                                                          wiki_ctx=wctx, lens=lens,
-                                                          model_override=card.get("model",""))
-                else:
-                    answer, used = fm_research(question, ctx, extra, wiki_ctx=wctx, viewpoint=vp, lens=lens,
-                                               model_override=card.get("model",""))
+                send_inbox_reply(k, mid, reply)
             except Exception as e:
-                # fm_research threw BEFORE any send → un-claim (we claimed up front) so the next poll
-                # retries, and DEBUG-LOG it to the synced file (a bare print vanished — that is why the
-                # Nov-3 "Fwd: Next Energy Revolution" drop left no trace). Never silently burn a message.
-                print(f"  research failed for {mid}: {e}")
-                debug_log("research-exception", mid, full.get("subject","(no subject)"),
-                          question=question, note=f"fm_research raised (not sent); un-claimed, retries next poll: {e}")
-                replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
+                debug_log("reply-send-error", mid, full.get("subject","(no subject)"),
+                          question=question, answer=reply.get("text",""), note=str(e))
+                if verbose: print(f"  ⚠ reply POST errored after marking seen: {e}")
                 continue
-            if _is_requeue(answer):
-                # Not sendable this pass → do NOT send, do NOT mark seen (next poll retries fresh), and
-                # DEBUG-LOG it (flagged + saved) so the failure is visible, never silently emitted.
-                # The message was CLAIMED up front (anti-storm); un-claim it here or ANTI-LOOP 1 would
-                # see the claim on the next poll and block the retry forever — the silent-drop bug that
-                # burned every 429'd forward Nov 2+ (claimed-but-never-sent). Retry is the whole intent.
-                kind = ("no-thinking-heading" if _is_requeue(answer, REQUEUE_NO_THINKING)
-                        else "model-bailed")
-                _why = _requeue_why(answer)
-                subj = full.get("subject","(no subject)")
-                print(f"  ↻ re-queued {mid} [{kind}]{' — ' + _why if _why else ''} "
-                      f"— will retry next poll")
-                debug_log(kind, mid, subj, question=question,
-                          note=f"re-queued (not sent); will retry next poll. causes: {_why or 'n/a'}")
-                replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
-                continue
-            prov = {
-                "origin": "inbound-email",
-                "trigger": f"'{full.get('subject','(no subject)')}' from {full.get('from','?')}",
-                "message_id": mid,
-                "thread_id": m.get("thread_id"),
-                "space": space,
-                "why": why,
-                "model": used,
-                "sources": [f"wiki:{s}" for s in wslugs] + [a.get("filename", "attachment") for a in atts],
-                "host": socket.gethostname().split(".")[0],
-                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S UTC", time.gmtime())
-            }
-            content=MailContent(answer, provenance=prov, title=full.get("subject", ""),
-                                text_prefix=format_text_provenance(prov))
-            reply={}
-            if WANT_PDF.search(question or ""):     # a NEW question that also wants a PDF
-                b64=make_pdf_b64(answer)
-                if b64:
-                    content.attachments=[{"filename":pdf_filename(answer, full.get("subject")),
-                                           "content_type":"application/pdf","content":b64}]
-                else:
-                    content.notices.append("PDF generation failed; no PDF is attached. The answer remains below.")
-        # Append the transcription-belt + gdrive-fetch + chatgpt-hoover notes to whichever reply path built it.
-        for _n in (yt_note, gd_note, cg_note):
-            if _n:
-                content.notices.append(_n)
-        # Attach the hoovered ChatGPT conversation.md + analysis.md to the reply.
-        if cg_atts:
-            content.attachments.extend(cg_atts)
-        # SELF-CONTAINED REPLY: if the sender attached files (a cool PDF), send them RIGHT BACK on the
-        # reply alongside the analysis — so 'email a PDF in → analysis + the PDF back out' just works
-        # for ANYONE, including Esa mailing himself. (Reusable: rides on the same reply.)
-        if atts and not reformat:
-            reattach=inbound_atts_b64(k, mid, atts, warnings=content.notices)
-            content.attachments.extend(reattach)
-        reply=content.payload()
-        try:
-            reply = _guard_outgoing_payload(reply, mail_language.target_language(extra or question))
-            reply["_report_language"] = mail_language.target_language(extra or question)
-        except mail_language.LanguageGuardError as exc:
-            debug_log("language-hold", mid, full.get("subject", ""), note=str(exc))
-            replied_retract(mid, replied_mids, replied_threads, m.get("thread_id"))
+            new+=1
+            if verbose: print(f"  ✓ replied (model {used}, $0)" + (" [+pdf]" if "attachments" in reply else "")
+                              + (" [fwd+att→esa]" if forwarded else (" [bcc]" if "bcc" in reply else "")))
+        except Exception as _e:
+            import traceback as _tb
+            _mid=m.get("message_id")
+            print(f"  ⚠ message failed before send ({_mid}): {_e}")
+            if _claim:
+                replied_retract(_claim, replied_mids, replied_threads, m.get("thread_id"))
+                seen.discard(_claim)
+            debug_log("unhandled-exception", _mid, m.get("subject","") or "",
+                      note=("un-claimed, retries next poll" if _claim else "not claimed")+": "+_tb.format_exc()[-3000:])
             continue
-        # Esa visibility. Two paths:
-        #  • inbound attachments from a non-Esa sender → also FORWARD the exchange + files to Esa, so
-        #    he gets a copy of a friend's 'hot stuff' (the BCC alone wouldn't carry it); skip the BCC.
-        #  • otherwise → BCC Esa on the reply so he sees answers sent to other senders.
-        from_esa = BCC and BCC.lower() in (full.get("from") or "").lower()
-        forwarded=False
-        if atts and not from_esa:                              # inbound attachments → full-forward the exchange to Esa
-            forwarded=forward_to_esa(k, full, mid, question, answer, atts)
-        if BCC and not from_esa and not forwarded:
-            reply["bcc"]=[BCC]
-        # Mark handled BEFORE the reply POST. AgentMail can accept/send the reply and still make
-        # the client see an HTTP/JSON/timeout error; retrying that same inbound message causes
-        # duplicate replies. Prefer at-most-once email replies over mail storms.
-        seen.add(mid)
-        st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
-        # Durable at-most-once record, written BEFORE the POST for the same reason `seen` is: a send
-        # that errors on the client side may still have gone out. The ledger outlives the state file.
-        replied_add(mid, m.get("thread_id"), full.get("subject",""))
-        replied_mids.add(mid); replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
-        try:
-            send_inbox_reply(k, mid, reply)
-        except Exception as e:
-            debug_log("reply-send-error", mid, full.get("subject","(no subject)"),
-                      question=question, answer=reply.get("text",""), note=str(e))
-            if verbose: print(f"  ⚠ reply POST errored after marking seen: {e}")
-            continue
-        new+=1
-        if verbose: print(f"  ✓ replied (model {used}, $0)" + (" [+pdf]" if "attachments" in reply else "")
-                          + (" [fwd+att→esa]" if forwarded else (" [bcc]" if "bcc" in reply else "")))
     st["seen"]=list(seen)[-SEEN_CAP:]; st["last_poll"]=time.strftime("%Y-%m-%dT%H:%M:%S"); save_state(st)
     return new
 
