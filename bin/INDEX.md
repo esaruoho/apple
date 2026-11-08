@@ -1,9 +1,10 @@
-# CLI Tools Index — 351 tools in bin/
+# CLI Tools Index — 360 tools in bin/
 
 **Grep this file to find the right tool. Each is callable from PATH if bin/ is on it.**
 
 Format: `tool-name` — description — `path`
 Regenerate: `python3 bin/gen-skill-indexes.py`
+`aimeat-roundtable` — REPORT-CARD >> features/aimeat-roundtable.feature — `bin/aimeat-roundtable`
 `app-audio-record` — (no description) — `bin/app-audio-record`
 `app-plist-probe.py` — (no description) — `bin/app-plist-probe.py`
 `app-probe.py` — (no description) — `bin/app-probe.py`
@@ -16,6 +17,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `apple-folder-to-mbox` — (no description) — `bin/apple-folder-to-mbox`
 `apple-grand-export` — run every bulk exporter in one pass. — `bin/apple-grand-export`
 `apple-grand-search` — unified search across every exporter vault. — `bin/apple-grand-search`
+`apple-harness` — (no description) — `bin/apple-harness`
 `apple-image-similar` — find visually similar / duplicate images on-device, no deps. — `bin/apple-image-similar`
 `apple-intent` — natural language → an Apple-skill action, via on-device ML — `bin/apple-intent`
 `apple-keywords` — the "useful words, no junk" extractor. Apple-native, no deps. — `bin/apple-keywords`
@@ -68,6 +70,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `card` — report-card helper. Resolve a card by name, converse with it on the — `bin/card`
 `cc-here` — (no description) — `bin/cc-here`
 `cc-index` — (no description) — `bin/cc-index`
+`cloud-assets` — REPORT-CARD >> features/cloud-source-markdown.feature — `bin/cloud-assets`
 `cloudcity-mlx-safety-test` — (no description) — `bin/cloudcity-mlx-safety-test`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `compass` — read the iPhone's Compass heading onto the Mac command line, and — `bin/compass`
@@ -132,6 +135,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `fm-mlx` — ask the CloudcityMacMini's MLX server over Tailscale. — `bin/fm-mlx`
 `fm-submit` — (no description) — `bin/fm-submit`
 `fm-worker` — (no description) — `bin/fm-worker`
+`fmremote` — the remote Apple FoundationModels reasoning binding. — `bin/fmremote`
 `folder-memory` — (no description) — `bin/folder-memory`
 `folder-wordcloud` — bounded word-cloud for a folder, backing the "Word Cloud" — `bin/folder-wordcloud`
 `forum-verify-me` — NOTE: /usr/bin/env, NOT /opt/homebrew/bin/bash — this script runs on the LAPTOP, which — `bin/forum-verify-me`
@@ -140,6 +144,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `gen-features-index.py` — (no description) — `bin/gen-features-index.py`
 `gen-skill-indexes.py` — (no description) — `bin/gen-skill-indexes.py`
 `ghc` — GitHub Clone + Claude — `bin/ghc`
+`gimme` — thin shim to the canonical `convey gimme` verb (single source of truth — `bin/gimme`
 `git-feature-wall` — ZERO-TOKEN Apple-keynote "feature wall" from ANY git repo. — `bin/git-feature-wall`
 `guidance` — (no description) — `bin/guidance`
 `health-export` — (no description) — `bin/health-export`
@@ -160,6 +165,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `image-create` — generate an image with Apple's on-device Image Playground. — `bin/image-create`
 `imessage` — (no description) — `bin/imessage`
 `imessage-send-file` — (no description) — `bin/imessage-send-file`
+`img-to-clipboard` — Apple-native image-to-clipboard pipeline — `bin/img-to-clipboard`
 `install-exporters.sh` — symlink every apple/<name>-exporter/scripts/<name> — `bin/install-exporters.sh`
 `install-git-hooks` — symlink every hook from hooks/ into .git/hooks/ — `bin/install-git-hooks`
 `install-mail-flag-mailboxes` — (no description) — `bin/install-mail-flag-mailboxes`
@@ -181,7 +187,8 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `machine-card` — (no description) — `bin/machine-card`
 `mail-flag-probe-envelope` — (no description) — `bin/mail-flag-probe-envelope`
 `mail-flag-worker` — (no description) — `bin/mail-flag-worker`
-`mail-free-energy-analysis` — (no description) — `bin/mail-free-energy-analysis`
+`mail-free-energy-analysis` — REPORT-CARD >> features/aimeat-email-pdf.feature — `bin/mail-free-energy-analysis`
+`mail-pdf-text` — REPORT-CARD >> features/aimeat-email-pdf.feature — `bin/mail-pdf-text`
 `mailfe` — Mail a free-energy analysis of pasted text or a local file. — `bin/mailfe`
 `mailgraph` — (no description) — `bin/mailgraph`
 `maps-directions` — open Apple Maps with a route to your OTHER anchor. — `bin/maps-directions`
@@ -292,6 +299,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `sgrep` — (no description) — `bin/sgrep`
 `shortcut-gen.py` — (no description) — `bin/shortcut-gen.py`
 `show` — (no description) — `bin/show`
+`sim-purge` — safe discovery, dry-run, and unmount/purging of iOS Simulator runtimes, — `bin/sim-purge`
 `slideshow.py` — (no description) — `bin/slideshow.py`
 `smart` — (no description) — `bin/smart`
 `snap` — tile windows into a non-uniform auto-sized grid. — `bin/snap`
@@ -299,6 +307,7 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `speech-toggle` — pause ⇄ resume the speech currently being read aloud by — `bin/speech-toggle`
 `speech-transcribe` — on-device speech-to-text via Apple's Speech framework. — `bin/speech-transcribe`
 `spotlight-export.sh` — Compile workflow scripts to Spotlight-reachable .app bundles — `bin/spotlight-export.sh`
+`ssearch` — (no description) — `bin/ssearch`
 `stereo` — switch macOS accessibility audio to play stereo audio as stereo (disable mono) — `bin/stereo`
 `stickies-claude-install.sh` — stickies-claude-install — install/uninstall the stickies → claude watcher — `bin/stickies-claude-install.sh`
 `stickies-claude-watcher` — scan Stickies for #claude-tagged notes and — `bin/stickies-claude-watcher`

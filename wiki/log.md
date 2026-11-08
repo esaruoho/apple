@@ -78,3 +78,12 @@ Added `concepts/pdf-analysis-ocr-fallback.md`: traced ScaffFinder’s empty extr
 - 2026-10-11: Verified original Milewski PDF → cloudcity-llm attachment receipt (matching SHA256) → remote Vision extraction → gemini-3.1-flash-lite → actual Gmail reply. Found and tested explicit HTTP 413 attachment-free reply fallback. Proof: `analysis/proofs/milewski-email-proof.md`. Repair pushed; live worker deployment remains blocked by preserved Mini working-tree changes.
 
 - 2026-10-11: Corrected the Milewski email proof after Esa identified missing voices. Recovery had bypassed viewpoint/material mode. Added a shared document editor contract for inbound, compose and recovery; verified fourteen sections in the actual corrected sent email and matching Gmail receipt. See `analysis/proofs/milewski-corrected-analysis.md`.
+
+## [2026-11-08] build | Simulator runtime & cache purging — xcrun simctl + bin/sim-purge
+
+Documented the safe, canonical Apple tooling for discovering, dry-running, unmounting, and purging multi-gigabyte iOS Simulator runtime cryptex disk images (DMGs) and companion host dyld shared caches. Solved the 11.6 GB space reclamation issue where raw `rm` fails due to active kernel mounts on `/Library/Developer/CoreSimulator/Volumes/<Build>`, `_nsurlsessiond` / root ownership, and `simdiskimaged` tracking.
+
+- Added `wiki/concepts/simulator-runtime-purging.md` (architecture, 3-step purge runbook, manual cache maintenance).
+- Added `bin/sim-purge` CLI wrapper (list, dry-run, delete, prune, cache-remove) + `/sim-purge` slash pointer (`commands/sim-purge.md`).
+- Added routing note to `skill.md`. Cleaned 11.6 GB on live host (iOS 26.3 runtime 23D8133 + dyld cache + 11 unavailable device stubs).
+

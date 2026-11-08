@@ -19,7 +19,7 @@ Keys: ~/.agentmail.key, ~/.fm-free.key. Never in git.
 import json, os, random, re, subprocess, sys, time, html as _html, urllib.parse, urllib.request
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared"))
-from format_email import wrap_email_html, md_to_html as canonical_md_to_html
+from format_email import MailContent
 
 HOME = Path.home()
 SRCDIR = HOME/"work"/"merlib-dump"/"keelynet"/"ENERGY"
@@ -347,6 +347,14 @@ def remove_claim_spam(md):
         s = re.sub(r"(?i)^(\s*)\*{0,2}claimed\*{0,2}\s*:\*{0,2}\s*", r"\1", s)
         lines.append(s)
     return "\n".join(lines)
+
+# REPORT-CARD >> ~/work/convey/features/mail-consolidation.feature
+def report_content(name, title, main_an, lesser):
+    markdown = ("# "+title+"\n\nSource: "+name+".md · Claimed / unverified\n\n"+main_an+
+                "\n\n### qwen lesser take\n\n"+lesser)
+    return MailContent(markdown, title=title, notices=[
+        "Generated on the Mac Mini (freellmapi :3001 + MLX :8080), zero-cloud-cost brains where local. "
+        "Grounded in the source file; not independently verified."])
 
 def send_email(subject, text, html_body):
     from agentmail_send import agentmail_send
@@ -960,16 +968,9 @@ def main():
         display_title = meta.get("title") or name
         if meta.get("author") and meta["author"].lower() not in display_title.lower():
             display_title = "%s — %s" % (display_title, meta["author"])
-        text_body = ("%s\n\n%s\n\n=== QWEN LESSER TAKE ===\n%s\n" %
-                     (subject, main_an, lesser))
-        inner = (
-            "<p style='color:#8b949e;font-size:12px;margin-bottom:12px;'><code style='background:#21262d;color:#f0f6fc;padding:2px 5px;border-radius:4px;'>%s.md</code> · <b style='color:#ffffff;'>Claimed / unverified</b></p>"
-            "<h1 style='color:#f0f6fc;border-bottom:2px solid #30363d;padding-bottom:8px;margin-top:12px;font-size:22px;'>%s</h1>%s<hr style='border:0;border-top:1px solid #30363d;margin:20px 0;'>"
-            "<h3 style='color:#8b949e'>qwen lesser take</h3>%s"
-            "<p style='color:#8b949e;font-size:11px;margin-top:24px;'>Generated on the Mac Mini (freellmapi :3001 + MLX :8080), "
-            "zero-cloud-cost brains where local. Grounded in the source file; not independently verified.</p>"
-            % (name, _html.escape(display_title), canonical_md_to_html(main_an), canonical_md_to_html(lesser)))
-        html_body = wrap_email_html(inner, title=display_title)
+        report = report_content(name, display_title, main_an, lesser)
+        payload = report.payload()
+        text_body, html_body = payload["text"], payload["html"]
         try:
             res = send_email(subject, text_body, html_body)
         except Exception as e:

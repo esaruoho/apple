@@ -194,6 +194,7 @@ def bounded_source_step(state):
         signal.signal(signal.SIGALRM, previous)
 
 
+# REPORT-CARD >> ~/work/convey/features/mail-consolidation.feature
 def send_source_email(agent, key, message, payload):
     """One send attempt: ambiguous acceptance is retained for manual reconciliation."""
     from agentmail_send import send_message

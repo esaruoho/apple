@@ -32,7 +32,7 @@ final class Driver: NSObject, WKNavigationDelegate {
     func load(_ html: String) { web.loadHTMLString(html, baseURL: nil) }
 
     // Capture each page separately so invisible off-page text is not duplicated in extraction.
-    func paginatedPDF(_ webView: WKWebView, height: CGFloat, cuts: [CGFloat], lines: [CGFloat]) {
+    func paginatedPDF(_ webView: WKWebView, height: CGFloat, cuts: [CGFloat], lines: [CGFloat], links: [[String: Any]]) {
         guard let consumer = CGDataConsumer(url: out as CFURL) else { exit(1) }
         var box = CGRect(x: 0, y: 0, width: PAGE_W, height: 792)
         guard let context = CGContext(consumer: consumer, mediaBox: &box, nil) else { exit(1) }
@@ -57,6 +57,20 @@ final class Driver: NSObject, WKNavigationDelegate {
                 context.translateBy(x: 0, y: 792 - margin - (end - start))
                 context.drawPDFPage(page)
                 context.restoreGState()
+                // Drawing a PDF page preserves vectors/text, but not its link annotations.
+                for link in links {
+                    guard let address = link["url"] as? String, let url = URL(string: address),
+                          let x = (link["x"] as? NSNumber)?.doubleValue,
+                          let y = (link["y"] as? NSNumber)?.doubleValue,
+                          let width = (link["width"] as? NSNumber)?.doubleValue,
+                          let linkHeight = (link["height"] as? NSNumber)?.doubleValue else { continue }
+                    let top = max(CGFloat(y), start)
+                    let bottom = min(CGFloat(y + linkHeight), end)
+                    if bottom > top {
+                        context.setURL(url as CFURL, for: CGRect(x: CGFloat(x), y: 792 - margin - (bottom - start),
+                                                              width: CGFloat(width), height: bottom - top))
+                    }
+                }
                 context.endPDFPage()
                 capture(end)
             }
@@ -81,7 +95,11 @@ final class Driver: NSObject, WKNavigationDelegate {
                         range.selectNodeContents(walker.currentNode);
                         for (const rect of range.getClientRects()) lines.push(Math.ceil(rect.bottom + scrollY) + 1);
                     }
-                    return { height, cuts, lines };
+                    const links = Array.from(body.querySelectorAll('a[href]')).flatMap(a =>
+                        Array.from(a.getClientRects()).map(rect => ({url: a.href, x: rect.x, y: rect.y + scrollY,
+                            width: rect.width, height: rect.height})));
+                    const contentBottom = Math.max(64, ...cuts, ...lines);
+                    return { height: Math.min(height, contentBottom + 1), cuts, lines, links };
                 })()
                 """ : "Math.ceil(document.body.scrollHeight)"
             webView.evaluateJavaScript(measurement) { result, _ in
@@ -92,10 +110,11 @@ final class Driver: NSObject, WKNavigationDelegate {
                 let h = rawHeight.clamped(64, 20000)
                 let cuts = (measured?["cuts"] as? [NSNumber] ?? []).map { CGFloat($0.doubleValue) }
                 let lines = (measured?["lines"] as? [NSNumber] ?? []).map { CGFloat($0.doubleValue) }
+                let links = measured?["links"] as? [[String: Any]] ?? []
                 webView.frame = NSRect(x: 0, y: 0, width: PAGE_W, height: h)
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                     if paginate {
-                        self.paginatedPDF(webView, height: h, cuts: cuts, lines: lines)
+                        self.paginatedPDF(webView, height: h, cuts: cuts, lines: lines, links: links)
                         return
                     }
                     let cfg = WKPDFConfiguration()

@@ -167,6 +167,8 @@ compiles more than one file — `swiftc` is the authority, and such a target nee
 
 Source: `bin/imessage`, `bin/icloud-drop`, `bin/notify-iphone`. Wiki: [`wiki/concepts/imessage-from-terminal.md`](wiki/concepts/imessage-from-terminal.md), [`wiki/concepts/iphone-notify-pipeline.md`](wiki/concepts/iphone-notify-pipeline.md). **Hard rule:** `bin/imessage` does NOT accept files — System Events keystrokes would hijack Esa's keyboard. Use `icloud-drop --imessage` for any file delivery. See project memory `feedback_never_ui_hijack_active_session.md`.
 
+**iOS Simulator Runtime & Cache Purging (added 2026-11-08):** When multi-gigabyte DMGs in `/System/Library/AssetsV2/com_apple_MobileAsset_iOSSimulatorRuntime/` or dyld caches in `/Library/Developer/CoreSimulator/Caches/dyld/` consume disk space → use [`bin/sim-purge`](bin/sim-purge) / `/sim-purge` (list · dry-run [id|all] · delete <id|all> · prune · cache-remove). **Hard rule:** Never `rm` mounted cryptex DMGs directly; always let `xcrun simctl runtime delete` safely unmount and unregister them. Full runbook + architecture: [`wiki/concepts/simulator-runtime-purging.md`](wiki/concepts/simulator-runtime-purging.md).
+
 ## Repo layout
 
 `/Users/esaruoho/work/apple/`:

@@ -1,0 +1,40 @@
+#!/bin/bash
+# notes-append-images — append images to an EXISTING Apple Note, rendered inline, once each.
+# Report card: features/notes-append-images.feature · Knowledge: docs/apple-notes-images.md
+#
+# Usage: notes-append-images <note-id x-coredata://…/ICNote/pNNN> img1 [img2 …]
+#
+# Why clipboard paste (verified 2026-11-08):
+#   * `make new attachment … with data POSIX file` → every image shown TWICE, sliced/glitched.
+#   * <img src="data:…"> in the note body → stored as public.data, shown as "File · N KB" chips.
+#   * Clipboard «class PNGf» + Cmd-V → public.png, clean inline render. Only working path.
+# Inputs are converted with `sips -s format png` (whiteboard ".png" files are often JPEG inside).
+# Needs Accessibility permission for System Events (keystrokes). Additive only: never deletes.
+set -euo pipefail
+[ $# -ge 2 ] || { sed -n 2,4p "$0"; exit 2; }
+ID="$1"; shift
+TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
+DB="$HOME/Library/Group Containers/group.com.apple.notes/NoteStore.sqlite"
+PK="${ID##*/p}"
+count() { sqlite3 -readonly "$DB" "select count(*) from ZICCLOUDSYNCINGOBJECT where ZNOTE=$PK and ZTYPEUTI='public.png';"; }
+BEFORE=$(count)
+osascript -e 'tell application "Notes" to activate' -e "tell application \"Notes\" to show note id \"$ID\"" >/dev/null
+sleep 1.5
+i=0
+for f in "$@"; do
+  i=$((i+1)); out="$TMP/$i.png"
+  sips -s format png -Z 1600 "$f" --out "$out" >/dev/null 2>&1
+  osascript -e "set the clipboard to (read (POSIX file \"$out\") as «class PNGf»)" \
+    -e 'tell application "System Events" to tell process "Notes"
+key code 125 using command down
+delay 0.3
+keystroke "v" using command down
+delay 1.2
+key code 36
+end tell'
+done
+sleep 2
+AFTER=$(count)
+echo "public.png attachments: $BEFORE → $AFTER (expected +$#)"
+[ $((AFTER-BEFORE)) -eq $# ] || { echo "MISMATCH — screenshot the note and check" >&2; exit 4; }
+echo "OK — still verify visually (screencapture) before claiming done."

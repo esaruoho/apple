@@ -5,6 +5,13 @@ import urllib.error
 from unittest.mock import patch
 from shared import agentmail_send as sender
 from shared.format_email import MailContent
+# Kept for existing material-editor tests that import this historical fixture.
+import importlib.machinery
+import importlib.util
+loader=importlib.machinery.SourceFileLoader("mail_agent", "bin/freellmask-mail")
+spec=importlib.util.spec_from_loader(loader.name,loader)
+agent=importlib.util.module_from_spec(spec)
+loader.exec_module(agent)
 
 class ReplyFallbackTests(unittest.TestCase):
     def setUp(self):

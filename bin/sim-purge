@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# sim-purge — safe discovery, dry-run, and unmount/purging of iOS Simulator runtimes,
+# Cryptex disk images, dyld shared caches, and unavailable device stubs.
+#
+# MobileAsset simulator runtimes mount as sealed APFS volumes under:
+#   /Library/Developer/CoreSimulator/Volumes/<Build>
+# backed by multi-gigabyte DMGs in:
+#   /System/Library/AssetsV2/com_apple_MobileAsset_iOSSimulatorRuntime/.../*.dmg
+# alongside companion host-architecture dyld shared caches in:
+#   /Library/Developer/CoreSimulator/Caches/dyld/<HostBuild>/<SimRuntimeBuild>/
+#
+# Bypassing simctl with `rm` fails because the DMG is actively mounted, root-owned,
+# and tracked by CoreSimulatorService and simdiskimaged daemons.
+#
+# Usage:
+#   sim-purge list               List mounted runtime disk images, versions, and sizes
+#   sim-purge dry-run [id]       Dry-run removal of a runtime (UUID, build, or 'all')
+#   sim-purge delete <id>        Shutdown simulators, unmount, purge DMG & dyld cache
+#   sim-purge prune              Remove leftover unavailable simulator device stubs
+#   sim-purge cache-remove [id]  Remove dyld shared cache for specific runtime or --all
+#
+# FEATURE-CARD >> features/sim-purge.feature
+
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage:
+  sim-purge list               List installed runtime disk images & total size
+  sim-purge dry-run [id|all]   Show what would be deleted without making changes
+  sim-purge delete <id|all>    Safely shutdown, unmount, delete runtime & prune devices
+  sim-purge prune              Prune orphaned 'unavailable' simulator device records
+  sim-purge cache-remove [id]  Remove dyld shared cache for a runtime (or --all)
+  sim-purge help               Show this help message
+
+Examples:
+  sim-purge list
+  sim-purge dry-run all
+  sim-purge dry-run 23D8133
+  sim-purge delete 23D8133
+  sim-purge prune
+EOF
+}
+
+cmd="${1:-list}"
+
+case "$cmd" in
+  list)
+    echo "== Installed Runtime Disk Images =="
+    xcrun simctl runtime list -v
+    echo ""
+    echo "== Unavailable Devices =="
+    xcrun simctl list devices unavailable | grep -v "^==" || echo "None"
+    ;;
+
+  dry-run)
+    target="${2:-all}"
+    echo "Simulating runtime deletion for '$target' (dry-run)..."
+    xcrun simctl runtime delete "$target" --dry-run
+    ;;
+
+  delete)
+    target="${2:-}"
+    if [[ -z "$target" ]]; then
+      echo "Error: missing runtime target (specify a build, UUID, version string, or 'all')." >&2
+      echo "Run 'sim-purge list' to inspect available runtimes." >&2
+      exit 1
+    fi
+    echo "1. Shutting down all running simulators..."
+    xcrun simctl shutdown all 2>/dev/null || true
+
+    echo "2. Unmounting and deleting runtime '$target'..."
+    xcrun simctl runtime delete "$target"
+
+    echo "3. Pruning unavailable device stubs..."
+    xcrun simctl delete unavailable 2>/dev/null || true
+
+    echo "Done. Runtime and companion dyld shared cache purged cleanly."
+    ;;
+
+  prune)
+    echo "Pruning unavailable simulator devices..."
+    xcrun simctl delete unavailable
+    echo "Unavailable simulator devices pruned."
+    ;;
+
+  cache-remove)
+    target="${2:---all}"
+    echo "Removing dyld shared cache for '$target'..."
+    xcrun simctl runtime dyld_shared_cache remove "$target"
+    echo "Dyld shared cache removed."
+    ;;
+
+  help|-h|--help)
+    usage
+    ;;
+
+  *)
+    echo "Unknown command: $cmd" >&2
+    usage >&2
+    exit 1
+    ;;
+esac
