@@ -218,7 +218,7 @@ def handle(occ, a, seen, use_shortcut):
     md = reply_markdown(reply, f'{a.label} · {route.split("/")[-1]}' if route else a.label, a.done_tag)
     if use_shortcut and unique:
         append_via_shortcut(a.shortcut, occ['title'], md)
-        header = md.strip().splitlines()[1].strip('* ').strip()  # "🤖 label · stamp"
+        header = next(l for l in md.splitlines() if l.startswith('**🤖')).strip('* ')  # "🤖 label · stamp"
         after = osa(INFO, occ['nid']).split('\x1f', 1)[1]
         where = 'appended in note' if header in after else 'APPEND NOT VERIFIED (logged, not retried)'
     else:
