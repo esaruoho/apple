@@ -26,6 +26,7 @@
 #
 # RESULT-LOG >> (auto-maintained by the report-card hooks — newest below)
 #   2026-11-08  direct-commit  touched: converse-to-obsidian
+#   2026-11-08  direct-commit  touched: converse-to-obsidian
 # =============================================================================
 
 Feature: converse-to-obsidian — linked Markdown views of Converse sessions

@@ -55,4 +55,5 @@
 ### `97079898-dc66-4b30-93f4-912e439fdf6c`  (2026-11-08)
 - Resume: `claude --resume 97079898-dc66-4b30-93f4-912e439fdf6c`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/97079898-dc66-4b30-93f4-912e439fdf6c.jsonl
-- Tooling touched: INDEX.md
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (17): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature, iphone-compass.feature, me-address.feature, me-location.feature, mlx-agent-tool-loop.feature, notes-append-images.feature, notes-new.feature, notes-process.feature, rec-audio.feature … (+3)

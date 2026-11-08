@@ -9,6 +9,7 @@
 # WATCH: stream_section verify_panel candidates collect prepare_roster FM_MLX_NO_SSH
 # RESULT-LOG >>
 #   2026-11-08  direct-commit  touched: collect
+#   2026-11-08  direct-commit  touched: collect
 #   2026-11-01  direct-commit  touched: collect
 #   2026-10-23  direct-commit  touched: collect
 #   2026-10-21  built and deployed via Syncthing; 18 behavioral tests and two 18-turn Mini jobs verified
