@@ -46,6 +46,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [Home address from the Contacts me-card](#me-address) — `me-address.feature`
 - [Where am I right now — device-presence geolocation for a desktop Mac](#me-location) — `me-location.feature`
 - [The on-device agentic tool-calling loop on the Mini's MLX brain](#mlx-agent-tool-loop) — `mlx-agent-tool-loop.feature`
+- [notes-new creates exactly one new Apple Note without touching anything else](#notes-new) — `notes-new.feature`
 - [Post-process a screen recording's audio (split / flatten)](#rec-audio) — `rec-audio.feature`
 - [Subtitle a screen recording (.srt sidecar + burn-in)](#rec-subtitle) — `rec-subtitle.feature`
 - [Two presses of the same key always get the shell back](#recburn-abort) — `recburn-abort.feature`
@@ -976,6 +977,22 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - the final answer is shown via the ONE shared presenter (DRY) — `@built @sim-verified`
 
 **Grade:** @built ×10 · @hw-verified ×7 · @sim-verified ×3
+
+
+<a id="notes-new"></a>
+## notes-new creates exactly one new Apple Note without touching anything else
+
+`features/notes-new.feature` · [session](notes-new.session.md)
+
+**Behaviour (5 scenarios):**
+
+- Creates a note in an explicit account/folder and verifies it — `@built @hw-verified`
+- Refuses bad targets instead of guessing — `@built @hw-verified`
+- Content cannot inject AppleScript or break HTML — `@built @hw-verified`
+- Never edits, moves, deletes, keystrokes, or writes NoteStore SQLite — `@designed`
+- Google (IMAP) Notes account behaves like iCloud — `@untested`
+
+**Grade:** @built ×3 · @designed ×1 · @hw-verified ×3 · @untested ×1
 
 
 <a id="rec-audio"></a>

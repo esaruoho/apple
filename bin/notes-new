@@ -1,0 +1,126 @@
+#!/usr/bin/env python3
+"""notes-new — create ONE new Apple Note, safely. Additive only.
+
+Report card: features/notes-new.feature
+
+Safety contract:
+  * Only ever runs `make new note` — never edits, moves or deletes an existing note.
+  * Account + folder are explicit (default iCloud / Notes) and must already exist;
+    refuses "Recently Deleted". Never creates folders.
+  * Content is passed to osascript as argv (no string-splicing into AppleScript),
+    and HTML-escaped before markdown → HTML conversion.
+  * Uses the Notes scripting dictionary only — no System Events / keystrokes.
+  * Never touches the NoteStore SQLite.
+  * Verifies: reads the new note back by its returned id and checks the title.
+
+Usage:
+  notes-new --title "T" file.md
+  echo "body" | notes-new --title "T" -
+  notes-new --title "T" --account iCloud --folder BBS file.md
+  notes-new --title "T" --dry-run file.md      # print HTML, create nothing
+"""
+import argparse, html, re, subprocess, sys
+
+APPLESCRIPT = r'''
+on run argv
+  set acctName to item 1 of argv
+  set folderName to item 2 of argv
+  set noteTitle to item 3 of argv
+  set noteBody to item 4 of argv
+  tell application "Notes"
+    if not (exists account acctName) then error "NO_ACCOUNT" number 9001
+    if not (exists folder folderName of account acctName) then error "NO_FOLDER" number 9002
+    set n to make new note at folder folderName of account acctName with properties {body:noteBody}
+    return (id of n) & linefeed & (name of n)
+  end tell
+end run
+'''
+
+
+def inline(s: str) -> str:
+    s = html.escape(s, quote=False)
+    s = re.sub(r'`([^`\n]+)`', r'<tt>\1</tt>', s)
+    s = re.sub(r'\*\*([^*\n]+)\*\*', r'<b>\1</b>', s)
+    s = re.sub(r'(?<![*\w])\*([^*\n]+)\*(?![*\w])', r'<i>\1</i>', s)
+    s = re.sub(r'\[([^\]\n]+)\]\((https?://[^)\s]+)\)', r'<a href="\2">\1</a>', s)
+    return s
+
+
+def md_to_html(md: str) -> str:
+    out, list_tag = [], None
+    for raw in md.splitlines():
+        line = raw.rstrip()
+        m_ul = re.match(r'^\s*[-*+]\s+(.*)$', line)
+        m_ol = re.match(r'^\s*\d+[.)]\s+(.*)$', line)
+        want = 'ul' if m_ul else 'ol' if m_ol else None
+        if list_tag and want != list_tag:
+            out.append(f'</{list_tag}>'); list_tag = None
+        if want:
+            if not list_tag:
+                out.append(f'<{want}>'); list_tag = want
+            out.append(f'<li>{inline((m_ul or m_ol).group(1))}</li>')
+            continue
+        m_h = re.match(r'^(#{1,3})\s+(.*)$', line)
+        if m_h:
+            lvl = len(m_h.group(1))
+            out.append(f'<h{lvl}>{inline(m_h.group(2))}</h{lvl}>')
+        elif line == '':
+            out.append('<div><br></div>')
+        else:
+            out.append(f'<div>{inline(line)}</div>')
+    if list_tag:
+        out.append(f'</{list_tag}>')
+    return '\n'.join(out)
+
+
+def build_body(title: str, md: str) -> str:
+    # Notes takes the note's name from the first line of the body.
+    return f'<h1>{html.escape(title, quote=False)}</h1>\n' + md_to_html(md)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description='Create one new Apple Note (additive only).')
+    ap.add_argument('source', help='markdown file, or - for stdin')
+    ap.add_argument('--title', required=True)
+    ap.add_argument('--account', default='iCloud')
+    ap.add_argument('--folder', default='Notes')
+    ap.add_argument('--dry-run', action='store_true')
+    a = ap.parse_args()
+
+    if a.folder.strip().lower() == 'recently deleted':
+        print('refusing: "Recently Deleted" is not a valid target', file=sys.stderr); return 2
+    if not a.title.strip():
+        print('refusing: empty title', file=sys.stderr); return 2
+    md = sys.stdin.read() if a.source == '-' else open(a.source, encoding='utf-8').read()
+    if md.startswith('---\n'):  # strip YAML frontmatter
+        end = md.find('\n---', 4)
+        if end != -1:
+            md = md[end + 4:].lstrip('\n')
+    body = build_body(a.title.strip(), md)
+
+    if a.dry_run:
+        print(body); return 0
+
+    try:
+        r = subprocess.run(['osascript', '-', a.account, a.folder, a.title.strip(), body],
+                           input=APPLESCRIPT, capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired:
+        print('osascript timed out (60s); check Notes for a partial note before retrying', file=sys.stderr)
+        return 3
+    if r.returncode != 0:
+        err = r.stderr.strip()
+        if 'NO_ACCOUNT' in err: err = f'no Notes account named "{a.account}"'
+        elif 'NO_FOLDER' in err: err = f'no folder "{a.folder}" in account "{a.account}" (not created)'
+        print(f'failed: {err}', file=sys.stderr); return 1
+
+    note_id, _, name = r.stdout.strip().partition('\n')
+    if name.strip() != a.title.strip():
+        print(f'WARNING: created {note_id} but title reads back as {name!r}', file=sys.stderr)
+        print(note_id); return 4
+    print(note_id)
+    print(f'created "{name}" in {a.account}/{a.folder}', file=sys.stderr)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())
