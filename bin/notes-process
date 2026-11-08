@@ -228,6 +228,7 @@ def handle(occ, a, seen, use_shortcut):
     reply, route = call_llm(a.llm, prompt, a.llm_timeout, context)
     reply = sanitize(reply, a.tag)
     md = reply_markdown(reply, f'{a.label} · {route.split("/")[-1]}' if route else a.label, a.done_tag)
+    md = '> ' + prompt.replace('\n', '\n> ') + '\n' + md  # keep the question with the answer (context)
     if use_shortcut and unique:
         append_via_shortcut(a.shortcut, occ['title'], md)
         header = next(l for l in md.splitlines() if l.startswith('**🤖')).strip('* ')  # "🤖 label · stamp"
