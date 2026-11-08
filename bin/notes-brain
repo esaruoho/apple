@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""notes-brain — prompt on stdin → reply on stdout; route Flubuild (Qwen) → MLX Qwen → Apple FM.
+
+Thin adapter (DRY): Flubuild via convey/convey/brain_routes.call_flubuild, MLX via bin/fm-mlx --raw,
+FM via bin/fmremote. Prints "route=<model>" on stderr. Card: features/notes-process.feature
+Usage: echo "question" | notes-brain [--system "context"]
+"""
+import argparse, subprocess, sys
+from pathlib import Path
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(Path.home() / 'work/convey'))
+
+ap = argparse.ArgumentParser(); ap.add_argument('--system', default='')
+ap.add_argument('--timeout', type=int, default=150); a = ap.parse_args()
+prompt = sys.stdin.read().strip()
+if not prompt:
+    sys.exit('empty prompt')
+errors = []
+
+try:
+    from convey.brain_routes import call_flubuild
+    msgs = ([{'role': 'system', 'content': a.system}] if a.system else []) + [{'role': 'user', 'content': prompt}]
+    text, route = call_flubuild(msgs, timeout=a.timeout)
+    if text.strip():
+        print(text.strip()); print(f'route={route}', file=sys.stderr); sys.exit(0)
+except Exception as e:
+    errors.append(f'flubuild: {e}')
+
+for name, argv in (('mlx', [str(HERE / 'fm-mlx'), '--raw', '--quiet'] + (['--system', a.system] if a.system else []) + [prompt]),
+                   ('apple-fm', [str(HERE / 'fmremote'), '--timeout', str(a.timeout)] + (['--system', a.system] if a.system else []) + ['-'])):
+    try:
+        r = subprocess.run(argv, input=prompt if name == 'apple-fm' else None, capture_output=True,
+                           text=True, timeout=a.timeout + 30)
+        if r.returncode == 0 and r.stdout.strip():
+            print(r.stdout.strip()); print(f'route={name}', file=sys.stderr); sys.exit(0)
+        errors.append(f'{name}: rc={r.returncode} {r.stderr.strip()[-200:]}')
+    except Exception as e:
+        errors.append(f'{name}: {e}')
+sys.exit('all brains failed: ' + ' | '.join(errors))

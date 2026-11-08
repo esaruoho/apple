@@ -6,7 +6,7 @@ Report card: features/notes-process.feature
 Type   hello world #process   in a note (a real orange Notes tag, or plain text).
 On the next pass:
   1. that line's text (minus the tag) is sent VERBATIM to the LLM
-     (default `fmremote` = Cloudcity Mac Mini FoundationModels; override --llm).
+     (default `notes-brain`: Flubuild Qwen → MLX Qwen → Apple FM; override --llm).
      A line that is only the tag sends the whole note text above it.
   2. the reply (markdown) is added as RICH TEXT, never by rewriting the note:
        a) APPEND via the Shortcut named --shortcut (default "notes-process-append",
@@ -144,12 +144,16 @@ def ledger_add(rec):
 
 
 # ---------- LLM + writers ----------
-def call_llm(cmd, prompt, timeout):
-    r = subprocess.run(shlex.split(cmd), input=prompt, capture_output=True, text=True,
+def call_llm(cmd, prompt, timeout, context=''):
+    argv = shlex.split(cmd)
+    if context and Path(argv[0]).name in ('fmremote', 'notes-brain'):  # verbatim prompt; earlier note text as context
+        argv[1:1] = ['--system', 'Earlier in this note (context for the question):\n' + context[-6000:]]
+    r = subprocess.run(argv, input=prompt, capture_output=True, text=True,
                        timeout=timeout, cwd=str(HERE.parent))
     if r.returncode != 0 or not r.stdout.strip():
         raise RuntimeError(f'llm failed rc={r.returncode}: {r.stderr.strip()[-300:]}')
-    return r.stdout.strip()
+    route = next((l[6:] for l in r.stderr.splitlines() if l.startswith('route=')), '')
+    return r.stdout.strip(), route
 
 
 def shortcut_installed(name):
@@ -204,8 +208,14 @@ def handle(occ, a, seen, use_shortcut):
     if a.dry_run:
         return log(f'DRY {label}: send {prompt!r} → {how}')
     log(f'send {label}: {prompt[:80]!r}')
-    reply = sanitize(call_llm(a.llm, prompt, a.llm_timeout), a.tag)
-    md = reply_markdown(reply, Path(shlex.split(a.llm)[0]).name, a.done_tag)
+    lines = plain.replace(OBJ, '').splitlines()
+    idx = next((i for i, l in enumerate(plain.splitlines()) if l.strip() == line), len(lines))
+    context = '\n'.join(lines[:idx]).strip()
+    if prompt in context:
+        context = ''
+    reply, route = call_llm(a.llm, prompt, a.llm_timeout, context)
+    reply = sanitize(reply, a.tag)
+    md = reply_markdown(reply, f'{a.label} · {route.split("/")[-1]}' if route else a.label, a.done_tag)
     if use_shortcut and unique:
         append_via_shortcut(a.shortcut, occ['title'], md)
         where = 'appended in note'
@@ -246,9 +256,10 @@ def main():
     g.add_argument('--watch', type=int, metavar='SECONDS')
     ap.add_argument('--tag', default='#process')
     ap.add_argument('--done-tag', default='#done')
-    ap.add_argument('--llm', default=f'{HERE}/fmremote --timeout 180 -')
+    ap.add_argument('--llm', default=f'{HERE}/notes-brain')
     ap.add_argument('--llm-timeout', type=int, default=240)
     ap.add_argument('--shortcut', default='notes-process-append')
+    ap.add_argument('--label', default='Cloudcity')
     ap.add_argument('--reply-account', default='iCloud')
     ap.add_argument('--reply-folder', default='Notes')
     ap.add_argument('--plain-text', action='store_true',

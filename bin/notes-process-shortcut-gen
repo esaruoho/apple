@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Generate + sign the `notes-process-append` Shortcut (native actions, no AppleScript).
+
+Input: JSON {"title":…, "markdown":…}. Actions: Get Dictionary → markdown → Make Rich Text
+from Markdown → title → Find Notes (Name is title, limit 1) → Append to Note.
+Docs: wiki/concepts/notes-process-append-shortcut.md   Card: features/notes-process.feature
+"""
+import plistlib, subprocess, sys, uuid
+from pathlib import Path
+
+OUT = Path(__file__).resolve().parent.parent / 'shortcuts' / 'notes'
+U = lambda: str(uuid.uuid4()).upper()
+A, B, C, D, E = U(), U(), U(), U(), U()
+
+def out(uid, name):
+    return {'Value': {'OutputUUID': uid, 'Type': 'ActionOutput', 'OutputName': name},
+            'WFSerializationType': 'WFTextTokenAttachment'}
+
+def act(ident, **p):
+    return {'WFWorkflowActionIdentifier': ident, 'WFWorkflowActionParameters': p}
+
+title_token = {'Value': {'attachmentsByRange': {'{0, 1}': {'OutputUUID': D, 'Type': 'ActionOutput',
+                                                          'OutputName': 'Dictionary Value'}},
+                         'string': '￼'},
+               'WFSerializationType': 'WFTextTokenString'}
+
+actions = [
+    act('is.workflow.actions.detect.dictionary', UUID=A,
+        WFInput={'Value': {'Type': 'ExtensionInput'}, 'WFSerializationType': 'WFTextTokenAttachment'}),
+    act('is.workflow.actions.getvalueforkey', UUID=B, WFDictionaryKey='markdown', WFInput=out(A, 'Dictionary')),
+    act('is.workflow.actions.getrichtextfrommarkdown', UUID=C, WFInput=out(B, 'Dictionary Value')),
+    act('is.workflow.actions.getvalueforkey', UUID=D, WFDictionaryKey='title', WFInput=out(A, 'Dictionary')),
+    act('is.workflow.actions.filter.notes', UUID=E, WFContentItemLimitEnabled=True, WFContentItemLimitNumber=1.0,
+        WFContentItemFilter={'Value': {'WFActionParameterFilterPrefix': 1, 'WFContentPredicateBoundedDate': False,
+                                       'WFActionParameterFilterTemplates': [{'Operator': 4, 'Property': 'Name',
+                                           'Removable': True, 'Values': {'String': title_token, 'Unit': 4}}]},
+                             'WFSerializationType': 'WFContentPredicateTableTemplate'}),
+    act('is.workflow.actions.appendnote', WFNote=out(E, 'Notes'), WFInput=out(C, 'Rich Text from Markdown')),
+]
+
+plist = {
+    'WFWorkflowActions': actions, 'WFWorkflowClientVersion': '2612.0.4',
+    'WFWorkflowHasShortcutInputVariables': True, 'WFWorkflowHasOutputFallback': False,
+    'WFWorkflowIcon': {'WFWorkflowIconGlyphNumber': 59511, 'WFWorkflowIconStartColor': 4292093695},
+    'WFWorkflowImportQuestions': [], 'WFWorkflowMinimumClientVersion': 900,
+    'WFWorkflowMinimumClientVersionString': '900',
+    'WFWorkflowInputContentItemClasses': ['WFGenericFileContentItem', 'WFStringContentItem',
+                                          'WFDictionaryContentItem'],
+    'WFWorkflowOutputContentItemClasses': [], 'WFWorkflowTypes': [],
+}
+OUT.mkdir(parents=True, exist_ok=True)
+raw, signed = OUT / 'notes-process-append.unsigned.shortcut', OUT / 'notes-process-append.shortcut'
+raw.write_bytes(plistlib.dumps(plist, fmt=plistlib.FMT_BINARY))
+r = subprocess.run(['shortcuts', 'sign', '--mode', 'anyone', '--input', str(raw), '--output', str(signed)],
+                   capture_output=True, text=True)
+raw.unlink()
+if r.returncode != 0:
+    sys.exit(f'sign failed: {r.stderr.strip()}')
+print(signed)

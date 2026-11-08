@@ -50,7 +50,7 @@
 - Resume: `claude --resume 86265a9a-f9a3-4edf-9750-98c4a6179061`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/86265a9a-f9a3-4edf-9750-98c4a6179061.jsonl
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
-- Cards touched (14): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature, me-address.feature, me-location.feature, mlx-agent-tool-loop.feature, notes-new.feature, notes-process.feature, rec-audio.feature, rec-subtitle.feature, recburn-abort.feature
+- Cards touched (16): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature, fm-mlx-dry.feature, me-address.feature, me-location.feature, mlx-agent-tool-loop.feature, notes-append-images.feature, notes-new.feature, notes-process.feature, rec-audio.feature … (+2)
 
 ### `97079898-dc66-4b30-93f4-912e439fdf6c`  (2026-11-08)
 - Resume: `claude --resume 97079898-dc66-4b30-93f4-912e439fdf6c`
