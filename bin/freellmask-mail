@@ -3053,6 +3053,59 @@ def belt_sleep(seconds, folder, done):
             return
 
 
+def _discord_env():
+    env = {}
+    f = Path.home() / "work" / "pakettibot-agent" / ".env"
+    try:
+        for line in f.read_text(errors="ignore").splitlines():
+            line = line.strip()
+            if "=" in line and not line.startswith("#"):
+                k, v = line.split("=", 1); env[k] = v.strip().strip('"').strip("'")
+    except Exception:
+        pass
+    return env
+
+
+def belt_notify(p: Path, folder: Path, ok: bool, info: str, subj: str):
+    """Close the loop in Discord for the PRIORITY lane (now/: 🧠 reactions + video transcripts).
+    🧠 items (discord-<channel>-<message>-…) get a threaded reply + ✅/❌ on the message Esa reacted to;
+    anything else in now/ gets a line in #pakettibot. The OCR backlog stays silent. Never raises."""
+    try:
+        if Path(p).relative_to(folder).parts[:1] != ("now",):
+            return
+    except Exception:
+        return
+    try:
+        env = _discord_env(); tok = env.get("DISCORD_BOT_TOKEN", "")
+        if not tok:
+            return
+        m = re.match(r"discord-(\d{15,22})-(\d{15,22})-", Path(p).name)
+        chan = m.group(1) if m else (env.get("PAKETTI_CHANNEL_IDS", "").split(",")[0] or "").strip()
+        if not chan:
+            return
+        if ok:
+            text = f"✅ **cloudcity-llm emailed** → esaruoho@gmail.com\n**{subj[:180]}**\n-# {str(info)[:300]}"
+        else:
+            text = (f"❌ **cloudcity-llm could not email** **{subj[:180]}**\n```{str(info)[:900]}```\n"
+                    f"-# retries automatically in 6h; full record in comms/queue/mail-belt/")
+        body = {"content": text[:1990]}
+        if m:
+            body["message_reference"] = {"message_id": m.group(2), "fail_if_not_exists": False}
+        hdr = {"Authorization": f"Bot {tok}", "Content-Type": "application/json",
+               "User-Agent": "freellmask-mail-belt/1.0"}
+        api = f"https://discord.com/api/v10/channels/{chan}"
+        urllib.request.urlopen(urllib.request.Request(f"{api}/messages", data=json.dumps(body).encode(),
+                                                      method="POST", headers=hdr), timeout=20).read()
+        if m:
+            emoji = urllib.parse.quote("✅" if ok else "❌")
+            urllib.request.urlopen(urllib.request.Request(
+                f"{api}/messages/{m.group(2)}/reactions/{emoji}/@me", method="PUT", headers=hdr,
+                data=b""), timeout=20).read()
+        print(f"   💬 discord notified ({'ok' if ok else 'failed'})", flush=True)
+    except Exception as e:
+        print(f"   💬 discord notify failed: {e}", flush=True)
+
+
 def belt_record(tag, key, path, ok, info):
     rec = {"key": key, "path": str(path), "ok": bool(ok), "info": str(info)[:400],
            "at": time.strftime("%Y-%m-%d %H:%M:%S")}
@@ -3165,6 +3218,7 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
             # A failure is ledgered too, but in the FAILED ledger — so the next pass retries it
             # instead of the belt silently deciding that file was never worth mailing.
             belt_record(tag, key, p, ok, info)
+            belt_notify(p, folder, ok, info, subj)
             if ok:
                 sent += 1
                 print(f"   ✅ {info}", flush=True)
