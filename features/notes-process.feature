@@ -13,7 +13,8 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     Then the reply is created as "Re: <title>" via bin/notes-new (markdown → rich text)
     And the original note is not modified at all
 
-  @built @untested
+  @todo
+  # generated Shortcut FAILED (dialogs) 2026-11-08; disabled. Hand-built variant documented, unverified.
   Scenario: True append via Shortcut (wiki/concepts/notes-process-append-shortcut.md)
     Given the Shortcut is installed and the note title is unique (title_count() == 1)
     Then the markdown reply is appended with Make Rich Text from Markdown + Append to Note

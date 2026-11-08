@@ -26,3 +26,11 @@
    else linked note "Re: <title>".
 8. Rewrote notes-process: read-only SQLite discovery of hashtag objects, no `set body` anywhere,
    ledger keyed by tag ZIDENTIFIER. Real run: p13544 → reply note p13583; 2nd pass no-op. 7 tests pass.
+
+## Round 3 — generated Shortcut failed; linked notes are the live path
+9. Generated Shortcut popped a text dialog (Esa typed "what is reactive power?" / "tell me about reactive power
+   extraction" into it) and then a "which note?" picker of all notes. Esa: "i don't want it to touch these notes."
+   Shortcut path disabled by default (--shortcut ''), append read-back verification + 45s cap added.
+10. Brain: notes-brain → Flubuild Qwen2.5-7B (→ MLX Qwen → Apple FM). "katsotaampa toimiiko tämä #process"
+    answered as linked note p13588; 2nd pass no-op. Hand-built Shortcut documented in
+    wiki/concepts/notes-process-append-shortcut.md (not yet built/verified).

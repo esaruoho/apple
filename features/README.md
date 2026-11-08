@@ -1021,13 +1021,13 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 - A real orange Notes tag is found (2026-11-08, note p13544) — `@built @hw-verified`
 - Fallback — reply as a linked rich-text note (note p13583) — `@built @hw-verified`
-- True append via Shortcut (wiki/concepts/notes-process-append-shortcut.md) — `@built @untested`
+- True append via Shortcut (wiki/concepts/notes-process-append-shortcut.md) — `@todo`
 - No feedback loop — `@built @hw-verified`
 - Never rewrites a note (test_notes_process.py: 7 tests) — `@built @sim-verified`
 - Guards — `@built @designed`
 - Running on the Mini under Cloudcity-Boot via systems.yaml — `@untested`
 
-**Grade:** @built ×6 · @designed ×1 · @hw-verified ×3 · @sim-verified ×1 · @untested ×2
+**Grade:** @built ×5 · @designed ×1 · @hw-verified ×3 · @sim-verified ×1 · @todo ×1 · @untested ×1
 
 
 <a id="rec-audio"></a>
