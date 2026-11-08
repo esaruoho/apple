@@ -157,6 +157,8 @@ def call_llm(cmd, prompt, timeout, context=''):
 
 
 def shortcut_installed(name):
+    if not name:
+        return False
     r = subprocess.run(['shortcuts', 'list'], capture_output=True, text=True, timeout=30)
     return name in r.stdout.splitlines()
 
@@ -260,7 +262,10 @@ def main():
     ap.add_argument('--done-tag', default='#done')
     ap.add_argument('--llm', default=f'{HERE}/notes-brain')
     ap.add_argument('--llm-timeout', type=int, default=240)
-    ap.add_argument('--shortcut', default='notes-process-append')
+    # OFF by default (2026-11-08): the generated Shortcut's Find Notes → Append to Note binding
+    # does not carry over, so Shortcuts shows a "which note?" picker of ALL notes. Unacceptable.
+    # Only pass --shortcut once an append is proven dialog-free.
+    ap.add_argument('--shortcut', default='')
     ap.add_argument('--label', default='Cloudcity')
     ap.add_argument('--reply-account', default='iCloud')
     ap.add_argument('--reply-folder', default='Notes')
