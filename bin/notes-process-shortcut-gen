@@ -35,7 +35,11 @@ actions = [
                                        'WFActionParameterFilterTemplates': [{'Operator': 4, 'Property': 'Name',
                                            'Removable': True, 'Values': {'String': title_token, 'Unit': 4}}]},
                              'WFSerializationType': 'WFContentPredicateTableTemplate'}),
-    act('is.workflow.actions.appendnote', WFNote=out(E, 'Notes'), WFInput=out(C, 'Rich Text from Markdown')),
+    # Notes' AppendToNoteLinkAction app intent declares params `entity` + `text`
+    # (Notes.app Metadata.appintents/extract.actionsdata) — the legacy WFNote/WFInput are IGNORED.
+    act('is.workflow.actions.appendnote', entity=out(E, 'Notes'), text=out(C, 'Rich Text from Markdown'),
+        AppIntentDescriptor={'TeamIdentifier': '0000000000', 'BundleIdentifier': 'com.apple.Notes',
+                             'Name': 'Notes', 'AppIntentIdentifier': 'AppendToNoteLinkAction'}),
 ]
 
 plist = {
