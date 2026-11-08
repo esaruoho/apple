@@ -164,9 +164,9 @@ def shortcut_installed(name):
 def append_via_shortcut(name, title, md):
     with tempfile.NamedTemporaryFile('w', suffix='.json', delete=False, encoding='utf-8') as f:
         json.dump({'title': title, 'markdown': md}, f, ensure_ascii=False)
-    try:
+    try:  # a dialog means the Shortcut is broken; never let it hang the loop
         r = subprocess.run(['shortcuts', 'run', name, '--input-path', f.name],
-                           capture_output=True, text=True, timeout=90)
+                           capture_output=True, text=True, timeout=45)
     finally:
         os.unlink(f.name)
     if r.returncode != 0:
@@ -218,7 +218,9 @@ def handle(occ, a, seen, use_shortcut):
     md = reply_markdown(reply, f'{a.label} · {route.split("/")[-1]}' if route else a.label, a.done_tag)
     if use_shortcut and unique:
         append_via_shortcut(a.shortcut, occ['title'], md)
-        where = 'appended in note'
+        header = md.strip().splitlines()[1].strip('* ').strip()  # "🤖 label · stamp"
+        after = osa(INFO, occ['nid']).split('\x1f', 1)[1]
+        where = 'appended in note' if header in after else 'APPEND NOT VERIFIED (logged, not retried)'
     else:
         if use_shortcut and not unique:
             log(f'note title not unique → linked note instead of append')
