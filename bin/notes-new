@@ -16,7 +16,7 @@ Safety contract:
 Usage:
   notes-new --title "T" file.md
   echo "body" | notes-new --title "T" -
-  notes-new --title "T" --account iCloud --folder BBS file.md
+  notes-new --title "T" --account iCloud --folder Work file.md
   notes-new --title "T" --dry-run file.md      # print HTML, create nothing
 """
 import argparse, html, re, subprocess, sys
