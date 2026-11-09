@@ -77,7 +77,7 @@ def title_count(title):
                          (title,)).fetchone()[0]
 
 
-def osa(script, *args, timeout=60):
+def osa(script, *args, timeout=25):
     r = subprocess.run(['osascript', '-', *args], input=script, capture_output=True,
                        text=True, timeout=timeout)
     if r.returncode != 0:
@@ -282,13 +282,13 @@ def main():
     ap.add_argument('--reply-folder', default='Notes')
     ap.add_argument('--plain-text', action='store_true',
                     help='also catch the tag typed as plain text (not an orange tag)')
-    ap.add_argument('--settle', type=int, default=15)
+    ap.add_argument('--settle', type=int, default=5)
     ap.add_argument('--dry-run', action='store_true')
     a = ap.parse_args()
     if not a.tag.startswith('#') or tag_re(a.tag).search(a.done_tag):
         sys.exit('tag must start with # and the done tag must not contain it')
-    if a.watch is not None and a.watch < 30:
-        sys.exit('--watch must be >= 30 seconds')
+    if a.watch is not None and a.watch < 10:
+        sys.exit('--watch must be >= 10 seconds')  # discovery is one cheap read-only SQLite query
     if a.once:
         return one_pass(a)
     while True:
