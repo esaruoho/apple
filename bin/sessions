@@ -1027,7 +1027,8 @@ def run_picker(stdscr, folder):
     except Exception:
         pass
 
-    rows = list_all(folder)
+    all_rows = list_all(folder)
+    rows = all_rows
     sel_key = None  # (provider, uuid) — stable across refresh
     sel = 0
     top = 0
@@ -1036,6 +1037,61 @@ def run_picker(stdscr, folder):
     sw_agents = load_agents()
     sw_profiles = load_profiles()
     sw_a = sw_p = sw_col = 0
+    query = ""                    # "?" full-text search filter ("" = off)
+    text_cache = {}               # (provider, uuid) -> (mtime, lowered text)
+
+    def session_text(r):
+        key = (r.provider, r.uuid)
+        hit = text_cache.get(key)
+        if hit and hit[0] == r.mtime:
+            return hit[1]
+        try:
+            if r.snippet is None:
+                LOAD[r.provider](r)
+            t = render_session(r).lower()
+        except Exception:
+            t = ((r.title or "") + " " + (r.snippet or "")).lower()
+        text_cache[key] = (r.mtime, t)
+        return t
+
+    def apply_filter(lst):
+        if not query:
+            return lst
+        q = query.lower()
+        return [r for r in lst if q in session_text(r)]
+
+    def prompt_query():
+        h, w = stdscr.getmaxyx()
+        stdscr.timeout(-1)
+        try:
+            curses.curs_set(1)
+        except curses.error:
+            pass
+        buf = query
+        while True:
+            line = f" ? search sessions: {buf}"
+            try:
+                stdscr.addnstr(h - 1, 0, line.ljust(w - 1), w - 1, curses.color_pair(2) | curses.A_BOLD)
+                stdscr.move(h - 1, min(len(line), w - 2))
+            except curses.error:
+                pass
+            stdscr.refresh()
+            c = stdscr.get_wch()
+            if c in ("\n", "\r") or c == curses.KEY_ENTER:
+                break
+            if c == "\x1b":
+                buf = None
+                break
+            if c in ("\x7f", "\b") or c == curses.KEY_BACKSPACE:
+                buf = buf[:-1]
+            elif isinstance(c, str) and c.isprintable():
+                buf += c
+        try:
+            curses.curs_set(0)
+        except curses.error:
+            pass
+        stdscr.timeout(REFRESH_MS)
+        return buf
 
     def ensure_meta(i):
         r = rows[i]
@@ -1072,8 +1128,9 @@ def run_picker(stdscr, folder):
         # the next line — the stacked duplicate rows and right-edge black boxes.
         W = max(1, w - 1)
         disp = folder.replace(HOME, "~", 1) if folder.startswith(HOME) else folder
-        header = display_safe(f" sessions · {disp}   C:{cn} P:{pn} X:{xn} G:{gn} A:{an} F:{fn} V:{vn}")
-        footer = " ↑/↓ select · ⏎ resume · n claude · c copilot · x codex · m gemini · a agy · f fm-chat · v converse · q quit · auto-refresh"
+        qtag = f"  ?\"{query}\" {len(rows)}/{len(all_rows)}" if query else ""
+        header = display_safe(f" sessions · {disp}{qtag}   C:{cn} P:{pn} X:{xn} G:{gn} A:{an} F:{fn} V:{vn}")
+        footer = " ↑/↓ select · ⏎ resume · ? search · n claude · c copilot · x codex · m gemini · a agy · f fm-chat · v converse · q quit · auto-refresh"
         try:
             stdscr.addnstr(0, 0, header.ljust(W), W, curses.color_pair(2) | curses.A_BOLD)
             stdscr.addnstr(h - 1, 0, footer.ljust(W), W, curses.color_pair(3))
@@ -1081,7 +1138,8 @@ def run_picker(stdscr, folder):
             pass
 
         if not rows:
-            msg = "No sessions for this folder. n=claude  c=copilot  x=codex  m=gemini  a=agy  f=fm-chat  v=converse  q=quit"
+            msg = (f"No session contains \"{query}\" — ? to change, Esc to clear" if query else
+                   "No sessions for this folder. n=claude  c=copilot  x=codex  m=gemini  a=agy  f=fm-chat  v=converse  q=quit")
             try:
                 stdscr.addnstr(h // 2, max(0, (w - len(msg)) // 2), msg, W)
             except curses.error:
@@ -1198,7 +1256,8 @@ def run_picker(stdscr, folder):
                         r.turns = old.turns
                         if r.title is None:
                             r.title = old.title
-                rows = fresh
+                all_rows = fresh
+                rows = apply_filter(all_rows)
                 re_select()
                 last_refresh = time.time()
             continue
@@ -1238,6 +1297,23 @@ def run_picker(stdscr, folder):
             return ("new", "fm-chat", None, None)
         elif k in (ord('v'), ord('V')):
             return ("new", "converse", None, None)
+        elif k == ord('?') or k == ord('/'):
+            if rows and 0 <= sel < len(rows):
+                sel_key = keyfor(rows[sel])
+            nq = prompt_query()
+            if nq is not None:
+                query = nq.strip()
+                stdscr.addnstr(h - 1, 0, " searching…".ljust(W), W, curses.color_pair(3))
+                stdscr.refresh()
+                rows = apply_filter(all_rows)
+                sel = top = 0
+                re_select()
+            continue
+        elif k == 27 and query:
+            query = ""
+            rows = all_rows
+            re_select()
+            continue
         elif k in (ord('q'), ord('Q'), 27):
             return ("quit", None, None, None)
 
