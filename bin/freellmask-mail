@@ -3163,13 +3163,27 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
     except FileExistsError:
         # A pane can be SIGKILLed (they routinely are), and a lock that outlives its owner would
         # wedge the belt forever — the failure mode is worse than the one it guards against.
+        # OWNER CHECK (2026-11-09): the lock holds the owner's pid; a dead owner = stale NOW, not in 6h.
+        # (A hand-restored lock made the belt exit "already running" on every relaunch for hours.)
         age = time.time() - lock.stat().st_mtime
+        try:
+            _owner = int((lock / "pid").read_text().strip())
+            os.kill(_owner, 0); _alive = True
+        except ProcessLookupError:
+            _alive = False
+        except Exception:
+            _alive = None                                   # no/unreadable pid → fall back to age
+        if _alive is False:
+            print(f"🎢 belt[{tag}] lock owner is dead — taking it over", flush=True)
+            age = 1e9
         if age < 6 * 3600:
             print(f"🎢 belt[{tag}] already running ({lock}, {int(age/60)}m old) — not starting a "
                   f"second", flush=True)
             return 0, 0
         print(f"🎢 belt[{tag}] stale lock ({int(age/3600)}h) — taking it over", flush=True)
         lock.touch()
+    try: (lock / "pid").write_text(str(os.getpid()))
+    except Exception: pass
     atexit.register(lambda: shutil.rmtree(lock, ignore_errors=True))
     code_version = code_digest()
     while True:
