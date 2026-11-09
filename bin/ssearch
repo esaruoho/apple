@@ -28,11 +28,12 @@ Matching is FIXED-STRING and case-insensitive by default (safe: no regex
 backtracking). Pass --regex to opt into Python regexes.
 
 Providers & paths (mirrors bin/sessions):
-  Claude   ~/.claude/projects/<encoded-cwd>/<uuid>.jsonl   → claude --resume <uuid>
-  Codex    ~/.codex/sessions/YYYY/MM/DD/rollout-*-<uuid>.jsonl → codex resume <uuid>
-  Gemini   ~/.gemini/tmp/<project>/chats/session-*-<id>.jsonl → gemini --resume <sessionId>
-  fm-chat  ~/.fm-chat/sessions/<uuid>.jsonl                 → fm-chat --resume <uuid>
-  converse ~/.cache/fm-converse/<name>.json                → fm-converse --session <name>
+  Claude       ~/.claude/projects/<encoded-cwd>/<uuid>.jsonl   → claude --resume <uuid>
+  Codex        ~/.codex/sessions/YYYY/MM/DD/rollout-*-<uuid>.jsonl → codex resume <uuid>
+  Gemini       ~/.gemini/tmp/<project>/chats/session-*-<id>.jsonl → gemini --resume <sessionId>
+  Antigravity  ~/.gemini/antigravity-cli/conversations/<uuid>.db → agy --conversation <uuid>
+  fm-chat      ~/.fm-chat/sessions/<uuid>.jsonl                 → fm-chat --resume <uuid>
+  converse     ~/.cache/fm-converse/<name>.json                → fm-converse --session <name>
 
 Apple-native: Python stdlib only. No Homebrew, no pip.
 """
@@ -40,8 +41,10 @@ import argparse
 import json
 import os
 import re
+import sqlite3
 import sys
 import time
+from urllib.parse import unquote, urlparse
 
 HOME = os.path.expanduser("~")
 
@@ -180,6 +183,99 @@ def turns_converse(path):
                 yield {"ts": "", "role": r, "kind": "dialogue", "text": text}
 
 
+def _parse_proto(b):
+    pos = 0
+    fields = []
+    l = len(b)
+    while pos < l:
+        key = 0
+        shift = 0
+        while pos < l:
+            byte = b[pos]
+            pos += 1
+            key |= (byte & 0x7f) << shift
+            if not (byte & 0x80):
+                break
+            shift += 7
+        tag = key >> 3
+        wire = key & 7
+        if wire == 0:
+            val = 0
+            shift = 0
+            while pos < l:
+                byte = b[pos]
+                pos += 1
+                val |= (byte & 0x7f) << shift
+                if not (byte & 0x80):
+                    break
+                shift += 7
+            fields.append((tag, wire, val))
+        elif wire == 2:
+            length = 0
+            shift = 0
+            while pos < l:
+                byte = b[pos]
+                pos += 1
+                length |= (byte & 0x7f) << shift
+                if not (byte & 0x80):
+                    break
+                shift += 7
+            val = b[pos:pos + length]
+            pos += length
+            fields.append((tag, wire, val))
+        elif wire == 1:
+            pos += 8
+        elif wire == 5:
+            pos += 4
+        else:
+            break
+    return fields
+
+
+def turns_antigravity(path):
+    if not os.path.isfile(path):
+        return
+    try:
+        con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
+        cur = con.cursor()
+        for idx, stype, payload in cur.execute(
+            "SELECT idx, step_type, step_payload FROM steps WHERE step_type IN (14, 15, 132) ORDER BY idx"
+        ):
+            try:
+                fields = _parse_proto(payload)
+                if stype == 14:  # user
+                    for tag, wire, val in fields:
+                        if tag == 19 and wire == 2:
+                            for t2, w2, v2 in _parse_proto(val):
+                                if t2 == 2 and w2 == 2:
+                                    txt = v2.decode("utf-8", "replace").strip()
+                                    if txt:
+                                        yield {"ts": "", "role": "user", "kind": "dialogue", "text": txt}
+                elif stype == 15:  # assistant
+                    dlg = None
+                    reasoning = None
+                    for tag, wire, val in fields:
+                        if tag == 20 and wire == 2:
+                            for t2, w2, v2 in _parse_proto(val):
+                                if t2 == 1 and w2 == 2:
+                                    dlg = v2.decode("utf-8", "replace").strip()
+                                elif t2 == 3 and w2 == 2:
+                                    reasoning = v2.decode("utf-8", "replace").strip()
+                    if dlg:
+                        yield {"ts": "", "role": "assistant", "kind": "dialogue", "text": dlg}
+                    if reasoning:
+                        yield {"ts": "", "role": "assistant", "kind": "reasoning", "text": reasoning}
+                elif stype == 132:  # tool
+                    tool_strs = [s.decode("utf-8", "replace") for s in re.findall(b"[\x20-\x7e]{4,}", payload)]
+                    if tool_strs:
+                        yield {"ts": "", "role": "assistant", "kind": "tool", "text": " ".join(tool_strs)}
+            except Exception:
+                continue
+        con.close()
+    except Exception:
+        pass
+
+
 # ─────────────────────────────── discovery ───────────────────────────────────
 def encode_cwd(path):
     return re.sub(r"[^A-Za-z0-9]", "-", os.path.realpath(path))
@@ -299,6 +395,46 @@ def discover(folder=None, days=14):
                 run = f"cd {cwd} && " if cwd else ""
                 yield ("gemini", path, sid or name, cwd, turns_gemini,
                        lambda s=sid, r=run: f"{r}gemini --resume {s}" if s else f"{r}gemini  # (no sessionId)")
+
+    # Antigravity (agy)
+    for agy_dir in [
+        os.path.join(HOME, ".gemini", "antigravity-cli"),
+        os.path.join(HOME, ".antigravity-cli"),
+        os.path.join(HOME, ".antigravity"),
+    ]:
+        sum_db = os.path.join(agy_dir, "conversation_summaries.db")
+        conv_dir = os.path.join(agy_dir, "conversations")
+        if not os.path.isfile(sum_db):
+            continue
+        try:
+            con = sqlite3.connect(f"file:{sum_db}?mode=ro", uri=True, timeout=0.5)
+            for cid, uris_raw in con.execute(
+                "SELECT conversation_id, workspace_uris FROM conversation_summaries"
+            ):
+                cwds = []
+                if uris_raw:
+                    try:
+                        uris = json.loads(uris_raw)
+                        if isinstance(uris, list):
+                            for u in uris:
+                                if isinstance(u, str):
+                                    cwds.append(os.path.realpath(unquote(urlparse(u).path)) if u.startswith("file://") else os.path.realpath(u))
+                        elif isinstance(uris, str):
+                            cwds.append(os.path.realpath(unquote(urlparse(uris).path)) if uris.startswith("file://") else os.path.realpath(uris))
+                    except Exception:
+                        pass
+                if want and (want not in cwds and want not in (uris_raw or "")):
+                    continue
+                path = os.path.join(conv_dir, f"{cid}.db")
+                if not os.path.isfile(path) or not fresh(path):
+                    continue
+                cwd = cwds[0] if cwds else None
+                run = f"cd {cwd} && " if cwd else ""
+                yield ("antigravity", path, cid, cwd, turns_antigravity,
+                       lambda u=cid, r=run: f"{r}agy --dangerously-skip-permissions --conversation {u}")
+            con.close()
+        except Exception:
+            pass
 
     # fm-chat
     fm_root = os.path.join(HOME, ".fm-chat", "sessions")

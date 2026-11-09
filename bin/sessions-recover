@@ -30,13 +30,13 @@ from collections import defaultdict
 from pathlib import Path
 
 META_PATH = Path.home() / "Library/Application Support/vibe-island/session-terminals.json"
-RESUME_RE = re.compile(r"--resume\s+([0-9a-fA-F-]{8,})")
+RESUME_RE = re.compile(r"(?:--resume\s+|--resume=|--conversation\s+|--conversation=)([0-9a-fA-F-]{8,})")
 
 
 def detect_tool(cmd: str) -> str | None:
     first = (cmd.strip().split() or [""])[0]
     base = os.path.basename(first)
-    if base in {"claude", "codex", "copilot"}:
+    if base in {"claude", "codex", "copilot", "gemini", "agy", "antigravity"}:
         return base
     if first.endswith("/claude"):
         return "claude"
@@ -44,6 +44,12 @@ def detect_tool(cmd: str) -> str | None:
         return "codex"
     if first.endswith("/copilot"):
         return "copilot"
+    if first.endswith("/gemini"):
+        return "gemini"
+    if first.endswith("/agy"):
+        return "agy"
+    if first.endswith("/antigravity"):
+        return "antigravity"
     return None
 
 
