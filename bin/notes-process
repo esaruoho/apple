@@ -77,9 +77,49 @@ def title_count(title):
                          (title,)).fetchone()[0]
 
 
+NOTES_TIMEOUTS = 0  # consecutive osascript timeouts → heal_notes() after 2
+
+
+def notes_pids():
+    r = subprocess.run(['pgrep', '-x', 'Notes'], capture_output=True, text=True)
+    return [int(p) for p in r.stdout.split()]
+
+
+def heal_notes(force=False):
+    """Keep Notes.app answering, unattended (2026-11-09: Mini Notes wedged 16 days at 76% CPU).
+    Not running → start it in the background (-g: no window pops forward).
+    force (2 timeouts in a row) → quit it, force-kill if it won't, restart in the background.
+    Safe: notes live in iCloud/NoteStore; quitting Notes loses nothing."""
+    pids = notes_pids()
+    if force and pids:
+        log(f'Notes not answering → restarting Notes (pids {pids})')
+        for pid in pids:
+            subprocess.run(['kill', '-TERM', str(pid)])
+        for _ in range(10):
+            if not notes_pids():
+                break
+            time.sleep(1)
+        for pid in notes_pids():
+            subprocess.run(['kill', '-KILL', str(pid)])
+        pids = []
+    if not pids:
+        subprocess.run(['open', '-g', '-a', 'Notes'])
+        time.sleep(8)
+        log('Notes started in the background')
+
+
 def osa(script, *args, timeout=25):
-    r = subprocess.run(['osascript', '-', *args], input=script, capture_output=True,
-                       text=True, timeout=timeout)
+    global NOTES_TIMEOUTS
+    try:
+        r = subprocess.run(['osascript', '-', *args], input=script, capture_output=True,
+                           text=True, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        NOTES_TIMEOUTS += 1
+        if NOTES_TIMEOUTS >= 2:
+            NOTES_TIMEOUTS = 0
+            heal_notes(force=True)
+        raise
+    NOTES_TIMEOUTS = 0
     if r.returncode != 0:
         raise RuntimeError(r.stderr.strip())
     return r.stdout.rstrip('\n')
@@ -254,6 +294,7 @@ def one_pass(a):
             folder='') for i in ids]
     if not occs:
         return log(f'nothing new for {a.tag}')
+    heal_notes()  # start Notes in the background if it isn't running
     use_shortcut = shortcut_installed(a.shortcut)
     if not use_shortcut:
         log(f'Shortcut "{a.shortcut}" not installed → replies go to linked notes')

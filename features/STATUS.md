@@ -52,7 +52,7 @@
 | mlx-agent-tool-loop | 10 | ✗ | — | ✓ | @built @hw-verified @sim-verified |
 | notes-append-images | 3 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
 | notes-new | 6 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
-| notes-process | 7 | ✗ | — | ✓ | @built @designed @hw-verified @sim-verified @todo @untested |
+| notes-process | 8 | ✗ | — | ✓ | @built @designed @hw-verified @sim-verified @todo @untested |
 | rec-audio | 4 | ✗ | — | ✓ | @hw-verified |
 | rec-subtitle | 18 | ✗ | — | ✓ | @built @hw-verified |
 | recburn-abort | 9 | ✗ | — | ✓ | @built @hw-verified @note |

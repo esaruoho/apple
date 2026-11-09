@@ -35,3 +35,9 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
 
   @untested
   Scenario: Running on the Mini under Cloudcity-Boot via systems.yaml
+
+  @built
+  Scenario: Notes.app self-heals on the unattended Mini
+    Given Notes is not running, or 2 Notes requests in a row time out (Notes wedged)
+    Then notes-process starts Notes in the background (open -g -a Notes), restarting it first if wedged
+    # bin/notes-process heal_notes(); 2026-11-09 Mini Notes was stuck 16 days at 76% CPU
