@@ -1561,7 +1561,7 @@ OWNER_ADDRS = set(a.strip().lower() for a in os.environ.get(
     "FREELLMASK_OWNER_ADDRS","esaruoho@gmail.com,esaruoho@icloud.com").split(",") if a.strip())
 def _is_owner(sender):
     s=(sender or "").lower()
-    return any(a in s for a in OWNER_ADDRS)
+    return any(a in s for a in OWNER_ADDRS) or bool(BCC and BCC.lower() in s)
 SPACECARDS = {
   "free-energy": {"label":"Free energy / over-unity","mode":"creative","personas":True,"headings":True,
       "retrieval":True,"memory_ns":"esa/free-energy","adjacent":["spirituality"],"senders":[],
@@ -2350,7 +2350,7 @@ def poll_once(verbose=True):
                     replied_add(mid, m.get("thread_id"), full.get("subject", ""), state="sending")
                     replied_mids.add(mid)
                     replied_threads.setdefault(m.get("thread_id"), []).append(time.time())
-                    if BCC and BCC.lower() not in (full.get("from") or "").lower():
+                    if BCC and not _is_owner(full.get("from")):
                         reply["bcc"] = [BCC]
                     _claim=None
                     try:
@@ -2520,7 +2520,7 @@ def poll_once(verbose=True):
             #  • inbound attachments from a non-Esa sender → also FORWARD the exchange + files to Esa, so
             #    he gets a copy of a friend's 'hot stuff' (the BCC alone wouldn't carry it); skip the BCC.
             #  • otherwise → BCC Esa on the reply so he sees answers sent to other senders.
-            from_esa = BCC and BCC.lower() in (full.get("from") or "").lower()
+            from_esa = _is_owner(full.get("from"))
             forwarded=False
             if atts and not from_esa:                              # inbound attachments → full-forward the exchange to Esa
                 forwarded=forward_to_esa(k, full, mid, question, answer, atts)
@@ -2922,7 +2922,7 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
         except Exception as exc:
             content.notices.append("Attachment unavailable: "+str(attach)+" ("+str(exc)+").")
     payload = dict(content.payload(), _report_language=report_language, to=[to], subject=subject)
-    if BCC and BCC.lower() != (to or "").lower():
+    if BCC and not _is_owner(to):
         payload["bcc"] = [BCC]
     # REPORT-CARD >> features/transcript-vault-email-analysis.feature
     # Save exactly what is sent, before sending. --archive-source identifies the flat
