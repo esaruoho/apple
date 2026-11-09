@@ -1040,25 +1040,90 @@ def run_picker(stdscr, folder):
     query = ""                    # "?" full-text search filter ("" = off)
     text_cache = {}               # (provider, uuid) -> (mtime, lowered text)
 
-    def session_text(r):
-        key = (r.provider, r.uuid)
+    hit_cache = {}                # (provider, uuid, query) -> (mtime, count, excerpt)
+
+    BOILER = (b'"skill_listing"', b'"api-request-blob"', b'"deferred_tools_delta"',
+              b'"mcp_instructions_delta"', b'"companion_intro"',
+              b'"role":"developer"', b'"role":"system"', b'"type":"world_state"',
+              b'"type":"turn_context"', b'"type":"session_meta"')
+
+    def raw_count(r, q):
+        """Fast pass: case-insensitive count over the raw session file via
+        mmap — no parsing, no copy (some stores are 300+ MB). Caches counts only."""
+        key = (r.provider, r.uuid, q)
         hit = text_cache.get(key)
         if hit and hit[0] == r.mtime:
             return hit[1]
+        qb = q.encode()
+        n = 0
         try:
-            if r.snippet is None:
-                LOAD[r.provider](r)
-            t = render_session(r).lower()
-        except Exception:
-            t = ((r.title or "") + " " + (r.snippet or "")).lower()
-        text_cache[key] = (r.mtime, t)
-        return t
+            with open(r.path, "rb") as f:
+                for line in f:
+                    low = line.lower()
+                    if qb in low and not any(m in line for m in BOILER):
+                        n += low.count(qb)
+        except (OSError, ValueError, TypeError):
+            try:   # odd store: fall back to the rendered text
+                if r.snippet is None:
+                    LOAD[r.provider](r)
+                n = render_session(r).lower().count(q)
+            except Exception:
+                n = 0
+        text_cache[key] = (r.mtime, n)
+        return n
+
+    USER_MARKS = (b'"type":"user"', b'"role":"user"', b'"type": "user"', b'"role": "user"')
+    NOISE_MARKS = BOILER + ( b"<system-reminder>", b"skills are available", b"skill.md",
+                   b"<command-", b"tool_result", b"function_call_output")
+
+    def excerpt(r, q):
+        """Where it matched — prefers a hit in YOUR message over boilerplate
+        (skill lists, tool output). Raw line scan, no parse; visible rows only."""
+        key = (r.provider, r.uuid, q)
+        hit = hit_cache.get(key)
+        if hit and hit[0] == r.mtime:
+            return hit[1]
+        qb = q.encode()
+        best = fallback = None
+        try:
+            with open(r.path, "rb") as f:
+                for line in f:
+                    low = line.lower()
+                    i = low.find(qb)
+                    if i < 0 or any(m in line for m in BOILER):
+                        continue
+                    if fallback is None:
+                        fallback = (line, i)
+                    if any(m in low for m in NOISE_MARKS):
+                        continue
+                    if any(m in line for m in USER_MARKS):
+                        best = (line, i)
+                        break
+                    if best is None:
+                        best = (line, i)   # clean non-user hit; keep looking for a user one
+        except (OSError, TypeError):
+            pass
+        pick = best or fallback
+        ex = ""
+        if pick:
+            line, i = pick
+            win = line[max(0, i - 60): i + len(qb) + 160].decode("utf-8", "replace")
+            win = win.replace("\\n", " ").replace('\\"', '"')
+            win = re.sub(r'[{}\[\]"\\]+|\s+', " ", win).strip()
+            ex = ("…" if i > 60 else "") + win
+        hit_cache[key] = (r.mtime, ex)
+        return ex
 
     def apply_filter(lst):
         if not query:
             return lst
         q = query.lower()
-        return [r for r in lst if q in session_text(r)]
+        out = []
+        for r in lst:
+            n = raw_count(r, q)
+            if n:
+                out.append(r)
+        return out
 
     def prompt_query():
         h, w = stdscr.getmaxyx()
@@ -1158,6 +1223,9 @@ def run_picker(stdscr, folder):
                 size = human_size(r.size).rjust(5) if r.size else "    ·"
                 glyph = PROVIDER_GLYPH[r.provider]
                 snippet = display_safe(r.snippet or "")
+                if query:
+                    ex = excerpt(r, query.lower())
+                    snippet = display_safe(f"{text_cache.get((r.provider, r.uuid, query.lower()), (0, 0))[1]}× » {ex or r.snippet or ''}")
                 short_id = r.uuid[:6]
                 selected = (i == sel)
                 base = curses.color_pair(1) | curses.A_BOLD if selected else curses.A_NORMAL
