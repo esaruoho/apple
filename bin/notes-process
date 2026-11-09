@@ -85,14 +85,14 @@ def notes_pids():
     return [int(p) for p in r.stdout.split()]
 
 
-def heal_notes(force=False):
+def heal_notes(force=False, quiet=False):
     """Keep Notes.app answering, unattended (2026-11-09: Mini Notes wedged 16 days at 76% CPU).
     Not running → start it in the background (-g: no window pops forward).
     force (2 timeouts in a row) → quit it, force-kill if it won't, restart in the background.
     Safe: notes live in iCloud/NoteStore; quitting Notes loses nothing."""
     pids = notes_pids()
     if force and pids:
-        log(f'Notes not answering → restarting Notes (pids {pids})')
+        log(f'{"iCloud refresh" if quiet else "Notes not answering"} → restarting Notes (pids {pids})')
         for pid in pids:
             subprocess.run(['kill', '-TERM', str(pid)])
         for _ in range(10):
@@ -104,8 +104,9 @@ def heal_notes(force=False):
         pids = []
     if not pids:
         subprocess.run(['open', '-g', '-a', 'Notes'])
-        time.sleep(8)
-        log('Notes started in the background')
+        time.sleep(4 if quiet else 8)
+        if not quiet:
+            log('Notes started in the background')
 
 
 def osa(script, *args, timeout=25):
@@ -284,7 +285,16 @@ def handle(occ, a, seen, use_shortcut):
     log(f'done {label}: {where}')
 
 
+LAST_REFRESH = time.time()
+
+
 def one_pass(a):
+    global LAST_REFRESH
+    # A backgrounded Notes on the Mini is slow to pull iCloud changes (2026-11-09: a note sat
+    # unsynced >2 min; a restart synced it in 4s). Relaunch it every --refresh seconds.
+    if a.refresh and time.time() - LAST_REFRESH >= a.refresh:
+        LAST_REFRESH = time.time()
+        heal_notes(force=True, quiet=True)
     seen = ledger()
     occs = [o for o in find_occurrences(a.tag) if o['key'] not in seen]
     if a.plain_text:
@@ -324,6 +334,8 @@ def main():
     ap.add_argument('--plain-text', action='store_true',
                     help='also catch the tag typed as plain text (not an orange tag)')
     ap.add_argument('--settle', type=int, default=5)
+    ap.add_argument('--refresh', type=int, default=60,
+                    help='relaunch Notes (background) every N s to force iCloud sync; 0 = off')
     ap.add_argument('--dry-run', action='store_true')
     a = ap.parse_args()
     if not a.tag.startswith('#') or tag_re(a.tag).search(a.done_tag):

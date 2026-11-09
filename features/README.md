@@ -1017,7 +1017,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/notes-process.feature` · [session](notes-process.session.md)
 
-**Behaviour (8 scenarios):**
+**Behaviour (9 scenarios):**
 
 - A real orange Notes tag is found (2026-11-08, note p13544) — `@built @hw-verified`
 - Fallback — reply as a linked rich-text note (note p13583) — `@built @hw-verified`
@@ -1027,8 +1027,9 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Guards — `@built @designed`
 - Running on the Mini under Cloudcity-Boot via systems.yaml — `@untested`
 - Notes.app self-heals on the unattended Mini — `@built`
+- iCloud sync is forced on the Mini — `@built`
 
-**Grade:** @built ×6 · @designed ×1 · @hw-verified ×3 · @sim-verified ×1 · @todo ×1 · @untested ×1
+**Grade:** @built ×7 · @designed ×1 · @hw-verified ×3 · @sim-verified ×1 · @todo ×1 · @untested ×1
 
 
 <a id="rec-audio"></a>

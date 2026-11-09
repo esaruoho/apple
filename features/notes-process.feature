@@ -41,3 +41,9 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     Given Notes is not running, or 2 Notes requests in a row time out (Notes wedged)
     Then notes-process starts Notes in the background (open -g -a Notes), restarting it first if wedged
     # bin/notes-process heal_notes(); 2026-11-09 Mini Notes was stuck 16 days at 76% CPU
+
+  @built
+  Scenario: iCloud sync is forced on the Mini
+    Given a backgrounded Notes is slow to pull new notes from iCloud
+    Then notes-process relaunches Notes in the background every --refresh seconds (default 60)
+    # bin/notes-process one_pass(); 2026-11-09 a note sat unsynced >2 min, restart synced in 4s
