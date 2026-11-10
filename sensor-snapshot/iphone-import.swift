@@ -23,6 +23,7 @@ func err(_ s: String) { FileHandle.standardError.write((s + "\n").data(using: .u
 let listOnly = args.contains("--list")
 let watch = args.contains("--watch")
 let latest = args.contains("--latest")
+let nameOnly = args.contains("--name-only")   // --latest: print newest name, no download
 let watchInitial = args.contains("--initial")   // --watch: also grab current newest first
 let destDir = args.last.flatMap { $0.hasPrefix("--") ? nil : $0 }
 
@@ -134,6 +135,7 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
 
     // Fast path: if the push event ever DOES fire for a fresh capture, take it.
     func cameraDevice(_ camera: ICCameraDevice, didAdd items: [ICCameraItem]) {
+        if ProcessInfo.processInfo.environment["ICDEBUG"] != nil { for i in items { err("[didAdd \(Date())] \(i.name ?? "?")") } }
         lastAdd = Date(); return
         guard watch, !done, catalogReady else { return }
         let fresh = items.compactMap { $0 as? ICCameraFile }
@@ -180,6 +182,7 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
                 guard let newest = mediaFiles(cam).max(by: { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }) else {
                     err("no media on device"); finish(3); return
                 }
+                if nameOnly { print(newest.name ?? ""); finish(0); return }
                 downloading = true; download(cam, newest)
             }
             return

@@ -39,7 +39,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         item.button?.target = self
         item.button?.action = #selector(click(_:))
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
-        pop.behavior = .transient
+        pop.behavior = .applicationDefined   // stays open while you shoot / drag; click 📱 to close
         pop.delegate = self
     }
 

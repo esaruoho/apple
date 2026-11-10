@@ -50,16 +50,18 @@ fi
 }
 
 if [[ "$WATCH" -eq 1 ]]; then
-  # ONE long-lived session: iOS streams new photos in over it (reopening kills the stream).
-  PARENT=$PPID
+  # A FRESH iphone-import process per check: iOS/icdd only reveals new photos to a
+  # new client — reopening a session inside one process keeps a frozen catalog.
+  LOG="$HOME/Library/Logs/iphone-latest.log"
+  PARENT=$PPID; FIRST=1
   while kill -0 "$PARENT" 2>/dev/null; do   # die with the app, never orphan
-    exec 3< <("$REPO/bin/iphone-import" --watch --initial "$TMP" 2>>"$HOME/Library/Logs/iphone-latest.log")
-    while IFS= read -r SRC <&3; do
-      [[ -f "$SRC" ]] || continue
-      process "$SRC"; echo "$JPG"; rm -f "$SRC"
-      kill -0 "$PARENT" 2>/dev/null || exit 0
-    done
-    sleep 3   # session dropped (unplug/lock) → reconnect
+    NAME="$("$REPO/bin/iphone-import" --latest --name-only "$TMP" 2>>"$LOG" | tail -1)" || NAME=""
+    if [[ -n "$NAME" && ( "$FIRST" -eq 1 || ! -f "$OUT/${NAME%.*}.jpg" ) ]]; then
+      echo "[iphone-latest] newest is $NAME — fetching" >>"$LOG"
+      SRC="$("$REPO/bin/iphone-import" --latest "$TMP" 2>>"$LOG" | tail -1)" || SRC=""
+      if [[ -f "$SRC" ]]; then process "$SRC"; echo "$JPG"; rm -f "$SRC"; FIRST=0; fi
+    fi
+    sleep 1
   done
   exit 0
 fi
