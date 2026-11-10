@@ -41,3 +41,11 @@ Feature: Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud
     When I take a photo on the UNLOCKED iPhone
     Then the watcher detects + downloads it (verified IMG_5702)
     And a locked phone just waits (no 80s give-up in watch mode)
+
+  @built @untested
+  Scenario: App holds ONE persistent ImageCaptureCore session (the Image Capture.app trick)
+    Given short sessions get icdd's stale cached catalog (stuck at IMG_5708 while phone had 5712;
+      with Image Capture.app holding a session open, a fetch saw IMG_5712 — hw-observed)
+    When iPhoneLatest launches it opens a session to the iPhone and never closes it
+    Then clicking 📱 downloads the live newest → JPEG → draggable thumbnail
+    And new items streaming in while the thumbnail is open trigger a refetch

@@ -4,6 +4,7 @@
 // FEATURE-CARD >> features/iphone-latest.feature
 import Cocoa
 import SwiftUI
+import ImageCaptureCore
 
 let SCRIPT = NSString(string: "~/work/apple/bin/iphone-latest").expandingTildeInPath
 let OUTDIR = NSString(string: "~/Pictures/iPhone-Latest").expandingTildeInPath
@@ -19,6 +20,89 @@ final class DragView: NSImageView, NSDraggingSource {
     }
 }
 
+// Persistent ImageCaptureCore session — the Image Capture.app trick. icdd only keeps
+// the iPhone's catalog live while a client HOLDS a session open; short sessions get a
+// stale cached catalog (stuck at an old IMG_). So: open once at launch, never close.
+final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate, ICCameraDeviceDownloadDelegate {
+    let browser = ICDeviceBrowser()
+    var cam: ICCameraDevice?
+    var open = false
+    var onNew: (() -> Void)?
+    var pendingDone: ((String?) -> Void)?
+    let tmp = NSTemporaryDirectory() + "iphone-latest-app"
+
+    func start() {
+        try? FileManager.default.createDirectory(atPath: tmp, withIntermediateDirectories: true)
+        browser.delegate = self
+        browser.browsedDeviceTypeMask = ICDeviceTypeMask(rawValue:
+            ICDeviceTypeMask.camera.rawValue | ICDeviceLocationTypeMask.local.rawValue)!
+        browser.start()
+        Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
+            guard let self = self, let c = self.cam, !self.open else { return }
+            c.requestOpenSession()   // retry while locked / after drop
+        }
+    }
+    func newest() -> ICCameraFile? {
+        (cam?.mediaFiles ?? []).compactMap { $0 as? ICCameraFile }
+            .max { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }
+    }
+    /// Download newest → JPEG in ~/Pictures/iPhone-Latest; returns jpg path (or nil).
+    func fetchNewest(_ done: @escaping (String?) -> Void) {
+        guard open, let c = cam, let f = newest() else { done(nil); return }
+        let jpg = OUTDIR + "/" + ((f.name ?? "photo") as NSString).deletingPathExtension + ".jpg"
+        if FileManager.default.fileExists(atPath: jpg) { done(jpg); return }
+        pendingDone = done
+        c.requestDownloadFile(f, options: [.downloadsDirectoryURL: URL(fileURLWithPath: tmp), .overwrite: true],
+            downloadDelegate: self, didDownloadSelector: #selector(didDownloadFile(_:error:options:contextInfo:)), contextInfo: nil)
+    }
+    var tries = 0
+    @objc func didDownloadFile(_ file: ICCameraFile, error: Error?, options: [String: Any] = [:], contextInfo: UnsafeMutableRawPointer?) {
+        if error != nil, tries < 15, let c = cam {     // -9934: iOS still writing it
+            tries += 1
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                c.requestDownloadFile(file, options: [.downloadsDirectoryURL: URL(fileURLWithPath: self.tmp), .overwrite: true],
+                    downloadDelegate: self, didDownloadSelector: #selector(self.didDownloadFile(_:error:options:contextInfo:)), contextInfo: nil)
+            }
+            return
+        }
+        tries = 0
+        let cb = pendingDone; pendingDone = nil
+        guard error == nil else { cb?(nil); return }
+        let name = (options[ICDownloadOption.savedFilename.rawValue] as? String) ?? file.name ?? "photo"
+        let src = tmp + "/" + name
+        let jpg = OUTDIR + "/" + (name as NSString).deletingPathExtension + ".jpg"
+        DispatchQueue.global().async {
+            try? FileManager.default.createDirectory(atPath: OUTDIR, withIntermediateDirectories: true)
+            let p = Process(); p.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
+            p.arguments = ["-s", "format", "jpeg", "-s", "formatOptions", "85", src, "--out", jpg]
+            p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
+            try? p.run(); p.waitUntilExit(); try? FileManager.default.removeItem(atPath: src)
+            DispatchQueue.main.async { cb?(FileManager.default.fileExists(atPath: jpg) ? jpg : nil) }
+        }
+    }
+
+    func deviceBrowser(_ b: ICDeviceBrowser, didAdd d: ICDevice, moreComing: Bool) {
+        guard cam == nil, let c = d as? ICCameraDevice else { return }
+        cam = c; c.delegate = self; c.requestOpenSession()
+    }
+    func deviceBrowser(_ b: ICDeviceBrowser, didRemove d: ICDevice, moreGoing: Bool) {
+        if d === cam { cam = nil; open = false }
+    }
+    func device(_ d: ICDevice, didOpenSessionWithError e: Error?) { open = (e == nil) }
+    func device(_ d: ICDevice, didCloseSessionWithError e: Error?) { open = false }
+    func didRemove(_ d: ICDevice) { if d === cam { cam = nil; open = false } }
+    func cameraDevice(_ c: ICCameraDevice, didAdd items: [ICCameraItem]) { onNew?() }
+    func cameraDevice(_ c: ICCameraDevice, didRemove items: [ICCameraItem]) {}
+    func cameraDevice(_ c: ICCameraDevice, didRenameItems items: [ICCameraItem]) {}
+    func cameraDevice(_ c: ICCameraDevice, didReceivePTPEvent e: Data) {}
+    func cameraDeviceDidChangeCapability(_ c: ICCameraDevice) {}
+    func cameraDeviceDidRemoveAccessRestriction(_ d: ICDevice) { if !open { cam?.requestOpenSession() } }
+    func cameraDeviceDidEnableAccessRestriction(_ d: ICDevice) {}
+    func deviceDidBecomeReady(withCompleteContentCatalog d: ICCameraDevice) { onNew?() }
+    func cameraDevice(_ c: ICCameraDevice, didReceiveThumbnail t: CGImage?, for i: ICCameraItem, error: Error?) {}
+    func cameraDevice(_ c: ICCameraDevice, didReceiveMetadata m: [AnyHashable: Any]?, for i: ICCameraItem, error: Error?) {}
+}
+
 final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     var item: NSStatusItem!
     var thumb: DragView?
@@ -28,6 +112,8 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     var shownPath: String?
     var pop = NSPopover()
     var busy = false
+    let phone = PhoneLink()
+    var debounce: DispatchWorkItem?
 
     func applicationDidFinishLaunching(_ n: Notification) {
         // kill watchers orphaned by a previous instance (two ICC sessions = stale catalog)
@@ -41,6 +127,15 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         pop.behavior = .transient
         pop.delegate = self
+        phone.start()
+        // Live: when new items stream in and the thumbnail is open, fetch the newest.
+        phone.onNew = { [weak self] in
+            guard let self = self else { return }
+            self.debounce?.cancel()
+            let w = DispatchWorkItem { if self.pop.isShown { self.grab() } }
+            self.debounce = w
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5, execute: w)
+        }
     }
 
     @objc func click(_ b: NSStatusBarButton) {
@@ -84,25 +179,18 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
 
     func grab() {
-        // Show the last-known image instantly, then fetch the phone's true newest
-        // with a FRESH session (bin/iphone-latest --no-clip) and swap it in.
         if !pop.isShown { showThumb(newestJPG() ?? "") }
         guard !busy else { return }
+        guard phone.open else {
+            caption?.stringValue = phone.cam == nil ? "⚠️ No iPhone on the cable" : "🔒 Unlock the iPhone (connecting…)"
+            return
+        }
         busy = true; item.button?.title = "⏳"
-        caption?.stringValue = "⏳ fetching newest from iPhone…"
-        DispatchQueue.global().async {
-            let p = Process(); let pipe = Pipe()
-            p.executableURL = URL(fileURLWithPath: SCRIPT)
-            p.arguments = ["--no-clip"]
-            p.standardOutput = pipe; p.standardError = FileHandle.nullDevice
-            try? p.run(); p.waitUntilExit()
-            let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
-                .split(separator: "\n").last.map(String.init) ?? ""
-            DispatchQueue.main.async {
-                self.busy = false; self.item.button?.title = "📱"
-                if out.hasSuffix(".jpg") { self.updateThumb(out) }
-                else { self.caption?.stringValue = "⚠️ iPhone cabled + unlocked? Click 📱 to retry" }
-            }
+        caption?.stringValue = "⏳ " + (phone.newest()?.name ?? "") + "…"
+        phone.fetchNewest { [weak self] jpg in
+            guard let self = self else { return }
+            self.busy = false; self.item.button?.title = "📱"
+            if let j = jpg { self.updateThumb(j) } else { self.caption?.stringValue = "⚠️ fetch failed — click 📱 to retry" }
         }
     }
 
