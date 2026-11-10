@@ -71,7 +71,6 @@ Regenerate: `python3 bin/gen-skill-indexes.py`
 `cc-here` — (no description) — `bin/cc-here`
 `cc-index` — (no description) — `bin/cc-index`
 `cloud-assets` — REPORT-CARD >> features/cloud-source-markdown.feature — `bin/cloud-assets`
-`cloudcity-mlx-safety-test` — (no description) — `bin/cloudcity-mlx-safety-test`
 `cocoa-class-probe` — (no description) — `bin/cocoa-class-probe`
 `compass` — read the iPhone's Compass heading onto the Mac command line, and — `bin/compass`
 `compass.py` — (no description) — `bin/compass.py`
