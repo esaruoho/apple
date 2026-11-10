@@ -24,6 +24,18 @@ Every photo is kept (never overwritten) in `~/Pictures/iPhone-Latest/Continuity-
 - MCP tool **`take_iphone_photo`** (`bin/iphone-snap-mcp`, dependency-free stdio server) is available in every Claude Code session:
   `claude mcp add iphone -s user -- ~/work/apple/bin/iphone-snap-mcp`
 
+### Other agents (same server, one line each — all registered on this Mac 2026-11-10)
+
+| Agent | Register | Config file |
+|---|---|---|
+| Claude Code | `claude mcp add iphone -s user -- ~/work/apple/bin/iphone-snap-mcp` | `~/.claude.json` |
+| Codex CLI | `codex mcp add iphone -- ~/work/apple/bin/iphone-snap-mcp` | `~/.codex/config.toml` |
+| Gemini CLI | `gemini mcp add -s user iphone ~/work/apple/bin/iphone-snap-mcp` | `~/.gemini/settings.json` |
+| Copilot CLI | `copilot mcp add iphone -- ~/work/apple/bin/iphone-snap-mcp` | `~/.copilot/mcp-config.json` |
+| Antigravity (`agy`) | `agy mcp add iphone ~/work/apple/bin/iphone-snap-mcp` | managed by `agy mcp` |
+
+No MCP? Any agent with a shell can run `bin/iphone-snap` and open the printed path.
+
 ## Requirements
 
 - macOS 13+ and an iPhone on the **same Apple ID**, with **Wi-Fi + Bluetooth** on (Continuity Camera).
