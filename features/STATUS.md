@@ -42,6 +42,7 @@
 | image-playground | 16 | ✗ | — | — | @built @caveat @untested @verified-live |
 | iphone-clip | 4 | ✗ | — | — | @built @verified |
 | iphone-compass | 5 | ✓ | ✓ | ✓ | @built @code-verified @hw-verified @runtime-verified @stock @wontfix |
+| iphone-latest | 2 | ✗ | — | ✓ | @apple @built @hw-verified @iphone @untested |
 | iphonemirror-rotated-live-mirror | 33 | ✗ | — | ✓ | @built @hw-verified @todo @untested |
 | mail-material-editor-contract | 4 | ✗ | ✓ | — | @built @runtime-verified @sim-verified |
 | mail-reply-attachment-fallback | 3 | ✗ | ✓ | — | @built @runtime-verified @sim-verified |
@@ -75,8 +76,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 63
+- Cards: 64
 - Build-verified: 9
 - Runtime-verified: 9 full + 5 partial
-- **Hardware-verified: 24**  ·  hardware-untested: 0
+- **Hardware-verified: 25**  ·  hardware-untested: 0
 

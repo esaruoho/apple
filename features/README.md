@@ -38,6 +38,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [image-playground — on-device pictures, locally, as the prose's twin](#image-playground) — `image-playground.feature`
 - [An iPhone photo, on the Mac clipboard, the way you took it](#iphone-clip) — `iphone-clip.feature`
 - [Read the iPhone Compass onto the Mac and point out East](#iphone-compass) — `iphone-compass.feature`
+- [Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud)](#iphone-latest) — `iphone-latest.feature`
 - [iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen](#iphonemirror-rotated-live-mirror) — `iphonemirror-rotated-live-mirror.feature`
 - [Free Energy documents retain the complete editorial format across entry points](#mail-material-editor-contract) — `mail-material-editor-contract.feature`
 - [Deliver analysis when returned original attachments exceed the mail service limit](#mail-reply-attachment-fallback) — `mail-reply-attachment-fallback.feature`
@@ -794,6 +795,21 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 **How it does it:** **Key procs:** `compass`, `turn_to_east`, `iphone-screen` · **Source files:** `bin/compass.py`
 
 **Grade:** @built ×4 · @code-verified ×2 · @hw-verified ×1 · @runtime-verified ×1 · @stock ×1
+
+
+<a id="iphone-latest"></a>
+## Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud)
+
+`features/iphone-latest.feature`
+
+**What it does:** Implementation: bin/iphone-latest ; topbar/AppleToolbox.swift grabLatestIPhonePhoto + LatestPhotoPanel Session: 80e0eb8a-1733-48c4-8ec5-10bc261249c6 (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6), 2026-11-10
+
+**Behaviour (2 scenarios):**
+
+- CLI grabs newest photo as JPEG onto the clipboard — `@built @hw-verified`
+- Menu-bar "📱 Latest iPhone Photo" shows a draggable thumbnail — `@built @untested`
+
+**Grade:** @built ×2 · @hw-verified ×1 · @untested ×1
 
 
 <a id="iphonemirror-rotated-live-mirror"></a>

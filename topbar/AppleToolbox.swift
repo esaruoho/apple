@@ -3321,6 +3321,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         runDetached(cmd, args)
     }
 
+    /// "📱 Latest iPhone Photo": bin/iphone-latest (USB import → JPEG → clipboard),
+    /// then a floating thumbnail panel you can DRAG into Terminal / Claude / Mail.
+    /// FEATURE-CARD >> features/iphone-latest.feature
+    @objc func grabLatestIPhonePhoto(_ sender: Any?) {
+        DispatchQueue.global().async {
+            let out = run("\(APPLE_DIR)/bin/iphone-latest", [], timeout: 100)
+                .split(separator: "\n").last.map(String.init) ?? ""
+            DispatchQueue.main.async {
+                guard out.hasSuffix(".jpg"), FileManager.default.fileExists(atPath: out) else {
+                    notify("📱 Latest iPhone Photo", "No photo — is the iPhone cabled + unlocked?")
+                    return
+                }
+                LatestPhotoPanel.show(path: out)
+            }
+        }
+    }
+
     /// "Arm iPhone → Clipboard": launch bin/iphone-clip --watch as a one-shot.
     /// Once armed, take a photo on the iPhone (Camera app) and the real photo is
     /// imported over USB and copied to the clipboard, ready to ⌘V into Claude.
@@ -4109,6 +4126,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             ? "📲 iPhone → Clipboard: ARMED — click to disarm"
             : "📲 Arm iPhone → Clipboard"
         menu.addItem(customAction(iphoneTitle, selector: #selector(armIPhoneToClipboard(_:))))
+        // Latest iPhone photo (USB) → JPEG → clipboard + draggable thumbnail panel.
+        menu.addItem(customAction("📱 Latest iPhone Photo", selector: #selector(grabLatestIPhonePhoto(_:))))
         // Claude-speech switch — the ONE control for "Claude talks to me". Truth
         // = intent flag (~/.config/voicebox/speak.state) AND server reachable
         // (cached voiceboxServerUp). Enabling guarantees BOTH: it flips the flag
@@ -9993,5 +10012,48 @@ enum SnapEngine {
         let base = n / r
         let extra = n % r
         return (0..<r).map { $0 < extra ? base + 1 : base }
+    }
+}
+
+
+// MARK: - Latest iPhone photo: draggable thumbnail panel
+// FEATURE-CARD >> features/iphone-latest.feature
+final class DraggableImageView: NSImageView, NSDraggingSource {
+    var fileURL: URL?
+    func draggingSession(_ s: NSDraggingSession, sourceOperationMaskFor c: NSDraggingContext) -> NSDragOperation { .copy }
+    override func mouseDown(with event: NSEvent) {
+        guard let url = fileURL, let img = image else { return }
+        let item = NSDraggingItem(pasteboardWriter: url as NSURL)
+        item.setDraggingFrame(bounds, contents: img)
+        beginDraggingSession(with: [item], event: event, source: self)
+    }
+}
+
+enum LatestPhotoPanel {
+    static var panel: NSPanel?
+    static func show(path: String) {
+        let url = URL(fileURLWithPath: path)
+        guard let img = NSImage(contentsOf: url) else { return }
+        let w: CGFloat = 220
+        let h = max(80, min(320, w * img.size.height / max(1, img.size.width)))
+        panel?.close()
+        let p = NSPanel(contentRect: NSRect(x: 0, y: 0, width: w, height: h + 24),
+                        styleMask: [.titled, .closable, .utilityWindow, .nonactivatingPanel],
+                        backing: .buffered, defer: false)
+        p.title = "📱 " + url.lastPathComponent + " — drag me"
+        p.level = .floating
+        p.isReleasedWhenClosed = false
+        p.hidesOnDeactivate = false
+        let iv = DraggableImageView(frame: NSRect(x: 0, y: 24, width: w, height: h))
+        iv.image = img; iv.imageScaling = .scaleProportionallyUpOrDown; iv.fileURL = url
+        let lbl = NSTextField(labelWithString: "Drag into chat · or ⌘V/Ctrl-V (on clipboard)")
+        lbl.font = .systemFont(ofSize: 10); lbl.alignment = .center
+        lbl.frame = NSRect(x: 0, y: 4, width: w, height: 16)
+        p.contentView?.addSubview(iv); p.contentView?.addSubview(lbl)
+        if let scr = NSScreen.main?.visibleFrame {
+            p.setFrameTopLeftPoint(NSPoint(x: scr.maxX - w - 20, y: scr.maxY - 10))
+        }
+        p.orderFrontRegardless()
+        panel = p
     }
 }
