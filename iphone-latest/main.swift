@@ -25,7 +25,6 @@ final class DragView: NSImageView, NSDraggingSource {
     // Drag starts only after the mouse actually MOVES (>4pt). Starting it in mouseDown
     // made every click (incl. double-click) flash a square, offset drag image.
     override func mouseDown(with e: NSEvent) {
-        if e.clickCount == 2 { downAt = nil; onDoubleClick?(); return }
         downAt = e.locationInWindow
     }
     override func mouseUp(with e: NSEvent) { downAt = nil }
@@ -281,7 +280,8 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
 
     @objc func click(_ b: NSStatusBarButton) {
         if NSApp.currentEvent?.type == .rightMouseUp { return showMenu() }
-        grab()   // every click = fresh fetch from the phone
+        if pop.isShown { pop.performClose(nil); return }   // open → just close, no camera
+        grab()
     }
 
     func showMenu() {
@@ -321,7 +321,7 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
 
     func grab() {
         L("click")
-        if !pop.isShown { showThumb(newestJPG() ?? "") }
+        showThumb(newestJPG() ?? "")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.takePhoto(nil) }
     }
 
@@ -368,12 +368,13 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         let root = CaptureView(frame: NSRect(x: 0, y: 0, width: w, height: h + 58))
         root.onImage = { [weak self] jpg in
             guard let self = self else { return }
+            self.capturing = false
             if self.pop.isShown, self.thumb != nil { self.updateThumb(jpg) } else { self.showThumb(jpg) }
         }
         let iv = DragView(frame: NSRect(x: 0, y: 58, width: w, height: h))
         iv.imageScaling = .scaleProportionallyUpOrDown
         if let img = img { iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path }
-        let l = NSTextField(labelWithString: img == nil ? "No photo yet" : "Drag into chat · double-click = new photo")
+        let l = NSTextField(labelWithString: img == nil ? "No photo yet" : "Drag into chat · 📷 below = another photo")
         l.font = .systemFont(ofSize: 10); l.alignment = .center
         l.frame = NSRect(x: 0, y: 38, width: w, height: 16)
         // Continuity Camera: Apple's "Import from iPhone ▸ Take Photo" — the phone's camera
@@ -382,7 +383,7 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         btn.bezelStyle = .rounded; btn.frame = NSRect(x: 10, y: 6, width: w - 20, height: 28)
         root.addSubview(iv); root.addSubview(l); root.addSubview(btn)
         thumb = iv; caption = l; captureView = root
-        iv.onDoubleClick = { [weak self] in self?.takePhoto(nil) }
+        // thumbnail = drag only; no click/double-click actions (they re-fired the camera)
         vc.view = root; pop.contentViewController = vc
         if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
         NSApp.activate(ignoringOtherApps: true)
@@ -390,6 +391,7 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
     }
 
     var captureView: CaptureView?
+    var capturing = false
     lazy var importMenu: NSMenu = {
         let main = NSMenu(); let fileItem = NSMenuItem(); let file = NSMenu(title: "File")
         let imp = NSMenuItem(title: "Import from iPhone", action: nil, keyEquivalent: "")
@@ -431,7 +433,9 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         root.window?.makeKeyAndOrderFront(nil)
         root.window?.makeFirstResponder(root)
         importMenu.update()
+        if capturing { L("continuity: already waiting for a photo — ignored"); return }
         if let (m, i) = findTakePhoto(importMenu) {
+            capturing = true
             L("continuity: firing '\(m.items[i].title)' directly")
             caption?.stringValue = "📷 Camera open on iPhone — shoot + Use Photo"
             m.performActionForItem(at: i)
@@ -477,12 +481,13 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
     func updateThumb(_ path: String) {
         guard let iv = thumb, let img = NSImage(contentsOfFile: path) else { return }
         iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path
-        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + "  ·  drag · double-click = new photo"
+        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + "  ·  drag into chat"
     }
 
     func applicationWillTerminate(_ n: Notification) { stopWatcher() }
 
     func popoverDidClose(_ n: Notification) {
+        capturing = false
         stopWatcher(); thumb = nil; caption = nil
     }
 }
