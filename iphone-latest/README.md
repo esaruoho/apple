@@ -18,6 +18,12 @@ No AirDrop, no emailing yourself, no iCloud wait, no cable needed.
 
 Every photo is kept (never overwritten) in `~/Pictures/iPhone-Latest/Continuity-<yyyyMMdd-HHmmss>.jpg`.
 
+## Claude can ask for a photo
+
+- `bin/iphone-snap` opens `iphonelatest://take`, waits for your shot, and prints the JPEG path. A Claude session then Reads the path and sees the photo.
+- MCP tool **`take_iphone_photo`** (`bin/iphone-snap-mcp`, dependency-free stdio server) is available in every Claude Code session:
+  `claude mcp add iphone -s user -- ~/work/apple/bin/iphone-snap-mcp`
+
 ## Requirements
 
 - macOS 13+ and an iPhone on the **same Apple ID**, with **Wi-Fi + Bluetooth** on (Continuity Camera).

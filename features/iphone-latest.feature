@@ -76,3 +76,19 @@ Feature: iPhoneLatest.app — take a photo with the iPhone, drag it into any cha
   Scenario: Why the app dropped USB (see FINDINGS.md)
     Then iOS publishes new photos to ImageCaptureCore one at a time, 15–60 s after the shot
     And same-process session reopens return a stale catalog; locked-phone sessions open restricted/empty
+
+  # ---- Claude can ask for a photo ----
+
+  @built @hw-verified
+  Scenario: A — bin/iphone-snap (URL scheme + wait)
+    When a Claude session runs bin/iphone-snap
+    Then it opens iphonelatest://take (App.application(_:open:)) → the iPhone camera opens
+    And it waits for the next Continuity-*.jpg and prints its path for the Read tool
+    # hw 2026-11-10 13:05: Continuity-20261110-130519.jpg (Arduino Uno clone) seen by Claude in-session
+
+  @built @untested
+  Scenario: B — MCP server take_iphone_photo
+    Given bin/iphone-snap-mcp is registered: claude mcp add iphone -s user -- …/bin/iphone-snap-mcp
+    When any Claude Code session (any repo) calls take_iphone_photo
+    Then it runs bin/iphone-snap and returns the photo as an MCP image (long edge 1600) + the saved path
+    # handshake + tools/list verified; health check "✔ Connected"; a full tools/call needs a new session

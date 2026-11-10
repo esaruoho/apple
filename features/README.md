@@ -804,7 +804,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 **What it does:** One click on the 📱 menu-bar icon opens the iPhone camera (Continuity Camera); the shot comes back as a draggable thumbnail. Apple-native, no third-party deps. Implementation: iphone-latest/main.swift · iphone-latest/build.sh · iphone-latest/make-icon.swift Docs: iphone-latest/README.md · iphone-latest/FINDINGS.md (why not USB) Session: features/iphone-latest.session.md (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6)
 
-**Behaviour (11 scenarios):**
+**Behaviour (13 scenarios):**
 
 - Click 📱 → iPhone camera → thumbnail — `@built @hw-verified`
 - The Continuity item must live in the MAIN menu — `@built @hw-verified`
@@ -817,8 +817,10 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Installs as /Applications/iPhoneLatest.app — `@built`
 - CLI bin/iphone-latest — newest USB photo → JPEG → clipboard — `@built @hw-verified`
 - Why the app dropped USB (see FINDINGS.md) — `@hw-verified`
+- A — bin/iphone-snap (URL scheme + wait) — `@built @hw-verified`
+- B — MCP server take_iphone_photo — `@built @untested`
 
-**Grade:** @built ×10 · @hw-verified ×5 · @untested ×5
+**Grade:** @built ×12 · @hw-verified ×6 · @untested ×6
 
 
 <a id="iphonemirror-rotated-live-mirror"></a>

@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""iphone-snap-mcp — MCP server (stdio, no dependencies) exposing one tool:
+
+  take_iphone_photo(prompt?, timeout?)  → opens the iPhone camera via iPhoneLatest.app
+                                           (Continuity Camera), waits for Esa to shoot,
+                                           returns the photo as an image + its path.
+
+Engine: bin/iphone-snap (iphonelatest://take + wait for the new JPEG).
+Register (user scope, every repo):
+  claude mcp add iphone -s user -- /Users/esaruoho/work/apple/bin/iphone-snap-mcp
+FEATURE-CARD >> features/iphone-latest.feature
+"""
+import base64, json, os, subprocess, sys, tempfile
+
+SNAP = os.path.join(os.path.dirname(os.path.realpath(__file__)), "iphone-snap")
+PROTOCOL = "2025-06-18"
+
+TOOL = {
+    "name": "take_iphone_photo",
+    "description": (
+        "Ask the user to take a photo with their iPhone and get it back as an image. "
+        "Opens the iPhone camera via Continuity Camera; the user shoots and taps Use Photo. "
+        "Use when you need to SEE something physical (a circuit, a screen, a document, the desk). "
+        "Blocks until the photo arrives or the timeout passes."
+    ),
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "prompt": {"type": "string", "description": "What you want photographed (shown in your reply, for the user)."},
+            "timeout": {"type": "integer", "description": "Seconds to wait (default 180).", "default": 180},
+        },
+    },
+}
+
+
+def send(msg):
+    sys.stdout.write(json.dumps(msg) + "\n")
+    sys.stdout.flush()
+
+
+def take(args):
+    timeout = int(args.get("timeout") or 180)
+    r = subprocess.run([SNAP, "--timeout", str(timeout)], capture_output=True, text=True, timeout=timeout + 15)
+    path = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else ""
+    if r.returncode != 0 or not os.path.isfile(path):
+        return {"isError": True, "content": [{"type": "text", "text": (r.stderr.strip() or "no photo") }]}
+    # downscale a copy for the model (long edge 1600 px), keep the original on disk
+    small = os.path.join(tempfile.gettempdir(), "iphone-snap-mcp.jpg")
+    subprocess.run(["sips", "-Z", "1600", path, "--out", small], capture_output=True)
+    src = small if os.path.isfile(small) else path
+    with open(src, "rb") as f:
+        data = base64.b64encode(f.read()).decode()
+    return {"content": [
+        {"type": "image", "data": data, "mimeType": "image/jpeg"},
+        {"type": "text", "text": f"Saved: {path}"},
+    ]}
+
+
+def main():
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            req = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        mid, method = req.get("id"), req.get("method")
+        if mid is None:          # notification (e.g. notifications/initialized)
+            continue
+        try:
+            if method == "initialize":
+                res = {"protocolVersion": req.get("params", {}).get("protocolVersion", PROTOCOL),
+                       "capabilities": {"tools": {}},
+                       "serverInfo": {"name": "iphone", "version": "1.0"}}
+            elif method == "tools/list":
+                res = {"tools": [TOOL]}
+            elif method == "tools/call":
+                p = req.get("params", {})
+                if p.get("name") != "take_iphone_photo":
+                    send({"jsonrpc": "2.0", "id": mid, "error": {"code": -32602, "message": "unknown tool"}}); continue
+                res = take(p.get("arguments") or {})
+            elif method == "ping":
+                res = {}
+            else:
+                send({"jsonrpc": "2.0", "id": mid, "error": {"code": -32601, "message": f"unknown method {method}"}}); continue
+            send({"jsonrpc": "2.0", "id": mid, "result": res})
+        except Exception as e:  # never crash the server
+            send({"jsonrpc": "2.0", "id": mid, "result": {"isError": True, "content": [{"type": "text", "text": str(e)}]}})
+
+
+if __name__ == "__main__":
+    main()
