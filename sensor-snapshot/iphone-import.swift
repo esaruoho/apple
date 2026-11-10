@@ -23,6 +23,7 @@ func err(_ s: String) { FileHandle.standardError.write((s + "\n").data(using: .u
 let listOnly = args.contains("--list")
 let watch = args.contains("--watch")
 let latest = args.contains("--latest")
+let watchInitial = args.contains("--initial")   // --watch: also grab current newest first
 let destDir = args.last.flatMap { $0.hasPrefix("--") ? nil : $0 }
 
 guard listOnly || ((watch || latest) && destDir != nil) else {
@@ -44,6 +45,7 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
     var downloading = false           // a download is in flight — don't start another
     var refreshing = false            // a poll-triggered close→reopen is in flight
     var pollTicks = 0                 // 2s poll ticks since we started watching
+    var retries = 0
     var pending: ICCameraFile?        // newer photo that streamed in mid-download
     var lastAdd = Date()              // --latest: when the last item streamed in
     var latestReadyAt: Date?          // --latest: catalog-ready time (settle window)
@@ -188,6 +190,10 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
         let files = mediaFiles(cam)
         if !catalogReady {
             baseline = Set(files.map { $0.name ?? "" }); catalogReady = true
+            if watchInitial, let n = files.max(by: { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }) {
+                err("[iphone-import] initial newest: \(n.name ?? "?")")
+                downloading = true; download(cam, n); return
+            }
             err("[iphone-import] catalog settled, \(files.count) item(s) — watching. Take a shot…")
         } else {
             let fresh = files.filter { !baseline.contains($0.name ?? "") }
@@ -216,7 +222,18 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
     // ICCameraDeviceDownloadDelegate
     func didDownloadFile(_ file: ICCameraFile, error: Error?,
                          options: [String: Any] = [:], contextInfo: UnsafeMutableRawPointer?) {
-        if let error = error { err("download failed: \(error)"); finish(4); return }
+        if let error = error {
+            // -9934: iOS is still writing a just-taken photo. In watch mode retry the
+            // same file every 1s (up to 15x) instead of dying + full reconnect.
+            if watch, retries < 15, let cam = camera {
+                retries += 1
+                err("[iphone-import] not ready yet (\((error as NSError).code)), retry \(retries)…")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.download(cam, file) }
+                return
+            }
+            err("download failed: \(error)"); finish(4); return
+        }
+        retries = 0
         let name = (options[ICDownloadOption.savedFilename.rawValue] as? String) ?? file.name ?? "photo"
         let path = URL(fileURLWithPath: destDir!).appendingPathComponent(name).path
         print(path); fflush(stdout)

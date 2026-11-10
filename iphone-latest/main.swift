@@ -65,9 +65,9 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     @objc func help() {
         let v = AppHelpView(appName: "iPhoneLatest",
             tagline: "Newest iPhone photo, over the cable, into any chat.",
-            usage: [(icon: "📱", text: "Click the icon: newest photo → JPEG → clipboard."),
+            usage: [(icon: "📱", text: "Click the icon: newest photo → JPEG thumbnail (clipboard untouched)."),
                     (icon: "🖱️", text: "Drag the thumbnail into Terminal / Claude / Mail."),
-                    (icon: "⌨️", text: "Or just ⌘V / Ctrl-V — it's already on the clipboard.")])
+                    ])
         let vc = NSHostingController(rootView: v)
         pop.contentViewController = vc
         if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
@@ -88,15 +88,6 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         // Show whatever is newest NOW, then pull the phone's newest in background;
         // the folder poll swaps it in when it lands.
         showThumb(newestJPG() ?? "")
-        guard !busy else { return }
-        busy = true; item.button?.title = "⏳"
-        DispatchQueue.global().async {
-            let p = Process()
-            p.executableURL = URL(fileURLWithPath: SCRIPT)
-            p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
-            try? p.run(); p.waitUntilExit()
-            DispatchQueue.main.async { self.busy = false; self.item.button?.title = "📱"; self.poll() }
-        }
     }
 
     func showThumb(_ path: String) {
@@ -106,6 +97,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             l.frame = NSRect(x: 0, y: 0, width: 260, height: 40)
             vc.view = l; pop.contentViewController = vc
             if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
+            startWatcher()
             return
         }
         let w: CGFloat = 240, h = max(80, min(340, w * img.size.height / max(1, img.size.width)))
@@ -113,7 +105,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         let iv = DragView(frame: NSRect(x: 0, y: 26, width: w, height: h))
         iv.image = img; iv.imageScaling = .scaleProportionallyUpOrDown
         iv.fileURL = URL(fileURLWithPath: path); shownPath = path
-        let l = NSTextField(labelWithString: "Drag into chat · or ⌘V (on clipboard)")
+        let l = NSTextField(labelWithString: "Drag into chat")
         l.font = .systemFont(ofSize: 10); l.alignment = .center
         l.frame = NSRect(x: 0, y: 5, width: w, height: 16)
         root.addSubview(iv); root.addSubview(l)
@@ -129,7 +121,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         guard watcher?.isRunning != true else { return }
         let p = Process()
         p.executableURL = URL(fileURLWithPath: SCRIPT)
-        p.arguments = ["--watch"]
+        p.arguments = ["--watch", "--no-clip"]
         p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
         try? p.run(); watcher = p
         pollTimer?.invalidate()
@@ -156,7 +148,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     func updateThumb(_ path: String) {
         guard let iv = thumb, let img = NSImage(contentsOfFile: path) else { return }
         iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path
-        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + " · drag or ⌘V"
+        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + " · drag into chat"
     }
 
     func applicationWillTerminate(_ n: Notification) { stopWatcher() }

@@ -53,7 +53,7 @@ if [[ "$WATCH" -eq 1 ]]; then
   # ONE long-lived session: iOS streams new photos in over it (reopening kills the stream).
   PARENT=$PPID
   while kill -0 "$PARENT" 2>/dev/null; do   # die with the app, never orphan
-    exec 3< <("$REPO/bin/iphone-import" --watch "$TMP" 2>/dev/null)
+    exec 3< <("$REPO/bin/iphone-import" --watch --initial "$TMP" 2>>"$HOME/Library/Logs/iphone-latest.log")
     while IFS= read -r SRC <&3; do
       [[ -f "$SRC" ]] || continue
       process "$SRC"; echo "$JPG"; rm -f "$SRC"
