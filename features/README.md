@@ -804,14 +804,16 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 **What it does:** Implementation: bin/iphone-latest ; topbar/AppleToolbox.swift grabLatestIPhonePhoto + LatestPhotoPanel Session: 80e0eb8a-1733-48c4-8ec5-10bc261249c6 (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6), 2026-11-10
 
-**Behaviour (4 scenarios):**
+**Behaviour (6 scenarios):**
 
 - CLI grabs newest photo as JPEG onto the clipboard — `@built @hw-verified`
 - Menu-bar "📱 Latest iPhone Photo" shows a draggable thumbnail — `@built @untested`
 - Standalone 📱 menu-bar icon (iphone-latest/main.swift, own app — not AppleToolbox) — `@built @untested`
 - Thumbnail auto-refreshes on a new photo — `@built @untested`
+- --latest sees photos newer than iOS's cached PTP catalog — `@built @hw-verified`
+- --watch keeps ONE session open (no 2s close→reopen, which killed iOS's item stream) — `@built @untested`
 
-**Grade:** @built ×4 · @hw-verified ×1 · @untested ×3
+**Grade:** @built ×6 · @hw-verified ×2 · @untested ×4
 
 
 <a id="iphonemirror-rotated-live-mirror"></a>

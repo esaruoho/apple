@@ -50,15 +50,18 @@ fi
 }
 
 if [[ "$WATCH" -eq 1 ]]; then
+  # ONE long-lived session: iOS streams new photos in over it (reopening kills the stream).
   PARENT=$PPID
   while kill -0 "$PARENT" 2>/dev/null; do   # die with the app, never orphan
-    rm -f "$TMP"/* 2>/dev/null || true
-    "$REPO/bin/iphone-import" --watch "$TMP" > "$TMP.out" 2>/dev/null & IMP=$!
-    wait "$IMP" || { sleep 3; continue; }
-    SRC="$(tail -1 "$TMP.out")"
-    [[ -n "$SRC" && -f "$SRC" ]] || { sleep 3; continue; }
-    process "$SRC"; echo "$JPG"
+    exec 3< <("$REPO/bin/iphone-import" --watch "$TMP" 2>/dev/null)
+    while IFS= read -r SRC <&3; do
+      [[ -f "$SRC" ]] || continue
+      process "$SRC"; echo "$JPG"; rm -f "$SRC"
+      kill -0 "$PARENT" 2>/dev/null || exit 0
+    done
+    sleep 3   # session dropped (unplug/lock) → reconnect
   done
+  exit 0
 fi
 SRC="$("$REPO/bin/iphone-import" --latest "$TMP" | tail -1)"
 [[ -n "$SRC" && -f "$SRC" ]] || { echo "❌ no photo (iPhone cabled + unlocked + Trusted?)" >&2; exit 1; }

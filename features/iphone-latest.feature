@@ -28,3 +28,13 @@ Feature: Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud
     When I take a new photo on the cabled iPhone
     Then `iphone-latest --watch` imports it → jpg → clipboard and the thumbnail swaps in place ("🆕 name")
     And closing the popover stops the watcher with no orphan iphone-import (@hw-verified teardown)
+
+  @built @hw-verified
+  Scenario: --latest sees photos newer than iOS's cached PTP catalog
+    Given the cached catalog stops at an older photo (was IMG_5693)
+    When iphone-import --latest waits for didAdd items to stop streaming (2.5s settle, 25s cap)
+    Then it downloads the true newest (verified IMG_5701, ~4s)
+
+  @built @untested
+  Scenario: --watch keeps ONE session open (no 2s close→reopen, which killed iOS's item stream)
+    Then each new photo arrives via didAdd and is printed as a path line, session stays open

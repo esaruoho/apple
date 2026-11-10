@@ -44,6 +44,13 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
     var downloading = false           // a download is in flight — don't start another
     var refreshing = false            // a poll-triggered close→reopen is in flight
     var pollTicks = 0                 // 2s poll ticks since we started watching
+    var pending: ICCameraFile?        // newer photo that streamed in mid-download
+    var lastAdd = Date()              // --latest: when the last item streamed in
+    var latestReadyAt: Date?          // --latest: catalog-ready time (settle window)
+    func newer(_ a: ICCameraFile?, _ b: ICCameraFile?) -> ICCameraFile? {
+        guard let a = a else { return b }; guard let b = b else { return a }
+        return (a.creationDate ?? .distantPast) >= (b.creationDate ?? .distantPast) ? a : b
+    }
 
     func start() {
         browser.delegate = self
@@ -121,7 +128,11 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
             return
         }
         if latest {
-            err("[iphone-import] catalog ready, \(files.count) media item(s)")
+            err("[iphone-import] catalog ready, \(files.count) media item(s) — letting newer items stream in…")
+            latestReadyAt = Date(); lastAdd = Date()
+            return
+        }
+        if false {
             guard let newest = files.max(by: { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }) else {
                 err("no media on device"); finish(3); return
             }
@@ -131,10 +142,12 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
 
     // Fast path: if the push event ever DOES fire for a fresh capture, take it.
     func cameraDevice(_ camera: ICCameraDevice, didAdd items: [ICCameraItem]) {
-        guard watch, !done, catalogReady, !downloading else { return }
+        if latest { lastAdd = Date(); return }
+        guard watch, !done, catalogReady else { return }
         let fresh = items.compactMap { $0 as? ICCameraFile }
             .filter { !baseline.contains($0.name ?? "") }
         guard let f = fresh.max(by: { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }) else { return }
+        if downloading { pending = newer(pending, f); return }
         err("[iphone-import] new photo detected: \(f.name ?? "?")")
         downloading = true
         download(camera, f)
@@ -169,12 +182,23 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
             return
         }
 
+        // --latest settle: download newest once nothing new streamed for 2.5s (cap 25s).
+        if latest, let r = latestReadyAt, !downloading {
+            if Date().timeIntervalSince(lastAdd) >= 2.5 || Date().timeIntervalSince(r) >= 25 {
+                guard let newest = mediaFiles(cam).max(by: { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }) else {
+                    err("no media on device"); finish(3); return
+                }
+                downloading = true; download(cam, newest)
+            }
+            return
+        }
+
         // Phase 2 — watching: every tick, force a fresh catalog scan.
         guard watch, catalogReady, !downloading, !refreshing else { return }
         pollTicks += 1
-        if pollTicks % 5 == 0 { err("[iphone-import] still watching… (\(pollTicks) scans)") }
-        refreshing = true
-        cam.requestCloseSession()   // didCloseSessionWithError → reopen → re-enumerate
+        // NOTE: we used to close→reopen here to "refresh". That restarted iOS's
+        // incremental catalog stream every 2s, so photos newer than the cached
+        // catalog NEVER arrived. Keep the session open; new items come via didAdd.
     }
 
     func download(_ device: ICCameraDevice, _ file: ICCameraFile) {
@@ -195,7 +219,12 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
         if let error = error { err("download failed: \(error)"); finish(4); return }
         let name = (options[ICDownloadOption.savedFilename.rawValue] as? String) ?? file.name ?? "photo"
         let path = URL(fileURLWithPath: destDir!).appendingPathComponent(name).path
-        print(path)
+        print(path); fflush(stdout)
+        if watch {
+            baseline.insert(file.name ?? ""); downloading = false
+            if let p = pending { pending = nil; if !baseline.contains(p.name ?? "") { downloading = true; download(camera!, p) } }
+            return
+        }
         finish(0)
     }
     func didReceiveDownloadProgress(for file: ICCameraFile,
