@@ -46,6 +46,7 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
     var refreshing = false            // a poll-triggered close→reopen is in flight
     var pollTicks = 0                 // 2s poll ticks since we started watching
     var retries = 0
+    var cycles = 0
     var pending: ICCameraFile?        // newer photo that streamed in mid-download
     var lastAdd = Date()              // --latest: when the last item streamed in
     var latestReadyAt: Date?          // --latest: catalog-ready time (settle window)
@@ -103,8 +104,9 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
         // A poll asked for a refresh: reopen so the catalog re-enumerates and we
         // can see any photo taken since the last scan.
         if refreshing, !done { (device as? ICCameraDevice)?.requestOpenSession() }
+        else if !done { err("[iphone-import] session closed unexpectedly (\(String(describing: error))) — reopening"); (device as? ICCameraDevice)?.requestOpenSession() }
     }
-    func didRemove(_ device: ICDevice) {}
+    func didRemove(_ device: ICDevice) { err("[iphone-import] device removed"); finish(5) }
     func cameraDevice(_ camera: ICCameraDevice, didRenameItems items: [ICCameraItem]) {}
     func cameraDevice(_ camera: ICCameraDevice, didReceivePTPEvent eventData: Data) {}
     func cameraDeviceDidRemoveAccessRestriction(_ device: ICDevice) {}
@@ -165,7 +167,7 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
                 err("open session still failing after \(unlockTries) tries — likely a Trust problem, not a lock.")
                 finish(2); return
             }
-            if unlockTries % 15 == 0 {
+            if unlockTries % 3 == 0 {
                 err("[iphone-import] still waiting for unlock… (\(unlockTries)/\(maxUnlockTries))")
             }
             cam.requestOpenSession()
@@ -203,6 +205,7 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
                 downloading = true; download(cam, f); return
             }
         }
+        cycles += 1; if true { err("[iphone-import] cycle \(cycles): \(files.count) items, newest \(files.max(by: { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) })?.name ?? "?")") }
         latestReadyAt = nil; refreshing = true
         cam.requestCloseSession()   // → didCloseSession → reopen → fresh enumeration
     }
@@ -250,6 +253,7 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
 
     func finish(_ code: Int32) {
         if done { return }
+        err("[iphone-import] exit \(code)")
         done = true; exitCode = code
         camera?.requestCloseSession()
         browser.stop()
