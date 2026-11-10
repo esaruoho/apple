@@ -215,7 +215,7 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
     func cameraDevice(_ c: ICCameraDevice, didReceiveMetadata m: [AnyHashable: Any]?, for i: ICCameraItem, error: Error?) {}
 }
 
-final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, UNUserNotificationCenterDelegate {
+final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPopoverDelegate, UNUserNotificationCenterDelegate {
     var item: NSStatusItem!
     var thumb: DragView?
     var caption: NSTextField?
@@ -394,6 +394,17 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, UNUserNotif
     }
 
     var captureView: CaptureView?
+    // End-of-chain requestor: NSApplication consults its delegate, so "Import from iPhone"
+    // enables even when the popover window isn't key.
+    @objc func validRequestor(forSendType s: NSPasteboard.PasteboardType?, returnType r: NSPasteboard.PasteboardType?) -> Any? {
+        if s == nil, let r = r, NSImage.imageTypes.contains(r.rawValue) { return self }
+        return nil
+    }
+    @objc func readSelection(from pb: NSPasteboard) -> Bool {
+        let v = captureView ?? CaptureView(frame: .zero)
+        if v.onImage == nil { v.onImage = { [weak self] j in self?.showThumb(j) } }
+        return v.readSelection(from: pb)
+    }
     @objc func takePhotoMenu(_ sender: NSButton) {
         guard let root = captureView else { return }
         NSApp.activate(ignoringOtherApps: true)
@@ -404,7 +415,9 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, UNUserNotif
         imp.identifier = NSMenuItem.importFromDeviceIdentifier   // AppKit fills in "Take Photo" etc.
         m.addItem(imp)
         L("continuity: showing import menu")
-        m.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.frame.maxY), in: root)
+        // Context-menu form: AppKit resolves the Continuity requestor from the view `for:`.
+        if let ev = NSApp.currentEvent { NSMenu.popUpContextMenu(m, with: ev, for: root) }
+        else { m.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.frame.maxY), in: root) }
     }
 
     // Live refresh: while the thumbnail is open, `iphone-latest --watch` prints a
