@@ -171,15 +171,20 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSServicesM
         let img = path.flatMap { NSImage(contentsOfFile: $0) }
         let w: CGFloat = 240
         let h: CGFloat = img.map { max(80, min(340, w * $0.size.height / max(1, $0.size.width))) } ?? 80
-        let root = CaptureView(frame: NSRect(x: 0, y: 0, width: w, height: h + 24))
+        let root = CaptureView(frame: NSRect(x: 0, y: 0, width: w, height: h + 46))
         root.onImage = { [weak self] p in self?.gotPhoto(p) }
-        let iv = DragView(frame: NSRect(x: 0, y: 24, width: w, height: h))
+        let iv = DragView(frame: NSRect(x: 0, y: 46, width: w, height: h))
         iv.imageScaling = .scaleProportionallyUpOrDown
         if let img = img, let p = path { iv.image = img; iv.fileURL = URL(fileURLWithPath: p) }
         let l = NSTextField(labelWithString: img == nil ? "No photo yet" : "Drag into chat · click 📱 for another")
         l.font = .systemFont(ofSize: 10); l.alignment = .center
-        l.frame = NSRect(x: 0, y: 4, width: w, height: 16)
-        root.addSubview(iv); root.addSubview(l)
+        l.frame = NSRect(x: 0, y: 26, width: w, height: 16)
+        // clickable row → open the folder with every photo taken
+        let folder = NSButton(title: "📂 Open iPhone-Latest folder", target: self, action: #selector(openFolder))
+        folder.isBordered = false; folder.font = .systemFont(ofSize: 11)
+        folder.contentTintColor = .linkColor
+        folder.frame = NSRect(x: 0, y: 4, width: w, height: 18)
+        root.addSubview(iv); root.addSubview(l); root.addSubview(folder)
         thumb = iv; caption = l; captureView = root
         let vc = NSViewController(); vc.view = root
         pop.contentViewController = vc
@@ -204,7 +209,11 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSServicesM
         m.addItem(withTitle: "Quit", action: #selector(NSApp.terminate(_:)), keyEquivalent: "q")
         item.menu = m; item.button?.performClick(nil); item.menu = nil
     }
-    @objc func openFolder() { NSWorkspace.shared.open(URL(fileURLWithPath: OUTDIR)) }
+    @objc func openFolder() {
+        pop.performClose(nil)
+        try? FileManager.default.createDirectory(atPath: OUTDIR, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(URL(fileURLWithPath: OUTDIR))
+    }
     @objc func help() {
         let v = AppHelpView(appName: "iPhoneLatest",
             tagline: "Take a photo with your iPhone, drag it into any chat.",
