@@ -5,6 +5,7 @@
 import Cocoa
 import SwiftUI
 import ImageCaptureCore
+import UserNotifications
 
 let SCRIPT = NSString(string: "~/work/apple/bin/iphone-latest").expandingTildeInPath
 let OUTDIR = NSString(string: "~/Pictures/iPhone-Latest").expandingTildeInPath
@@ -151,7 +152,7 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
     func cameraDevice(_ c: ICCameraDevice, didReceiveMetadata m: [AnyHashable: Any]?, for i: ICCameraItem, error: Error?) {}
 }
 
-final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
+final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, UNUserNotificationCenterDelegate {
     var item: NSStatusItem!
     var thumb: DragView?
     var caption: NSTextField?
@@ -162,6 +163,28 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     var busy = false
     let phone = PhoneLink()
     var debounce: DispatchWorkItem?
+    var lastNotified: String?
+
+    func notifyArrived(_ jpg: String) {
+        let c = UNMutableNotificationContent()
+        c.title = "📱 New iPhone photo"
+        c.body = (jpg as NSString).lastPathComponent + " — click to open & drag"
+        c.sound = .default
+        // attachment needs a copy (the system moves the file)
+        let att = NSTemporaryDirectory() + "notif-" + (jpg as NSString).lastPathComponent
+        try? FileManager.default.removeItem(atPath: att)
+        if (try? FileManager.default.copyItem(atPath: jpg, toPath: att)) != nil,
+           let a = try? UNNotificationAttachment(identifier: "img", url: URL(fileURLWithPath: att)) { c.attachments = [a] }
+        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: jpg, content: c, trigger: nil)) { e in
+            L("notify \((jpg as NSString).lastPathComponent): \(e.map { "\($0)" } ?? "ok")")
+        }
+    }
+    func userNotificationCenter(_ c: UNUserNotificationCenter, willPresent n: UNNotification,
+                                withCompletionHandler h: @escaping (UNNotificationPresentationOptions) -> Void) { h([.banner, .sound]) }
+    func userNotificationCenter(_ c: UNUserNotificationCenter, didReceive r: UNNotificationResponse,
+                                withCompletionHandler h: @escaping () -> Void) {
+        DispatchQueue.main.async { if !self.pop.isShown { self.grab() } }; h()
+    }
 
     func applicationDidFinishLaunching(_ n: Notification) {
         // kill watchers orphaned by a previous instance (two ICC sessions = stale catalog)
@@ -179,6 +202,8 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         // catalog, no new-photo pushes even after unlock (hw log 2026-11-10). So every
         // click and every unlock reopens the session, then reads the live catalog.
         phone.start()
+        let nc = UNUserNotificationCenter.current(); nc.delegate = self
+        nc.requestAuthorization(options: [.alert, .sound]) { ok, e in L("notif auth: \(ok) \(String(describing: e))") }
         // Live: when new items stream in and the thumbnail is open, fetch the newest.
         phone.onNew = { [weak self] in
             guard let self = self else { return }
@@ -233,6 +258,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         L("click: open=\(phone.open) shown=\(pop.isShown) busy=\(busy)")
         // Click never reopens the session (that raced iOS: -9943 + stale cache → "fetch failed").
         // Show the newest photo already here; new ones arrive via didAdd → prefetch().
+        if item.button?.title == "📸" { item.button?.title = "📱" }
         if !pop.isShown { showThumb(newestJPG() ?? "") }
         if phone.cam == nil { caption?.stringValue = "⚠️ No iPhone on the cable"; return }
         if !phone.open { caption?.stringValue = "🔒 Unlock the iPhone…"; return }
@@ -247,7 +273,13 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         phone.fetchNewest { [weak self] jpg in
             guard let self = self else { return }
             self.busy = false; self.item.button?.title = "📱"
-            if let j = jpg, self.pop.isShown { self.updateThumb(j) }
+            guard let j = jpg else { return }
+            if self.pop.isShown { self.updateThumb(j) }
+            if j != self.lastNotified, j != self.shownPath {
+                self.lastNotified = j
+                if !self.pop.isShown { self.item.button?.title = "📸" }   // unseen photo marker
+                self.notifyArrived(j)
+            }
         }
     }
 
