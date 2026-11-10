@@ -20,7 +20,7 @@ Feature: Identify which Safari tab is eating power, and act on it
     # cite: bin/safari-hogs tabs BURN_JS cputime
     # verified 2026-11-10: x.com tab -> pid 53806, YouTube tab -> pid 1238
 
-  @designed
+  @built @hw-verified
   Scenario: Background tabs are never JS-probed
     Then a hot PID with no front tab is listed as unmapped instead of waking sleeping tabs
     # cite: bin/safari-hogs tabs orphans
@@ -30,3 +30,16 @@ Feature: Identify which Safari tab is eating power, and act on it
     When I run "safari-hogs worst" the top-scored tab is made current and its window raised
     When I run "safari-hogs close-worst" it asks y/N before closing
     # cite: bin/safari-hogs select close
+
+  @built @hw-verified
+  Scenario: Background tabs are attributed by cache-partition site, without JS
+    When a busy process hosts no front tab
+    Then its mmapped WebKitCache record partitions name the sites it serves
+    And all tabs on those sites are listed as candidates (site-level, not tab-level)
+    # cite: bin/safari-hogs sites_for_pid all_tabs tabs
+    # verified 2026-11-10: pid 27008 -> google.com, 174 candidate tabs
+
+  @built @untested
+  Scenario: Repeated `worst` walks down the list
+    Then it skips the front tab of window 1 and the last pick stored in ~/.cache/safari-hogs-last
+    # cite: bin/safari-hogs pick_next

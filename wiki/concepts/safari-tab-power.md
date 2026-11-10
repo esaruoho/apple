@@ -31,3 +31,10 @@ Inside `tell application "Safari"`, the word `tab` means Safari's **tab class**,
 ## Per-tab metrics
 Media playing (the classic battery drain), DOM node count, iframes, bytes fetched and page age.
 Process power and CPU belong to the **process**, which can be shared by several tabs.
+
+## Background tabs without waking them (added same day)
+Each WebContent process mmaps WebKit network-cache bodies (`…/WebKitCache/Version 17/Records/<partition>/Resource/<hash>-blob`).
+The sibling record file (same path without `-blob`) starts with the **partition string**, which is the top-level site (e.g. `google.com`).
+So `lsof -Fn -p PID` → records → sites tells you which sites a process is serving. Tabs whose site matches become candidates.
+Limit: every tab of that site matches, sleeping ones included, so this gives site-level precision, not tab-level.
+`worst` skips the tab you're on and the last pick (`~/.cache/safari-hogs-last`), so repeated presses walk down the list. `reset` clears it.

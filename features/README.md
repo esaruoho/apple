@@ -1305,16 +1305,18 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/safari-hogs.feature` · [session](safari-hogs.session.md)
 
-**Behaviour (4 scenarios):**
+**Behaviour (6 scenarios):**
 
 - Rank Safari processes by energy without side effects — `@built @hw-verified`
 - Map a front tab to its PID by CPU fingerprint — `@built @hw-verified`
-- Background tabs are never JS-probed — `@designed`
+- Background tabs are never JS-probed — `@built @hw-verified`
 - Select or close the worst offender — `@built @untested`
+- Background tabs are attributed by cache-partition site, without JS — `@built @hw-verified`
+- Repeated `worst` walks down the list — `@built @untested`
 
 **How it does it:** **Key procs:** `bin/safari-hogs`, `commands/safari-hogs.md`, `wiki/concepts/safari-tab-power.md`, `procs`, `tabs`, `front_tabs`, `cputime`, `BURN_JS`, `PROBE_JS`, `select`, `close`
 
-**Grade:** @built ×3 · @designed ×1 · @hw-verified ×2 · @untested ×1
+**Grade:** @built ×6 · @hw-verified ×4 · @untested ×2
 
 
 <a id="screen-audio-record"></a>

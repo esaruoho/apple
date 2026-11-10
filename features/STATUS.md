@@ -64,7 +64,7 @@
 | recburn-voice-balance | 10 | ✗ | — | ✓ | @hw-verified @note @self-test |
 | recburn-whisper-deps | 4 | ✗ | ✓ | — | @built @runtime-verified |
 | recburnclick | 13 | ✗ | — | ✓ | @built @hw-verified @note |
-| safari-hogs | 4 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
+| safari-hogs | 6 | ✗ | — | ✓ | @built @hw-verified @untested |
 | screen-audio-record | 20 | ✗ | — | ✓ | @built @hw-verified @note @untested |
 | secret-scan | 5 | ✗ | — | ✓ | @hw-verified @note |
 | sesh | 11 | ✗ | — | ✓ | @built @hw-verified @todo @untested |

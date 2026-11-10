@@ -67,7 +67,7 @@
 - Resume: `claude --resume 480ed8ef-d841-4077-9b49-7aa23cc7bfc2`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/480ed8ef-d841-4077-9b49-7aa23cc7bfc2.jsonl
 - Tooling touched: INDEX.md, STATUS.md, gen-sessions.py, gen-status.py, print-card.py
-- Cards touched (4): aimeat-email-pdf.feature, aimeat-roundtable.feature, safari-hogs.feature, transcript-vault-email-analysis.feature
+- Cards touched (10): aimeat-email-pdf.feature, aimeat-roundtable.feature, recburn-voice-balance.feature, recburn-whisper-deps.feature, recburnclick.feature, safari-hogs.feature, screen-audio-record.feature, secret-scan.feature, sesh.feature, transcript-vault-email-analysis.feature
 
 ### `80e0eb8a-1733-48c4-8ec5-10bc261249c6`  (2026-11-10)
 - Resume: `claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6`
