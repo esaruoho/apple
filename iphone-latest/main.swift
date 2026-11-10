@@ -273,7 +273,12 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, UNUserNotif
         phone.fetchNewest { [weak self] jpg in
             guard let self = self else { return }
             self.busy = false; self.item.button?.title = "📱"
+            L("prefetch done: \(jpg ?? "nil") lastNotified=\(self.lastNotified ?? "-") shown=\(self.shownPath ?? "-")")
             guard let j = jpg else { return }
+            // more streamed in while we were busy? go again
+            if let n = self.phone.newest()?.name, !j.hasSuffix(((n as NSString).deletingPathExtension) + ".jpg") {
+                DispatchQueue.main.async { self.prefetch() }
+            }
             if self.pop.isShown { self.updateThumb(j) }
             if j != self.lastNotified, j != self.shownPath {
                 self.lastNotified = j
