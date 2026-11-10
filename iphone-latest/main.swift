@@ -19,8 +19,10 @@ func L(_ m: String) {
 
 final class DragView: NSImageView, NSDraggingSource {
     var fileURL: URL?
+    var onDoubleClick: (() -> Void)?
     func draggingSession(_ s: NSDraggingSession, sourceOperationMaskFor c: NSDraggingContext) -> NSDragOperation { .copy }
     override func mouseDown(with e: NSEvent) {
+        if e.clickCount == 2 { onDoubleClick?(); return }
         guard let u = fileURL, let img = image else { return }
         let it = NSDraggingItem(pasteboardWriter: u as NSURL)
         it.setDraggingFrame(bounds, contents: img)
@@ -37,6 +39,8 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
     var open = false
     var onNew: (() -> Void)?
     var reopening = false
+    var beats = 0
+    var downloading: Bool { pendingDone != nil }
     var afterReady: [() -> Void] = []
     func refresh(_ then: @escaping () -> Void) {
         guard let c = cam else { then(); return }
@@ -61,6 +65,20 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
         Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
             guard let self = self, let c = self.cam, !self.open else { return }
             c.requestOpenSession()   // retry while locked / after drop
+        }
+        // heartbeat: log real session state every 15s; reopen if ICC silently dropped it
+        Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            let c = self.cam
+            L("hb: cam=\(c != nil) open=\(self.open) hasOpen=\(c?.hasOpenSession ?? false) items=\(c?.mediaFiles?.count ?? -1) newest=\(self.newest()?.name ?? "-")")
+            if let c = c, self.open, !c.hasOpenSession { self.open = false; c.requestOpenSession() }
+            // Sessions go silently stale (hw 2026-11-10: IMG_5736 only appeared after an
+            // app restart). Every 2nd beat (~30s), idle → close+reopen for a fresh catalog;
+            // the ready → onNew → prefetch path then notifies about anything new.
+            self.beats += 1
+            if self.beats % 2 == 0, let c = c, self.open, self.afterReady.isEmpty, !self.downloading {
+                self.reopening = true; c.requestCloseSession()
+            }
         }
     }
     func newest() -> ICCameraFile? {
@@ -262,8 +280,21 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, UNUserNotif
         if !pop.isShown { showThumb(newestJPG() ?? "") }
         if phone.cam == nil { caption?.stringValue = "⚠️ No iPhone on the cable"; return }
         if !phone.open { caption?.stringValue = "🔒 Unlock the iPhone…"; return }
-        caption?.stringValue = "Drag into chat · new photos appear here (iOS takes ~5–25 s)"
+        caption?.stringValue = "Drag · double-click = refresh"
         prefetch()
+    }
+
+    /// Double-click: reopen the iPhone session (fresh catalog) and fetch the newest.
+    func hardRefresh() {
+        L("double-click refresh")
+        caption?.stringValue = "⏳ refreshing from iPhone…"
+        busy = true; item.button?.title = "⏳"
+        phone.refresh { [weak self] in
+            guard let self = self else { return }
+            self.busy = false; self.item.button?.title = "📱"
+            self.caption?.stringValue = "Drag · double-click = refresh"
+            self.prefetch()
+        }
     }
 
     /// New photo streamed in → download it now; swap into the thumbnail if it's open.
@@ -302,11 +333,12 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, UNUserNotif
         let iv = DragView(frame: NSRect(x: 0, y: 26, width: w, height: h))
         iv.image = img; iv.imageScaling = .scaleProportionallyUpOrDown
         iv.fileURL = URL(fileURLWithPath: path); shownPath = path
-        let l = NSTextField(labelWithString: "Drag into chat")
+        let l = NSTextField(labelWithString: "Drag · double-click = refresh")
         l.font = .systemFont(ofSize: 10); l.alignment = .center
         l.frame = NSRect(x: 0, y: 5, width: w, height: 16)
         root.addSubview(iv); root.addSubview(l)
         thumb = iv; caption = l
+        iv.onDoubleClick = { [weak self] in self?.hardRefresh() }
         vc.view = root; pop.contentViewController = vc
         if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
     }
@@ -344,7 +376,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, UNUserNotif
     func updateThumb(_ path: String) {
         guard let iv = thumb, let img = NSImage(contentsOfFile: path) else { return }
         iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path
-        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + " · drag into chat · click 📱 to refresh"
+        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + "  ·  drag · double-click = refresh"
     }
 
     func applicationWillTerminate(_ n: Notification) { stopWatcher() }
