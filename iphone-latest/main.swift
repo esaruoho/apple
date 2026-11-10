@@ -35,6 +35,16 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
     var cam: ICCameraDevice?
     var open = false
     var onNew: (() -> Void)?
+    var reopening = false
+    var afterReady: (() -> Void)?
+    func refresh(_ then: @escaping () -> Void) {
+        guard let c = cam else { then(); return }
+        afterReady = then; lastAdded = nil
+        if open { reopening = true; c.requestCloseSession() } else { c.requestOpenSession() }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in   // never hang
+            if let t = self?.afterReady { self?.afterReady = nil; L("refresh timeout"); t() }
+        }
+    }
     var pendingDone: ((String?) -> Void)?
     let tmp = NSTemporaryDirectory() + "iphone-latest-app"
 
@@ -103,7 +113,10 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
         if d === cam { cam = nil; open = false }
     }
     func device(_ d: ICDevice, didOpenSessionWithError e: Error?) { open = (e == nil); L("open: \(e.map { "\(($0 as NSError).code)" } ?? "OK")") }
-    func device(_ d: ICDevice, didCloseSessionWithError e: Error?) { open = false; L("closed") }
+    func device(_ d: ICDevice, didCloseSessionWithError e: Error?) {
+        open = false; L("closed")
+        if reopening { reopening = false; cam?.requestOpenSession() }
+    }
     func didRemove(_ d: ICDevice) { if d === cam { cam = nil; open = false } }
     func cameraDevice(_ c: ICCameraDevice, didAdd items: [ICCameraItem]) {
         guard items.count < 20 else { return }          // initial catalog flood, not new shots
@@ -115,9 +128,18 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
     func cameraDevice(_ c: ICCameraDevice, didRenameItems items: [ICCameraItem]) {}
     func cameraDevice(_ c: ICCameraDevice, didReceivePTPEvent e: Data) {}
     func cameraDeviceDidChangeCapability(_ c: ICCameraDevice) {}
-    func cameraDeviceDidRemoveAccessRestriction(_ d: ICDevice) { if !open { cam?.requestOpenSession() } }
-    func cameraDeviceDidEnableAccessRestriction(_ d: ICDevice) {}
-    func deviceDidBecomeReady(withCompleteContentCatalog d: ICCameraDevice) { L("ready \(d.mediaFiles?.count ?? 0) newest \(newest()?.name ?? "-")"); onNew?() }
+    func cameraDeviceDidRemoveAccessRestriction(_ d: ICDevice) {
+        L("unlocked → reopening session")
+        refresh { [weak self] in self?.onNew?() }
+    }
+    func cameraDeviceDidEnableAccessRestriction(_ d: ICDevice) { L("locked") }
+    func deviceDidBecomeReady(withCompleteContentCatalog d: ICCameraDevice) {
+        L("ready \(d.mediaFiles?.count ?? 0) newest \(newest()?.name ?? "-")")
+        if let t = afterReady {
+            afterReady = nil
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { t() }   // let late items stream in
+        } else { onNew?() }
+    }
     func cameraDevice(_ c: ICCameraDevice, didReceiveThumbnail t: CGImage?, for i: ICCameraItem, error: Error?) {}
     func cameraDevice(_ c: ICCameraDevice, didReceiveMetadata m: [AnyHashable: Any]?, for i: ICCameraItem, error: Error?) {}
 }
@@ -146,18 +168,9 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         pop.behavior = .transient
         pop.delegate = self
-        // Hard-won (hw log 2026-11-10): iOS only PUSHES new photos (didAdd) while
-        // Image Capture.app is running. Our own open session alone got nothing.
-        // So keep it running — hidden (-g -j), re-checked every 30s.
-        func ensureImageCapture() {
-            if NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Image_Capture").isEmpty {
-                L("launching Image Capture hidden")
-                let o = Process(); o.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-                o.arguments = ["-g", "-j", "-a", "Image Capture"]; try? o.run()
-            }
-        }
-        ensureImageCapture()
-        Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in ensureImageCapture() }
+        // A session opened while the phone is LOCKED is access-restricted: stale
+        // catalog, no new-photo pushes even after unlock (hw log 2026-11-10). So every
+        // click and every unlock reopens the session, then reads the live catalog.
         phone.start()
         // Live: when new items stream in and the thumbnail is open, fetch the newest.
         phone.onNew = { [weak self] in
@@ -213,16 +226,20 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         L("click: open=\(phone.open) shown=\(pop.isShown) busy=\(busy)")
         if !pop.isShown { showThumb(newestJPG() ?? "") }
         guard !busy else { return }
-        guard phone.open else {
+        guard phone.cam != nil else {
             caption?.stringValue = phone.cam == nil ? "⚠️ No iPhone on the cable" : "🔒 Unlock the iPhone (connecting…)"
             return
         }
         busy = true; item.button?.title = "⏳"
         caption?.stringValue = "⏳ " + (phone.newest()?.name ?? "") + "…"
-        phone.fetchNewest { [weak self] jpg in
+        phone.refresh { [weak self] in
             guard let self = self else { return }
-            self.busy = false; self.item.button?.title = "📱"
-            if let j = jpg { self.updateThumb(j) } else { self.caption?.stringValue = "⚠️ fetch failed — click 📱 to retry" }
+            L("after refresh: items=\(self.phone.cam?.mediaFiles?.count ?? -1) newest=\(self.phone.newest()?.name ?? "-") open=\(self.phone.open)")
+            self.phone.fetchNewest { [weak self] jpg in
+                guard let self = self else { return }
+                self.busy = false; self.item.button?.title = "📱"
+                if let j = jpg { self.updateThumb(j) } else { self.caption?.stringValue = "⚠️ fetch failed — click 📱 to retry" }
+            }
         }
     }
 
