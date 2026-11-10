@@ -280,8 +280,7 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
 
     @objc func click(_ b: NSStatusBarButton) {
         if NSApp.currentEvent?.type == .rightMouseUp { return showMenu() }
-        if pop.isShown { pop.performClose(nil); return }   // open → just close, no camera
-        grab()
+        grab()   // icon = take a photo. Always. (close the thumbnail by clicking elsewhere)
     }
 
     func showMenu() {
@@ -321,7 +320,7 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
 
     func grab() {
         L("click")
-        showThumb(newestJPG() ?? "")
+        if !pop.isShown { showThumb(newestJPG() ?? "") }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.takePhoto(nil) }
     }
 
@@ -365,23 +364,19 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         let img = path.hasSuffix(".jpg") ? NSImage(contentsOfFile: path) : nil
         let w: CGFloat = 240
         let h: CGFloat = img.map { max(80, min(340, w * $0.size.height / max(1, $0.size.width))) } ?? 80
-        let root = CaptureView(frame: NSRect(x: 0, y: 0, width: w, height: h + 58))
+        let root = CaptureView(frame: NSRect(x: 0, y: 0, width: w, height: h + 24))
         root.onImage = { [weak self] jpg in
             guard let self = self else { return }
             self.capturing = false
             if self.pop.isShown, self.thumb != nil { self.updateThumb(jpg) } else { self.showThumb(jpg) }
         }
-        let iv = DragView(frame: NSRect(x: 0, y: 58, width: w, height: h))
+        let iv = DragView(frame: NSRect(x: 0, y: 24, width: w, height: h))
         iv.imageScaling = .scaleProportionallyUpOrDown
         if let img = img { iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path }
-        let l = NSTextField(labelWithString: img == nil ? "No photo yet" : "Drag into chat · 📷 below = another photo")
+        let l = NSTextField(labelWithString: img == nil ? "No photo yet" : "Drag into chat · click 📱 for another")
         l.font = .systemFont(ofSize: 10); l.alignment = .center
-        l.frame = NSRect(x: 0, y: 38, width: w, height: 16)
-        // Continuity Camera: Apple's "Import from iPhone ▸ Take Photo" — the phone's camera
-        // opens, the shot comes straight back to us (no USB catalog, no iOS delay).
-        let btn = NSButton(title: "📷 Take Photo on iPhone", target: self, action: #selector(takePhotoMenu(_:)))
-        btn.bezelStyle = .rounded; btn.frame = NSRect(x: 10, y: 6, width: w - 20, height: 28)
-        root.addSubview(iv); root.addSubview(l); root.addSubview(btn)
+        l.frame = NSRect(x: 0, y: 4, width: w, height: 16)
+        root.addSubview(iv); root.addSubview(l)
         thumb = iv; caption = l; captureView = root
         // thumbnail = drag only; no click/double-click actions (they re-fired the camera)
         vc.view = root; pop.contentViewController = vc
@@ -441,11 +436,22 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
             m.performActionForItem(at: i)
             return
         }
-        L("continuity: Take Photo not populated yet — showing menu once")
-        caption?.stringValue = "Pick Import from iPhone ▸ Take Photo (only this once)"
-        let at = sender.map { NSPoint(x: $0.frame.minX, y: $0.frame.maxY) } ?? NSPoint(x: 10, y: 40)
-        importMenu.popUp(positioning: nil, at: at, in: root)
-        dump(importMenu)
+        // AppKit only populates the Continuity submenu when the menu is opened. Open it,
+        // cancel it a moment later, then fire Take Photo ourselves.
+        L("continuity: priming menu")
+        let t = Timer(timeInterval: 0.4, repeats: false) { [weak self] _ in self?.importMenu.cancelTracking() }
+        RunLoop.main.add(t, forMode: .common)
+        importMenu.popUp(positioning: nil, at: NSPoint(x: 10, y: 40), in: root)
+        importMenu.update()
+        if let (m, i) = findTakePhoto(importMenu) {
+            capturing = true
+            L("continuity: primed → firing '\(m.items[i].title)'")
+            caption?.stringValue = "📷 Take the photo on your iPhone…"
+            m.performActionForItem(at: i)
+        } else {
+            dump(importMenu)
+            caption?.stringValue = "⚠️ iPhone camera not available (Wi-Fi + Bluetooth on, same Apple ID?)"
+        }
     }
 
     // Live refresh: while the thumbnail is open, `iphone-latest --watch` prints a
