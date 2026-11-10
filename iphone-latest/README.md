@@ -2,6 +2,8 @@
 
 **Take a photo with your iPhone, drag it into any chat.**
 
+> **Standalone public repo (canonical): [esaruoho/apple-continuity-camera-photographer](https://github.com/esaruoho/apple-continuity-camera-photographer)** (`~/work/apple-continuity-camera-photographer`). It adds `install-mcp.sh`, which registers the MCP server with every agent CLI. The MCP registrations on this Mac point at the standalone copy. Keep both in sync; the standalone wins if they diverge.
+
 A tiny Apple-native menu-bar app. One click on 📱 opens the iPhone's camera. Take the shot, tap **Use Photo**, and it appears as a thumbnail under the icon, ready to drag into Terminal, Claude, Mail or Messages.
 
 No AirDrop, no emailing yourself, no iCloud wait, no cable needed.

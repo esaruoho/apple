@@ -4,6 +4,7 @@ Feature: iPhoneLatest.app — take a photo with the iPhone, drag it into any cha
   the shot comes back as a draggable thumbnail. Apple-native, no third-party deps.
 
   Implementation: iphone-latest/main.swift · iphone-latest/build.sh · iphone-latest/make-icon.swift
+  Standalone (canonical): github.com/esaruoho/apple-continuity-camera-photographer
   Docs: iphone-latest/README.md · iphone-latest/FINDINGS.md (why not USB)
   Session: features/iphone-latest.session.md (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6)
 

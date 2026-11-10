@@ -802,7 +802,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/iphone-latest.feature` · [session](iphone-latest.session.md)
 
-**What it does:** One click on the 📱 menu-bar icon opens the iPhone camera (Continuity Camera); the shot comes back as a draggable thumbnail. Apple-native, no third-party deps. Implementation: iphone-latest/main.swift · iphone-latest/build.sh · iphone-latest/make-icon.swift Docs: iphone-latest/README.md · iphone-latest/FINDINGS.md (why not USB) Session: features/iphone-latest.session.md (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6)
+**What it does:** One click on the 📱 menu-bar icon opens the iPhone camera (Continuity Camera); the shot comes back as a draggable thumbnail. Apple-native, no third-party deps. Implementation: iphone-latest/main.swift · iphone-latest/build.sh · iphone-latest/make-icon.swift Standalone (canonical): github.com/esaruoho/apple-continuity-camera-photographer Docs: iphone-latest/README.md · iphone-latest/FINDINGS.md (why not USB) Session: features/iphone-latest.session.md (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6)
 
 **Behaviour (13 scenarios):**
 
