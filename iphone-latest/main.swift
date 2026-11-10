@@ -40,6 +40,31 @@ final class DragView: NSImageView, NSDraggingSource {
     }
 }
 
+// Continuity Camera receiver: the services requestor that accepts the photo the
+// iPhone sends back after "Take Photo". Saves it as JPEG in ~/Pictures/iPhone-Latest.
+final class CaptureView: NSView, NSServicesMenuRequestor {
+    var onImage: ((String) -> Void)?
+    override var acceptsFirstResponder: Bool { true }
+    override func validRequestor(forSendType s: NSPasteboard.PasteboardType?, returnType r: NSPasteboard.PasteboardType?) -> Any? {
+        if s == nil, let r = r, NSImage.imageTypes.contains(r.rawValue) { return self }
+        return super.validRequestor(forSendType: s, returnType: r)
+    }
+    func readSelection(from pb: NSPasteboard) -> Bool {
+        guard let img = NSImage(pasteboard: pb), let tiff = img.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff),
+              let jpg = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.88]) else {
+            L("continuity: no image on pasteboard"); return false
+        }
+        let f = DateFormatter(); f.dateFormat = "yyyyMMdd-HHmmss"
+        try? FileManager.default.createDirectory(atPath: OUTDIR, withIntermediateDirectories: true)
+        let path = OUTDIR + "/Continuity-" + f.string(from: Date()) + ".jpg"
+        do { try jpg.write(to: URL(fileURLWithPath: path)) } catch { L("continuity write: \(error)"); return false }
+        L("continuity: got \(rep.pixelsWide)x\(rep.pixelsHigh) → \(path)")
+        DispatchQueue.main.async { self.onImage?(path) }
+        return true
+    }
+}
+
 // Persistent ImageCaptureCore session — the Image Capture.app trick. icdd only keeps
 // the iPhone's catalog live while a client HOLDS a session open; short sessions get a
 // stale cached catalog (stuck at an old IMG_). So: open once at launch, never close.
@@ -341,26 +366,45 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, UNUserNotif
 
     func showThumb(_ path: String) {
         let vc = NSViewController()
-        guard path.hasSuffix(".jpg"), let img = NSImage(contentsOfFile: path) else {
-            let l = NSTextField(labelWithString: "  No photo — iPhone cabled + unlocked?  ")
-            l.frame = NSRect(x: 0, y: 0, width: 260, height: 40)
-            vc.view = l; pop.contentViewController = vc
-            if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
-                return
+        let img = path.hasSuffix(".jpg") ? NSImage(contentsOfFile: path) : nil
+        let w: CGFloat = 240
+        let h: CGFloat = img.map { max(80, min(340, w * $0.size.height / max(1, $0.size.width))) } ?? 80
+        let root = CaptureView(frame: NSRect(x: 0, y: 0, width: w, height: h + 58))
+        root.onImage = { [weak self] jpg in
+            guard let self = self else { return }
+            if self.pop.isShown, self.thumb != nil { self.updateThumb(jpg) } else { self.showThumb(jpg) }
         }
-        let w: CGFloat = 240, h = max(80, min(340, w * img.size.height / max(1, img.size.width)))
-        let root = NSView(frame: NSRect(x: 0, y: 0, width: w, height: h + 26))
-        let iv = DragView(frame: NSRect(x: 0, y: 26, width: w, height: h))
-        iv.image = img; iv.imageScaling = .scaleProportionallyUpOrDown
-        iv.fileURL = URL(fileURLWithPath: path); shownPath = path
-        let l = NSTextField(labelWithString: "Drag · double-click = refresh")
+        let iv = DragView(frame: NSRect(x: 0, y: 58, width: w, height: h))
+        iv.imageScaling = .scaleProportionallyUpOrDown
+        if let img = img { iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path }
+        let l = NSTextField(labelWithString: img == nil ? "No photo yet" : "Drag into chat · double-click = refresh")
         l.font = .systemFont(ofSize: 10); l.alignment = .center
-        l.frame = NSRect(x: 0, y: 5, width: w, height: 16)
-        root.addSubview(iv); root.addSubview(l)
-        thumb = iv; caption = l
+        l.frame = NSRect(x: 0, y: 38, width: w, height: 16)
+        // Continuity Camera: Apple's "Import from iPhone ▸ Take Photo" — the phone's camera
+        // opens, the shot comes straight back to us (no USB catalog, no iOS delay).
+        let btn = NSButton(title: "📷 Take Photo on iPhone", target: self, action: #selector(takePhotoMenu(_:)))
+        btn.bezelStyle = .rounded; btn.frame = NSRect(x: 10, y: 6, width: w - 20, height: 28)
+        root.addSubview(iv); root.addSubview(l); root.addSubview(btn)
+        thumb = iv; caption = l; captureView = root
         iv.onDoubleClick = { [weak self] in self?.hardRefresh() }
         vc.view = root; pop.contentViewController = vc
         if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
+        NSApp.activate(ignoringOtherApps: true)
+        root.window?.makeFirstResponder(root)
+    }
+
+    var captureView: CaptureView?
+    @objc func takePhotoMenu(_ sender: NSButton) {
+        guard let root = captureView else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        root.window?.makeKeyAndOrderFront(nil)
+        root.window?.makeFirstResponder(root)
+        let m = NSMenu()
+        let imp = NSMenuItem(title: "Import from iPhone", action: nil, keyEquivalent: "")
+        imp.identifier = NSMenuItem.importFromDeviceIdentifier   // AppKit fills in "Take Photo" etc.
+        m.addItem(imp)
+        L("continuity: showing import menu")
+        m.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.frame.maxY), in: root)
     }
 
     // Live refresh: while the thumbnail is open, `iphone-latest --watch` prints a
