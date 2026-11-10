@@ -5,6 +5,7 @@
 // FEATURE-CARD >> features/iphone-latest.feature
 import Cocoa
 import SwiftUI
+import ServiceManagement
 
 let OUTDIR = NSString(string: "~/Pictures/iPhone-Latest").expandingTildeInPath
 
@@ -93,7 +94,22 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSServicesM
         pop.behavior = .transient
         pop.delegate = self
         _ = importMenu
+        // First launch: turn Open at Login on (toggle lives in the right-click menu).
+        if !UserDefaults.standard.bool(forKey: "loginItemInitialized") {
+            UserDefaults.standard.set(true, forKey: "loginItemInitialized")
+            setOpenAtLogin(true)
+        }
     }
+
+    // MARK: Open at Login (SMAppService — Apple's login-item API, macOS 13+)
+
+    var opensAtLogin: Bool { SMAppService.mainApp.status == .enabled }
+    func setOpenAtLogin(_ on: Bool) {
+        do { if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() } }
+        catch { L("login item \(on ? "register" : "unregister") failed: \(error)") }
+        L("open at login: \(opensAtLogin)")
+    }
+    @objc func toggleLogin() { setOpenAtLogin(!opensAtLogin) }
 
     @objc func click(_ b: NSStatusBarButton) {
         if NSApp.currentEvent?.type == .rightMouseUp { return showMenu() }
@@ -205,6 +221,9 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSServicesM
         let m = NSMenu()
         m.addItem(withTitle: "Help / Support Esa…", action: #selector(help), keyEquivalent: "").target = self
         m.addItem(withTitle: "Open folder", action: #selector(openFolder), keyEquivalent: "").target = self
+        let login = NSMenuItem(title: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
+        login.target = self; login.state = opensAtLogin ? .on : .off
+        m.addItem(login)
         m.addItem(.separator())
         m.addItem(withTitle: "Quit", action: #selector(NSApp.terminate(_:)), keyEquivalent: "q")
         item.menu = m; item.button?.performClick(nil); item.menu = nil

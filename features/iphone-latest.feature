@@ -1,59 +1,78 @@
-@apple @iphone
-Feature: Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud)
-  Implementation: bin/iphone-latest ; topbar/AppleToolbox.swift grabLatestIPhonePhoto + LatestPhotoPanel
-  Session: 80e0eb8a-1733-48c4-8ec5-10bc261249c6 (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6), 2026-11-10
+@apple @iphone @menubar
+Feature: iPhoneLatest.app — take a photo with the iPhone, drag it into any chat
+  One click on the 📱 menu-bar icon opens the iPhone camera (Continuity Camera);
+  the shot comes back as a draggable thumbnail. Apple-native, no third-party deps.
+
+  Implementation: iphone-latest/main.swift · iphone-latest/build.sh · iphone-latest/make-icon.swift
+  Docs: iphone-latest/README.md · iphone-latest/FINDINGS.md (why not USB)
+  Session: features/iphone-latest.session.md (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6)
+
+  # ---- The app (v1.0) ----
 
   @built @hw-verified
-  Scenario: CLI grabs newest photo as JPEG onto the clipboard
-    Given the iPhone is USB-cabled and unlocked
-    When I run bin/iphone-latest
-    Then the newest HEIC is converted to ~/Pictures/iPhone-Latest/<name>.jpg via sips
-    And the clipboard holds the image AND its file URL (verified: IMG_5684.jpg, JPEG+TIFF+file on pasteboard)
-
-  @built @untested
-  Scenario: Menu-bar "📱 Latest iPhone Photo" shows a draggable thumbnail
-    When I click 🧰 ▸ 📱 Latest iPhone Photo
-    Then a floating panel shows the thumbnail top-right
-    And dragging it into Terminal / Claude drops the .jpg file
-
-  @built @untested
-  Scenario: Standalone 📱 menu-bar icon (iphone-latest/main.swift, own app — not AppleToolbox)
-    When I click the 📱 icon in the menu bar
-    Then it shows ⏳, runs bin/iphone-latest, and pops a draggable thumbnail under the icon
-    And right-click offers Help / Support Esa (shared/SupportHelp.swift), Open folder, Quit
-
-  @built @untested
-  Scenario: Thumbnail auto-refreshes on a new photo
-    Given the 📱 thumbnail popover is open
-    When I take a new photo on the cabled iPhone
-    Then `iphone-latest --watch` imports it → jpg → clipboard and the thumbnail swaps in place ("🆕 name")
-    And closing the popover stops the watcher with no orphan iphone-import (@hw-verified teardown)
+  Scenario: Click 📱 → iPhone camera → thumbnail
+    Given iPhoneLatest is running and the iPhone shares the Apple ID (Wi-Fi + Bluetooth)
+    When I click 📱 with the thumbnail closed
+    Then App.takePhoto fires AppKit's "Take Photo" (NSMenuItem.importFromDeviceIdentifier) directly
+    And the shot returns through NSServicesMenuRequestor.readSelection → savePhoto
+    And it is saved as ~/Pictures/iPhone-Latest/Continuity-<yyyyMMdd-HHmmss>.jpg and shown as the thumbnail
+    # hw log 2026-11-10 10:48: 1440x1920 shots returned ~5 s after "firing Take Photo"
 
   @built @hw-verified
-  Scenario: --latest sees photos newer than iOS's cached PTP catalog
-    Given the cached catalog stops at an older photo (was IMG_5693)
-    When iphone-import --latest waits for didAdd items to stop streaming (2.5s settle, 25s cap)
-    Then it downloads the true newest (verified IMG_5701, ~4s)
-
-  @built @hw-verified
-  Scenario: --watch cycles open → stream settles (2.5s quiet) → compare → reopen
-    Given iOS only reveals new photos on a fresh session, streamed in AFTER catalog-ready
-    When I take a photo on the UNLOCKED iPhone
-    Then the watcher detects + downloads it (verified IMG_5702)
-    And a locked phone just waits (no 80s give-up in watch mode)
+  Scenario: The Continuity item must live in the MAIN menu
+    Given a probe app (scratchpad probe.swift) with a key window and a requestor first responder
+    Then the importFromDevice item in a pop-up menu stays disabled with no submenu
+    And the same item in NSApp.mainMenu is enabled ("<<Import From Device>>")
+    So App.importMenu is installed as the main menu's File menu
 
   @built @untested
-  Scenario: App holds ONE persistent ImageCaptureCore session (the Image Capture.app trick)
-    Given short sessions get icdd's stale cached catalog (stuck at IMG_5708 while phone had 5712;
-      with Image Capture.app holding a session open, a fetch saw IMG_5712 — hw-observed)
-    When iPhoneLatest launches it opens a session to the iPhone and never closes it
-    Then clicking 📱 downloads the live newest → JPEG → draggable thumbnail
-    And new items streaming in while the thumbnail is open trigger a refetch
+  Scenario: First click after launch primes the menu
+    Given AppKit fills the device submenu only after the menu has been opened
+    When "Take Photo" is not yet present
+    Then takePhoto pops importMenu, cancels it after 0.4 s (RunLoop .common timer), and fires Take Photo
+
+  @built @untested
+  Scenario: Icon click while the thumbnail is open only dismisses
+    Given the transient popover closes itself on the same click before click(_:) runs
+    When click(_:) sees pop.isShown or a close < 0.5 s ago (closedAt)
+    Then it closes and does NOT open the camera
+
+  @built @untested
+  Scenario: One capture at a time
+    Given a Take Photo is pending (capturing = true)
+    Then further takePhoto calls are ignored until the photo arrives or the popover closes
+
+  @built @untested
+  Scenario: Thumbnail is drag-only
+    Then DragView starts a drag only after the mouse moves > 4 pt (no square/offset flash on click)
+    And no click or double-click on the thumbnail triggers any action
+
+  @built @untested
+  Scenario: Folder row
+    When I click "📂 Open iPhone-Latest folder"
+    Then the popover closes and ~/Pictures/iPhone-Latest opens in Finder (photos are never overwritten)
 
   @built @hw-verified
-  Scenario: Continuity Camera replaces the USB path in iPhoneLatest.app
-    Given AppKit only activates NSMenuItem.importFromDeviceIdentifier inside the MAIN menu (probe-verified)
-    When I click 📱
-    Then the iPhone camera opens ("Take Photo" fired directly once AppKit populated the menu)
-    And the shot comes back via NSServicesMenuRequestor → ~/Pictures/iPhone-Latest/Continuity-<ts>.jpg → draggable thumbnail
-    And the USB ImageCaptureCore path is retired in the app (stale catalog, 15–60s delay — iphone-latest/FINDINGS.md)
+  Scenario: Open at Login
+    Given first launch (UserDefaults loginItemInitialized unset)
+    Then SMAppService.mainApp.register() runs (log: "open at login: true")
+    And right-click 📱 ▸ Open at Login toggles it
+
+  @built
+  Scenario: Installs as /Applications/iPhoneLatest.app
+    When I run iphone-latest/build.sh
+    Then it compiles with shared/SupportHelp.swift (shared Help + donate panel), signs with the stable
+      Apple Development identity, installs /Applications/iPhoneLatest.app, removes the old
+      /Applications/AppleToolbox copy, lsregisters and relaunches
+
+  # ---- Retired: the USB cable path (kept as CLI, not in the app) ----
+
+  @built @hw-verified
+  Scenario: CLI bin/iphone-latest — newest USB photo → JPEG → clipboard
+    When I run bin/iphone-latest on a cabled, unlocked iPhone
+    Then the newest photo per ImageCaptureCore is converted via sips and put on the clipboard
+
+  @hw-verified
+  Scenario: Why the app dropped USB (see FINDINGS.md)
+    Then iOS publishes new photos to ImageCaptureCore one at a time, 15–60 s after the shot
+    And same-process session reopens return a stale catalog; locked-phone sessions open restricted/empty

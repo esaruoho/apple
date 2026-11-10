@@ -38,7 +38,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [image-playground — on-device pictures, locally, as the prose's twin](#image-playground) — `image-playground.feature`
 - [An iPhone photo, on the Mac clipboard, the way you took it](#iphone-clip) — `iphone-clip.feature`
 - [Read the iPhone Compass onto the Mac and point out East](#iphone-compass) — `iphone-compass.feature`
-- [Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud)](#iphone-latest) — `iphone-latest.feature`
+- [iPhoneLatest.app — take a photo with the iPhone, drag it into any chat](#iphone-latest) — `iphone-latest.feature`
 - [iPhoneMirror — live, auto-oriented, auto-cropped mirror of a USB iPhone screen](#iphonemirror-rotated-live-mirror) — `iphonemirror-rotated-live-mirror.feature`
 - [Free Energy documents retain the complete editorial format across entry points](#mail-material-editor-contract) — `mail-material-editor-contract.feature`
 - [Deliver analysis when returned original attachments exceed the mail service limit](#mail-reply-attachment-fallback) — `mail-reply-attachment-fallback.feature`
@@ -798,24 +798,27 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 
 <a id="iphone-latest"></a>
-## Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud)
+## iPhoneLatest.app — take a photo with the iPhone, drag it into any chat
 
-`features/iphone-latest.feature`
+`features/iphone-latest.feature` · [session](iphone-latest.session.md)
 
-**What it does:** Implementation: bin/iphone-latest ; topbar/AppleToolbox.swift grabLatestIPhonePhoto + LatestPhotoPanel Session: 80e0eb8a-1733-48c4-8ec5-10bc261249c6 (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6), 2026-11-10
+**What it does:** One click on the 📱 menu-bar icon opens the iPhone camera (Continuity Camera); the shot comes back as a draggable thumbnail. Apple-native, no third-party deps. Implementation: iphone-latest/main.swift · iphone-latest/build.sh · iphone-latest/make-icon.swift Docs: iphone-latest/README.md · iphone-latest/FINDINGS.md (why not USB) Session: features/iphone-latest.session.md (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6)
 
-**Behaviour (8 scenarios):**
+**Behaviour (11 scenarios):**
 
-- CLI grabs newest photo as JPEG onto the clipboard — `@built @hw-verified`
-- Menu-bar "📱 Latest iPhone Photo" shows a draggable thumbnail — `@built @untested`
-- Standalone 📱 menu-bar icon (iphone-latest/main.swift, own app — not AppleToolbox) — `@built @untested`
-- Thumbnail auto-refreshes on a new photo — `@built @untested`
-- --latest sees photos newer than iOS's cached PTP catalog — `@built @hw-verified`
-- --watch cycles open → stream settles (2.5s quiet) → compare → reopen — `@built @hw-verified`
-- App holds ONE persistent ImageCaptureCore session (the Image Capture.app trick) — `@built @untested`
-- Continuity Camera replaces the USB path in iPhoneLatest.app — `@built @hw-verified`
+- Click 📱 → iPhone camera → thumbnail — `@built @hw-verified`
+- The Continuity item must live in the MAIN menu — `@built @hw-verified`
+- First click after launch primes the menu — `@built @untested`
+- Icon click while the thumbnail is open only dismisses — `@built @untested`
+- One capture at a time — `@built @untested`
+- Thumbnail is drag-only — `@built @untested`
+- Folder row — `@built @untested`
+- Open at Login — `@built @hw-verified`
+- Installs as /Applications/iPhoneLatest.app — `@built`
+- CLI bin/iphone-latest — newest USB photo → JPEG → clipboard — `@built @hw-verified`
+- Why the app dropped USB (see FINDINGS.md) — `@hw-verified`
 
-**Grade:** @built ×8 · @hw-verified ×4 · @untested ×4
+**Grade:** @built ×10 · @hw-verified ×5 · @untested ×5
 
 
 <a id="iphonemirror-rotated-live-mirror"></a>
