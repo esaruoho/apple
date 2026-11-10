@@ -21,9 +21,19 @@ final class DragView: NSImageView, NSDraggingSource {
     var fileURL: URL?
     var onDoubleClick: (() -> Void)?
     func draggingSession(_ s: NSDraggingSession, sourceOperationMaskFor c: NSDraggingContext) -> NSDragOperation { .copy }
+    var downAt: NSPoint?
+    // Drag starts only after the mouse actually MOVES (>4pt). Starting it in mouseDown
+    // made every click (incl. double-click) flash a square, offset drag image.
     override func mouseDown(with e: NSEvent) {
-        if e.clickCount == 2 { onDoubleClick?(); return }
-        guard let u = fileURL, let img = image else { return }
+        if e.clickCount == 2 { downAt = nil; onDoubleClick?(); return }
+        downAt = e.locationInWindow
+    }
+    override func mouseUp(with e: NSEvent) { downAt = nil }
+    override func mouseDragged(with e: NSEvent) {
+        guard let d = downAt, let u = fileURL, let img = image else { return }
+        let p = e.locationInWindow
+        guard hypot(p.x - d.x, p.y - d.y) > 4 else { return }
+        downAt = nil
         let it = NSDraggingItem(pasteboardWriter: u as NSURL)
         it.setDraggingFrame(bounds, contents: img)
         beginDraggingSession(with: [it], event: e, source: self)
