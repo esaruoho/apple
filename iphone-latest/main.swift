@@ -30,6 +30,9 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     var busy = false
 
     func applicationDidFinishLaunching(_ n: Notification) {
+        // kill watchers orphaned by a previous instance (two ICC sessions = stale catalog)
+        let k = Process(); k.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+        k.arguments = ["-f", "iphone-latest --watch"]; try? k.run(); k.waitUntilExit()
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.title = "📱"
         item.button?.toolTip = "Newest iPhone photo (USB) — click"
@@ -155,6 +158,8 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path
         caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + " · drag or ⌘V"
     }
+
+    func applicationWillTerminate(_ n: Notification) { stopWatcher() }
 
     func popoverDidClose(_ n: Notification) {
         stopWatcher(); thumb = nil; caption = nil

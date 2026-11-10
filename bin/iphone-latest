@@ -50,7 +50,8 @@ fi
 }
 
 if [[ "$WATCH" -eq 1 ]]; then
-  while true; do
+  PARENT=$PPID
+  while kill -0 "$PARENT" 2>/dev/null; do   # die with the app, never orphan
     rm -f "$TMP"/* 2>/dev/null || true
     "$REPO/bin/iphone-import" --watch "$TMP" > "$TMP.out" 2>/dev/null & IMP=$!
     wait "$IMP" || { sleep 3; continue; }
