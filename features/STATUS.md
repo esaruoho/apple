@@ -64,6 +64,7 @@
 | recburn-voice-balance | 10 | ✗ | — | ✓ | @hw-verified @note @self-test |
 | recburn-whisper-deps | 4 | ✗ | ✓ | — | @built @runtime-verified |
 | recburnclick | 13 | ✗ | — | ✓ | @built @hw-verified @note |
+| safari-hogs | 4 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
 | screen-audio-record | 20 | ✗ | — | ✓ | @built @hw-verified @note @untested |
 | secret-scan | 5 | ✗ | — | ✓ | @hw-verified @note |
 | sesh | 11 | ✗ | — | ✓ | @built @hw-verified @todo @untested |
@@ -76,8 +77,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 64
+- Cards: 65
 - Build-verified: 9
 - Runtime-verified: 9 full + 5 partial
-- **Hardware-verified: 25**  ·  hardware-untested: 0
+- **Hardware-verified: 26**  ·  hardware-untested: 0
 

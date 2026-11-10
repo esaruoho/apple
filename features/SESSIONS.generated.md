@@ -8,7 +8,7 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**10 card conversations** plugged in:
+**11 card conversations** plugged in:
 
 ### `070edd2e-d868-47ea-a2ba-a8104dd6a979`  (2026-10-16)
 - Resume: `claude --resume 070edd2e-d868-47ea-a2ba-a8104dd6a979`
@@ -62,6 +62,12 @@
 - Resume: `claude --resume 84e995e8-69d7-418f-82b9-0218e990f902`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/84e995e8-69d7-418f-82b9-0218e990f902.jsonl
 - Tooling touched: INDEX.md
+
+### `480ed8ef-d841-4077-9b49-7aa23cc7bfc2`  (2026-11-10)
+- Resume: `claude --resume 480ed8ef-d841-4077-9b49-7aa23cc7bfc2`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/480ed8ef-d841-4077-9b49-7aa23cc7bfc2.jsonl
+- Tooling touched: INDEX.md, STATUS.md, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (4): aimeat-email-pdf.feature, aimeat-roundtable.feature, safari-hogs.feature, transcript-vault-email-analysis.feature
 
 ### `80e0eb8a-1733-48c4-8ec5-10bc261249c6`  (2026-11-10)
 - Resume: `claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6`

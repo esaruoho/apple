@@ -60,6 +60,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [Lift the voice against the app audio, measured not guessed](#recburn-voice-balance) — `recburn-voice-balance.feature`
 - [Install and verify compatible Whisper dependencies](#recburn-whisper-deps) — `recburn-whisper-deps.feature`
 - [Burn a live click counter into a screen recording](#recburnclick) — `recburnclick.feature`
+- [Identify which Safari tab is eating power, and act on it](#safari-hogs) — `safari-hogs.feature`
 - [Record screen + system audio to one .mov with no loopback driver](#screen-audio-record) — `screen-audio-record.feature`
 - [Refuse to commit an account id, bank last-4, key or token](#secret-scan) — `secret-scan.feature`
 - [The master session list is bootable with one word](#sesh) — `sesh.feature`
@@ -1297,6 +1298,23 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - ⌃⌥⌘Space zeroes the counter from anywhere — `@built`
 
 **Grade:** @built ×4 · @hw-verified ×9
+
+
+<a id="safari-hogs"></a>
+## Identify which Safari tab is eating power, and act on it
+
+`features/safari-hogs.feature` · [session](safari-hogs.session.md)
+
+**Behaviour (4 scenarios):**
+
+- Rank Safari processes by energy without side effects — `@built @hw-verified`
+- Map a front tab to its PID by CPU fingerprint — `@built @hw-verified`
+- Background tabs are never JS-probed — `@designed`
+- Select or close the worst offender — `@built @untested`
+
+**How it does it:** **Key procs:** `bin/safari-hogs`, `commands/safari-hogs.md`, `wiki/concepts/safari-tab-power.md`, `procs`, `tabs`, `front_tabs`, `cputime`, `BURN_JS`, `PROBE_JS`, `select`, `close`
+
+**Grade:** @built ×3 · @designed ×1 · @hw-verified ×2 · @untested ×1
 
 
 <a id="screen-audio-record"></a>

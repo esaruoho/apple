@@ -1,0 +1,209 @@
+#!/usr/bin/env python3
+"""safari-hogs — which Safari tab is eating the power?
+
+Report card: features/safari-hogs.feature
+
+  safari-hogs procs            rank Safari Web Content processes by CPU / power / RAM (zero side effects)
+  safari-hogs tabs             fingerprint each window's FRONT tab to its PID + per-tab metrics
+  safari-hogs worst            print the worst tab and bring it to the front (select it)
+  safari-hogs close-worst      same, then ask y/N before closing it
+  options: --sample N  (seconds of CPU sampling, default 3)   --json
+
+Why only FRONT tabs get JS-probed: `do JavaScript` on a background tab that
+Safari has put to sleep RELOADS it (verified 2026-11-10: tab age 0s after probe). With
+hundreds of tabs that would itself be the power hog. Front tabs are always loaded,
+so probing them is free. A hot PID that matches no front tab = "a background tab in
+process N"; we say so instead of guessing.
+
+Mapping technique: there is no public PID→tab API (lsappinfo only says "Safari Web
+Content"). So we run a 400 ms busy loop inside one tab at a time and watch which
+WebContent PID's CPU time jumps. That PID hosts that tab.
+"""
+import json, subprocess, sys, time
+
+WC = "StagedFrameworks/Safari/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent"
+WC_SYS = "/System/Library/Frameworks/WebKit.framework/Versions/A/XPCServices/com.apple.WebKit.WebContent"
+
+
+def sh(cmd, inp=None, timeout=60):
+    return subprocess.run(cmd, input=inp, capture_output=True, text=True, timeout=timeout).stdout
+
+
+def osa(script, timeout=60):
+    r = subprocess.run(["osascript", "-"], input=script, capture_output=True, text=True, timeout=timeout)
+    if r.returncode:
+        raise RuntimeError(r.stderr.strip())
+    return r.stdout.rstrip("\n")
+
+
+def safari_pids():
+    """PIDs of Safari's web-content / networking / GPU helpers with display names."""
+    out = {}
+    for line in sh(["ps", "-axo", "pid=,command="]).splitlines():
+        pid, _, cmd = line.strip().partition(" ")
+        if "StagedFrameworks/Safari" in cmd and "XPCServices" in cmd or "/Safari.app/Contents/MacOS/Safari" in cmd:
+            name = sh(["lsappinfo", "info", "-only", "name", pid]).partition("=")[2].strip().strip('"')
+            if "Mail" in name or "Keyboard Maestro" in name:
+                continue
+            out[int(pid)] = name or cmd.rsplit("/", 1)[-1]
+    return out
+
+
+def cputime(pids):
+    """Cumulative CPU seconds per pid (ps 'time' column)."""
+    if not pids:
+        return {}
+    res = {}
+    for line in sh(["ps", "-o", "pid=,time=,rss=", "-p", ",".join(map(str, pids))]).splitlines():
+        pid, t, rss = line.split()
+        m, s = t.split(":") if t.count(":") == 1 else (None, None)
+        if m is None:  # h:mm:ss
+            h, m, s = t.split(":"); secs = int(h) * 3600 + int(m) * 60 + float(s)
+        else:
+            secs = int(m) * 60 + float(s)
+        res[int(pid)] = (secs, int(rss))
+    return res
+
+
+def power(pids, sample):
+    """Energy-impact column from top over `sample` seconds."""
+    out = sh(["top", "-l", "2", "-s", str(sample), "-stats", "pid,cpu,power"], timeout=sample + 30)
+    blocks = out.split("PID")
+    res = {}
+    for line in blocks[-1].splitlines()[1:]:
+        f = line.split()
+        if len(f) >= 3 and f[0].isdigit() and int(f[0]) in pids:
+            res[int(f[0])] = (float(f[1]), float(f[2]))
+    return res
+
+
+def procs(sample):
+    pids = safari_pids()
+    pw = power(set(pids), sample)
+    ct = cputime(pids)
+    rows = [dict(pid=p, name=n, cpu=pw.get(p, (0, 0))[0], power=pw.get(p, (0, 0))[1],
+                 rss_mb=round(ct.get(p, (0, 0))[1] / 1024), cpu_total_s=round(ct.get(p, (0, 0))[0]))
+            for p, n in pids.items()]
+    rows.sort(key=lambda r: (r["power"], r["cpu"], r["rss_mb"]), reverse=True)
+    return rows
+
+
+PROBE_JS = r"""(function(){var m=[].slice.call(document.querySelectorAll('video,audio'));
+var playing=m.filter(function(e){return !e.paused&&!e.ended&&e.readyState>2}).length;
+var res=performance.getEntriesByType('resource');var bytes=0;res.forEach(function(r){bytes+=r.transferSize||0});
+return JSON.stringify({playing:playing,media:m.length,nodes:document.getElementsByTagName('*').length,
+iframes:document.getElementsByTagName('iframe').length,resources:res.length,mb:Math.round(bytes/1048576),
+age_s:Math.round((Date.now()-performance.timeOrigin)/1000),vis:document.visibilityState})})()"""
+
+BURN_JS = "(function(){var t=Date.now();while(Date.now()-t<400){}return 1})()"
+
+
+def front_tabs():
+    s = '''tell application "Safari"
+set TB to character id 9
+set o to ""
+repeat with i from 1 to count windows
+  try
+    set t to current tab of window i
+    set o to o & i & TB & (index of t) & TB & (URL of t) & TB & (name of t) & linefeed
+  end try
+end repeat
+o
+end tell'''
+    rows = []
+    for line in osa(s).splitlines():
+        f = line.split("\t")
+        if len(f) >= 4:
+            rows.append(dict(window=int(f[0]), tab=int(f[1]), url=f[2], title=f[3]))
+    return rows
+
+
+def js(w, t, code):
+    code = code.replace("\\", "\\\\").replace('"', '\\"')
+    return osa(f'tell application "Safari" to do JavaScript "{code}" in tab {t} of window {w}', timeout=20)
+
+
+def tabs(sample):
+    ranking = procs(sample)
+    hot = {r["pid"]: r for r in ranking}
+    wc = [p for p, r in hot.items() if "Web Content" in r["name"]]
+    out = []
+    for ft in front_tabs():
+        try:
+            ft.update(json.loads(js(ft["window"], ft["tab"], PROBE_JS)))
+        except Exception as e:
+            ft["error"] = str(e)[:80]
+            out.append(ft); continue
+        before = cputime(wc)
+        try:
+            js(ft["window"], ft["tab"], BURN_JS)
+        except Exception:
+            pass
+        after = cputime(wc)
+        delta = {p: after[p][0] - before[p][0] for p in after if p in before}
+        pid = max(delta, key=delta.get) if delta else None
+        if pid and delta[pid] >= 0.2:
+            ft["pid"] = pid
+            ft["proc_power"] = hot[pid]["power"]; ft["proc_cpu"] = hot[pid]["cpu"]; ft["proc_rss_mb"] = hot[pid]["rss_mb"]
+        out.append(ft)
+    mapped = {t.get("pid") for t in out}
+    orphans = [r for r in ranking if "Web Content" in r["name"] and r["pid"] not in mapped and (r["power"] > 1 or r["cpu"] > 1)]
+    out.sort(key=score, reverse=True)
+    return out, orphans
+
+
+def score(t):
+    return (t.get("proc_power", 0) + t.get("proc_cpu", 0) + 30 * t.get("playing", 0)
+            + t.get("nodes", 0) / 5000 + t.get("mb", 0) / 20)
+
+
+def select(t):
+    osa(f'''tell application "Safari"
+set current tab of window {t["window"]} to tab {t["tab"]} of window {t["window"]}
+set index of window {t["window"]} to 1
+activate
+end tell''')
+
+
+def close(t):
+    osa(f'tell application "Safari" to close tab {t["tab"]} of window {t["window"]}')
+
+
+def fmt_tab(t):
+    pid = f'pid {t["pid"]} · {t["proc_power"]:.1f} power · {t["proc_cpu"]:.1f}% cpu · {t["proc_rss_mb"]} MB' if "pid" in t else "pid ?"
+    extra = f'▶{t.get("playing",0)} media · {t.get("nodes","?")} nodes · {t.get("iframes","?")} iframes · {t.get("mb","?")} MB fetched'
+    return f'w{t["window"]} t{t["tab"]}  {t["title"][:60]}\n      {t["url"][:90]}\n      {pid} | {extra}'
+
+
+def main():
+    a = sys.argv[1:]
+    cmd = a[0] if a and not a[0].startswith("-") else "procs"
+    sample = int(a[a.index("--sample") + 1]) if "--sample" in a else 3
+    as_json = "--json" in a
+    if cmd == "procs":
+        rows = procs(sample)
+        if as_json: print(json.dumps(rows, indent=1)); return
+        print(f"{'PID':>6} {'POWER':>6} {'CPU%':>6} {'RAM MB':>7} {'CPU s':>7}  NAME")
+        for r in rows:
+            print(f"{r['pid']:>6} {r['power']:>6.1f} {r['cpu']:>6.1f} {r['rss_mb']:>7} {r['cpu_total_s']:>7}  {r['name']}")
+        return
+    if cmd in ("tabs", "worst", "close-worst"):
+        ts, orphans = tabs(sample)
+        if as_json: print(json.dumps(dict(tabs=ts, unmapped_hot_procs=orphans), indent=1)); return
+        if cmd == "tabs":
+            for t in ts: print(fmt_tab(t))
+        if orphans:
+            print("\n⚠ Hot processes hosting only BACKGROUND tabs (not probed — probing would wake sleeping tabs):")
+            for r in orphans: print(f"   pid {r['pid']}  {r['power']:.1f} power  {r['cpu']:.1f}% cpu  {r['rss_mb']} MB  {r['name']}")
+        if cmd == "tabs" or not ts: return
+        w = ts[0]
+        print("Worst front tab:\n" + fmt_tab(w)); select(w)
+        if cmd == "close-worst":
+            if input("Close it? [y/N] ").strip().lower() == "y":
+                close(w); print("closed.")
+        return
+    print(__doc__)
+
+
+if __name__ == "__main__":
+    main()
