@@ -70,6 +70,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSServicesM
     var caption: NSTextField?
     var captureView: CaptureView?
     var capturing = false
+    var closedAt = Date.distantPast
 
     // AppKit only activates the Continuity "Import from iPhone" item when it lives in
     // the MAIN menu (probe-verified; pop-up menus stay grey).
@@ -96,8 +97,13 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSServicesM
 
     @objc func click(_ b: NSStatusBarButton) {
         if NSApp.currentEvent?.type == .rightMouseUp { return showMenu() }
-        L("click")
-        if !pop.isShown { showThumb(newestJPG()) }
+        // Icon click while the thumbnail is open = dismiss. (The transient popover closes
+        // itself on that same click before we get here, so check how recently it closed.)
+        if pop.isShown || Date().timeIntervalSince(closedAt) < 0.5 {
+            pop.performClose(nil); L("click: dismiss"); return
+        }
+        L("click: take photo")
+        showThumb(newestJPG())
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.takePhoto() }
     }
 
@@ -186,7 +192,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSServicesM
         caption?.stringValue = "Drag into chat · click 📱 for another"
     }
 
-    func popoverDidClose(_ n: Notification) { capturing = false; thumb = nil; caption = nil }
+    func popoverDidClose(_ n: Notification) { capturing = false; thumb = nil; caption = nil; closedAt = Date() }
 
     // MARK: Right-click menu
 
