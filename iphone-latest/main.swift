@@ -161,6 +161,16 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
     func deviceDidBecomeReady(withCompleteContentCatalog d: ICCameraDevice) {
         L("ready \(d.mediaFiles?.count ?? 0) newest \(newest()?.name ?? "-") open=\(open)")
         guard open else { return }   // cached catalog from a failed (locked) open — ignore
+        // Plugged in while LOCKED → session opens with an EMPTY catalog (hw log: "ready 0").
+        // Keep reopening every 3s until the phone is unlocked and items show up.
+        if (d.mediaFiles?.count ?? 0) == 0 {
+            L("empty catalog (phone locked at plug-in?) — reopen in 3s")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                guard let self = self, self.open, let c = self.cam else { return }
+                self.reopening = true; c.requestCloseSession()
+            }
+            return
+        }
         if !afterReady.isEmpty {
             let cbs = afterReady; afterReady = []
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { cbs.forEach { $0() } }   // let late items stream in
