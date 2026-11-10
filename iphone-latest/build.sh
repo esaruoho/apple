@@ -11,7 +11,7 @@ cat > "$APP/Contents/Info.plist" <<P
 <key>CFBundleName</key><string>iPhoneLatest</string><key>CFBundleExecutable</key><string>iPhoneLatest</string>
 <key>CFBundlePackageType</key><string>APPL</string><key>LSUIElement</key><true/></dict></plist>
 P
-codesign -s - --force "$APP" >/dev/null 2>&1 || true
+codesign -s "Apple Development: esa Ruoho (X5RGX55QYU)" --force "$APP" >/dev/null 2>&1 || true
 pkill -x iPhoneLatest || true
 rm -rf "$DEST"; /bin/cp -R "$APP" "$DEST"; rm -rf "$APP"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$DEST"

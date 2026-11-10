@@ -6,6 +6,7 @@ import Cocoa
 import SwiftUI
 
 let SCRIPT = NSString(string: "~/work/apple/bin/iphone-latest").expandingTildeInPath
+let OUTDIR = NSString(string: "~/Pictures/iPhone-Latest").expandingTildeInPath
 
 final class DragView: NSImageView, NSDraggingSource {
     var fileURL: URL?
@@ -23,6 +24,8 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     var thumb: DragView?
     var caption: NSTextField?
     var watcher: Process?
+    var pollTimer: Timer?
+    var shownPath: String?
     var pop = NSPopover()
     var busy = false
 
@@ -67,20 +70,29 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
     }
 
+    func newestJPG() -> String? {
+        let fm = FileManager.default
+        guard let names = try? fm.contentsOfDirectory(atPath: OUTDIR) else { return nil }
+        return names.filter { $0.lowercased().hasSuffix(".jpg") }
+            .map { OUTDIR + "/" + $0 }
+            .max { (mtime($0)) < (mtime($1)) }
+    }
+    func mtime(_ p: String) -> Date {
+        ((try? FileManager.default.attributesOfItem(atPath: p))?[.modificationDate] as? Date) ?? .distantPast
+    }
+
     func grab() {
+        // Show whatever is newest NOW, then pull the phone's newest in background;
+        // the folder poll swaps it in when it lands.
+        showThumb(newestJPG() ?? "")
         guard !busy else { return }
         busy = true; item.button?.title = "⏳"
         DispatchQueue.global().async {
-            let p = Process(); let pipe = Pipe()
+            let p = Process()
             p.executableURL = URL(fileURLWithPath: SCRIPT)
-            p.standardOutput = pipe; p.standardError = FileHandle.nullDevice
+            p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
             try? p.run(); p.waitUntilExit()
-            let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
-                .trimmingCharacters(in: .whitespacesAndNewlines).split(separator: "\n").last.map(String.init) ?? ""
-            DispatchQueue.main.async {
-                self.busy = false; self.item.button?.title = "📱"
-                self.showThumb(out)
-            }
+            DispatchQueue.main.async { self.busy = false; self.item.button?.title = "📱"; self.poll() }
         }
     }
 
@@ -97,7 +109,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         let root = NSView(frame: NSRect(x: 0, y: 0, width: w, height: h + 26))
         let iv = DragView(frame: NSRect(x: 0, y: 26, width: w, height: h))
         iv.image = img; iv.imageScaling = .scaleProportionallyUpOrDown
-        iv.fileURL = URL(fileURLWithPath: path)
+        iv.fileURL = URL(fileURLWithPath: path); shownPath = path
         let l = NSTextField(labelWithString: "Drag into chat · or ⌘V (on clipboard)")
         l.font = .systemFont(ofSize: 10); l.alignment = .center
         l.frame = NSRect(x: 0, y: 5, width: w, height: 16)
@@ -112,26 +124,23 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     // jpg path per NEW photo; swap it into the same view (+ it's on the clipboard).
     func startWatcher() {
         guard watcher?.isRunning != true else { return }
-        let p = Process(); let pipe = Pipe()
+        let p = Process()
         p.executableURL = URL(fileURLWithPath: SCRIPT)
         p.arguments = ["--watch"]
-        p.standardOutput = pipe; p.standardError = FileHandle.nullDevice
-        var buf = ""
-        pipe.fileHandleForReading.readabilityHandler = { [weak self] h in
-            guard let chunk = String(data: h.availableData, encoding: .utf8), !chunk.isEmpty else { return }
-            buf += chunk
-            while let r = buf.range(of: "\n") {
-                let line = String(buf[..<r.lowerBound]); buf.removeSubrange(..<r.upperBound)
-                guard line.hasSuffix(".jpg") else { continue }
-                DispatchQueue.main.async { self?.updateThumb(line) }
-            }
-        }
+        p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
         try? p.run(); watcher = p
+        pollTimer?.invalidate()
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.poll() }
+    }
+
+    func poll() {
+        guard thumb != nil, let n = newestJPG(), n != shownPath else { return }
+        updateThumb(n)
     }
 
     func stopWatcher() {
+        pollTimer?.invalidate(); pollTimer = nil
         guard let p = watcher else { return }
-        (p.standardOutput as? Pipe)?.fileHandleForReading.readabilityHandler = nil
         if p.isRunning {
             // kill the child iphone-import too (it's in the script's process group)
             p.terminate()
@@ -143,7 +152,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     func updateThumb(_ path: String) {
         guard let iv = thumb, let img = NSImage(contentsOfFile: path) else { return }
-        iv.image = img; iv.fileURL = URL(fileURLWithPath: path)
+        iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path
         caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + " · drag or ⌘V"
     }
 
