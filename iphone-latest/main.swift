@@ -36,13 +36,16 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
     var open = false
     var onNew: (() -> Void)?
     var reopening = false
-    var afterReady: (() -> Void)?
+    var afterReady: [() -> Void] = []
     func refresh(_ then: @escaping () -> Void) {
         guard let c = cam else { then(); return }
-        afterReady = then; lastAdded = nil
+        let first = afterReady.isEmpty
+        afterReady.append(then)
+        guard first else { return }            // a reopen is already in flight — just wait for it
         if open { reopening = true; c.requestCloseSession() } else { c.requestOpenSession() }
         DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in   // never hang
-            if let t = self?.afterReady { self?.afterReady = nil; L("refresh timeout"); t() }
+            guard let self = self, !self.afterReady.isEmpty else { return }
+            L("refresh timeout"); let cbs = self.afterReady; self.afterReady = []; cbs.forEach { $0() }
         }
     }
     var pendingDone: ((String?) -> Void)?
@@ -59,11 +62,15 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
             c.requestOpenSession()   // retry while locked / after drop
         }
     }
-    var lastAdded: ICCameraFile?   // the item iOS just streamed in (no creationDate yet)
     func newest() -> ICCameraFile? {
-        if let a = lastAdded { return a }
-        return (cam?.mediaFiles ?? []).compactMap { $0 as? ICCameraFile }
-            .max { ($0.creationDate ?? .distantFuture, $0.name ?? "") < ($1.creationDate ?? .distantFuture, $1.name ?? "") }
+        func num(_ f: ICCameraFile) -> Int {
+            let n = f.name ?? ""; guard n.hasPrefix("IMG_") else { return -1 }
+            return Int(n.dropFirst(4).prefix { $0.isNumber }) ?? -1
+        }
+        let files = (cam?.mediaFiles ?? []).compactMap { $0 as? ICCameraFile }
+        // date first (fresh items have none yet = newest); IMG number breaks ties.
+        // (number alone fails: iPhone counters wrap — an old IMG_9728 beat IMG_5721.)
+        return files.max { ($0.creationDate ?? .distantFuture, num($0)) < ($1.creationDate ?? .distantFuture, num($1)) }
     }
     /// Download newest → JPEG in ~/Pictures/iPhone-Latest; returns jpg path (or nil).
     func fetchNewest(_ done: @escaping (String?) -> Void) {
@@ -121,7 +128,6 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
     func cameraDevice(_ c: ICCameraDevice, didAdd items: [ICCameraItem]) {
         guard items.count < 20 else { return }          // initial catalog flood, not new shots
         L("didAdd \(items.compactMap { $0.name })")
-        if let f = items.compactMap({ $0 as? ICCameraFile }).last { lastAdded = f }
         onNew?()
     }
     func cameraDevice(_ c: ICCameraDevice, didRemove items: [ICCameraItem]) {}
@@ -135,9 +141,9 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
     func cameraDeviceDidEnableAccessRestriction(_ d: ICDevice) { L("locked") }
     func deviceDidBecomeReady(withCompleteContentCatalog d: ICCameraDevice) {
         L("ready \(d.mediaFiles?.count ?? 0) newest \(newest()?.name ?? "-")")
-        if let t = afterReady {
-            afterReady = nil
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { t() }   // let late items stream in
+        if !afterReady.isEmpty {
+            let cbs = afterReady; afterReady = []
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { cbs.forEach { $0() } }   // let late items stream in
         } else { onNew?() }
     }
     func cameraDevice(_ c: ICCameraDevice, didReceiveThumbnail t: CGImage?, for i: ICCameraItem, error: Error?) {}
