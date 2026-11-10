@@ -66,5 +66,5 @@
 ### `80e0eb8a-1733-48c4-8ec5-10bc261249c6`  (2026-11-10)
 - Resume: `claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/80e0eb8a-1733-48c4-8ec5-10bc261249c6.jsonl
-- Tooling touched: INDEX.md
-- Cards touched (2): iphone-clip.feature, iphone-latest.feature
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (20): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature, mail-material-editor-contract.feature, mail-reply-attachment-fallback.feature, me-address.feature … (+6)

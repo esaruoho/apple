@@ -15,3 +15,9 @@ Feature: Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud
     When I click 🧰 ▸ 📱 Latest iPhone Photo
     Then a floating panel shows the thumbnail top-right
     And dragging it into Terminal / Claude drops the .jpg file
+
+  @built @untested
+  Scenario: Standalone 📱 menu-bar icon (iphone-latest/main.swift, own app — not AppleToolbox)
+    When I click the 📱 icon in the menu bar
+    Then it shows ⏳, runs bin/iphone-latest, and pops a draggable thumbnail under the icon
+    And right-click offers Help / Support Esa (shared/SupportHelp.swift), Open folder, Quit
