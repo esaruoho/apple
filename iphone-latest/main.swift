@@ -39,14 +39,13 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         item.button?.target = self
         item.button?.action = #selector(click(_:))
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
-        pop.behavior = .applicationDefined   // stays open while you shoot / drag; click 📱 to close
+        pop.behavior = .transient
         pop.delegate = self
     }
 
     @objc func click(_ b: NSStatusBarButton) {
         if NSApp.currentEvent?.type == .rightMouseUp { return showMenu() }
-        if pop.isShown { pop.performClose(nil); return }
-        grab()
+        grab()   // every click = fresh fetch from the phone
     }
 
     func showMenu() {
@@ -85,9 +84,26 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
 
     func grab() {
-        // Show whatever is newest NOW, then pull the phone's newest in background;
-        // the folder poll swaps it in when it lands.
-        showThumb(newestJPG() ?? "")
+        // Show the last-known image instantly, then fetch the phone's true newest
+        // with a FRESH session (bin/iphone-latest --no-clip) and swap it in.
+        if !pop.isShown { showThumb(newestJPG() ?? "") }
+        guard !busy else { return }
+        busy = true; item.button?.title = "⏳"
+        caption?.stringValue = "⏳ fetching newest from iPhone…"
+        DispatchQueue.global().async {
+            let p = Process(); let pipe = Pipe()
+            p.executableURL = URL(fileURLWithPath: SCRIPT)
+            p.arguments = ["--no-clip"]
+            p.standardOutput = pipe; p.standardError = FileHandle.nullDevice
+            try? p.run(); p.waitUntilExit()
+            let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?
+                .split(separator: "\n").last.map(String.init) ?? ""
+            DispatchQueue.main.async {
+                self.busy = false; self.item.button?.title = "📱"
+                if out.hasSuffix(".jpg") { self.updateThumb(out) }
+                else { self.caption?.stringValue = "⚠️ iPhone cabled + unlocked? Click 📱 to retry" }
+            }
+        }
     }
 
     func showThumb(_ path: String) {
@@ -97,8 +113,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             l.frame = NSRect(x: 0, y: 0, width: 260, height: 40)
             vc.view = l; pop.contentViewController = vc
             if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
-            startWatcher()
-            return
+                return
         }
         let w: CGFloat = 240, h = max(80, min(340, w * img.size.height / max(1, img.size.width)))
         let root = NSView(frame: NSRect(x: 0, y: 0, width: w, height: h + 26))
@@ -112,7 +127,6 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         thumb = iv; caption = l
         vc.view = root; pop.contentViewController = vc
         if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
-        startWatcher()
     }
 
     // Live refresh: while the thumbnail is open, `iphone-latest --watch` prints a
@@ -148,7 +162,7 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     func updateThumb(_ path: String) {
         guard let iv = thumb, let img = NSImage(contentsOfFile: path) else { return }
         iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path
-        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + " · drag into chat"
+        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + " · drag into chat · click 📱 to refresh"
     }
 
     func applicationWillTerminate(_ n: Notification) { stopWatcher() }
