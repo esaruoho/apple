@@ -42,7 +42,7 @@
 | image-playground | 16 | ✗ | — | — | @built @caveat @untested @verified-live |
 | iphone-clip | 4 | ✗ | — | — | @built @verified |
 | iphone-compass | 5 | ✓ | ✓ | ✓ | @built @code-verified @hw-verified @runtime-verified @stock @wontfix |
-| iphone-latest | 7 | ✗ | — | ✓ | @apple @built @hw-verified @iphone @untested |
+| iphone-latest | 8 | ✗ | — | ✓ | @apple @built @hw-verified @iphone @untested |
 | iphonemirror-rotated-live-mirror | 33 | ✗ | — | ✓ | @built @hw-verified @todo @untested |
 | mail-material-editor-contract | 4 | ✗ | ✓ | — | @built @runtime-verified @sim-verified |
 | mail-reply-attachment-fallback | 3 | ✗ | ✓ | — | @built @runtime-verified @sim-verified |

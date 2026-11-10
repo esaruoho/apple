@@ -804,7 +804,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 **What it does:** Implementation: bin/iphone-latest ; topbar/AppleToolbox.swift grabLatestIPhonePhoto + LatestPhotoPanel Session: 80e0eb8a-1733-48c4-8ec5-10bc261249c6 (claude --resume 80e0eb8a-1733-48c4-8ec5-10bc261249c6), 2026-11-10
 
-**Behaviour (7 scenarios):**
+**Behaviour (8 scenarios):**
 
 - CLI grabs newest photo as JPEG onto the clipboard — `@built @hw-verified`
 - Menu-bar "📱 Latest iPhone Photo" shows a draggable thumbnail — `@built @untested`
@@ -813,8 +813,9 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - --latest sees photos newer than iOS's cached PTP catalog — `@built @hw-verified`
 - --watch cycles open → stream settles (2.5s quiet) → compare → reopen — `@built @hw-verified`
 - App holds ONE persistent ImageCaptureCore session (the Image Capture.app trick) — `@built @untested`
+- Continuity Camera replaces the USB path in iPhoneLatest.app — `@built @hw-verified`
 
-**Grade:** @built ×7 · @hw-verified ×3 · @untested ×4
+**Grade:** @built ×8 · @hw-verified ×4 · @untested ×4
 
 
 <a id="iphonemirror-rotated-live-mirror"></a>

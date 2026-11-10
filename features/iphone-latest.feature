@@ -49,3 +49,11 @@ Feature: Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud
     When iPhoneLatest launches it opens a session to the iPhone and never closes it
     Then clicking 📱 downloads the live newest → JPEG → draggable thumbnail
     And new items streaming in while the thumbnail is open trigger a refetch
+
+  @built @hw-verified
+  Scenario: Continuity Camera replaces the USB path in iPhoneLatest.app
+    Given AppKit only activates NSMenuItem.importFromDeviceIdentifier inside the MAIN menu (probe-verified)
+    When I click 📱
+    Then the iPhone camera opens ("Take Photo" fired directly once AppKit populated the menu)
+    And the shot comes back via NSServicesMenuRequestor → ~/Pictures/iPhone-Latest/Continuity-<ts>.jpg → draggable thumbnail
+    And the USB ImageCaptureCore path is retired in the app (stale catalog, 15–60s delay — iphone-latest/FINDINGS.md)

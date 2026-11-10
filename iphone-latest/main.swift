@@ -264,7 +264,8 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         // A session opened while the phone is LOCKED is access-restricted: stale
         // catalog, no new-photo pushes even after unlock (hw log 2026-11-10). So every
         // click and every unlock reopens the session, then reads the live catalog.
-        phone.start()
+        // USB/ImageCaptureCore path retired (stale catalogs, 15–60s iOS delay — FINDINGS.md).
+        // Continuity Camera only.
         _ = importMenu   // register Continuity item in the main menu at launch
         let nc = UNUserNotificationCenter.current(); nc.delegate = self
         nc.requestAuthorization(options: [.alert, .sound]) { ok, e in L("notif auth: \(ok) \(String(describing: e))") }
@@ -310,7 +311,7 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
     func newestJPG() -> String? {
         let fm = FileManager.default
         guard let names = try? fm.contentsOfDirectory(atPath: OUTDIR) else { return nil }
-        return names.filter { $0.lowercased().hasSuffix(".jpg") }
+        return names.filter { $0.hasPrefix("Continuity-") && $0.lowercased().hasSuffix(".jpg") }
             .map { OUTDIR + "/" + $0 }
             .max { (mtime($0)) < (mtime($1)) }
     }
@@ -319,15 +320,9 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
     }
 
     func grab() {
-        L("click: open=\(phone.open) shown=\(pop.isShown) busy=\(busy)")
-        // Click never reopens the session (that raced iOS: -9943 + stale cache → "fetch failed").
-        // Show the newest photo already here; new ones arrive via didAdd → prefetch().
-        if item.button?.title == "📸" { item.button?.title = "📱" }
+        L("click")
         if !pop.isShown { showThumb(newestJPG() ?? "") }
-        if phone.cam == nil { caption?.stringValue = "⚠️ No iPhone on the cable"; return }
-        if !phone.open { caption?.stringValue = "🔒 Unlock the iPhone…"; return }
-        caption?.stringValue = "Drag · double-click = refresh"
-        prefetch()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.takePhoto(nil) }
     }
 
     /// Double-click: reopen the iPhone session (fresh catalog) and fetch the newest.
@@ -378,7 +373,7 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         let iv = DragView(frame: NSRect(x: 0, y: 58, width: w, height: h))
         iv.imageScaling = .scaleProportionallyUpOrDown
         if let img = img { iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path }
-        let l = NSTextField(labelWithString: img == nil ? "No photo yet" : "Drag into chat · double-click = refresh")
+        let l = NSTextField(labelWithString: img == nil ? "No photo yet" : "Drag into chat · double-click = new photo")
         l.font = .systemFont(ofSize: 10); l.alignment = .center
         l.frame = NSRect(x: 0, y: 38, width: w, height: 16)
         // Continuity Camera: Apple's "Import from iPhone ▸ Take Photo" — the phone's camera
@@ -387,7 +382,7 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         btn.bezelStyle = .rounded; btn.frame = NSRect(x: 10, y: 6, width: w - 20, height: 28)
         root.addSubview(iv); root.addSubview(l); root.addSubview(btn)
         thumb = iv; caption = l; captureView = root
-        iv.onDoubleClick = { [weak self] in self?.hardRefresh() }
+        iv.onDoubleClick = { [weak self] in self?.takePhoto(nil) }
         vc.view = root; pop.contentViewController = vc
         if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
         NSApp.activate(ignoringOtherApps: true)
@@ -414,15 +409,39 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         if v.onImage == nil { v.onImage = { [weak self] j in self?.showThumb(j) } }
         return v.readSelection(from: pb)
     }
-    @objc func takePhotoMenu(_ sender: NSButton) {
+    @objc func takePhotoMenu(_ sender: NSButton) { takePhoto(sender) }
+
+    /// Find AppKit's populated "Take Photo" item (under Import from iPhone ▸ <device>).
+    func findTakePhoto(_ m: NSMenu) -> (NSMenu, Int)? {
+        for (i, it) in m.items.enumerated() {
+            if it.title.localizedCaseInsensitiveContains("Take Photo"), it.action != nil || it.target != nil { return (m, i) }
+            if let sub = it.submenu, let r = findTakePhoto(sub) { return r }
+        }
+        return nil
+    }
+    func dump(_ m: NSMenu, _ d: Int = 0) {
+        for it in m.items { L(String(repeating: "  ", count: d) + "menu: '\(it.title)' en=\(it.isEnabled) act=\(it.action.map { NSStringFromSelector($0) } ?? "-")"); if let s = it.submenu { dump(s, d + 1) } }
+    }
+
+    /// One click → the iPhone camera opens. Directly fires "Take Photo" once AppKit has
+    /// populated the Continuity menu (it does so the first time the menu is opened).
+    func takePhoto(_ sender: NSButton?) {
         guard let root = captureView else { return }
         NSApp.activate(ignoringOtherApps: true)
         root.window?.makeKeyAndOrderFront(nil)
         root.window?.makeFirstResponder(root)
-        // Probe-proven (2026-11-10): AppKit only activates the Continuity item when it
-        // lives in the MAIN menu (popup menus stay grey). So pop up the main-menu File menu.
-        L("continuity: showing File ▸ Import from iPhone")
-        importMenu.popUp(positioning: nil, at: NSPoint(x: sender.frame.minX, y: sender.frame.maxY), in: root)
+        importMenu.update()
+        if let (m, i) = findTakePhoto(importMenu) {
+            L("continuity: firing '\(m.items[i].title)' directly")
+            caption?.stringValue = "📷 Camera open on iPhone — shoot + Use Photo"
+            m.performActionForItem(at: i)
+            return
+        }
+        L("continuity: Take Photo not populated yet — showing menu once")
+        caption?.stringValue = "Pick Import from iPhone ▸ Take Photo (only this once)"
+        let at = sender.map { NSPoint(x: $0.frame.minX, y: $0.frame.maxY) } ?? NSPoint(x: 10, y: 40)
+        importMenu.popUp(positioning: nil, at: at, in: root)
+        dump(importMenu)
     }
 
     // Live refresh: while the thumbnail is open, `iphone-latest --watch` prints a
@@ -458,7 +477,7 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
     func updateThumb(_ path: String) {
         guard let iv = thumb, let img = NSImage(contentsOfFile: path) else { return }
         iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path
-        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + "  ·  drag · double-click = refresh"
+        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + "  ·  drag · double-click = new photo"
     }
 
     func applicationWillTerminate(_ n: Notification) { stopWatcher() }
