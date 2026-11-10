@@ -265,6 +265,7 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         // catalog, no new-photo pushes even after unlock (hw log 2026-11-10). So every
         // click and every unlock reopens the session, then reads the live catalog.
         phone.start()
+        _ = importMenu   // register Continuity item in the main menu at launch
         let nc = UNUserNotificationCenter.current(); nc.delegate = self
         nc.requestAuthorization(options: [.alert, .sound]) { ok, e in L("notif auth: \(ok) \(String(describing: e))") }
         // Live: when new items stream in and the thumbnail is open, fetch the newest.
@@ -394,6 +395,14 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
     }
 
     var captureView: CaptureView?
+    lazy var importMenu: NSMenu = {
+        let main = NSMenu(); let fileItem = NSMenuItem(); let file = NSMenu(title: "File")
+        let imp = NSMenuItem(title: "Import from iPhone", action: nil, keyEquivalent: "")
+        imp.identifier = NSMenuItem.importFromDeviceIdentifier
+        file.addItem(imp); fileItem.submenu = file; main.addItem(fileItem)
+        NSApp.mainMenu = main
+        return file
+    }()
     // End-of-chain requestor: NSApplication consults its delegate, so "Import from iPhone"
     // enables even when the popover window isn't key.
     @objc func validRequestor(forSendType s: NSPasteboard.PasteboardType?, returnType r: NSPasteboard.PasteboardType?) -> Any? {
@@ -410,14 +419,10 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         NSApp.activate(ignoringOtherApps: true)
         root.window?.makeKeyAndOrderFront(nil)
         root.window?.makeFirstResponder(root)
-        let m = NSMenu()
-        let imp = NSMenuItem(title: "Import from iPhone", action: nil, keyEquivalent: "")
-        imp.identifier = NSMenuItem.importFromDeviceIdentifier   // AppKit fills in "Take Photo" etc.
-        m.addItem(imp)
-        L("continuity: showing import menu")
-        // Context-menu form: AppKit resolves the Continuity requestor from the view `for:`.
-        if let ev = NSApp.currentEvent { NSMenu.popUpContextMenu(m, with: ev, for: root) }
-        else { m.popUp(positioning: nil, at: NSPoint(x: 0, y: sender.frame.maxY), in: root) }
+        // Probe-proven (2026-11-10): AppKit only activates the Continuity item when it
+        // lives in the MAIN menu (popup menus stay grey). So pop up the main-menu File menu.
+        L("continuity: showing File ▸ Import from iPhone")
+        importMenu.popUp(positioning: nil, at: NSPoint(x: sender.frame.minX, y: sender.frame.maxY), in: root)
     }
 
     // Live refresh: while the thumbnail is open, `iphone-latest --watch` prints a

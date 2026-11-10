@@ -8,7 +8,6 @@
 # RESULT: Delivery record and compatibility seed are recorded by this card's git history.
 # WATCH: stream_section verify_panel candidates collect prepare_roster FM_MLX_NO_SSH
 # RESULT-LOG >>
-#   2026-11-10  direct-commit  touched: candidates collect
 #   2026-11-08  direct-commit  touched: FM_MLX_NO_SSH
 #   2026-11-08  direct-commit  touched: collect
 #   2026-11-08  direct-commit  touched: collect

@@ -35,6 +35,7 @@
 #
 # RESULT-LOG >> (auto-maintained by the report-card hooks — newest below)
 #   2026-11-10  direct-commit  touched: resolve
+#   2026-11-10  direct-commit  touched: resolve
 #   2026-11-08  direct-commit  touched: apple-harness fmremote
 #   2026-11-08  direct-commit  touched: extract
 #   2026-11-08  direct-commit  touched: fmremote resolve
