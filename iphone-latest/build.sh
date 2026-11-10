@@ -4,7 +4,7 @@
 set -e; cd "$(dirname "$0")"
 APP=iPhoneLatest.app; DEST="/Applications/AppleToolbox/$APP"
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS"
-xcrun swiftc -O main.swift ../shared/SupportHelp.swift -o "$APP/Contents/MacOS/iPhoneLatest" -framework Cocoa -framework SwiftUI -framework ImageCaptureCore
+xcrun swiftc -O main.swift ../shared/SupportHelp.swift -o "$APP/Contents/MacOS/iPhoneLatest" -framework Cocoa -framework SwiftUI
 mkdir -p "$APP/Contents/Resources"; /bin/cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cat > "$APP/Contents/Info.plist" <<P
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

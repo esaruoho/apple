@@ -1,13 +1,11 @@
-// iPhoneLatest — its own 📱 menu-bar icon (NOT AppleToolbox). Click = grab the
-// newest photo off the USB-cabled iPhone (bin/iphone-latest → JPEG → clipboard)
-// and show a draggable thumbnail. Right-click = Help / Quit.
+// iPhoneLatest — 📱 menu-bar icon. Click → the iPhone camera opens (Continuity
+// Camera) → take the photo, tap Use Photo → thumbnail appears → drag it into chat.
+// That's all. No USB, no watchers, no notifications (see FINDINGS.md for why).
+// Photos are saved to ~/Pictures/iPhone-Latest/Continuity-<timestamp>.jpg.
 // FEATURE-CARD >> features/iphone-latest.feature
 import Cocoa
 import SwiftUI
-import ImageCaptureCore
-import UserNotifications
 
-let SCRIPT = NSString(string: "~/work/apple/bin/iphone-latest").expandingTildeInPath
 let OUTDIR = NSString(string: "~/Pictures/iPhone-Latest").expandingTildeInPath
 
 func L(_ m: String) {
@@ -17,16 +15,13 @@ func L(_ m: String) {
     else { try? line.write(toFile: path, atomically: true, encoding: .utf8) }
 }
 
+/// The thumbnail. Drag only — a drag starts after the mouse moves >4pt, so plain
+/// clicks never flash a drag image.
 final class DragView: NSImageView, NSDraggingSource {
     var fileURL: URL?
-    var onDoubleClick: (() -> Void)?
-    func draggingSession(_ s: NSDraggingSession, sourceOperationMaskFor c: NSDraggingContext) -> NSDragOperation { .copy }
     var downAt: NSPoint?
-    // Drag starts only after the mouse actually MOVES (>4pt). Starting it in mouseDown
-    // made every click (incl. double-click) flash a square, offset drag image.
-    override func mouseDown(with e: NSEvent) {
-        downAt = e.locationInWindow
-    }
+    func draggingSession(_ s: NSDraggingSession, sourceOperationMaskFor c: NSDraggingContext) -> NSDragOperation { .copy }
+    override func mouseDown(with e: NSEvent) { downAt = e.locationInWindow }
     override func mouseUp(with e: NSEvent) { downAt = nil }
     override func mouseDragged(with e: NSEvent) {
         guard let d = downAt, let u = fileURL, let img = image else { return }
@@ -39,8 +34,21 @@ final class DragView: NSImageView, NSDraggingSource {
     }
 }
 
-// Continuity Camera receiver: the services requestor that accepts the photo the
-// iPhone sends back after "Take Photo". Saves it as JPEG in ~/Pictures/iPhone-Latest.
+/// Receives the photo the iPhone sends back after "Take Photo" and saves it as JPEG.
+func savePhoto(from pb: NSPasteboard) -> String? {
+    guard let img = NSImage(pasteboard: pb), let tiff = img.tiffRepresentation,
+          let rep = NSBitmapImageRep(data: tiff),
+          let jpg = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.88]) else {
+        L("no image on pasteboard"); return nil
+    }
+    let f = DateFormatter(); f.dateFormat = "yyyyMMdd-HHmmss"
+    try? FileManager.default.createDirectory(atPath: OUTDIR, withIntermediateDirectories: true)
+    let path = OUTDIR + "/Continuity-" + f.string(from: Date()) + ".jpg"
+    do { try jpg.write(to: URL(fileURLWithPath: path)) } catch { L("write failed: \(error)"); return nil }
+    L("got \(rep.pixelsWide)x\(rep.pixelsHigh) → \(path)")
+    return path
+}
+
 final class CaptureView: NSView, NSServicesMenuRequestor {
     var onImage: ((String) -> Void)?
     override var acceptsFirstResponder: Bool { true }
@@ -49,239 +57,138 @@ final class CaptureView: NSView, NSServicesMenuRequestor {
         return super.validRequestor(forSendType: s, returnType: r)
     }
     func readSelection(from pb: NSPasteboard) -> Bool {
-        guard let img = NSImage(pasteboard: pb), let tiff = img.tiffRepresentation,
-              let rep = NSBitmapImageRep(data: tiff),
-              let jpg = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.88]) else {
-            L("continuity: no image on pasteboard"); return false
-        }
-        let f = DateFormatter(); f.dateFormat = "yyyyMMdd-HHmmss"
-        try? FileManager.default.createDirectory(atPath: OUTDIR, withIntermediateDirectories: true)
-        let path = OUTDIR + "/Continuity-" + f.string(from: Date()) + ".jpg"
-        do { try jpg.write(to: URL(fileURLWithPath: path)) } catch { L("continuity write: \(error)"); return false }
-        L("continuity: got \(rep.pixelsWide)x\(rep.pixelsHigh) → \(path)")
-        DispatchQueue.main.async { self.onImage?(path) }
+        guard let p = savePhoto(from: pb) else { return false }
+        DispatchQueue.main.async { self.onImage?(p) }
         return true
     }
 }
 
-// Persistent ImageCaptureCore session — the Image Capture.app trick. icdd only keeps
-// the iPhone's catalog live while a client HOLDS a session open; short sessions get a
-// stale cached catalog (stuck at an old IMG_). So: open once at launch, never close.
-final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate, ICCameraDeviceDownloadDelegate {
-    let browser = ICDeviceBrowser()
-    var cam: ICCameraDevice?
-    var open = false
-    var onNew: (() -> Void)?
-    var reopening = false
-    var beats = 0
-    var downloading: Bool { pendingDone != nil }
-    var afterReady: [() -> Void] = []
-    func refresh(_ then: @escaping () -> Void) {
-        guard let c = cam else { then(); return }
-        let first = afterReady.isEmpty
-        afterReady.append(then)
-        guard first else { return }            // a reopen is already in flight — just wait for it
-        if open { reopening = true; c.requestCloseSession() } else { c.requestOpenSession() }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in   // never hang
-            guard let self = self, !self.afterReady.isEmpty else { return }
-            L("refresh timeout"); let cbs = self.afterReady; self.afterReady = []; cbs.forEach { $0() }
-        }
-    }
-    var pendingDone: ((String?) -> Void)?
-    let tmp = NSTemporaryDirectory() + "iphone-latest-app"
-
-    func start() {
-        try? FileManager.default.createDirectory(atPath: tmp, withIntermediateDirectories: true)
-        browser.delegate = self
-        browser.browsedDeviceTypeMask = ICDeviceTypeMask(rawValue:
-            ICDeviceTypeMask.camera.rawValue | ICDeviceLocationTypeMask.local.rawValue)!
-        browser.start()
-        Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
-            guard let self = self, let c = self.cam, !self.open else { return }
-            c.requestOpenSession()   // retry while locked / after drop
-        }
-        // heartbeat: log real session state every 15s; reopen if ICC silently dropped it
-        Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
-            let c = self.cam
-            L("hb: cam=\(c != nil) open=\(self.open) hasOpen=\(c?.hasOpenSession ?? false) items=\(c?.mediaFiles?.count ?? -1) newest=\(self.newest()?.name ?? "-")")
-            if let c = c, self.open, !c.hasOpenSession { self.open = false; c.requestOpenSession() }
-            // Sessions go silently stale (hw 2026-11-10: IMG_5736 only appeared after an
-            // app restart). Every 2nd beat (~30s), idle → close+reopen for a fresh catalog;
-            // the ready → onNew → prefetch path then notifies about anything new.
-            self.beats += 1
-            if self.beats % 2 == 0, let c = c, self.open, self.afterReady.isEmpty, !self.downloading {
-                self.reopening = true; c.requestCloseSession()
-            }
-        }
-    }
-    func newest() -> ICCameraFile? {
-        func num(_ f: ICCameraFile) -> Int {
-            let n = f.name ?? ""; guard n.hasPrefix("IMG_") else { return -1 }
-            return Int(n.dropFirst(4).prefix { $0.isNumber }) ?? -1
-        }
-        let files = (cam?.mediaFiles ?? []).compactMap { $0 as? ICCameraFile }
-        // date first (fresh items have none yet = newest); IMG number breaks ties.
-        // (number alone fails: iPhone counters wrap — an old IMG_9728 beat IMG_5721.)
-        return files.max { ($0.creationDate ?? .distantFuture, num($0)) < ($1.creationDate ?? .distantFuture, num($1)) }
-    }
-    /// Download newest → JPEG in ~/Pictures/iPhone-Latest; returns jpg path (or nil).
-    func fetchNewest(_ done: @escaping (String?) -> Void) {
-        L("fetch: open=\(open) cam=\(cam != nil) items=\(cam?.mediaFiles?.count ?? -1) newest=\(newest()?.name ?? "-")")
-        guard open, let c = cam, let f = newest() else { done(nil); return }
-        let jpg = OUTDIR + "/" + ((f.name ?? "photo") as NSString).deletingPathExtension + ".jpg"
-        if FileManager.default.fileExists(atPath: jpg) { done(jpg); return }
-        pendingDone = done
-        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
-            if let cb = self?.pendingDone { self?.pendingDone = nil; L("fetch timeout"); cb(nil) }
-        }
-        c.requestDownloadFile(f, options: [.downloadsDirectoryURL: URL(fileURLWithPath: tmp), .overwrite: true],
-            downloadDelegate: self, didDownloadSelector: #selector(didDownloadFile(_:error:options:contextInfo:)), contextInfo: nil)
-    }
-    var tries = 0
-    @objc func didDownloadFile(_ file: ICCameraFile, error: Error?, options: [String: Any] = [:], contextInfo: UnsafeMutableRawPointer?) {
-        if error != nil, tries < 15, let c = cam {     // -9934: iOS still writing it
-            tries += 1
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                c.requestDownloadFile(file, options: [.downloadsDirectoryURL: URL(fileURLWithPath: self.tmp), .overwrite: true],
-                    downloadDelegate: self, didDownloadSelector: #selector(self.didDownloadFile(_:error:options:contextInfo:)), contextInfo: nil)
-            }
-            return
-        }
-        tries = 0
-        let cb = pendingDone; pendingDone = nil
-        L("downloaded \(file.name ?? "?") err=\(String(describing: error))")
-        guard error == nil else { cb?(nil); return }
-        let name = (options[ICDownloadOption.savedFilename.rawValue] as? String) ?? file.name ?? "photo"
-        let src = tmp + "/" + name
-        let jpg = OUTDIR + "/" + (name as NSString).deletingPathExtension + ".jpg"
-        DispatchQueue.global().async {
-            try? FileManager.default.createDirectory(atPath: OUTDIR, withIntermediateDirectories: true)
-            let p = Process(); p.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
-            p.arguments = ["-s", "format", "jpeg", "-s", "formatOptions", "85", src, "--out", jpg]
-            p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
-            try? p.run(); p.waitUntilExit(); try? FileManager.default.removeItem(atPath: src)
-            DispatchQueue.main.async { cb?(FileManager.default.fileExists(atPath: jpg) ? jpg : nil) }
-        }
-    }
-
-    func deviceBrowser(_ b: ICDeviceBrowser, didAdd d: ICDevice, moreComing: Bool) {
-        guard cam == nil, let c = d as? ICCameraDevice else { return }
-        L("found \(c.name ?? "?")"); cam = c; c.delegate = self; c.requestOpenSession()
-    }
-    func deviceBrowser(_ b: ICDeviceBrowser, didRemove d: ICDevice, moreGoing: Bool) {
-        if d === cam { cam = nil; open = false }
-    }
-    func device(_ d: ICDevice, didOpenSessionWithError e: Error?) { open = (e == nil); L("open: \(e.map { "\(($0 as NSError).code)" } ?? "OK")") }
-    func device(_ d: ICDevice, didCloseSessionWithError e: Error?) {
-        open = false; L("closed")
-        if reopening { reopening = false; cam?.requestOpenSession() }
-    }
-    func didRemove(_ d: ICDevice) { if d === cam { cam = nil; open = false } }
-    func cameraDevice(_ c: ICCameraDevice, didAdd items: [ICCameraItem]) {
-        guard items.count < 20 else { return }          // initial catalog flood, not new shots
-        L("didAdd \(items.compactMap { $0.name })")
-        onNew?()
-    }
-    func cameraDevice(_ c: ICCameraDevice, didRemove items: [ICCameraItem]) {}
-    func cameraDevice(_ c: ICCameraDevice, didRenameItems items: [ICCameraItem]) {}
-    func cameraDevice(_ c: ICCameraDevice, didReceivePTPEvent e: Data) {}
-    func cameraDeviceDidChangeCapability(_ c: ICCameraDevice) {}
-    func cameraDeviceDidRemoveAccessRestriction(_ d: ICDevice) {
-        L("unlocked")
-        if !open { cam?.requestOpenSession() }
-    }
-    func cameraDeviceDidEnableAccessRestriction(_ d: ICDevice) { L("locked") }
-    func deviceDidBecomeReady(withCompleteContentCatalog d: ICCameraDevice) {
-        L("ready \(d.mediaFiles?.count ?? 0) newest \(newest()?.name ?? "-") open=\(open)")
-        guard open else { return }   // cached catalog from a failed (locked) open — ignore
-        // Plugged in while LOCKED → session opens with an EMPTY catalog (hw log: "ready 0").
-        // Keep reopening every 3s until the phone is unlocked and items show up.
-        if (d.mediaFiles?.count ?? 0) == 0 {
-            L("empty catalog (phone locked at plug-in?) — reopen in 3s")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-                guard let self = self, self.open, let c = self.cam else { return }
-                self.reopening = true; c.requestCloseSession()
-            }
-            return
-        }
-        if !afterReady.isEmpty {
-            let cbs = afterReady; afterReady = []
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { cbs.forEach { $0() } }   // let late items stream in
-        } else { onNew?() }
-    }
-    func cameraDevice(_ c: ICCameraDevice, didReceiveThumbnail t: CGImage?, for i: ICCameraItem, error: Error?) {}
-    func cameraDevice(_ c: ICCameraDevice, didReceiveMetadata m: [AnyHashable: Any]?, for i: ICCameraItem, error: Error?) {}
-}
-
-final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPopoverDelegate, UNUserNotificationCenterDelegate {
+final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSServicesMenuRequestor {
     var item: NSStatusItem!
+    let pop = NSPopover()
     var thumb: DragView?
     var caption: NSTextField?
-    var watcher: Process?
-    var pollTimer: Timer?
-    var shownPath: String?
-    var pop = NSPopover()
-    var busy = false
-    let phone = PhoneLink()
-    var debounce: DispatchWorkItem?
-    var lastNotified: String?
+    var captureView: CaptureView?
+    var capturing = false
 
-    func notifyArrived(_ jpg: String) {
-        let c = UNMutableNotificationContent()
-        c.title = "📱 New iPhone photo"
-        c.body = (jpg as NSString).lastPathComponent + " — click to open & drag"
-        c.sound = .default
-        // attachment needs a copy (the system moves the file)
-        let att = NSTemporaryDirectory() + "notif-" + (jpg as NSString).lastPathComponent
-        try? FileManager.default.removeItem(atPath: att)
-        if (try? FileManager.default.copyItem(atPath: jpg, toPath: att)) != nil,
-           let a = try? UNNotificationAttachment(identifier: "img", url: URL(fileURLWithPath: att)) { c.attachments = [a] }
-        UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: jpg, content: c, trigger: nil)) { e in
-            L("notify \((jpg as NSString).lastPathComponent): \(e.map { "\($0)" } ?? "ok")")
-        }
-    }
-    func userNotificationCenter(_ c: UNUserNotificationCenter, willPresent n: UNNotification,
-                                withCompletionHandler h: @escaping (UNNotificationPresentationOptions) -> Void) { h([.banner, .sound]) }
-    func userNotificationCenter(_ c: UNUserNotificationCenter, didReceive r: UNNotificationResponse,
-                                withCompletionHandler h: @escaping () -> Void) {
-        DispatchQueue.main.async { if !self.pop.isShown { self.grab() } }; h()
-    }
+    // AppKit only activates the Continuity "Import from iPhone" item when it lives in
+    // the MAIN menu (probe-verified; pop-up menus stay grey).
+    lazy var importMenu: NSMenu = {
+        let main = NSMenu(); let fileItem = NSMenuItem(); let file = NSMenu(title: "File")
+        let imp = NSMenuItem(title: "Import from iPhone", action: nil, keyEquivalent: "")
+        imp.identifier = NSMenuItem.importFromDeviceIdentifier
+        file.addItem(imp); fileItem.submenu = file; main.addItem(fileItem)
+        NSApp.mainMenu = main
+        return file
+    }()
 
     func applicationDidFinishLaunching(_ n: Notification) {
-        // kill watchers orphaned by a previous instance (two ICC sessions = stale catalog)
-        let k = Process(); k.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
-        k.arguments = ["-f", "iphone-latest --watch"]; try? k.run(); k.waitUntilExit()
         item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.title = "📱"
-        item.button?.toolTip = "Newest iPhone photo (USB) — click"
+        item.button?.toolTip = "Take a photo with the iPhone"
         item.button?.target = self
         item.button?.action = #selector(click(_:))
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         pop.behavior = .transient
         pop.delegate = self
-        // A session opened while the phone is LOCKED is access-restricted: stale
-        // catalog, no new-photo pushes even after unlock (hw log 2026-11-10). So every
-        // click and every unlock reopens the session, then reads the live catalog.
-        // USB/ImageCaptureCore path retired (stale catalogs, 15–60s iOS delay — FINDINGS.md).
-        // Continuity Camera only.
-        _ = importMenu   // register Continuity item in the main menu at launch
-        let nc = UNUserNotificationCenter.current(); nc.delegate = self
-        nc.requestAuthorization(options: [.alert, .sound]) { ok, e in L("notif auth: \(ok) \(String(describing: e))") }
-        // Live: when new items stream in and the thumbnail is open, fetch the newest.
-        phone.onNew = { [weak self] in
-            guard let self = self else { return }
-            self.debounce?.cancel()
-            let w = DispatchWorkItem { self.prefetch() }
-            self.debounce = w
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: w)
-        }
+        _ = importMenu
     }
 
     @objc func click(_ b: NSStatusBarButton) {
         if NSApp.currentEvent?.type == .rightMouseUp { return showMenu() }
-        grab()   // icon = take a photo. Always. (close the thumbnail by clicking elsewhere)
+        L("click")
+        if !pop.isShown { showThumb(newestJPG()) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.takePhoto() }
     }
+
+    // MARK: Continuity Camera
+
+    func findTakePhoto(_ m: NSMenu) -> (NSMenu, Int)? {
+        for (i, it) in m.items.enumerated() {
+            if it.title.localizedCaseInsensitiveContains("Take Photo"), it.action != nil { return (m, i) }
+            if let sub = it.submenu, let r = findTakePhoto(sub) { return r }
+        }
+        return nil
+    }
+
+    func takePhoto() {
+        guard let root = captureView else { return }
+        if capturing { L("already waiting for a photo"); return }
+        NSApp.activate(ignoringOtherApps: true)
+        root.window?.makeKeyAndOrderFront(nil)
+        root.window?.makeFirstResponder(root)
+        importMenu.update()
+        if findTakePhoto(importMenu) == nil {
+            // AppKit fills the submenu only once the menu has been opened: open it and
+            // cancel it 0.4s later, then fire Take Photo ourselves.
+            L("priming menu")
+            let t = Timer(timeInterval: 0.4, repeats: false) { [weak self] _ in self?.importMenu.cancelTracking() }
+            RunLoop.main.add(t, forMode: .common)
+            importMenu.popUp(positioning: nil, at: NSPoint(x: 10, y: 30), in: root)
+            importMenu.update()
+        }
+        guard let (m, i) = findTakePhoto(importMenu) else {
+            L("Take Photo unavailable")
+            caption?.stringValue = "⚠️ iPhone camera unavailable (Wi-Fi + Bluetooth, same Apple ID?)"
+            return
+        }
+        capturing = true
+        caption?.stringValue = "📷 Take the photo on your iPhone…"
+        L("firing \(m.items[i].title)")
+        m.performActionForItem(at: i)
+    }
+
+    func gotPhoto(_ path: String) {
+        capturing = false
+        if pop.isShown, thumb != nil { updateThumb(path) } else { showThumb(path) }
+    }
+
+    // End-of-chain requestor (NSApplication asks its delegate) — same handling.
+    @objc func validRequestor(forSendType s: NSPasteboard.PasteboardType?, returnType r: NSPasteboard.PasteboardType?) -> Any? {
+        if s == nil, let r = r, NSImage.imageTypes.contains(r.rawValue) { return self }
+        return nil
+    }
+    @objc func readSelection(from pb: NSPasteboard) -> Bool {
+        guard let p = savePhoto(from: pb) else { return false }
+        DispatchQueue.main.async { self.gotPhoto(p) }
+        return true
+    }
+
+    // MARK: Thumbnail
+
+    func newestJPG() -> String? {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: OUTDIR)) ?? []
+        return names.filter { $0.hasPrefix("Continuity-") && $0.hasSuffix(".jpg") }.sorted().last.map { OUTDIR + "/" + $0 }
+    }
+
+    func showThumb(_ path: String?) {
+        let img = path.flatMap { NSImage(contentsOfFile: $0) }
+        let w: CGFloat = 240
+        let h: CGFloat = img.map { max(80, min(340, w * $0.size.height / max(1, $0.size.width))) } ?? 80
+        let root = CaptureView(frame: NSRect(x: 0, y: 0, width: w, height: h + 24))
+        root.onImage = { [weak self] p in self?.gotPhoto(p) }
+        let iv = DragView(frame: NSRect(x: 0, y: 24, width: w, height: h))
+        iv.imageScaling = .scaleProportionallyUpOrDown
+        if let img = img, let p = path { iv.image = img; iv.fileURL = URL(fileURLWithPath: p) }
+        let l = NSTextField(labelWithString: img == nil ? "No photo yet" : "Drag into chat · click 📱 for another")
+        l.font = .systemFont(ofSize: 10); l.alignment = .center
+        l.frame = NSRect(x: 0, y: 4, width: w, height: 16)
+        root.addSubview(iv); root.addSubview(l)
+        thumb = iv; caption = l; captureView = root
+        let vc = NSViewController(); vc.view = root
+        pop.contentViewController = vc
+        if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
+    }
+
+    func updateThumb(_ path: String) {
+        guard let iv = thumb, let img = NSImage(contentsOfFile: path) else { return }
+        iv.image = img; iv.fileURL = URL(fileURLWithPath: path)
+        caption?.stringValue = "Drag into chat · click 📱 for another"
+    }
+
+    func popoverDidClose(_ n: Notification) { capturing = false; thumb = nil; caption = nil }
+
+    // MARK: Right-click menu
 
     func showMenu() {
         let m = NSMenu()
@@ -291,210 +198,15 @@ final class App: NSObject, NSServicesMenuRequestor, NSApplicationDelegate, NSPop
         m.addItem(withTitle: "Quit", action: #selector(NSApp.terminate(_:)), keyEquivalent: "q")
         item.menu = m; item.button?.performClick(nil); item.menu = nil
     }
-
-    @objc func openFolder() {
-        NSWorkspace.shared.open(URL(fileURLWithPath: NSString(string: "~/Pictures/iPhone-Latest").expandingTildeInPath))
-    }
-
+    @objc func openFolder() { NSWorkspace.shared.open(URL(fileURLWithPath: OUTDIR)) }
     @objc func help() {
         let v = AppHelpView(appName: "iPhoneLatest",
-            tagline: "Newest iPhone photo, over the cable, into any chat.",
-            usage: [(icon: "📱", text: "Click the icon: newest photo → JPEG thumbnail (clipboard untouched)."),
-                    (icon: "🖱️", text: "Drag the thumbnail into Terminal / Claude / Mail."),
-                    ])
-        let vc = NSHostingController(rootView: v)
-        pop.contentViewController = vc
+            tagline: "Take a photo with your iPhone, drag it into any chat.",
+            usage: [(icon: "📱", text: "Click the icon: the iPhone camera opens."),
+                    (icon: "📷", text: "Take the photo, tap Use Photo — the thumbnail updates."),
+                    (icon: "🖱️", text: "Drag the thumbnail into Terminal / Claude / Mail.")])
+        pop.contentViewController = NSHostingController(rootView: v)
         if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
-    }
-
-    func newestJPG() -> String? {
-        let fm = FileManager.default
-        guard let names = try? fm.contentsOfDirectory(atPath: OUTDIR) else { return nil }
-        return names.filter { $0.hasPrefix("Continuity-") && $0.lowercased().hasSuffix(".jpg") }
-            .map { OUTDIR + "/" + $0 }
-            .max { (mtime($0)) < (mtime($1)) }
-    }
-    func mtime(_ p: String) -> Date {
-        ((try? FileManager.default.attributesOfItem(atPath: p))?[.modificationDate] as? Date) ?? .distantPast
-    }
-
-    func grab() {
-        L("click")
-        if !pop.isShown { showThumb(newestJPG() ?? "") }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.takePhoto(nil) }
-    }
-
-    /// Double-click: reopen the iPhone session (fresh catalog) and fetch the newest.
-    func hardRefresh() {
-        L("double-click refresh")
-        caption?.stringValue = "⏳ refreshing from iPhone…"
-        busy = true; item.button?.title = "⏳"
-        phone.refresh { [weak self] in
-            guard let self = self else { return }
-            self.busy = false; self.item.button?.title = "📱"
-            self.caption?.stringValue = "Drag · double-click = refresh"
-            self.prefetch()
-        }
-    }
-
-    /// New photo streamed in → download it now; swap into the thumbnail if it's open.
-    func prefetch() {
-        guard !busy, phone.open else { return }
-        busy = true; item.button?.title = "⏳"
-        phone.fetchNewest { [weak self] jpg in
-            guard let self = self else { return }
-            self.busy = false; self.item.button?.title = "📱"
-            L("prefetch done: \(jpg ?? "nil") lastNotified=\(self.lastNotified ?? "-") shown=\(self.shownPath ?? "-")")
-            guard let j = jpg else { return }
-            // more streamed in while we were busy? go again
-            if let n = self.phone.newest()?.name, !j.hasSuffix(((n as NSString).deletingPathExtension) + ".jpg") {
-                DispatchQueue.main.async { self.prefetch() }
-            }
-            if self.pop.isShown { self.updateThumb(j) }
-            if j != self.lastNotified, j != self.shownPath {
-                self.lastNotified = j
-                if !self.pop.isShown { self.item.button?.title = "📸" }   // unseen photo marker
-                self.notifyArrived(j)
-            }
-        }
-    }
-
-    func showThumb(_ path: String) {
-        let vc = NSViewController()
-        let img = path.hasSuffix(".jpg") ? NSImage(contentsOfFile: path) : nil
-        let w: CGFloat = 240
-        let h: CGFloat = img.map { max(80, min(340, w * $0.size.height / max(1, $0.size.width))) } ?? 80
-        let root = CaptureView(frame: NSRect(x: 0, y: 0, width: w, height: h + 24))
-        root.onImage = { [weak self] jpg in
-            guard let self = self else { return }
-            self.capturing = false
-            if self.pop.isShown, self.thumb != nil { self.updateThumb(jpg) } else { self.showThumb(jpg) }
-        }
-        let iv = DragView(frame: NSRect(x: 0, y: 24, width: w, height: h))
-        iv.imageScaling = .scaleProportionallyUpOrDown
-        if let img = img { iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path }
-        let l = NSTextField(labelWithString: img == nil ? "No photo yet" : "Drag into chat · click 📱 for another")
-        l.font = .systemFont(ofSize: 10); l.alignment = .center
-        l.frame = NSRect(x: 0, y: 4, width: w, height: 16)
-        root.addSubview(iv); root.addSubview(l)
-        thumb = iv; caption = l; captureView = root
-        // thumbnail = drag only; no click/double-click actions (they re-fired the camera)
-        vc.view = root; pop.contentViewController = vc
-        if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
-        NSApp.activate(ignoringOtherApps: true)
-        root.window?.makeFirstResponder(root)
-    }
-
-    var captureView: CaptureView?
-    var capturing = false
-    lazy var importMenu: NSMenu = {
-        let main = NSMenu(); let fileItem = NSMenuItem(); let file = NSMenu(title: "File")
-        let imp = NSMenuItem(title: "Import from iPhone", action: nil, keyEquivalent: "")
-        imp.identifier = NSMenuItem.importFromDeviceIdentifier
-        file.addItem(imp); fileItem.submenu = file; main.addItem(fileItem)
-        NSApp.mainMenu = main
-        return file
-    }()
-    // End-of-chain requestor: NSApplication consults its delegate, so "Import from iPhone"
-    // enables even when the popover window isn't key.
-    @objc func validRequestor(forSendType s: NSPasteboard.PasteboardType?, returnType r: NSPasteboard.PasteboardType?) -> Any? {
-        if s == nil, let r = r, NSImage.imageTypes.contains(r.rawValue) { return self }
-        return nil
-    }
-    @objc func readSelection(from pb: NSPasteboard) -> Bool {
-        let v = captureView ?? CaptureView(frame: .zero)
-        if v.onImage == nil { v.onImage = { [weak self] j in self?.showThumb(j) } }
-        return v.readSelection(from: pb)
-    }
-    @objc func takePhotoMenu(_ sender: NSButton) { takePhoto(sender) }
-
-    /// Find AppKit's populated "Take Photo" item (under Import from iPhone ▸ <device>).
-    func findTakePhoto(_ m: NSMenu) -> (NSMenu, Int)? {
-        for (i, it) in m.items.enumerated() {
-            if it.title.localizedCaseInsensitiveContains("Take Photo"), it.action != nil || it.target != nil { return (m, i) }
-            if let sub = it.submenu, let r = findTakePhoto(sub) { return r }
-        }
-        return nil
-    }
-    func dump(_ m: NSMenu, _ d: Int = 0) {
-        for it in m.items { L(String(repeating: "  ", count: d) + "menu: '\(it.title)' en=\(it.isEnabled) act=\(it.action.map { NSStringFromSelector($0) } ?? "-")"); if let s = it.submenu { dump(s, d + 1) } }
-    }
-
-    /// One click → the iPhone camera opens. Directly fires "Take Photo" once AppKit has
-    /// populated the Continuity menu (it does so the first time the menu is opened).
-    func takePhoto(_ sender: NSButton?) {
-        guard let root = captureView else { return }
-        NSApp.activate(ignoringOtherApps: true)
-        root.window?.makeKeyAndOrderFront(nil)
-        root.window?.makeFirstResponder(root)
-        importMenu.update()
-        if capturing { L("continuity: already waiting for a photo — ignored"); return }
-        if let (m, i) = findTakePhoto(importMenu) {
-            capturing = true
-            L("continuity: firing '\(m.items[i].title)' directly")
-            caption?.stringValue = "📷 Camera open on iPhone — shoot + Use Photo"
-            m.performActionForItem(at: i)
-            return
-        }
-        // AppKit only populates the Continuity submenu when the menu is opened. Open it,
-        // cancel it a moment later, then fire Take Photo ourselves.
-        L("continuity: priming menu")
-        let t = Timer(timeInterval: 0.4, repeats: false) { [weak self] _ in self?.importMenu.cancelTracking() }
-        RunLoop.main.add(t, forMode: .common)
-        importMenu.popUp(positioning: nil, at: NSPoint(x: 10, y: 40), in: root)
-        importMenu.update()
-        if let (m, i) = findTakePhoto(importMenu) {
-            capturing = true
-            L("continuity: primed → firing '\(m.items[i].title)'")
-            caption?.stringValue = "📷 Take the photo on your iPhone…"
-            m.performActionForItem(at: i)
-        } else {
-            dump(importMenu)
-            caption?.stringValue = "⚠️ iPhone camera not available (Wi-Fi + Bluetooth on, same Apple ID?)"
-        }
-    }
-
-    // Live refresh: while the thumbnail is open, `iphone-latest --watch` prints a
-    // jpg path per NEW photo; swap it into the same view (+ it's on the clipboard).
-    func startWatcher() {
-        guard watcher?.isRunning != true else { return }
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: SCRIPT)
-        p.arguments = ["--watch", "--no-clip"]
-        p.standardOutput = FileHandle.nullDevice; p.standardError = FileHandle.nullDevice
-        try? p.run(); watcher = p
-        pollTimer?.invalidate()
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.poll() }
-    }
-
-    func poll() {
-        guard thumb != nil, let n = newestJPG(), n != shownPath else { return }
-        updateThumb(n)
-    }
-
-    func stopWatcher() {
-        pollTimer?.invalidate(); pollTimer = nil
-        guard let p = watcher else { return }
-        if p.isRunning {
-            // kill the child iphone-import too (it's in the script's process group)
-            p.terminate()
-            let k = Process(); k.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
-            k.arguments = ["-P", String(p.processIdentifier)]; try? k.run()
-        }
-        watcher = nil
-    }
-
-    func updateThumb(_ path: String) {
-        guard let iv = thumb, let img = NSImage(contentsOfFile: path) else { return }
-        iv.image = img; iv.fileURL = URL(fileURLWithPath: path); shownPath = path
-        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + "  ·  drag into chat"
-    }
-
-    func applicationWillTerminate(_ n: Notification) { stopWatcher() }
-
-    func popoverDidClose(_ n: Notification) {
-        capturing = false
-        stopWatcher(); thumb = nil; caption = nil
     }
 }
 
