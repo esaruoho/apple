@@ -18,8 +18,11 @@ final class DragView: NSImageView, NSDraggingSource {
     }
 }
 
-final class App: NSObject, NSApplicationDelegate {
+final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     var item: NSStatusItem!
+    var thumb: DragView?
+    var caption: NSTextField?
+    var watcher: Process?
     var pop = NSPopover()
     var busy = false
 
@@ -31,6 +34,7 @@ final class App: NSObject, NSApplicationDelegate {
         item.button?.action = #selector(click(_:))
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         pop.behavior = .transient
+        pop.delegate = self
     }
 
     @objc func click(_ b: NSStatusBarButton) {
@@ -98,8 +102,53 @@ final class App: NSObject, NSApplicationDelegate {
         l.font = .systemFont(ofSize: 10); l.alignment = .center
         l.frame = NSRect(x: 0, y: 5, width: w, height: 16)
         root.addSubview(iv); root.addSubview(l)
+        thumb = iv; caption = l
         vc.view = root; pop.contentViewController = vc
         if let b = item.button { pop.show(relativeTo: b.bounds, of: b, preferredEdge: .minY) }
+        startWatcher()
+    }
+
+    // Live refresh: while the thumbnail is open, `iphone-latest --watch` prints a
+    // jpg path per NEW photo; swap it into the same view (+ it's on the clipboard).
+    func startWatcher() {
+        guard watcher?.isRunning != true else { return }
+        let p = Process(); let pipe = Pipe()
+        p.executableURL = URL(fileURLWithPath: SCRIPT)
+        p.arguments = ["--watch"]
+        p.standardOutput = pipe; p.standardError = FileHandle.nullDevice
+        var buf = ""
+        pipe.fileHandleForReading.readabilityHandler = { [weak self] h in
+            guard let chunk = String(data: h.availableData, encoding: .utf8), !chunk.isEmpty else { return }
+            buf += chunk
+            while let r = buf.range(of: "\n") {
+                let line = String(buf[..<r.lowerBound]); buf.removeSubrange(..<r.upperBound)
+                guard line.hasSuffix(".jpg") else { continue }
+                DispatchQueue.main.async { self?.updateThumb(line) }
+            }
+        }
+        try? p.run(); watcher = p
+    }
+
+    func stopWatcher() {
+        guard let p = watcher else { return }
+        (p.standardOutput as? Pipe)?.fileHandleForReading.readabilityHandler = nil
+        if p.isRunning {
+            // kill the child iphone-import too (it's in the script's process group)
+            p.terminate()
+            let k = Process(); k.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+            k.arguments = ["-P", String(p.processIdentifier)]; try? k.run()
+        }
+        watcher = nil
+    }
+
+    func updateThumb(_ path: String) {
+        guard let iv = thumb, let img = NSImage(contentsOfFile: path) else { return }
+        iv.image = img; iv.fileURL = URL(fileURLWithPath: path)
+        caption?.stringValue = "🆕 " + (path as NSString).lastPathComponent + " · drag or ⌘V"
+    }
+
+    func popoverDidClose(_ n: Notification) {
+        stopWatcher(); thumb = nil; caption = nil
     }
 }
 

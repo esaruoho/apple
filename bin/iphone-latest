@@ -5,6 +5,8 @@
 #   iphone-latest            → ~/Pictures/iPhone-Latest/<name>.jpg, ⌘V-ready
 #   iphone-latest --no-clip  → just fetch + convert, print path
 #   iphone-latest --open     → also reveal in Quick Look
+#   iphone-latest --watch    → keep running; every NEW photo → jpg + clipboard,
+#                              one path per line on stdout (iPhoneLatest.app live refresh)
 #
 # Then: ⌘V / Ctrl-V into Claude Code, or drag the file into the Terminal.
 # Pipeline: bin/iphone-import --latest (ImageCaptureCore) → sips → NSPasteboard.
@@ -12,17 +14,19 @@
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$HOME/Pictures/iPhone-Latest"
-CLIP=1; OPEN=0
+CLIP=1; OPEN=0; WATCH=0
 for a in "$@"; do case "$a" in
-  --no-clip) CLIP=0 ;; --open) OPEN=1 ;;
+  --watch) WATCH=1 ;; --no-clip) CLIP=0 ;; --open) OPEN=1 ;;
   -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
   *) echo "unknown arg: $a" >&2; exit 2 ;;
 esac; done
 
 mkdir -p "$OUT"
-TMP="$(mktemp -d -t iphone-latest)"; trap 'rm -rf "$TMP"' EXIT
-SRC="$("$REPO/bin/iphone-import" --latest "$TMP" | tail -1)"
-[[ -n "$SRC" && -f "$SRC" ]] || { echo "❌ no photo (iPhone cabled + unlocked + Trusted?)" >&2; exit 1; }
+TMP="$(mktemp -d -t iphone-latest)"
+cleanup() { pkill -f "iphone-import --watch $TMP" 2>/dev/null || true; rm -rf "$TMP" "$TMP.out"; }
+trap cleanup EXIT; trap 'exit 0' TERM INT
+process() {  # $1 = imported source file → sets JPG
+SRC="$1"
 
 BASE="$(basename "${SRC%.*}")"
 JPG="$OUT/$BASE.jpg"
@@ -43,5 +47,20 @@ pb's writeObjects:{img, u}
 APPLESCRIPT
   echo "✅ $(basename "$JPG") on clipboard — ⌘V into Claude, or drag the file." >&2
 fi
+}
+
+if [[ "$WATCH" -eq 1 ]]; then
+  while true; do
+    rm -f "$TMP"/* 2>/dev/null || true
+    "$REPO/bin/iphone-import" --watch "$TMP" > "$TMP.out" 2>/dev/null & IMP=$!
+    wait "$IMP" || { sleep 3; continue; }
+    SRC="$(tail -1 "$TMP.out")"
+    [[ -n "$SRC" && -f "$SRC" ]] || { sleep 3; continue; }
+    process "$SRC"; echo "$JPG"
+  done
+fi
+SRC="$("$REPO/bin/iphone-import" --latest "$TMP" | tail -1)"
+[[ -n "$SRC" && -f "$SRC" ]] || { echo "❌ no photo (iPhone cabled + unlocked + Trusted?)" >&2; exit 1; }
+process "$SRC"
 [[ "$OPEN" -eq 1 ]] && qlmanage -p "$JPG" >/dev/null 2>&1 &
 echo "$JPG"

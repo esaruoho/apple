@@ -21,3 +21,10 @@ Feature: Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud
     When I click the 📱 icon in the menu bar
     Then it shows ⏳, runs bin/iphone-latest, and pops a draggable thumbnail under the icon
     And right-click offers Help / Support Esa (shared/SupportHelp.swift), Open folder, Quit
+
+  @built @untested
+  Scenario: Thumbnail auto-refreshes on a new photo
+    Given the 📱 thumbnail popover is open
+    When I take a new photo on the cabled iPhone
+    Then `iphone-latest --watch` imports it → jpg → clipboard and the thumbnail swaps in place ("🆕 name")
+    And closing the popover stops the watcher with no orphan iphone-import (@hw-verified teardown)
