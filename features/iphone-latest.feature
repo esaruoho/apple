@@ -35,6 +35,9 @@ Feature: Latest iPhone photo → chat in one click (USB cable, no AirDrop/iCloud
     When iphone-import --latest waits for didAdd items to stop streaming (2.5s settle, 25s cap)
     Then it downloads the true newest (verified IMG_5701, ~4s)
 
-  @built @untested
-  Scenario: --watch keeps ONE session open (no 2s close→reopen, which killed iOS's item stream)
-    Then each new photo arrives via didAdd and is printed as a path line, session stays open
+  @built @hw-verified
+  Scenario: --watch cycles open → stream settles (2.5s quiet) → compare → reopen
+    Given iOS only reveals new photos on a fresh session, streamed in AFTER catalog-ready
+    When I take a photo on the UNLOCKED iPhone
+    Then the watcher detects + downloads it (verified IMG_5702)
+    And a locked phone just waits (no 80s give-up in watch mode)

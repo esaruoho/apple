@@ -77,7 +77,7 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
     // --- device session ---
     func device(_ device: ICDevice, didOpenSessionWithError error: Error?) {
         guard let error = error else {            // success → catalog will follow
-            sessionOpen = true; wantRetry = false
+            sessionOpen = true; wantRetry = false; unlockTries = 0
             return
         }
         let code = (error as NSError).code
@@ -110,21 +110,9 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
     func deviceDidBecomeReady(withCompleteContentCatalog device: ICCameraDevice) {
         let files = mediaFiles(device)
         if watch {
-            if !catalogReady {
-                // First enumeration: remember everything already on the phone.
-                baseline = Set(files.map { $0.name ?? "" })
-                catalogReady = true
-                err("[iphone-import] catalog ready, \(files.count) item(s) — watching (polling every 2s). Take a shot now…")
-            } else {
-                // A poll-triggered reopen finished: did a new photo appear?
-                refreshing = false
-                let fresh = files.filter { !baseline.contains($0.name ?? "") }
-                if let f = fresh.max(by: { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }) {
-                    err("[iphone-import] new photo detected: \(f.name ?? "?")")
-                    downloading = true
-                    download(device, f)
-                }
-            }
+            // Don't decide yet: iOS streams items newer than icdd's cached catalog
+            // via didAdd AFTER this. tick() decides once the stream goes quiet.
+            refreshing = false; lastAdd = Date(); latestReadyAt = Date()
             return
         }
         if latest {
@@ -142,7 +130,7 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
 
     // Fast path: if the push event ever DOES fire for a fresh capture, take it.
     func cameraDevice(_ camera: ICCameraDevice, didAdd items: [ICCameraItem]) {
-        if latest { lastAdd = Date(); return }
+        lastAdd = Date(); return
         guard watch, !done, catalogReady else { return }
         let fresh = items.compactMap { $0 as? ICCameraFile }
             .filter { !baseline.contains($0.name ?? "") }
@@ -171,11 +159,11 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
         if !sessionOpen {
             guard wantRetry else { return }
             unlockTries += 1
-            if unlockTries >= maxUnlockTries {
+            if !watch, unlockTries >= maxUnlockTries {
                 err("open session still failing after \(unlockTries) tries — likely a Trust problem, not a lock.")
                 finish(2); return
             }
-            if unlockTries % 2 == 0 {
+            if unlockTries % 15 == 0 {
                 err("[iphone-import] still waiting for unlock… (\(unlockTries)/\(maxUnlockTries))")
             }
             cam.requestOpenSession()
@@ -193,12 +181,24 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
             return
         }
 
-        // Phase 2 — watching: every tick, force a fresh catalog scan.
-        guard watch, catalogReady, !downloading, !refreshing else { return }
-        pollTicks += 1
-        // NOTE: we used to close→reopen here to "refresh". That restarted iOS's
-        // incremental catalog stream every 2s, so photos newer than the cached
-        // catalog NEVER arrived. Keep the session open; new items come via didAdd.
+        // Phase 2 — watching. Cycle: open → stream settles → compare → close → reopen.
+        // (Closing BEFORE the stream settled was the old bug: new photos never arrived.)
+        guard watch, !downloading, !refreshing, let r = latestReadyAt else { return }
+        guard Date().timeIntervalSince(lastAdd) >= 2.5 || Date().timeIntervalSince(r) >= 25 else { return }
+        let files = mediaFiles(cam)
+        if !catalogReady {
+            baseline = Set(files.map { $0.name ?? "" }); catalogReady = true
+            err("[iphone-import] catalog settled, \(files.count) item(s) — watching. Take a shot…")
+        } else {
+            let fresh = files.filter { !baseline.contains($0.name ?? "") }
+            if let f = fresh.max(by: { ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast) }) {
+                fresh.forEach { baseline.insert($0.name ?? "") }
+                err("[iphone-import] new photo detected: \(f.name ?? "?")")
+                downloading = true; download(cam, f); return
+            }
+        }
+        latestReadyAt = nil; refreshing = true
+        cam.requestCloseSession()   // → didCloseSession → reopen → fresh enumeration
     }
 
     func download(_ device: ICCameraDevice, _ file: ICCameraFile) {
@@ -221,8 +221,9 @@ final class Importer: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate,
         let path = URL(fileURLWithPath: destDir!).appendingPathComponent(name).path
         print(path); fflush(stdout)
         if watch {
-            baseline.insert(file.name ?? ""); downloading = false
-            if let p = pending { pending = nil; if !baseline.contains(p.name ?? "") { downloading = true; download(camera!, p) } }
+            downloading = false
+            latestReadyAt = nil; refreshing = true
+            camera?.requestCloseSession()
             return
         }
         finish(0)

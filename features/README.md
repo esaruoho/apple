@@ -811,9 +811,9 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Standalone 📱 menu-bar icon (iphone-latest/main.swift, own app — not AppleToolbox) — `@built @untested`
 - Thumbnail auto-refreshes on a new photo — `@built @untested`
 - --latest sees photos newer than iOS's cached PTP catalog — `@built @hw-verified`
-- --watch keeps ONE session open (no 2s close→reopen, which killed iOS's item stream) — `@built @untested`
+- --watch cycles open → stream settles (2.5s quiet) → compare → reopen — `@built @hw-verified`
 
-**Grade:** @built ×6 · @hw-verified ×2 · @untested ×4
+**Grade:** @built ×6 · @hw-verified ×3 · @untested ×3
 
 
 <a id="iphonemirror-rotated-live-mirror"></a>
