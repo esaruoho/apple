@@ -34,6 +34,8 @@ Every photo is kept (never overwritten) in `~/Pictures/iPhone-Latest/Continuity-
 | Copilot CLI | `copilot mcp add iphone -- ~/work/apple/bin/iphone-snap-mcp` | `~/.copilot/mcp-config.json` |
 | Antigravity (`agy`) | `agy mcp add iphone ~/work/apple/bin/iphone-snap-mcp` | managed by `agy mcp` |
 
+Global instructions telling each agent to *use* the tool when seeing would help: `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, `~/.gemini/GEMINI.md`, `~/.copilot/copilot-instructions.md`. Pre-approved in Claude Code (`mcp__iphone__take_iphone_photo` in `~/.claude/settings.json`) and trusted in Gemini (`--trust`).
+
 No MCP? Any agent with a shell can run `bin/iphone-snap` and open the printed path.
 
 ## Requirements
