@@ -1,0 +1,35 @@
+#!/bin/bash
+# iphone-snap — ask Esa for an iPhone photo and wait for it. Prints the JPEG path.
+#
+#   iphone-snap [--timeout SECONDS]     (default 180)
+#
+# Opens iphonelatest://take, so iPhoneLatest.app opens the iPhone camera (Continuity
+# Camera). Esa shoots and taps Use Photo, the app saves
+# ~/Pictures/iPhone-Latest/Continuity-<ts>.jpg, and this prints that path.
+# A Claude session then Reads the path to SEE the photo.
+#
+# Exit codes: 0 ok · 1 timeout · 2 iPhoneLatest.app missing
+# Also the engine behind the MCP tool take_iphone_photo (bin/iphone-snap-mcp).
+# FEATURE-CARD >> features/iphone-latest.feature
+set -euo pipefail
+DIR="$HOME/Pictures/iPhone-Latest"
+TIMEOUT=180
+[[ "${1:-}" == "--timeout" ]] && TIMEOUT="${2:-180}"
+[[ -d /Applications/iPhoneLatest.app ]] || { echo "iPhoneLatest.app not installed (run iphone-latest/build.sh)" >&2; exit 2; }
+
+mkdir -p "$DIR"
+newest() { ls -1 "$DIR"/Continuity-*.jpg 2>/dev/null | sort | tail -1 || true; }
+BEFORE="$(newest)"
+
+open -g "iphonelatest://take"
+echo "📷 Camera opened on the iPhone — take the photo and tap Use Photo…" >&2
+
+for ((i = 0; i < TIMEOUT * 2; i++)); do
+  NOW="$(newest)"
+  if [[ -n "$NOW" && "$NOW" != "$BEFORE" ]]; then
+    sleep 0.3   # let the write finish
+    echo "$NOW"; exit 0
+  fi
+  sleep 0.5
+done
+echo "⏱ no photo within ${TIMEOUT}s" >&2; exit 1

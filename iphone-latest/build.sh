@@ -34,6 +34,10 @@ cat > "$APP/Contents/Info.plist" <<P
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
   <key>LSUIElement</key><true/>
+  <key>CFBundleURLTypes</key><array><dict>
+    <key>CFBundleURLName</key><string>org.esaruoho.iphonelatest</string>
+    <key>CFBundleURLSchemes</key><array><string>iphonelatest</string></array>
+  </dict></array>
   <key>NSHumanReadableCopyright</key><string>Esa Ruoho — github.com/esaruoho/apple</string>
 </dict></plist>
 P

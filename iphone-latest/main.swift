@@ -111,6 +111,19 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSServicesM
     }
     @objc func toggleLogin() { setOpenAtLogin(!opensAtLogin) }
 
+    // iphonelatest://take — same as clicking 📱 (used by bin/iphone-snap and the MCP server
+    // so a Claude session can ask for a photo).
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for u in urls where u.scheme == "iphonelatest" {
+            L("url: \(u.absoluteString)")
+            if u.host == "take" {
+                if !pop.isShown { showThumb(newestJPG()) }
+                caption?.stringValue = "📷 Claude asked for a photo — take it on your iPhone"
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { self.takePhoto() }
+            }
+        }
+    }
+
     @objc func click(_ b: NSStatusBarButton) {
         if NSApp.currentEvent?.type == .rightMouseUp { return showMenu() }
         // Icon click while the thumbnail is open = dismiss. (The transient popover closes
