@@ -146,6 +146,18 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         item.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         pop.behavior = .transient
         pop.delegate = self
+        // Hard-won (hw log 2026-11-10): iOS only PUSHES new photos (didAdd) while
+        // Image Capture.app is running. Our own open session alone got nothing.
+        // So keep it running — hidden (-g -j), re-checked every 30s.
+        func ensureImageCapture() {
+            if NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Image_Capture").isEmpty {
+                L("launching Image Capture hidden")
+                let o = Process(); o.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                o.arguments = ["-g", "-j", "-a", "Image Capture"]; try? o.run()
+            }
+        }
+        ensureImageCapture()
+        Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { _ in ensureImageCapture() }
         phone.start()
         // Live: when new items stream in and the thumbnail is open, fetch the newest.
         phone.onNew = { [weak self] in
