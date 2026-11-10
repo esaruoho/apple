@@ -135,12 +135,13 @@ final class PhoneLink: NSObject, ICDeviceBrowserDelegate, ICCameraDeviceDelegate
     func cameraDevice(_ c: ICCameraDevice, didReceivePTPEvent e: Data) {}
     func cameraDeviceDidChangeCapability(_ c: ICCameraDevice) {}
     func cameraDeviceDidRemoveAccessRestriction(_ d: ICDevice) {
-        L("unlocked → reopening session")
-        refresh { [weak self] in self?.onNew?() }
+        L("unlocked")
+        if !open { cam?.requestOpenSession() }
     }
     func cameraDeviceDidEnableAccessRestriction(_ d: ICDevice) { L("locked") }
     func deviceDidBecomeReady(withCompleteContentCatalog d: ICCameraDevice) {
-        L("ready \(d.mediaFiles?.count ?? 0) newest \(newest()?.name ?? "-")")
+        L("ready \(d.mediaFiles?.count ?? 0) newest \(newest()?.name ?? "-") open=\(open)")
+        guard open else { return }   // cached catalog from a failed (locked) open — ignore
         if !afterReady.isEmpty {
             let cbs = afterReady; afterReady = []
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { cbs.forEach { $0() } }   // let late items stream in
@@ -230,23 +231,13 @@ final class App: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     func grab() {
         L("click: open=\(phone.open) shown=\(pop.isShown) busy=\(busy)")
+        // Click never reopens the session (that raced iOS: -9943 + stale cache → "fetch failed").
+        // Show the newest photo already here; new ones arrive via didAdd → prefetch().
         if !pop.isShown { showThumb(newestJPG() ?? "") }
-        guard !busy else { return }
-        guard phone.cam != nil else {
-            caption?.stringValue = phone.cam == nil ? "⚠️ No iPhone on the cable" : "🔒 Unlock the iPhone (connecting…)"
-            return
-        }
-        busy = true; item.button?.title = "⏳"
-        caption?.stringValue = "⏳ " + (phone.newest()?.name ?? "") + "…"
-        phone.refresh { [weak self] in
-            guard let self = self else { return }
-            L("after refresh: items=\(self.phone.cam?.mediaFiles?.count ?? -1) newest=\(self.phone.newest()?.name ?? "-") open=\(self.phone.open)")
-            self.phone.fetchNewest { [weak self] jpg in
-                guard let self = self else { return }
-                self.busy = false; self.item.button?.title = "📱"
-                if let j = jpg { self.updateThumb(j) } else { self.caption?.stringValue = "⚠️ fetch failed — click 📱 to retry" }
-            }
-        }
+        if phone.cam == nil { caption?.stringValue = "⚠️ No iPhone on the cable"; return }
+        if !phone.open { caption?.stringValue = "🔒 Unlock the iPhone…"; return }
+        caption?.stringValue = "Drag into chat · new photos appear here (iOS takes ~5–25 s)"
+        prefetch()
     }
 
     /// New photo streamed in → download it now; swap into the thumbnail if it's open.
