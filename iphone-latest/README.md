@@ -8,6 +8,17 @@ A tiny Apple-native menu-bar app. One click on 📱 opens the iPhone's camera. T
 
 No AirDrop, no emailing yourself, no iCloud wait, no cable needed.
 
+![Clicking 📱 arms the iPhone](docs/take-a-photo.png)
+
+## Why
+
+Showing an AI agent something on the desk used to mean: take the photo, iMessage or email it to yourself, find it, drag it into the chat. Now:
+
+1. **Click 📱.** The iPhone is armed immediately. Shoot, tap **Use Photo**, and drag the thumbnail into Claude, Codex, Gemini or anywhere else. It's also saved to `~/Pictures/iPhone-Latest/`.
+2. **Tell the agent "take a photo".** The MCP tool arms the iPhone. Shoot, tap **Use Photo**, and the photo goes straight into the chat, with no dragging and the context intact.
+
+It fits naturally with USB tethering: the same cable gives the laptop internet and charges the phone. The photos themselves travel over Continuity Camera, so no cable is needed for them.
+
 ## Use
 
 | Action | Result |
