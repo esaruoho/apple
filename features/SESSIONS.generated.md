@@ -8,7 +8,7 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**11 card conversations** plugged in:
+**12 card conversations** plugged in:
 
 ### `070edd2e-d868-47ea-a2ba-a8104dd6a979`  (2026-10-16)
 - Resume: `claude --resume 070edd2e-d868-47ea-a2ba-a8104dd6a979`
@@ -74,3 +74,9 @@
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/80e0eb8a-1733-48c4-8ec5-10bc261249c6.jsonl
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
 - Cards touched (20): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature, mail-material-editor-contract.feature, mail-reply-attachment-fallback.feature, me-address.feature … (+6)
+
+### `c0842e71-9d1f-4528-a777-87fbb845d668`  (2026-11-11)
+- Resume: `claude --resume c0842e71-9d1f-4528-a777-87fbb845d668`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/c0842e71-9d1f-4528-a777-87fbb845d668.jsonl
+- Tooling touched: INDEX.md
+- Cards touched (3): notes-process.feature, notes-variants.feature, transcript-vault-email-analysis.feature

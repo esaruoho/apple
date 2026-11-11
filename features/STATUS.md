@@ -54,6 +54,7 @@
 | notes-append-images | 3 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
 | notes-new | 6 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
 | notes-process | 9 | ✗ | — | ✓ | @built @designed @hw-verified @sim-verified @todo @untested |
+| notes-variants | 5 | ✗ | — | — | @built @sim-verified @todo |
 | rec-audio | 4 | ✗ | — | ✓ | @hw-verified |
 | rec-subtitle | 18 | ✗ | — | ✓ | @built @hw-verified |
 | recburn-abort | 9 | ✗ | — | ✓ | @built @hw-verified @note |
@@ -77,7 +78,7 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 65
+- Cards: 66
 - Build-verified: 9
 - Runtime-verified: 9 full + 5 partial
 - **Hardware-verified: 26**  ·  hardware-untested: 0

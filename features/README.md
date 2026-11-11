@@ -50,6 +50,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [notes-append-images — append images to an Apple Note, rendered once each](#notes-append-images) — `notes-append-images.feature`
 - [notes-new creates exactly one new Apple Note without touching anything else](#notes-new) — `notes-new.feature`
 - [a #process tag in a note gets an LLM reply added as rich text, never by rewriting the note](#notes-process) — `notes-process.feature`
+- [notes-variants — N near-duplicate notes → MASTER consensus + branches](#notes-variants) — `notes-variants.feature`
 - [Post-process a screen recording's audio (split / flatten)](#rec-audio) — `rec-audio.feature`
 - [Subtitle a screen recording (.srt sidecar + burn-in)](#rec-subtitle) — `rec-subtitle.feature`
 - [Two presses of the same key always get the shell back](#recburn-abort) — `recburn-abort.feature`
@@ -1058,6 +1059,22 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - iCloud sync is forced on the Mini — `@built`
 
 **Grade:** @built ×7 · @designed ×1 · @hw-verified ×3 · @sim-verified ×1 · @todo ×1 · @untested ×1
+
+
+<a id="notes-variants"></a>
+## notes-variants — N near-duplicate notes → MASTER consensus + branches
+
+`features/notes-variants.feature`
+
+**Behaviour (5 scenarios):**
+
+- extract duplicates read-only from NoteStore.sqlite — `@sim-verified`
+- meaning-level alignment via apple-embed (NLEmbedding), Jaccard fallback — `@sim-verified`
+- outputs — `@built`
+- slot-level branching tree — `@todo`
+- variant families are too fragmented (234 families of 293) — needs a lower --family-sim or embedding-level variant vectors — `@todo`
+
+**Grade:** @built ×1 · @sim-verified ×2 · @todo ×2
 
 
 <a id="rec-audio"></a>

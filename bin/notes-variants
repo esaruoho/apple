@@ -1,0 +1,261 @@
+#!/usr/bin/env python3
+"""notes-variants — many near-duplicate notes → one MASTER + its branches.
+
+Born 2026-11-11 from the notes-process loop that wrote ~300+ "Re: Nikola Tesla…" replies,
+each a different LLM sample of the same question. Treat them as an ensemble:
+
+  1. EXTRACT  every note whose title starts with --prefix, straight from NoteStore.sqlite
+              (opened READ-ONLY; gzip+protobuf body decoded here; Notes.app untouched)
+              → <out>/variants/NNN.md  (oldest first, timestamped)
+  2. ALIGN    split each into sentences/bullets; cluster equivalent sentences across all
+              variants (token-set similarity) → "claims", each with support = #variants.
+  3. MASTER   claims carried by >= --quorum of variants, in their median position
+              → MASTER.md  (the consensus answer)
+  4. BRANCHES claims below quorum, grouped by which variant family carries them
+              → BRANCHES.md ; variant families via similarity clustering → FAMILIES.md
+     plus claims.json (full vector space: claim × variant incidence) for further work.
+
+Report card: features/notes-variants.feature
+
+Usage:
+  notes-variants --prefix 'Re: Nikola Tesla' --out ~/work/apple/analysis/notes-variants/tesla-radio
+"""
+import argparse, datetime, gzip, json, re, sqlite3, statistics
+from pathlib import Path
+
+DB = Path.home() / 'Library/Group Containers/group.com.apple.notes/NoteStore.sqlite'
+EPOCH = 978307200
+
+
+# ---------- protobuf (minimal) ----------
+def _varint(b, i):
+    r = s = 0
+    while True:
+        c = b[i]; i += 1
+        r |= (c & 0x7f) << s; s += 7
+        if c < 0x80:
+            return r, i
+
+
+def _fields(b):
+    i = 0
+    while i < len(b):
+        k, i = _varint(b, i)
+        f, t = k >> 3, k & 7
+        if t == 0:
+            v, i = _varint(b, i)
+        elif t == 2:
+            n, i = _varint(b, i); v = b[i:i + n]; i += n
+        elif t == 1:
+            v = b[i:i + 8]; i += 8
+        elif t == 5:
+            v = b[i:i + 4]; i += 4
+        else:
+            return
+        yield f, v
+
+
+def _get(b, f):
+    return next((v for ff, v in _fields(b) if ff == f), None)
+
+
+def note_text(blob):
+    """NoteStoreProto(2: Document(3: Note(2: note_text)))"""
+    raw = gzip.decompress(blob)
+    doc = _get(raw, 2); note = _get(doc, 3); txt = _get(note, 2)
+    return txt.decode('utf-8', 'replace').replace('￼', '')
+
+
+def extract(prefix):
+    c = sqlite3.connect(f'file:{DB}?mode=ro', uri=True, timeout=5)
+    rows = c.execute('''select n.Z_PK, n.ZTITLE1, n.ZCREATIONDATE3, d.ZDATA
+        from ZICCLOUDSYNCINGOBJECT n join ZICNOTEDATA d on d.Z_PK = n.ZNOTEDATA
+        where n.ZTITLE1 like ? and coalesce(n.ZMARKEDFORDELETION,0)=0
+        order by n.ZCREATIONDATE3''', (prefix + '%',)).fetchall()
+    out = []
+    for pk, title, cd, blob in rows:
+        try:
+            t = note_text(blob)
+        except Exception as e:
+            t = f'<<decode failed: {e}>>'
+        out.append(dict(pk=pk, title=title,
+                        at=datetime.datetime.fromtimestamp(cd + EPOCH).isoformat(timespec='seconds'),
+                        text=t))
+    return out
+
+
+# ---------- alignment ----------
+STOP = set('the a an of to and or in on is was that this it as by for with be are were his he its from at which'.split())
+BOILER = re.compile(r'^(re:|>|🤖|#done)', re.I)
+
+
+def units(text):
+    """Body → sentences/bullets, skipping title, quoted question, signature, #done."""
+    lines = text.splitlines()
+    sep = next((i for i, l in enumerate(lines) if l.strip().startswith('──')), 0)
+    lines = lines[sep + 1:]  # drop title + quoted question (everything above ────)
+    out = []
+    for l in lines:
+        l = l.strip().lstrip('-*•·').strip()
+        if not l or BOILER.match(l):
+            continue
+        for s in re.split(r'(?<=[.!?])\s+(?=[A-Z0-9“"])', l):
+            if len(s.split()) >= 3:
+                out.append(s.strip())
+    return out
+
+
+def toks(s):
+    return frozenset(w for w in re.findall(r'[a-z0-9]+', s.lower()) if w not in STOP and len(w) > 2)
+
+
+def sim(a, b):
+    return len(a & b) / len(a | b) if a and b else 0.0
+
+
+def embed(sentences):
+    """Apple NLEmbedding (bin/apple-embed) → unit-normalised matrix, or None."""
+    import subprocess
+    try:
+        import numpy as np
+        r = subprocess.run([str(Path(__file__).resolve().parent / 'apple-embed')],
+                           input='\n'.join(s.replace('\n', ' ') for s in sentences),
+                           capture_output=True, text=True, timeout=600)
+        vs = [json.loads(l)['v'] for l in r.stdout.splitlines() if l.strip()]
+        if len(vs) != len(sentences):
+            return None
+        m = np.array(vs, dtype='float32')
+        return m / (np.linalg.norm(m, axis=1, keepdims=True) + 1e-9)
+    except Exception:
+        return None
+
+
+def align(variants, thr, ethr):
+    """Cluster equivalent sentences across variants. Meaning-level (embedding cosine
+    >= ethr, greedy vs running centroid) when apple-embed works, else token Jaccard >= thr."""
+    from collections import Counter
+    items = []  # (vi, rel, text)
+    for vi, v in enumerate(variants):
+        us = units(v['text'])
+        items += [(vi, pos / max(1, len(us) - 1), u) for pos, u in enumerate(us)]
+    E = embed([it[2] for it in items])
+    claims = []
+    if E is not None:
+        import numpy as np
+        cents = np.zeros((0, E.shape[1]), dtype='float32')
+        for k, it in enumerate(items):
+            if len(claims):
+                sims = cents @ E[k]
+                j = int(sims.argmax())
+                if sims[j] >= ethr:
+                    c = claims[j]; c['members'].append(it); c['sum'] += E[k]
+                    cents[j] = c['sum'] / np.linalg.norm(c['sum']); continue
+            claims.append(dict(members=[it], sum=E[k].copy(), idx=[]))
+            cents = np.vstack([cents, E[k]])
+        for j, c in enumerate(claims):
+            c['rep'] = max(c['members'], key=lambda m: float(E[items.index(m)] @ cents[j]))[2] \
+                if len(c['members']) < 400 else c['members'][0][2]
+    else:
+        for it in items:
+            t = toks(it[2])
+            best, bs = None, thr
+            for c in claims:
+                s = sim(t, c['toks'])
+                if s >= bs:
+                    best, bs = c, s
+            if best:
+                best['members'].append(it); best['tf'].update(t)
+            else:
+                claims.append(dict(toks=t, tf=Counter(t), members=[it]))
+        for c in claims:
+            core = {w for w, n in c['tf'].items() if n >= max(1, len(c['members']) / 2)}
+            c['rep'] = max(c['members'], key=lambda m: sim(toks(m[2]), core) if core else 0)[2]
+    for c in claims:
+        c['support'] = len({m[0] for m in c['members']})
+        c['pos'] = statistics.median(m[1] for m in c['members'])
+        c.pop('sum', None)
+    return claims, ('apple-embed cosine' if E is not None else 'token Jaccard')
+
+
+def families(variants, claims, thr):
+    vecs = [set() for _ in variants]
+    for ci, c in enumerate(claims):
+        for vi, _, _ in c['members']:
+            vecs[vi].add(ci)
+    fams = []
+    for vi, s in enumerate(vecs):
+        for f in fams:
+            if sim(s, f['cent']) >= thr:
+                f['members'].append(vi); f['cent'] |= s; break
+        else:
+            fams.append(dict(cent=set(s), members=[vi]))
+    return vecs, sorted(fams, key=lambda f: -len(f['members']))
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--prefix', required=True)
+    ap.add_argument('--out', required=True)
+    ap.add_argument('--quorum', type=float, default=0.25, help='fraction of variants for MASTER')
+    ap.add_argument('--sim', type=float, default=0.45, help='sentence-cluster Jaccard threshold')
+    ap.add_argument('--esim', type=float, default=0.82, help='embedding cosine threshold')
+    ap.add_argument('--family-sim', type=float, default=0.30)
+    a = ap.parse_args()
+    out = Path(a.out).expanduser(); (out / 'variants').mkdir(parents=True, exist_ok=True)
+
+    vs = extract(a.prefix)
+    if not vs:
+        raise SystemExit('no notes match')
+    for i, v in enumerate(vs):
+        (out / 'variants' / f'{i:03d}.md').write_text(f'<!-- pk {v["pk"]} · {v["at"]} -->\n{v["text"]}\n')
+    claims, method = align(vs, a.sim, a.esim)
+    n = len(vs); q = max(2, round(a.quorum * n))
+    master = sorted([c for c in claims if c['support'] >= q], key=lambda c: c['pos'])
+    branch = sorted([c for c in claims if 2 <= c['support'] < q], key=lambda c: -c['support'])
+    singles = [c for c in claims if c['support'] == 1]
+    vecs, fams = families(vs, claims, a.family_sim)
+    span = f'{vs[0]["at"]} → {vs[-1]["at"]}'
+
+    m = [f'# MASTER — {a.prefix}', '',
+         f'Consensus of **{n}** variants ({span}). A claim is kept if ≥{q} variants '
+         f'({a.quorum:.0%}) say it (clustered by {method}); ordered by median position. `[k/{n}]` = support.', '']
+    m += [f'- {c["rep"]}  `[{c["support"]}/{n}]`' for c in master]
+    (out / 'MASTER.md').write_text('\n'.join(m) + '\n')
+
+    b = [f'# BRANCHES — {a.prefix}', '', f'Claims carried by 2…{q-1} of {n} variants '
+         '(minority branches), most-supported first. Unique one-offs: '
+         f'{len(singles)} (see claims.json).', '']
+    for c in branch:
+        vis = sorted({x[0] for x in c['members']})
+        b.append(f'- {c["rep"]}  `[{c["support"]}/{n}]` variants {",".join(f"{x:03d}" for x in vis[:12])}{"…" if len(vis) > 12 else ""}')
+    (out / 'BRANCHES.md').write_text('\n'.join(b) + '\n')
+
+    f = [f'# FAMILIES — {a.prefix}', '', f'{n} variants clustered by shared claims '
+         f'(Jaccard ≥ {a.family_sim}). Each family = one branch of the tree; its signature = '
+         'claims most of its members share that are NOT in MASTER.', '']
+    mset = {id(c) for c in master}
+    for k, fam in enumerate(fams):
+        cnt = {}
+        for vi in fam['members']:
+            for ci in vecs[vi]:
+                cnt[ci] = cnt.get(ci, 0) + 1
+        sig = [claims[ci] for ci, k2 in sorted(cnt.items(), key=lambda x: -x[1])
+               if id(claims[ci]) not in mset and k2 >= max(2, len(fam['members']) / 2)][:6]
+        f.append(f'## Family {k+1} — {len(fam["members"])} variants')
+        f.append('variants: ' + ', '.join(f'{x:03d}' for x in fam['members'][:30]) + ('…' if len(fam['members']) > 30 else ''))
+        f += [f'- {c["rep"]}' for c in sig] or ['- (no distinctive claims beyond MASTER)']
+        f.append('')
+    (out / 'FAMILIES.md').write_text('\n'.join(f) + '\n')
+
+    json.dump(dict(prefix=a.prefix, method=method, n=n, span=span, quorum=q,
+                   variants=[dict(i=i, pk=v['pk'], at=v['at'], claims=sorted(vecs[i])) for i, v in enumerate(vs)],
+                   claims=[dict(i=i, rep=c['rep'], support=c['support'], pos=round(c['pos'], 3),
+                                members=[dict(v=x[0], text=x[2]) for x in c['members']])
+                           for i, c in enumerate(claims)]),
+              open(out / 'claims.json', 'w'), ensure_ascii=False, indent=1)
+    print(f'{n} variants · {len(claims)} claims · master {len(master)} · branches {len(branch)} '
+          f'· singles {len(singles)} · families {len(fams)} → {out}')
+
+
+if __name__ == '__main__':
+    main()
