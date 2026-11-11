@@ -25,3 +25,16 @@ Feature: notes-variants — N near-duplicate notes → MASTER consensus + branch
     Then claims sharing a sentence stem ("Tesla's views were rooted in…") are shown as one fork with weighted alternatives
   @todo
   Scenario: variant families are too fragmented (234 families of 293) — needs a lower --family-sim or embedding-level variant vectors
+
+  @sim-verified
+  Scenario: ask N times on purpose — #consensus tag
+    Given a note line "my question #consensus"
+    When the "Notes Consensus" Cloudcity-Boot pane runs notes-process --tag '#consensus' --samples 25
+    Then notes-brain is asked 25 times and the answers are aligned by notes-variants.run()
+    And the reply note holds the MASTER consensus with [k/N] support plus the folder of all answers
+    # verified headless 2026-11-11: 4 samples via flubuild Qwen, ~4 s each, /usr/bin/python3 pure-Python cosine
+  @untested
+  Scenario: the pane end-to-end on the Mini (first real #consensus note)
+
+  @sim-verified
+  Scenario: hysteresis duplicates — 292 variants → 41 MASTER claims (analysis/notes-variants/hysteresis)

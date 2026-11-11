@@ -78,5 +78,5 @@
 ### `c0842e71-9d1f-4528-a777-87fbb845d668`  (2026-11-11)
 - Resume: `claude --resume c0842e71-9d1f-4528-a777-87fbb845d668`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/c0842e71-9d1f-4528-a777-87fbb845d668.jsonl
-- Tooling touched: INDEX.md
-- Cards touched (3): notes-process.feature, notes-variants.feature, transcript-vault-email-analysis.feature
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (22): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature, mail-material-editor-contract.feature, mail-reply-attachment-fallback.feature, me-address.feature … (+8)

@@ -1,0 +1,45 @@
+# MASTER — Re: What has hysteresis
+
+Consensus of **292** variants (2026-11-10T22:26:35 → 2026-11-11T01:49:31). A claim is kept if ≥23 variants (8%) say it (clustered by apple-embed cosine); ordered by median position. `[k/292]` = support.
+
+- Hysteresis is a property observed in certain materials and systems where the output depends not only on the current input but also on the history of inputs.  `[292/292]`
+- This means that the system's state at any given time is influenced by its past states as well.  `[89/292]`
+- This means that the system's state or response lags behind the input, often forming a loop or memory effect.  `[34/292]`
+- This means that the system's state will "remember" past conditions even after those conditions have changed.  `[99/292]`
+- This means that the system's state depends on the path taken to reach that state, rather than just the current conditions.  `[70/292]`
+- Common examples include magnetic materials, springs, and some types of memory devices.  `[32/292]`
+- Elements with Hysteresis:  `[281/292]`
+- Magnetic Materials: Many ferromagnetic materials exhibit hysteresis, particularly in their magnetic properties.  `[26/292]`
+- Magnetic Materials: Many ferromagnetic materials exhibit hysteresis, such as iron, nickel, and cobalt.  `[159/292]`
+- Magnetic Materials: When a magnetic material is exposed to a magnetic field, it can retain some magnetization even after the field is removed.  `[105/292]`
+- This is known as remanence.  `[40/292]`
+- The magnetization of these materials depends on the history of the magnetic field applied to them.  `[82/292]`
+- The magnetic field strength (H) and the magnetic flux density (B) are related through a hysteresis loop.  `[34/292]`
+- Shape Memory Alloys: Materials like nitinol (nickel-titanium alloy) can undergo shape changes based on temperature, and their behavior can show hysteresis.  `[44/292]`
+- Rubber and Polymers: These materials can show hysteresis in their stress-strain curves, meaning the deformation depends on the previous deformations.  `[41/292]`
+- Some Ceramics and Polymers: Certain types of ceramics and polymers can also show hysteresis under specific conditions.  `[78/292]`
+- Shape Memory Alloys: These alloys change shape in response to temperature changes and can exhibit hysteresis in their phase transitions.  `[35/292]`
+- Piezoelectric Materials: Some piezoelectric materials can show hysteresis in their electrical response to mechanical stress.  `[46/292]`
+- Some Polymers: Certain polymers can show hysteresis in their mechanical properties under cyclic loading.  `[30/292]`
+- Elements without Hysteresis:  `[239/292]`
+- Linear Systems: Most simple linear systems do not exhibit hysteresis.  `[25/292]`
+- Elements That Do Not Have Hysteresis:  `[24/292]`
+- Linear Systems: In linear systems, the response to an input is directly proportional to the input itself, and there is no memory of past inputs.  `[32/292]`
+- Most non-magnetic materials do not exhibit hysteresis.  `[81/292]`
+- Non-magnetic Metals: Materials like copper, aluminum, and gold do not exhibit significant hysteresis because they do not retain magnetic properties.  `[85/292]`
+- Elements and Simple Systems:  `[29/292]`
+- For example, metals like copper or aluminum, which are not ferromagnetic, do not show significant hysteresis.  `[49/292]`
+- Linear Systems: Systems that follow linear relationships between input and output do not exhibit hysteresis.  `[29/292]`
+- Insulators: Pure insulating materials typically do not show hysteresis unless they are subjected to specific conditions that induce magnetic or other forms of hysteresis.  `[45/292]`
+- Pure gases (like air) do not exhibit hysteresis because they do not retain any memory of past states under normal conditions.  `[65/292]`
+- Air and Hysteresis:  `[80/292]`
+- Does Air Have Hysteresis?  `[52/292]`
+- However, certain properties of air can show hysteresis under specific conditions:  `[26/292]`
+- Air itself does not have hysteresis because it is a gas and does not retain any memory of past states in the way that magnetic materials do.  `[146/292]`
+- The properties of air (such as pressure, temperature, and density) change based on the current conditions and do not depend on past conditions.  `[45/292]`
+- However, in certain complex systems involving air, such as in weather patterns or atmospheric dynamics, hysteresis might be observed due to the interaction of various factors over time, but this is not a fundamental property of air itself.  `[96/292]`
+- However, in certain complex systems involving air (such as in weather patterns or in the behavior of air in confined spaces with changing boundary conditions), hysteresis might be observed, but this would be due to the complexity of the system rather than a fundamental property of air itself.  `[29/292]`
+- Air, being a simple gas, does not exhibit hysteresis.  `[245/292]`
+- In summary, hysteresis is a characteristic of certain materials and systems, particularly those involving magnetic fields or complex mechanical behaviors.  `[177/292]`
+- In summary, hysteresis is primarily associated with certain materials and systems, particularly magnetic materials, while most other elements and substances do not exhibit this property.  `[46/292]`
+- Simple elements and gases like air do not exhibit hysteresis under normal conditions.  `[32/292]`

@@ -93,7 +93,8 @@ def units(text):
     """Body → sentences/bullets, skipping title, quoted question, signature, #done."""
     lines = text.splitlines()
     sep = next((i for i, l in enumerate(lines) if l.strip().startswith('──')), 0)
-    lines = lines[sep + 1:]  # drop title + quoted question (everything above ────)
+    if sep or (lines and lines[0].strip().startswith('──')):
+        lines = lines[sep + 1:]  # note: drop title + quoted question (everything above ────)
     out = []
     for l in lines:
         l = l.strip().lstrip('-*•·').strip()
@@ -117,15 +118,18 @@ def embed(sentences):
     """Apple NLEmbedding (bin/apple-embed) → unit-normalised matrix, or None."""
     import subprocess
     try:
-        import numpy as np
         r = subprocess.run([str(Path(__file__).resolve().parent / 'apple-embed')],
                            input='\n'.join(s.replace('\n', ' ') for s in sentences),
                            capture_output=True, text=True, timeout=600)
         vs = [json.loads(l)['v'] for l in r.stdout.splitlines() if l.strip()]
         if len(vs) != len(sentences):
             return None
-        m = np.array(vs, dtype='float32')
-        return m / (np.linalg.norm(m, axis=1, keepdims=True) + 1e-9)
+        try:
+            import numpy as np
+            m = np.array(vs, dtype='float32')
+            return m / (np.linalg.norm(m, axis=1, keepdims=True) + 1e-9)
+        except ImportError:  # /usr/bin/python3 (Cloudcity-Boot panes) has no numpy
+            return [[x / (sum(y * y for y in v) ** .5 + 1e-9) for x in v] for v in vs]
     except Exception:
         return None
 
@@ -140,7 +144,24 @@ def align(variants, thr, ethr):
         items += [(vi, pos / max(1, len(us) - 1), u) for pos, u in enumerate(us)]
     E = embed([it[2] for it in items])
     claims = []
-    if E is not None:
+    if isinstance(E, list):  # pure-Python cosine (small N, e.g. --samples 25)
+        dot = lambda u, v: sum(x * y for x, y in zip(u, v))
+        cents = []
+        for k, it in enumerate(items):
+            j, best = -1, -2.0
+            for jj, c in enumerate(cents):
+                d = dot(c, E[k])
+                if d > best:
+                    j, best = jj, d
+            if j >= 0 and best >= ethr:
+                c = claims[j]; c['members'].append(it); c['sum'] = [x + y for x, y in zip(c['sum'], E[k])]
+                n = sum(x * x for x in c['sum']) ** .5; cents[j] = [x / n for x in c['sum']]
+                c['ix'].append(k)
+            else:
+                claims.append(dict(members=[it], sum=list(E[k]), ix=[k])); cents.append(list(E[k]))
+        for j, c in enumerate(claims):
+            c['rep'] = items[max(c['ix'], key=lambda k: dot(E[k], cents[j]))][2]
+    elif E is not None:
         import numpy as np
         cents = np.zeros((0, E.shape[1]), dtype='float32')
         for k, it in enumerate(items):
@@ -192,22 +213,14 @@ def families(variants, claims, thr):
     return vecs, sorted(fams, key=lambda f: -len(f['members']))
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument('--prefix', required=True)
-    ap.add_argument('--out', required=True)
-    ap.add_argument('--quorum', type=float, default=0.25, help='fraction of variants for MASTER')
-    ap.add_argument('--sim', type=float, default=0.45, help='sentence-cluster Jaccard threshold')
-    ap.add_argument('--esim', type=float, default=0.82, help='embedding cosine threshold')
-    ap.add_argument('--family-sim', type=float, default=0.30)
-    a = ap.parse_args()
-    out = Path(a.out).expanduser(); (out / 'variants').mkdir(parents=True, exist_ok=True)
-
-    vs = extract(a.prefix)
-    if not vs:
-        raise SystemExit('no notes match')
+def run(vs, out, title, quorum=0.25, simthr=0.45, esim=0.82, family_sim=0.30):
+    """vs = [dict(pk, at, text)] → writes variants/ MASTER BRANCHES FAMILIES claims.json into out.
+    Returns the MASTER markdown. Importable (bin/notes-process --samples uses it)."""
+    import types
+    a = types.SimpleNamespace(prefix=title, quorum=quorum, sim=simthr, esim=esim, family_sim=family_sim)
+    out = Path(out).expanduser(); (out / 'variants').mkdir(parents=True, exist_ok=True)
     for i, v in enumerate(vs):
-        (out / 'variants' / f'{i:03d}.md').write_text(f'<!-- pk {v["pk"]} · {v["at"]} -->\n{v["text"]}\n')
+        (out / 'variants' / f'{i:03d}.md').write_text(f'<!-- pk {v.get("pk")} · {v.get("at")} -->\n{v["text"]}\n')
     claims, method = align(vs, a.sim, a.esim)
     n = len(vs); q = max(2, round(a.quorum * n))
     master = sorted([c for c in claims if c['support'] >= q], key=lambda c: c['pos'])
@@ -255,6 +268,31 @@ def main():
               open(out / 'claims.json', 'w'), ensure_ascii=False, indent=1)
     print(f'{n} variants · {len(claims)} claims · master {len(master)} · branches {len(branch)} '
           f'· singles {len(singles)} · families {len(fams)} → {out}')
+
+    return (out / 'MASTER.md').read_text()
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    g = ap.add_mutually_exclusive_group(required=True)
+    g.add_argument('--prefix', help='note title prefix to extract from Notes')
+    g.add_argument('--from-dir', help='folder of *.md/*.txt answers, one variant each')
+    ap.add_argument('--title', default='')
+    ap.add_argument('--out', required=True)
+    ap.add_argument('--quorum', type=float, default=0.25, help='fraction of variants for MASTER')
+    ap.add_argument('--sim', type=float, default=0.45, help='sentence-cluster Jaccard threshold')
+    ap.add_argument('--esim', type=float, default=0.82, help='embedding cosine threshold')
+    ap.add_argument('--family-sim', type=float, default=0.30)
+    a = ap.parse_args()
+
+    if a.from_dir:
+        fs = sorted(p for p in Path(a.from_dir).expanduser().iterdir() if p.suffix in ('.md', '.txt'))
+        vs = [dict(pk=None, at=f.name, text=f.read_text()) for f in fs]
+    else:
+        vs = extract(a.prefix)
+    if not vs:
+        raise SystemExit('no variants')
+    run(vs, a.out, a.title or a.prefix or a.from_dir, a.quorum, a.sim, a.esim, a.family_sim)
 
 
 if __name__ == '__main__':

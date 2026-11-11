@@ -54,7 +54,7 @@
 | notes-append-images | 3 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
 | notes-new | 6 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
 | notes-process | 9 | ✗ | — | ✓ | @built @designed @hw-verified @sim-verified @todo @untested |
-| notes-variants | 5 | ✗ | — | — | @built @sim-verified @todo |
+| notes-variants | 8 | ✗ | — | — | @built @sim-verified @todo @untested |
 | rec-audio | 4 | ✗ | — | ✓ | @hw-verified |
 | rec-subtitle | 18 | ✗ | — | ✓ | @built @hw-verified |
 | recburn-abort | 9 | ✗ | — | ✓ | @built @hw-verified @note |

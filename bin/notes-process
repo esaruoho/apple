@@ -272,7 +272,10 @@ def handle(occ, a, seen, use_shortcut):
     seen.add(key)
     ledger_add({'key': key, 'note': occ['nid'], 'title': occ['title'], 'line': line,
                 'at': datetime.datetime.now().isoformat(timespec='seconds'), 'where': 'claimed'})
-    reply, route = call_llm(a.llm, prompt, a.llm_timeout, context)
+    if a.samples > 1:
+        reply, route = consensus_reply(a, prompt, context, occ)
+    else:
+        reply, route = call_llm(a.llm, prompt, a.llm_timeout, context)
     reply = sanitize(reply, a.tag)
     md = reply_markdown(reply, f'{a.label} · {route.split("/")[-1]}' if route else a.label, a.done_tag)
     md = '> ' + prompt.replace('\n', '\n> ') + '\n' + md  # keep the question with the answer (context)
@@ -288,6 +291,31 @@ def handle(occ, a, seen, use_shortcut):
     ledger_add({'key': key, 'note': occ['nid'], 'title': occ['title'], 'line': line,
                 'at': datetime.datetime.now().isoformat(timespec='seconds'), 'where': where})
     log(f'done {label}: {where}')
+
+
+def consensus_reply(a, prompt, context, occ):
+    """--samples N: ask the same question N times, align the answers (bin/notes-variants),
+    reply with the MASTER consensus. All N answers + branches are kept on disk."""
+    import importlib.machinery, importlib.util
+    ldr = importlib.machinery.SourceFileLoader('notes_variants', str(HERE / 'notes-variants'))
+    nv = importlib.util.module_from_spec(importlib.util.spec_from_loader('notes_variants', ldr))
+    ldr.exec_module(nv)
+    vs, route = [], ''
+    for i in range(a.samples):
+        try:
+            r, route = call_llm(a.llm, prompt, a.llm_timeout, context)
+            vs.append(dict(pk=i, at=datetime.datetime.now().isoformat(timespec='seconds'), text=r))
+            log(f'  sample {i + 1}/{a.samples} ok')
+        except Exception as e:
+            log(f'  sample {i + 1}/{a.samples} failed: {e}')
+    if len(vs) < 2:
+        raise RuntimeError(f'only {len(vs)} samples succeeded')
+    slug = re.sub(r'[^a-z0-9]+', '-', prompt.lower())[:50].strip('-') or 'note'
+    out = Path(a.consensus_dir).expanduser() / f'{datetime.datetime.now():%Y%m%d-%H%M%S}-{slug}'
+    master = nv.run(vs, out, prompt[:80], quorum=a.quorum)
+    body = '\n'.join(l for l in master.splitlines()[2:])  # drop "# MASTER" heading
+    return (f'**Consensus of {len(vs)} answers** (claims ≥{a.quorum:.0%} of answers; `[k/N]` = support)\n'
+            f'{body}\n\nAll {len(vs)} answers + BRANCHES.md + FAMILIES.md: `{out}`'), route
 
 
 LAST_REFRESH = time.time()
@@ -343,6 +371,10 @@ def main():
     ap.add_argument('--settle', type=int, default=5)
     ap.add_argument('--refresh', type=int, default=60,
                     help='relaunch Notes (background) every N s to force iCloud sync; 0 = off')
+    ap.add_argument('--samples', type=int, default=1,
+                    help='ask N times and reply with the consensus (bin/notes-variants); e.g. --tag "#consensus" --samples 25')
+    ap.add_argument('--quorum', type=float, default=0.3, help='--samples: fraction of answers a claim needs')
+    ap.add_argument('--consensus-dir', default=str(HERE.parent / 'analysis/notes-variants/consensus'))
     ap.add_argument('--dry-run', action='store_true')
     a = ap.parse_args()
     if not a.tag.startswith('#') or tag_re(a.tag).search(a.done_tag):

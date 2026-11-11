@@ -1066,15 +1066,18 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/notes-variants.feature`
 
-**Behaviour (5 scenarios):**
+**Behaviour (8 scenarios):**
 
 - extract duplicates read-only from NoteStore.sqlite — `@sim-verified`
 - meaning-level alignment via apple-embed (NLEmbedding), Jaccard fallback — `@sim-verified`
 - outputs — `@built`
 - slot-level branching tree — `@todo`
 - variant families are too fragmented (234 families of 293) — needs a lower --family-sim or embedding-level variant vectors — `@todo`
+- ask N times on purpose — #consensus tag — `@sim-verified`
+- the pane end-to-end on the Mini (first real #consensus note) — `@untested`
+- hysteresis duplicates — 292 variants → 41 MASTER claims (analysis/notes-variants/hysteresis) — `@sim-verified`
 
-**Grade:** @built ×1 · @sim-verified ×2 · @todo ×2
+**Grade:** @built ×1 · @sim-verified ×4 · @todo ×2 · @untested ×1
 
 
 <a id="rec-audio"></a>

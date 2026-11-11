@@ -1,0 +1,219 @@
+# BRANCHES — Re: What has hysteresis
+
+Claims carried by 2…22 of 292 variants (minority branches), most-supported first. Unique one-offs: 259 (see claims.json).
+
+- Some Ceramics: Certain types of ceramics can exhibit hysteresis in their electrical properties under cyclic stress.  `[22/292]` variants 001,022,033,040,065,114,118,158,161,184,194,210…
+- Magnetic Materials: These materials exhibit hysteresis when they are exposed to varying magnetic fields.  `[22/292]` variants 013,025,028,032,045,050,070,075,079,083,090,091…
+- It is a simple gas and does not retain any memory of past conditions in terms of its physical or chemical properties.  `[22/292]` variants 017,092,115,124,134,165,169,182,194,203,213,214…
+- When these materials are exposed to a magnetic field, they align their magnetic domains, and when the field is removed, the domains remain aligned for some time, leading to a hysteresis loop.  `[22/292]` variants 019,036,059,060,062,067,094,103,105,112,150,156…
+- Magnetic Materials: When a magnetized material (like iron) is exposed to a changing magnetic field, its magnetization will lag behind the applied field.  `[20/292]` variants 031,073,076,099,100,104,108,109,123,125,148,155…
+- Examples include iron, nickel, and cobalt.  `[19/292]` variants 003,010,012,018,027,034,040,044,047,077,113,118…
+- Ideal Capacitors and Inductors: In ideal electrical components, the charge or current is directly proportional to the voltage or the magnetic flux, respectively, without any hysteresis.  `[19/292]` variants 030,076,083,089,125,139,149,153,155,167,175,187…
+- Most metals and non-magnetic materials do not exhibit hysteresis under normal conditions.  `[18/292]` variants 006,010,015,022,023,064,090,110,111,145,164,172…
+- For example, metals like copper, aluminum, and gold do not show significant hysteresis unless they are subjected to special treatments or conditions.  `[18/292]` variants 014,036,037,047,049,069,098,118,122,151,158,166…
+- Thermal Systems: Certain thermal systems can exhibit hysteresis, especially in phase transitions like melting and freezing.  `[18/292]` variants 091,092,099,124,130,146,149,158,172,195,236,239…
+- Non-magnetic Materials: Materials that do not become magnetized, such as wood or plastic, do not exhibit hysteresis.  `[17/292]` variants 005,017,047,059,105,106,143,153,157,162,169,172…
+- Hysteresis loops are often seen in magnetic materials, rubber, and some types of mechanical systems.  `[17/292]` variants 008,015,017,029,031,049,074,108,116,123,125,143…
+- Gases generally do not show hysteresis because their properties (such as pressure and volume) are directly proportional to temperature and do not depend on the historical changes in those properties.  `[17/292]` variants 013,025,042,043,051,053,090,091,137,144,182,187…
+- Gases do not retain a "memory" of past states in the same way that magnetic materials do.  `[17/292]` variants 023,026,036,065,071,081,085,141,148,150,179,196…
+- In summary, hysteresis is primarily observed in materials and systems that can store and recall information about their past states, such as magnetic materials and some shape memory alloys.  `[17/292]` variants 064,071,088,093,101,136,142,147,156,160,174,191…
+- Metals: Pure metals generally do not show significant hysteresis unless they are part of a complex system or undergo phase transitions.  `[15/292]` variants 005,011,071,074,101,110,144,156,180,185,210,220…
+- Some Mechanical Systems: Certain mechanical systems, like springs with friction or dampers, can exhibit hysteresis in their response to external forces.  `[15/292]` variants 008,010,041,067,075,081,123,140,143,152,163,185…
+- Air itself does not exhibit hysteresis because it is a simple gas and follows ideal gas laws under normal conditions.  `[15/292]` variants 129,140,146,189,194,200,203,208,218,237,263,266…
+- Ideal Springs: In an ideal spring, the force is directly proportional to the displacement, and there is no memory of past displacements.  `[14/292]` variants 008,046,050,054,070,083,107,137,140,152,155,228…
+- Elements and simple systems typically do not exhibit hysteresis because they do not have complex internal structures or memory effects.  `[14/292]` variants 009,108,123,173,178,186,201,210,227,239,242,247…
+- Magnetic Materials: The magnetization of ferromagnetic materials like iron depends on the history of magnetic fields applied to them.  `[14/292]` variants 010,021,029,049,074,133,137,155,157,168,215,259…
+- For example, resistors, capacitors, and inductors in linear circuits do not exhibit hysteresis.  `[14/292]` variants 027,031,043,054,079,107,133,189,200,228,269,271…
+- Thermocouples: Some thermocouples can show hysteresis in their temperature response due to changes in the material properties with temperature.  `[14/292]` variants 038,055,061,074,080,095,112,157,164,170,179,187…
+- Examples include simple resistors, capacitors, and inductors in electrical circuits.  `[14/292]` variants 059,070,075,083,086,089,096,140,152,171,178,228…
+- In summary, hysteresis is a characteristic of certain materials and systems, particularly those that can store and recall information about their past states.  `[14/292]` variants 158,175,188,192,214,221,228,235,237,248,259,260…
+- Rubber and Polymers: Some rubber and polymer materials can show hysteresis under mechanical stress, particularly in their strain recovery.  `[13/292]` variants 000,006,018,053,119,122,193,204,225,226,241,246…
+- Examples include most metals (like copper, aluminum), insulators, and gases.  `[13/292]` variants 002,042,048,084,120,141,154,196,229,234,240,243…
+- It is a non-magnetic, non-ferroelectric, and non-piezoelectric medium under normal conditions.  `[13/292]` variants 004,019,045,066,121,128,150,153,184,192,197,231…
+- Some Types of Memory Devices: Certain types of non-volatile memory, like magnetic RAM, can exhibit hysteresis in their data retention characteristics.  `[13/292]` variants 005,013,015,016,050,083,109,132,133,168,177,225…
+- Some Electronic Components: Certain types of capacitors and inductors can exhibit hysteresis under specific conditions.  `[12/292]` variants 024,035,043,053,106,145,156,228,236,257,269,285
+- Thermocouples: The voltage generated by a thermocouple can depend on the temperature history of the material.  `[12/292]` variants 039,046,068,076,107,169,178,203,209,257,261,287
+- The relationship between the magnetic field strength and the resulting magnetization is described by the hysteresis loop.  `[12/292]` variants 059,066,093,102,121,150,158,162,184,238,246,281
+- For example, if you compress air and then release it, the air will return to its original state without retaining any "memory" of the compression.  `[12/292]` variants 059,119,151,161,167,181,201,205,220,239,258,268
+- However, air can be affected by external forces (like pressure or temperature changes) and can exhibit some form of hysteresis in certain applications, such as in the context of air conditioning systems where the state of the air (temperature and humidity) can depend on the history of heating and cooling cycles.  `[12/292]` variants 124,158,172,202,235,238,255,272,281,282,287,289
+- Insulators: Pure insulating materials generally do not show hysteresis unless they undergo phase transitions or have complex internal structures.  `[11/292]` variants 009,042,161,176,208,213,218,230,251,278,286
+- Air does not exhibit hysteresis in the same way as materials or systems do.  `[11/292]` variants 016,073,075,087,091,102,126,130,249,255,262
+- Semiconductors: While semiconductors can exhibit some form of hysteresis in their electrical properties under certain conditions, it is generally much less pronounced than in magnetic or ferroelectric materials.  `[11/292]` variants 019,062,103,128,147,190,192,213,216,225,289
+- This is why a magnet can retain its magnetic properties even after the external field is removed.  `[11/292]` variants 021,029,049,074,079,133,137,155,168,215,261
+- It is a simple gas that responds linearly to changes in pressure and temperature according to the ideal gas law.  `[11/292]` variants 021,030,058,074,076,123,137,205,209,232,263
+- Elements with Hysteresis  `[11/292]` variants 022,025,050,052,081,110,183,210,227,259,260
+- Solenoids: In a solenoid, the current required to maintain a certain magnetic flux density depends on the previous history of the current.  `[11/292]` variants 035,058,102,107,116,126,133,158,178,209,250
+- Ideal Capacitors and Inductors: These components do not exhibit hysteresis because they store energy in a way that is independent of past conditions.  `[11/292]` variants 035,038,046,058,102,130,152,203,206,249,261
+- Rubber and Elastic Materials: These materials exhibit hysteresis in their stress-strain curves, meaning the energy required to deform the material is not fully recovered when the load is removed.  `[11/292]` variants 039,061,075,125,152,157,169,187,203,228,287
+- Elastic Materials: Some elastic materials can show hysteresis in their stress-strain curves, especially under cyclic loading.  `[11/292]` variants 091,100,112,130,146,163,239,248,263,264,271
+- Semiconductors: While some semiconductors can show hysteresis under certain conditions, many do not.  `[10/292]` variants 000,067,118,119,134,188,214,222,258,274
+- For example, resistors, capacitors, and inductors in electrical circuits typically do not show hysteresis unless they are part of a more complex system that introduces nonlinearity or memory effects.  `[10/292]` variants 028,090,094,100,200,215,236,246,251,285
+- For example, a simple resistor in an electrical circuit.  `[10/292]` variants 046,102,107,155,175,187,203,250,251,261
+- Air, being a gas, does not inherently exhibit hysteresis, though its properties can sometimes show hysteretic behavior under specific conditions.  `[10/292]` variants 046,060,083,102,126,156,158,166,200,250
+- There is no memory effect in the behavior of air under normal conditions.  `[10/292]` variants 051,058,070,076,111,123,221,232,263,269
+- In summary, hysteresis is a characteristic of certain materials and systems, and air, being a simple gas, does not inherently exhibit hysteresis.  `[9/292]` variants 008,050,095,110,149,167,176,222,257
+- Thermocouples: Some thermocouples exhibit hysteresis due to the thermal history of the material.  `[9/292]` variants 011,021,031,087,163,175,200,254,262
+- For example, if you heat air and then cool it back down, the air will return to its original state without retaining any memory of the heating process.  `[9/292]` variants 011,072,084,103,133,138,188,190,270
+- The properties of air (such as pressure, volume, and temperature) follow straightforward relationships described by the ideal gas law, and these properties do not depend on the history of changes.  `[9/292]` variants 027,044,077,102,143,159,164,227,257
+- Rubber Bands: When stretched, rubber bands exhibit hysteresis in their stress-strain curve.  `[9/292]` variants 029,038,070,079,132,168,255,257,261
+- Humidity in Air: The relative humidity of air can exhibit some hysteresis effects, particularly in the context of desiccation and hydration cycles.  `[9/292]` variants 034,055,073,083,089,167,255,271,279
+- Rubber Bands: When you stretch a rubber band, it will return to its original shape when released, but if you stretch it beyond its elastic limit, it may not fully return to its original shape.  `[9/292]` variants 046,068,073,099,126,133,139,155,209
+- The properties of air, such as density and pressure, change in direct proportion to changes in temperature and volume, without retaining any "memory" of past states.  `[9/292]` variants 050,053,129,144,185,187,239,244,251
+- Non-elastic Materials: Most non-elastic materials do not exhibit hysteresis in their mechanical properties.  `[8/292]` variants 012,044,069,160,223,263,279,285
+- Saturable Inductors: These are used in power electronics and exhibit hysteresis in their magnetic characteristics.  `[8/292]` variants 015,031,045,153,157,168,170,203
+- Common examples of hysteresis include:  `[8/292]` variants 016,032,091,146,167,248,269,271
+- Pure elements that do not form magnetic domains typically do not show hysteresis.  `[8/292]` variants 048,055,098,114,120,154,202,229
+- Thermal Properties: The thermal capacity of air can show some hysteresis in very specific conditions, such as during rapid heating and cooling cycles, but this is not a common or significant effect.  `[8/292]` variants 055,086,089,104,156,250,252,279
+- This is known as the hysteresis loop.  `[8/292]` variants 073,100,104,186,198,200,251,277
+- Ideal Springs: An ideal spring follows Hooke's law strictly and does not show any memory effect, hence no hysteresis.  `[8/292]` variants 146,176,206,221,261,269,271,276
+- This is known as remanence and is a classic example of hysteresis.  `[7/292]` variants 001,009,080,087,138,247,254
+- Rubber Bands: When stretched, rubber bands exhibit hysteresis because the force required to stretch them further increases with each cycle of stretching and relaxing.  `[7/292]` variants 009,076,080,087,107,137,178
+- Fluids: Liquids and gases generally do not show hysteresis in their physical properties under normal conditions.  `[7/292]` variants 017,022,199,204,218,278,288
+- Thermocouples: Certain types of thermocouples can exhibit hysteresis in their temperature-to-voltage response.  `[7/292]` variants 034,077,138,191,221,237,251
+- Humidity: In the context of humidity, the relationship between temperature and relative humidity can sometimes show hysteresis, particularly in closed systems where condensation and evaporation processes are not perfectly reversible.  `[7/292]` variants 039,073,156,166,191,222,252
+- Thermal Properties: In very controlled environments, the thermal capacity of air can change depending on the history of temperature changes, but this is not true hysteresis.  `[7/292]` variants 048,067,155,237,241,248,262
+- For example, a single element like copper or aluminum does not show hysteresis in its electrical resistance or mechanical properties.  `[7/292]` variants 055,108,113,173,201,242,247
+- If the magnetic field is then removed, the material may retain some magnetization, depending on the strength and direction of the field.  `[7/292]` variants 076,099,104,109,148,195,198
+- Elastic Deformation: Some materials exhibit elastic hysteresis, meaning that the stress-strain curve does not return to zero when the applied force is removed.  `[7/292]` variants 148,149,158,199,209,221,291
+- The most common example is ferrite, which is used in many electronic components.  `[6/292]` variants 006,022,048,111,210,237
+- Thermocouples: In some cases, thermocouples can show hysteresis, especially if they are subjected to rapid temperature changes.  `[6/292]` variants 009,073,079,155,247,255
+- Examples of Non-Hysteresis:  `[6/292]` variants 009,017,038,102,124,126
+- Ideal Springs and Masses: Idealized models of springs and masses do not exhibit hysteresis; they return to their original state after the force is removed.  `[6/292]` variants 016,089,091,096,171,249
+- When you compress air, it will expand to its original volume when the pressure is released, without retaining any "memory" of the compression process.  `[6/292]` variants 018,062,063,148,206,228
+- But this is not a fundamental property of air itself.  `[6/292]` variants 022,038,039,047,163,244
+- The pressure and volume relationship described by Boyle's Law or the combined gas law is linear and does not depend on past states.  `[6/292]` variants 031,079,208,215,276,291
+- Linear Materials: Materials that follow linear relationships (like Ohm's law for resistors) do not exhibit hysteresis because their response is directly proportional to the input.  `[6/292]` variants 033,052,146,153,257,260
+- Rubber Bands: When you stretch a rubber band, it takes some time for it to return to its original shape, depending on how much it was stretched.  `[6/292]` variants 035,058,074,102,200,250
+- In summary, hysteresis is primarily associated with certain materials and systems that can remember past conditions, while linear systems and simple fluids like air do not exhibit this property.  `[6/292]` variants 036,099,114,193,209,283
+- In summary, hysteresis is a characteristic of certain materials and systems that remember past conditions, while linear systems and ideal components do not exhibit hysteresis.  `[6/292]` variants 046,058,087,102,247,250
+- This is why you see a hysteresis loop when plotting the magnetic field strength against the magnetization.  `[6/292]` variants 123,171,201,225,245,291
+- For example, a resistor in an electrical circuit follows Ohm's law without memory of past voltages or currents.  `[5/292]` variants 009,076,125,126,255
+- Memory Devices: Some types of memory, such as magnetic tape or hard disk drives, use hysteresis to store data persistently.  `[5/292]` variants 010,028,079,090,129
+- Mechanical Springs: In some mechanical systems, the force required to stretch or compress a spring can depend on how much it was previously stretched or compressed.  `[5/292]` variants 021,109,149,251,262
+- Insulators: Most insulating materials do not exhibit hysteresis unless they are specifically engineered to do so.  `[5/292]` variants 022,062,183,190,204
+- When you change the pressure or temperature of air, it will respond immediately and directly to the new conditions without any lag or retention of past states.  `[5/292]` variants 026,036,127,240,273
+- It is a simple gas with no internal structure that would remember past conditions.  `[5/292]` variants 029,074,173,242,254
+- In summary, while many materials and systems can exhibit hysteresis, air itself does not inherently show this property.  `[5/292]` variants 034,068,107,255,271
+- Here are some examples and non-examples of hysteresis:  `[5/292]` variants 038,102,126,160,287
+- For example, a simple resistor in an electrical circuit behaves linearly and does not remember past conditions.  `[5/292]` variants 039,058,073,177,266
+- Humidity: While not exactly hysteresis, the moisture content in air can depend on past humidity levels and temperature changes, but this is more about equilibrium and thermodynamics rather than a hysteresis loop.  `[5/292]` variants 048,086,237,241,248
+- Some Types of Springs: Certain types of springs, particularly those made from materials like nickel-titanium alloys (shape-memory alloys), can show hysteresis in their deformation behavior.  `[5/292]` variants 070,129,159,201,259
+- Simple elements like metals, gases (including air), and pure liquids do not typically exhibit hysteresis under normal conditions.  `[5/292]` variants 080,087,113,138,209
+- However, certain properties of air, such as its density or viscosity, can change depending on the history of pressure and temperature changes.  `[5/292]` variants 087,154,229,270,277
+- But this is more about the system's behavior rather than a property of air itself.  `[5/292]` variants 087,125,130,157,281
+- Semiconductors: Under normal operating conditions, semiconductors do not show hysteresis in their electrical properties.  `[5/292]` variants 095,110,161,163,212
+- Materials with hysteresis typically exhibit behaviors such as magnetization, strain, or phase transitions.  `[5/292]` variants 100,148,198,221,290
+- Humidity: The amount of water vapor in the air can depend on the history of temperature and humidity changes.  `[5/292]` variants 107,149,155,250,255
+- However, air can exhibit some hysteretic behavior in certain contexts, such as in the case of humidity.  `[5/292]` variants 110,114,147,163,176
+- Solenoids: In electrical circuits, solenoids can exhibit hysteresis in their magnetic properties when used as switches or relays.  `[4/292]` variants 001,017,073,099
+- Simple Mechanical Systems: Basic mechanical components like rigid rods or simple springs without damping do not show hysteresis.  `[4/292]` variants 009,123,175,178
+- They respond linearly to changes in external parameters such as temperature or pressure.  `[4/292]` variants 010,028,087,209
+- Idealized Models: Idealized models of materials often do not show hysteresis because they assume perfect linearity and no memory effects.  `[4/292]` variants 021,189,251,262
+- Ideal Springs: An ideal spring follows Hooke's law, where the force is directly proportional to the displacement.  `[4/292]` variants 027,030,102,126
+- Some Types of Springs: Certain spring materials can show hysteresis under cyclic loading, meaning the deformation depends on the previous deformations.  `[4/292]` variants 028,090,177,265
+- Magnetic Materials: These materials exhibit hysteresis because their magnetic domains align in response to an external magnetic field, and this alignment can persist even after the field is removed.  `[4/292]` variants 030,047,176,177
+- Materials with magnetic properties, for example, exhibit hysteresis in their magnetization curves.  `[4/292]` variants 035,104,105,160
+- Ideal Resistors: In an ideal resistor, the voltage across it is directly proportional to the current through it, with no hysteresis.  `[4/292]` variants 035,079,139,167
+- The amount of force required to stretch the band depends on how much it was previously stretched.  `[4/292]` variants 038,070,099,132
+- Saturable Inductors: In electrical circuits, the inductance of a saturable inductor can change depending on the previous current through it.  `[4/292]` variants 039,074,169,287
+- Plastic Deformation: In materials that undergo plastic deformation, the stress-strain curve may not be symmetric; the material may deform more under tension than it returns to under compression.  `[4/292]` variants 046,251,262,290
+- Some Soils: Certain types of soil can exhibit hysteresis in their stress-strain behavior under cyclic loading.  `[4/292]` variants 047,170,208,255
+- It is a simple gas and follows the ideal gas laws under most conditions.  `[4/292]` variants 052,176,251,276
+- Rubber and Springs: These materials exhibit hysteresis due to their elastic properties.  `[4/292]` variants 055,143,164,189
+- The magnetization (M) depends not only on the current magnetic field (H) but also on the previous history of magnetic fields.  `[4/292]` variants 070,079,239,263
+- It is a simple gas and behaves according to the ideal gas law, where its properties (such as pressure, volume, and temperature) are determined solely by the current conditions and not by past conditions.  `[4/292]` variants 097,129,179,240
+- Metals and Alloys: Some metals and alloys, especially those used in engineering applications, can exhibit hysteresis in their stress-strain curves.  `[4/292]` variants 098,225,234,246
+- The behavior of air is typically described by thermodynamic equations and does not exhibit the path-dependent behavior seen in materials with hysteresis.  `[4/292]` variants 104,224,225,265
+- Piezoelectric Materials: These materials can convert mechanical stress into electrical energy and vice versa, and their response can be hysteresis-dependent.  `[4/292]` variants 114,214,233,290
+- Rubber: Rubber exhibits hysteresis in its stress-strain curve.  `[4/292]` variants 116,123,201,238
+- The behavior of air is generally linear and does not depend on its previous states in the same way that magnetic materials do.  `[3/292]` variants 001,266,285
+- It is a simple gas that follows the ideal gas law under normal conditions, which is a linear relationship between pressure, volume, and temperature.  `[3/292]` variants 009,259,261
+- Some Ceramics: Certain types of ceramics can exhibit hysteresis under specific conditions.  `[3/292]` variants 012,188,218
+- Rubber: Rubber exhibits hysteresis in its stress-strain relationship, meaning the energy required to stretch the rubber depends on how it was previously deformed.  `[3/292]` variants 015,017,108
+- For example, resistors and capacitors in simple circuits typically do not show hysteresis.  `[3/292]` variants 024,206,237
+- Linear Materials: Materials that follow Hooke's Law (where stress is directly proportional to strain) do not exhibit hysteresis.  `[3/292]` variants 025,159,208
+- There is no lag or dependency on past states.  `[3/292]` variants 027,126,277
+- There is no memory effect, so it does not exhibit hysteresis.  `[3/292]` variants 030,102,149
+- This behavior can be described using hysteresis loops.  `[3/292]` variants 031,077,105
+- Some Ferroelectric Materials: These materials exhibit hysteresis in their polarization characteristics.  `[3/292]` variants 032,153,167
+- However, there are some phenomena related to air that might seem similar to hysteresis:  `[3/292]` variants 039,126,203
+- Mechanical Systems: Some mechanical systems, like springs with friction, exhibit hysteresis due to the energy dissipated during deformation.  `[3/292]` variants 049,186,277
+- It is a simple gas composed of molecules (primarily nitrogen and oxygen) that do not retain any memory of past conditions.  `[3/292]` variants 049,283,290
+- Changes in air pressure or temperature do not depend on the history of these changes; they respond directly to the current conditions.  `[3/292]` variants 049,137,283
+- Pure gases under isothermal conditions (where temperature remains constant).  `[3/292]` variants 061,178,247
+- For example, if you heat air and then cool it back down, the final state will depend on the path taken (heating and cooling rates), but this is not a hysteresis loop in the strict sense.  `[3/292]` variants 064,081,230
+- When you change the pressure or temperature of air, it responds immediately and does not "remember" previous conditions.  `[3/292]` variants 065,211,267
+- Solenoids: The magnetic flux in a solenoid depends on whether it was previously magnetized or demagnetized.  `[3/292]` variants 080,255,257
+- Linear Systems: These systems respond in a direct and proportional manner to their inputs.  `[3/292]` variants 083,149,200
+- Air, while it can show some complex behaviors over time, does not inherently exhibit hysteresis in the same way as solid materials or other systems do.  `[3/292]` variants 089,091,270
+- It is a simple gas and does not retain any state information from previous conditions.  `[3/292]` variants 094,216,236
+- Phase Transitions: Some materials exhibit hysteresis during phase transitions, such as the transition between liquid and solid states, where the temperature may need to change significantly before the phase changes completely.  `[3/292]` variants 097,148,198
+- Materials with Memory Effects: Certain polymers and other materials can show memory effects, where their properties depend on past mechanical deformations.  `[3/292]` variants 097,200,261
+- Materials with hysteresis typically exhibit this behavior in their magnetic properties, elasticity, or other mechanical behaviors.  `[3/292]` variants 112,239,263
+- In summary, hysteresis is primarily associated with materials that can be magnetized, such as ferromagnetic metals, and certain types of ceramics and polymers.  `[3/292]` variants 131,207,275
+- Thermocouples: Some thermocouples exhibit hysteresis in their temperature response, meaning they may show different readings for the same temperature depending on whether the temperature was increasing or decreasing.  `[3/292]` variants 137,173,215
+- Materials with magnetic properties, for example, exhibit hysteresis.  `[3/292]` variants 145,153,156
+- It is a non-magnetic, non-piezoelectric medium and does not retain any memory of past conditions in terms of its physical properties.  `[3/292]` variants 157,226,289
+- Simple elements and pure substances generally do not exhibit hysteresis, and air itself does not show this property.  `[3/292]` variants 170,186,251
+- The process of heating and cooling can create a hysteresis loop.  `[3/292]` variants 174,190,191
+- Rubber: The deformation of rubber under stress depends on the previous stresses it has experienced.  `[3/292]` variants 186,242,277
+- Solenoids: In a solenoid, the magnetic flux density depends on the number of times the coil has been energized or de-energized.  `[3/292]` variants 200,261,264
+- Has Hysteresis: Magnetic materials, some elastic materials, certain types of thermocouples, and solenoids.  `[3/292]` variants 215,257,264
+- For example, if you heat air and then cool it back down, the air will not retain any "memory" of the heating process in terms of its behavior.  `[2/292]` variants 001,037
+- This is why you can use a magnet to attract metal objects after it has been demagnetized.  `[2/292]` variants 005,207
+- For example, if you heat air, its volume will expand, but this expansion is not dependent on the history of heating; it simply responds to the current temperature.  `[2/292]` variants 005,233
+- The expansion and contraction of air in a closed system can show some behavior that resembles hysteresis due to factors like heat exchange with the surroundings, but this is not the same as the hysteresis seen in magnetic materials.  `[2/292]` variants 008,253
+- Ideal Springs: An ideal spring behaves linearly and does not retain any history of deformation once the force is removed.  `[2/292]` variants 009,125
+- The behavior of gases is generally described by equations of state (like the ideal gas law) which relate pressure, volume, and temperature.  `[2/292]` variants 012,171
+- Its properties (such as pressure, volume, and temperature) are generally linear and do not depend on past states.  `[2/292]` variants 013,146
+- When you change the pressure or temperature of air, it will respond according to its thermodynamic properties, but it will not "remember" previous states in the way that materials with hysteresis do.  `[2/292]` variants 014,057
+- The state of air (its pressure, density, etc.) at any given moment depends solely on the current conditions and not on past conditions.  `[2/292]` variants 015,030
+- Some Types of Springs: Certain spring materials can exhibit hysteresis, particularly if they undergo significant deformation and repeated cycles of loading and unloading.  `[2/292]` variants 025,096
+- They exhibit hysteresis in their stress-strain curves.  `[2/292]` variants 027,235
+- Ideal Springs: An ideal spring follows Hooke's Law without any memory of past deformations.  `[2/292]` variants 031,058
+- Ideal Capacitors and Inductors: In ideal electrical components, the charge and current relationships do not depend on past states.  `[2/292]` variants 032,146
+- Ohmic Conductors: These conductors follow Ohm's law, where the current is directly proportional to the voltage, and there is no memory effect.  `[2/292]` variants 032,038
+- Solenoids: In a solenoid, the magnetic flux density depends on the current flowing through it, but it can also depend on the previous states of the current.  `[2/292]` variants 038,076
+- Thermal Hysteresis: In very controlled environments, air might show slight thermal hysteresis due to the time it takes for heat to fully distribute within a system, but this is not a fundamental property of air.  `[2/292]` variants 039,110
+- They exhibit hysteresis in their phase transitions.  `[2/292]` variants 044,121
+- Solenoids: In a solenoid, the magnetic flux density (B) depends not only on the current (I) but also on the previous history of current changes.  `[2/292]` variants 046,068
+- Elastic Materials: Some elastic materials can exhibit hysteresis under stress.  `[2/292]` variants 052,124
+- For instance, the heat capacity of a material can change depending on whether it is heating up or cooling down.  `[2/292]` variants 052,060
+- The most common example is iron, which shows a distinct hysteresis loop in its magnetic properties.  `[2/292]` variants 054,275
+- The pressure-volume relationship for an ideal gas follows the ideal gas law, which is a linear relationship and does not depend on past states.  `[2/292]` variants 054,153
+- Plastic Deformation: In metals, plastic deformation can lead to hysteresis in stress-strain curves.  `[2/292]` variants 055,173
+- Pure elements like gold, silver, and platinum typically do not show hysteresis unless they are part of a complex system or undergo phase changes.  `[2/292]` variants 064,234
+- It does not remember past conditions in the way that materials with hysteresis do.  `[2/292]` variants 072,138
+- For instance, when a surface cools below the dew point, water vapor condenses, and this process is not easily reversed without additional energy input (e.g., heating the surface).  `[2/292]` variants 073,107
+- In summary, while air itself does not have hysteresis, certain properties of air can exhibit behavior similar to hysteresis under specific conditions.  `[2/292]` variants 073,126
+- They return to their original state immediately after the force is removed.  `[2/292]` variants 075,208
+- Non-Elastic Solids: Most rigid solids do not show hysteresis unless they undergo plastic deformation, which is a non-reversible process.  `[2/292]` variants 092,124
+- For example, a gas will expand or contract based solely on the current pressure and temperature, without retaining any "memory" of previous states.  `[2/292]` variants 097,195
+- However, compounds or alloys made from these elements can show hysteresis due to their more complex interactions.  `[2/292]` variants 099,290
+- It is a simple gas that responds to pressure and temperature changes without retaining any "memory" of past conditions.  `[2/292]` variants 104,265
+- Some Types of Springs: Certain mechanical springs can show hysteresis under stress, particularly if they are subjected to repeated cycles of loading and unloading.  `[2/292]` variants 108,176
+- Pressure Changes: When air pressure changes, it tends to return to its original state once the external force (e.g., a pump) is removed, similar to how a linear spring behaves.  `[2/292]` variants 111,176
+- For example, copper, aluminum, and most plastics.  `[2/292]` variants 114,244
+- The energy required to stretch the rubber is higher than the energy released during relaxation, leading to an elastic hysteresis loop.  `[2/292]` variants 116,123
+- For example, Ohm's law for resistors (V = IR) describes a linear relationship and does not show hysteresis.  `[2/292]` variants 116,248
+- Materials with hysteresis typically exhibit a lag between the application and removal of an external stimulus.  `[2/292]` variants 124,195
+- The magnetization (output) lags behind the applied magnetic field (input), creating a hysteresis loop.  `[2/292]` variants 126,262
+- Rubber and Other Elastomers: These materials show hysteresis in their stress-strain curves, meaning the strain depends not only on the current stress but also on the history of stresses applied.  `[2/292]` variants 140,185
+- The pressure of air in a container, for example, will change directly in proportion to the volume change (assuming temperature remains constant), without any memory of past pressures.  `[2/292]` variants 140,185
+- This is why you can still feel the magnetism in an old refrigerator magnet.  `[2/292]` variants 145,148
+- Rubber Bands: When stretched, rubber bands do not return exactly to their original length when the force is removed; they retain some deformation.  `[2/292]` variants 145,153
+- Examples include many metals and some plastics under small deformations.  `[2/292]` variants 159,259
+- Most Metals: Unlike ferromagnetic materials, most metals do not show significant hysteresis.  `[2/292]` variants 168,244
+- Its properties (like pressure and temperature) change directly in response to the current conditions without retaining any history.  `[2/292]` variants 168,199
+- The amount of magnetization that remains is called remanence, and this is an example of hysteresis.  `[2/292]` variants 173,189
+- However, if you consider the behavior of air in a closed system with significant thermal inertia (like a room), there could be some very minor hysteresis-like effects due to heat capacity and thermal lag, but these are negligible for most practical purposes.  `[2/292]` variants 178,194
+- Air does not retain any memory of past magnetic or electric fields.  `[2/292]` variants 184,231
+- This is why rubber can "remember" how much it was stretched previously.  `[2/292]` variants 186,277
+- Air is a gas, which is a form of matter that does not retain memory of past states in the way that materials with hysteresis do.  `[2/292]` variants 186,199
+- Soil and Water Content: In soil mechanics, the relationship between water content and stress can be hysteresis-like, especially during loading and unloading cycles.  `[2/292]` variants 189,247
+- These systems respond directly to the current input without retaining any memory of past conditions.  `[2/292]` variants 193,252
+- When the stress is removed, the material may not return exactly to its original shape, showing hysteresis in its strain.  `[2/292]` variants 195,259
+- However, when these elements form more complex systems (like alloys or composite materials), hysteresis can appear.  `[2/292]` variants 198,285
+- Most non-magnetic elements do not exhibit hysteresis because they do not retain a permanent magnetic field after an external magnetic field is removed.  `[2/292]` variants 223,237
+- Does Not Have Hysteresis: Non-magnetic materials, air, and most other simple substances.  `[2/292]` variants 236,264
+- When the magnetic field changes direction or intensity, the material's magnetization lags behind, creating a hysteresis loop.  `[2/292]` variants 259,272
