@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+"""latex2unicode — LaTeX math in LLM output → readable Unicode for surfaces that can't render
+TeX (Apple Notes, iMessage, plain RTF). Pipe: `... | latex2unicode`, or import convert().
+
+  \\( L = \\frac{|\\mathcal{E}|}{\\frac{dI}{dt}} \\)   →   L = |ℰ| / (dI/dt)
+  \\[ ... \\] / $$ ... $$ display math → its own line;  x^2 → x², v_0 → v₀, \\omega → ω
+
+Used by bin/notes-process sanitize() (#process / #consensus replies). Card: features/notes-process.feature
+"""
+import re, sys
+
+SYM = {
+    # Greek
+    'alpha': 'α', 'beta': 'β', 'gamma': 'γ', 'delta': 'δ', 'epsilon': 'ε', 'varepsilon': 'ε',
+    'zeta': 'ζ', 'eta': 'η', 'theta': 'θ', 'vartheta': 'ϑ', 'iota': 'ι', 'kappa': 'κ',
+    'lambda': 'λ', 'mu': 'μ', 'nu': 'ν', 'xi': 'ξ', 'pi': 'π', 'rho': 'ρ', 'sigma': 'σ',
+    'tau': 'τ', 'upsilon': 'υ', 'phi': 'φ', 'varphi': 'φ', 'chi': 'χ', 'psi': 'ψ', 'omega': 'ω',
+    'Gamma': 'Γ', 'Delta': 'Δ', 'Theta': 'Θ', 'Lambda': 'Λ', 'Xi': 'Ξ', 'Pi': 'Π',
+    'Sigma': 'Σ', 'Phi': 'Φ', 'Psi': 'Ψ', 'Omega': 'Ω',
+    # operators / relations
+    'times': '×', 'cdot': '·', 'div': '÷', 'pm': '±', 'mp': '∓', 'leq': '≤', 'le': '≤',
+    'geq': '≥', 'ge': '≥', 'neq': '≠', 'ne': '≠', 'approx': '≈', 'sim': '∼', 'equiv': '≡',
+    'propto': '∝', 'infty': '∞', 'partial': '∂', 'nabla': '∇', 'int': '∫', 'oint': '∮',
+    'iint': '∬', 'sum': 'Σ', 'prod': 'Π', 'to': '→', 'rightarrow': '→', 'leftarrow': '←',
+    'Rightarrow': '⇒', 'leftrightarrow': '↔', 'degree': '°', 'circ': '°', 'angle': '∠',
+    'parallel': '∥', 'perp': '⊥', 'in': '∈', 'forall': '∀', 'exists': '∃', 'hbar': 'ℏ',
+    'ell': 'ℓ', 'dots': '…', 'ldots': '…', 'cdots': '⋯', 'quad': '  ', 'qquad': '    ',
+    'langle': '⟨', 'rangle': '⟩', 'vert': '|', 'mid': '|', 'lvert': '|', 'rvert': '|',
+    'Re': 'Re', 'Im': 'Im', 'sin': 'sin', 'cos': 'cos', 'tan': 'tan', 'ln': 'ln', 'log': 'log',
+    'exp': 'exp', 'max': 'max', 'min': 'min', 'lim': 'lim',
+}
+CAL = dict(zip('ABCDEFGHIJKLMNOPQRSTUVWXYZ', '𝒜ℬ𝒞𝒟ℰℱ𝒢ℋℐ𝒥𝒦ℒℳ𝒩𝒪𝒫𝒬ℛ𝒮𝒯𝒰𝒱𝒲𝒳𝒴𝒵'))
+SUP = dict(zip('0123456789+-=()nijkxyzabcdeT', '⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁿⁱʲᵏˣʸᶻᵃᵇᶜᵈᵉᵀ'))
+SUB = dict(zip('0123456789+-=()aeijkmnoprstux', '₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎ₐₑᵢⱼₖₘₙₒₚᵣₛₜᵤₓ'))
+GROUP = r'\{((?:[^{}]|\{(?:[^{}]|\{[^{}]*\})*\})*)\}'  # up to 3 levels of nested braces
+
+
+def _script(s, table, mark):
+    s = s.strip()
+    if s and all(c in table for c in s):
+        return ''.join(table[c] for c in s)
+    return f'{mark}({s})' if len(s) > 1 else f'{mark}{s}'
+
+
+def _atom(s):
+    s = s.strip()
+    return s if re.fullmatch(r'[\w.|ℰ-𝒵αβγδεζηθικλμνξπρστυφχψωΔΩΦΣΠ∂]+', s) else f'({s})'
+
+
+def math(m):
+    s = m
+    for _ in range(4):  # nested \frac / \sqrt from the inside out
+        s = re.sub(r'\\[dt]?frac\s*' + GROUP + r'\s*' + GROUP,
+                   lambda g: f'{_atom(math(g.group(1)))}/{_atom(math(g.group(2)))}', s)
+        s = re.sub(r'\\sqrt\s*' + GROUP, lambda g: f'√{_atom(math(g.group(1)))}', s)
+    s = re.sub(r'\\mathcal\s*\{?([A-Z])\}?', lambda g: CAL[g.group(1)], s)
+    s = re.sub(r'\\(?:mathrm|text|mathbf|mathit|operatorname|textbf|vec|hat|bar|overline|boldsymbol)\s*' + GROUP,
+               lambda g: g.group(1), s)
+    s = re.sub(r'\\(left|right|big|Big|bigg|Bigg)\b', '', s)
+    s = re.sub(r'\\([A-Za-z]+)', lambda g: SYM.get(g.group(1), g.group(1)), s)
+    s = re.sub(r'\^\s*' + GROUP, lambda g: _script(g.group(1), SUP, '^'), s)
+    s = re.sub(r'\^\s*(\S)', lambda g: _script(g.group(1), SUP, '^'), s)
+    s = re.sub(r'_\s*' + GROUP, lambda g: _script(g.group(1), SUB, '_'), s)
+    s = re.sub(r'_\s*([A-Za-z0-9])', lambda g: _script(g.group(1), SUB, '_'), s)
+    s = s.replace('\\,', ' ').replace('\\;', ' ').replace('\\!', '').replace('\\ ', ' ').replace('\\\\', ' ')
+    s = s.replace('{', '').replace('}', '').replace('\\', '')
+    return re.sub(r'[ \t]{2,}', ' ', s).strip()
+
+
+def convert(text):
+    text = re.sub(r'\\\[(.+?)\\\]', lambda m: '\n' + math(m.group(1)) + '\n', text, flags=re.S)
+    text = re.sub(r'\$\$(.+?)\$\$', lambda m: '\n' + math(m.group(1)) + '\n', text, flags=re.S)
+    text = re.sub(r'\\\((.+?)\\\)', lambda m: math(m.group(1)), text, flags=re.S)
+    text = re.sub(r'(?<![\w$])\$([^$\n]{1,200}?)\$(?!\w)', lambda m: math(m.group(1)), text)
+    return re.sub(r'\n{3,}', '\n\n', text)
+
+
+if __name__ == '__main__':
+    sys.stdout.write(convert(sys.stdin.read()))

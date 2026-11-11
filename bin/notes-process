@@ -163,7 +163,20 @@ def prompts_for(plain, tag, kind):
     return out
 
 
+def _latex():
+    import importlib.machinery, importlib.util
+    ldr = importlib.machinery.SourceFileLoader('latex2unicode', str(HERE / 'latex2unicode'))
+    m = importlib.util.module_from_spec(importlib.util.spec_from_loader('latex2unicode', ldr))
+    ldr.exec_module(m)
+    return m
+
+
 def sanitize(reply, tag):
+    # Notes can't render TeX (2026-11-11: \\frac / \\mathcal showed raw) → Unicode math first.
+    try:
+        reply = _latex().convert(reply)
+    except Exception as e:
+        log(f'latex2unicode failed (reply kept raw): {e}')
     return tag_re(tag).sub(lambda m: '#⁠' + m.group(0)[1:], reply)
 
 

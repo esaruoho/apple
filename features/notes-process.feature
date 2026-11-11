@@ -47,3 +47,11 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     Given a backgrounded Notes is slow to pull new notes from iCloud
     Then notes-process relaunches Notes in the background every --refresh seconds (default 60)
     # bin/notes-process one_pass(); 2026-11-09 a note sat unsynced >2 min, restart synced in 4s
+
+  @sim-verified
+  Scenario: LaTeX in replies is rendered as Unicode math (Notes can't show TeX)
+    Given an LLM reply containing \( L \), \[ L = \frac{|\mathcal{E}|}{\frac{dI}{dt}} \], $E = \frac{1}{2} L I^2$
+    When sanitize() runs bin/latex2unicode convert()
+    Then the note shows "L = |ℰ|/(dI/dt)" on its own line and "E = 1/2 L I²"
+    And plain dollar amounts like "$5 and $10" are left alone
+    # verified 2026-11-11 under /usr/bin/python3 (the Cloudcity-Boot interpreter)
