@@ -266,6 +266,12 @@ def handle(occ, a, seen, use_shortcut):
     context = '\n'.join(lines[:idx]).strip()
     if prompt in context:
         context = ''
+    # AT-MOST-ONCE (2026-11-11): claim the key in the ledger BEFORE any side effect. Before this,
+    # a notes-new timeout (note created, error raised) left the key unlogged → a new "Re:" note
+    # every 15s pass (~400 duplicates). A lost reply is fine; a duplicate loop is not.
+    seen.add(key)
+    ledger_add({'key': key, 'note': occ['nid'], 'title': occ['title'], 'line': line,
+                'at': datetime.datetime.now().isoformat(timespec='seconds'), 'where': 'claimed'})
     reply, route = call_llm(a.llm, prompt, a.llm_timeout, context)
     reply = sanitize(reply, a.tag)
     md = reply_markdown(reply, f'{a.label} · {route.split("/")[-1]}' if route else a.label, a.done_tag)
@@ -279,7 +285,6 @@ def handle(occ, a, seen, use_shortcut):
         if use_shortcut and not unique:
             log(f'note title not unique → linked note instead of append')
         where = 'linked note ' + linked_note(occ['title'], md, a.reply_account, a.reply_folder)
-    seen.add(key)
     ledger_add({'key': key, 'note': occ['nid'], 'title': occ['title'], 'line': line,
                 'at': datetime.datetime.now().isoformat(timespec='seconds'), 'where': where})
     log(f'done {label}: {where}')
@@ -295,6 +300,8 @@ def one_pass(a):
     if a.refresh and time.time() - LAST_REFRESH >= a.refresh:
         LAST_REFRESH = time.time()
         heal_notes(force=True, quiet=True)
+    if (STATE / 'STOP').exists():
+        return log(f'STOP file present ({STATE}/STOP) — not processing')
     seen = ledger()
     occs = [o for o in find_occurrences(a.tag) if o['key'] not in seen]
     if a.plain_text:
