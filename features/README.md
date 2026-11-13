@@ -46,6 +46,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - [AppleBar parses markdown in its result pane](#markdown-attributed) — `markdown-attributed.feature`
 - [Home address from the Contacts me-card](#me-address) — `me-address.feature`
 - [Where am I right now — device-presence geolocation for a desktop Mac](#me-location) — `me-location.feature`
+- [Local message counts per contact](#messages-counts) — `messages-counts.feature`
 - [The on-device agentic tool-calling loop on the Mini's MLX brain](#mlx-agent-tool-loop) — `mlx-agent-tool-loop.feature`
 - [notes-append-images — append images to an Apple Note, rendered once each](#notes-append-images) — `notes-append-images.feature`
 - [notes-new creates exactly one new Apple Note without touching anything else](#notes-new) — `notes-new.feature`
@@ -985,6 +986,21 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - home is a constant, here is a variable — they are different questions
 
 **Grade:** @built ×3
+
+
+<a id="messages-counts"></a>
+## Local message counts per contact
+
+`features/messages-counts.feature` · [session](messages-counts.session.md)
+
+**Behaviour (2 scenarios):**
+
+- Count both sides of direct conversations — `@built @runtime-verified`
+- Keep private data local — `@built @runtime-verified`
+
+**How it does it:** **Key procs:** `connect_readonly`, `load_contacts`, `count_messages`, `write_reports`
+
+**Grade:** @built ×2 · @runtime-verified ×2
 
 
 <a id="mlx-agent-tool-loop"></a>

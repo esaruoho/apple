@@ -50,6 +50,7 @@
 | markdown-attributed | 4 | ✗ | — | — | @built @note @verified |
 | me-address | 6 | ✗ | — | — | @built @note @verified |
 | me-location | 9 | ✗ | — | — | @built @note @verified |
+| messages-counts | 2 | ✗ | ✓ | — | @built @runtime-verified |
 | mlx-agent-tool-loop | 10 | ✗ | — | ✓ | @built @hw-verified @sim-verified |
 | notes-append-images | 3 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
 | notes-new | 6 | ✗ | — | ✓ | @built @designed @hw-verified @untested |
@@ -78,8 +79,8 @@
 | voicememo-audio-tag-to-wav | 4 | ✗ | — | ✓ | @built @hw-verified @untested-on-real-tag |
 
 ## Tally (computed)
-- Cards: 66
+- Cards: 67
 - Build-verified: 9
-- Runtime-verified: 9 full + 5 partial
+- Runtime-verified: 10 full + 5 partial
 - **Hardware-verified: 26**  ·  hardware-untested: 0
 

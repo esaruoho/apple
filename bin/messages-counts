@@ -1,0 +1,203 @@
+#!/usr/bin/env python3
+"""Count local Messages metadata, with exact Contacts matching. Stdlib only.
+
+REPORT-CARD >> features/messages-counts.feature
+"""
+import argparse
+import collections
+import datetime as dt
+import json
+import pathlib
+import sqlite3
+
+
+def connect_readonly(path):
+    db = sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True, timeout=5)
+    db.row_factory = sqlite3.Row
+    db.execute('PRAGMA query_only=ON')
+    db.execute('BEGIN')  # Consistent SQLite snapshot, including committed WAL rows.
+    return db
+
+
+def normalize(value):
+    value = (value or '').strip().lower()
+    if '@' in value:
+        return value
+    digits = ''.join(c for c in value if c.isdecimal())
+    if digits and all(c.isdecimal() or c in '+()- .\u00a0' for c in value):
+        return digits  # No suffix/fuzzy matching or guessed country codes.
+    return value
+
+
+def load_contacts(root):
+    identities = collections.defaultdict(set)
+    names = {}
+    warnings = []
+    paths = [root / 'AddressBook-v22.abcddb', *sorted(root.glob('Sources/*/AddressBook-v22.abcddb'))]
+    for path in paths:
+        if not path.exists():
+            continue
+        try:
+            with connect_readonly(path) as db:
+                people = {}
+                for r in db.execute('SELECT Z_PK,ZUNIQUEID,ZFIRSTNAME,ZMIDDLENAME,ZLASTNAME,ZORGANIZATION FROM ZABCDRECORD'):
+                    name = ' '.join(x for x in (r['ZFIRSTNAME'], r['ZMIDDLENAME'], r['ZLASTNAME']) if x) or r['ZORGANIZATION']
+                    if not name:
+                        continue
+                    key = r['ZUNIQUEID'] or str(path) + ':' + str(r['Z_PK'])
+                    people[r['Z_PK']] = key
+                    names[key] = name
+                for table, col in [('ZABCDPHONENUMBER', 'ZFULLNUMBER'), ('ZABCDEMAILADDRESS', 'ZADDRESS')]:
+                    for r in db.execute(f'SELECT ZOWNER,{col} AS address FROM {table}'):
+                        if r['ZOWNER'] in people and r['address']:
+                            identities[normalize(r['address'])].add(people[r['ZOWNER']])
+        except sqlite3.Error as exc:
+            warnings.append(f'Contacts store unavailable: {path}: {exc}')
+    return identities, names, warnings
+
+
+def date_string(value):
+    if not value:
+        return None
+    seconds = value / 1e9 if abs(value) > 1e12 else value
+    return (dt.datetime(2001, 1, 1, tzinfo=dt.timezone.utc) + dt.timedelta(seconds=seconds)).date().isoformat()
+
+
+def count_messages(db, identities, names):
+    handles = {}
+    aliases = collections.defaultdict(set)
+    for r in db.execute('SELECT ROWID,id,uncanonicalized_id FROM handle'):
+        handles[r['ROWID']] = r['id']
+        aliases[r['id']].add(normalize(r['id']))
+        if r['uncanonicalized_id']:
+            aliases[r['id']].add(normalize(r['uncanonicalized_id']))
+    members = collections.defaultdict(set)
+    for r in db.execute('SELECT chat_id,handle_id FROM chat_handle_join'):
+        if r['handle_id'] in handles:
+            members[r['chat_id']].add(handles[r['handle_id']])
+    chats = {}
+    bucket_meta = {}
+    ambiguous = []
+    for r in db.execute('SELECT ROWID,style,display_name FROM chat'):
+        cid = r['ROWID']
+        addresses = members[cid]
+        # style 45 = direct, 43 = group in this inspected database.
+        if r['style'] == 45 and len(addresses) == 1:
+            address = next(iter(addresses))
+            candidates = set().union(*(identities.get(a, set()) for a in aliases[address]))
+            if len(candidates) == 1:
+                person = next(iter(candidates))
+                key, label = 'person:' + person, names[person]
+            else:
+                key, label = 'handle:' + normalize(address), address
+                if len(candidates) > 1:
+                    ambiguous.append({'handle': address, 'possible_contacts': sorted(names[x] for x in candidates)})
+            kind = 'direct'
+        else:
+            key = 'chat:' + str(cid)
+            label = r['display_name'] or ', '.join(sorted(addresses)) or f'Chat {cid}'
+            kind = 'group' if r['style'] == 43 or len(addresses) > 1 else 'unclassified'
+        chats[cid] = key
+        meta = bucket_meta.setdefault(key, {'name': label, 'kind': kind, 'handles': set(), 'chat_ids': []})
+        meta['handles'].update(addresses)
+        meta['chat_ids'].append(cid)
+
+    records = {}
+    buckets = collections.defaultdict(set)
+    for r in db.execute('''SELECT m.ROWID,m.is_from_me,m.service,m.date,m.item_type,
+            m.is_system_message,m.is_service_message,m.associated_message_type,j.chat_id
+            FROM message m LEFT JOIN chat_message_join j ON j.message_id=m.ROWID'''):
+        mid = r['ROWID']
+        category = 'message'
+        association = r['associated_message_type'] or 0
+        if 2000 <= association < 4000:
+            category = 'reaction'
+        elif association or r['item_type'] or r['is_system_message'] or r['is_service_message']:
+            category = 'system_or_associated'
+        records[mid] = (bool(r['is_from_me']), r['service'] or 'unknown', r['date'], category)
+        if r['chat_id'] in chats:
+            buckets[chats[r['chat_id']]].add(mid)
+
+    def summarize(ids):
+        ordinary = [records[x] for x in ids if records[x][3] == 'message']
+        sent = sum(r[0] for r in ordinary)
+        services = {}
+        for service in sorted({r[1] for r in ordinary}):
+            rows = [r for r in ordinary if r[1] == service]
+            n_sent = sum(r[0] for r in rows)
+            services[service] = {'sent': n_sent, 'received': len(rows)-n_sent, 'total': len(rows)}
+        dates = [r[2] for r in ordinary if r[2]]
+        return {'sent': sent, 'received': len(ordinary)-sent, 'total': len(ordinary),
+                'raw_records': len(ids), 'reactions': sum(records[x][3] == 'reaction' for x in ids),
+                'system_or_associated': sum(records[x][3] == 'system_or_associated' for x in ids),
+                'first_date': date_string(min(dates)) if dates else None,
+                'last_date': date_string(max(dates)) if dates else None, 'services': services}
+
+    output = []
+    for key, ids in buckets.items():
+        meta = bucket_meta[key]
+        output.append({**meta, 'handles': sorted(meta['handles']), **summarize(ids)})
+    output.sort(key=lambda r: r['total'], reverse=True)
+    assigned = set().union(*buckets.values()) if buckets else set()
+    multi = sum(n > 1 for n in collections.Counter(mid for ids in buckets.values() for mid in ids).values())
+    assert all(r['sent'] + r['received'] == r['total'] for r in output)
+    total = summarize(set(records))
+    assert total['raw_records'] == total['total'] + total['reactions'] + total['system_or_associated']
+    return {'generated_at': dt.datetime.now().astimezone().isoformat(), 'all_records': total,
+            'unassigned': summarize(set(records)-assigned), 'messages_in_multiple_report_rows': multi,
+            'ambiguous_contacts': ambiguous, 'conversations': output}
+
+
+def write_reports(report, output):
+    output.mkdir(parents=True, exist_ok=True, mode=0o700)
+    notes = [
+        'Counts cover history present on this Mac; another device may retain different history.',
+        'Ordinary messages include attachment-only bubbles; reactions and system/associated events are separate.',
+        'Exact phone digits/email matching, including aliases explicitly stored in Messages uncanonicalized_id. No guessed country codes. Multiple identities merge only when they map uniquely to one Contacts record.',
+        'Groups are separate; their messages are not credited to individual contact totals.',
+        'Date spans are UTC. Report rows may overlap if a message belongs to multiple conversations; see the overlap audit.',
+        'No message text, attributed bodies, attachment contents or URLs were selected. Sources were opened read-only.',
+        'SQLite snapshots are consistent per database, not synchronized across separate Contacts and Messages stores.',
+    ]
+    report['method'] = notes
+    (output / 'counts.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
+    lines = ['# Messages per contact', '', 'Generated: ' + report['generated_at'], '']
+    lines += ['- ' + note for note in notes]
+    lines += ['', '## Database audit', '', '```json', json.dumps({k: v for k, v in report.items() if k not in ('conversations', 'method', 'ambiguous_contacts')}, ensure_ascii=False, indent=2), '```', '']
+    for kind, title in [('direct', 'Direct conversations'), ('group', 'Group conversations'), ('unclassified', 'Unclassified conversations')]:
+        lines += ['## ' + title, '', '| Contact / conversation | Sent | Received | Total | iMessage | SMS | Reactions | First | Last |', '|---|---:|---:|---:|---:|---:|---:|---|---|']
+        for r in report['conversations']:
+            if r['kind'] != kind:
+                continue
+            label = r['name'].replace('|', '\\|').replace('\n', ' ')
+            lines.append(f"| {label} | {r['sent']:,} | {r['received']:,} | {r['total']:,} | {r['services'].get('iMessage', {}).get('total', 0):,} | {r['services'].get('SMS', {}).get('total', 0):,} | {r['reactions']:,} | {r['first_date'] or ''} | {r['last_date'] or ''} |")
+        lines.append('')
+    if report['ambiguous_contacts']:
+        lines += ['## Ambiguous identities (not merged)', '', '```json', json.dumps(report['ambiguous_contacts'], ensure_ascii=False, indent=2), '```']
+    (output / 'counts.md').write_text('\n'.join(lines) + '\n')
+    for path in (output / 'counts.json', output / 'counts.md'):
+        path.chmod(0o600)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--db', type=pathlib.Path, default=pathlib.Path.home() / 'Library/Messages/chat.db')
+    parser.add_argument('--contacts-root', type=pathlib.Path, default=pathlib.Path.home() / 'Library/Application Support/AddressBook')
+    parser.add_argument('--output', type=pathlib.Path, default=pathlib.Path(__file__).resolve().parent.parent / 'exported/imessage-counts')
+    args = parser.parse_args()
+    identities, names, warnings = load_contacts(args.contacts_root)
+    with connect_readonly(args.db) as db:
+        report = count_messages(db, identities, names)
+    report['warnings'] = warnings
+    write_reports(report, args.output)
+    print('Report:', args.output / 'counts.md')
+    print('All database records:', report['all_records']['raw_records'])
+    print('Ordinary messages:', report['all_records']['total'])
+    print('Direct contacts:', sum(r['kind'] == 'direct' for r in report['conversations']))
+    for r in report['conversations']:
+        if any(s in r['name'].casefold() for s in ('dima', 'dmit', 'дима', 'дмит')):
+            print(json.dumps(r, ensure_ascii=False))
+
+
+if __name__ == '__main__':
+    main()

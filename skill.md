@@ -173,6 +173,12 @@ Source: `bin/imessage`, `bin/icloud-drop`, `bin/notify-iphone`. Wiki: [`wiki/con
 
 ## Repo layout
 
+**Messages statistics:** For "how many iMessages per person/contact", run
+`python3 bin/messages-counts`. It reads local Messages and Contacts metadata through
+read-only SQLite, reports sent/received totals and separates groups and reactions.
+Private reports: `exported/imessage-counts/` (gitignored). See
+[`wiki/concepts/messages-automation.md`](wiki/concepts/messages-automation.md).
+
 `/Users/esaruoho/work/apple/`:
 
 - `bin/` — 65+ CLI tools; slashes in `commands/`
