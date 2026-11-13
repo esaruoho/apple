@@ -237,6 +237,34 @@ def gather_sidecars(result_pdf):
     return sidecars
 
 
+CONVEY_MANIFEST = COMMS / "convey-ocr-manifest.jsonl"
+_CONVEY_STEMS = None
+
+
+def _convey_owned(result_name):
+    """True if this result's stem was submitted through `convey ocr-submit`."""
+    global _CONVEY_STEMS
+    if _CONVEY_STEMS is None:
+        _CONVEY_STEMS = set()
+        try:
+            with open(CONVEY_MANIFEST, encoding="utf-8") as f:
+                for line in f:
+                    try:
+                        s = json.loads(line).get("stem")
+                    except Exception:
+                        continue
+                    if s:
+                        _CONVEY_STEMS.add(s)
+        except OSError:
+            pass
+    stem = result_name
+    for suf in ("_ocr.pdf", ".pdfws", ".txt", ".pdf"):
+        if stem.endswith(suf):
+            stem = stem[: -len(suf)]
+            break
+    return stem in _CONVEY_STEMS
+
+
 def handle_ocr_result(result_pdf, mapping, dry_run=False):
     """Reconcile one *_ocr.pdf result with its original. Return True on success."""
     # Results carrying an ast_<id> prefix were submitted by the spine pipeline
@@ -245,6 +273,12 @@ def handle_ocr_result(result_pdf, mapping, dry_run=False):
     # touching them would double-file and needlessly mutate merlib-dump. Skip.
     if re.search(r"ast_[0-9a-f]{16}", result_pdf.name):
         return None  # sentinel: spine-owned, not orphaned, not handled
+    # Results submitted via `convey ocr-submit` are owned by convey's collector, which
+    # homes them AND writes the manifest 'homed' record + to-be-analyzed ledger entry.
+    # If this legacy leg grabs them first, the manifest never says 'homed' and
+    # `convey ocr-await` hangs forever (2026-11-11: Lemaire & Scherer, Coler DE680761).
+    if _convey_owned(result_pdf.name):
+        return None  # sentinel: convey-owned, leave for `convey ocr-collect`
 
     original, map_key = find_original(result_pdf.name, mapping)
     if original is None:
