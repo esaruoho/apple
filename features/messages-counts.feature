@@ -3,7 +3,9 @@
 # thinkspace: messages-counts.session.md
 # areaspace: read local Messages and contact identity metadata; never message bodies or source writes.
 # SESSION: messages-counts.session.md
-# RESULT: Working-tree implementation; not committed or pushed; no PR.
+# RESULT: Feature and card delivered in 34bb404b, direct push to main, no PR.
+# Files: bin/messages-counts; skill.md; wiki/concepts/messages-automation.md;
+#        messages-counts.feature; messages-counts.session.md; generated indexes.
 # WATCH: connect_readonly load_contacts count_messages write_reports
 # RESULT-LOG >>
 #   2026-11-13  direct-commit  touched: connect_readonly load_contacts count_messages write_reports
