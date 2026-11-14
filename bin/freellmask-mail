@@ -519,8 +519,9 @@ MATERIAL_SECTIONS = (
 # missing any of these headings is rejected and regenerated" — but only "Thought about it" was ever
 # verified in code, which is exactly why Prigogine kept vanishing from the emails and nobody noticed
 # (Esa, 2026-08-12: "where was prigogine from freellmask-mail???").
+# REPORT-CARD >> ~/work/convey/features/marinov-email-voice.feature
 TONE_HEADINGS = ["In Walter Russell's tone", "In Tom Bearden's tone", "In Ilya Prigogine's tone",
-                 "In Hilarion's tone", "In Charles Proteus Steinmetz's tone", "In Don Smith's tone",
+                 "In Hilarion's tone", "In Stefan Marinov's tone", "In Charles Proteus Steinmetz's tone", "In Don Smith's tone",
                  "In the skeptical closed-system electrical engineer's tone"]
 MATERIAL_HEADINGS = ["Summary", "Key points", "Notable quotes", "People & entities mentioned",
                      "What holds up", "What is worth checking", "Overall assessment"]
@@ -606,6 +607,11 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "never dropped.)\n"
           "## In Hilarion's tone\n(2-4 sentences in the Hilarion channel's cadence: one living substance, "
           "consciousness as ground, gentle didactic cosmology — everything a modulation of the one energy)\n"
+          "## In Stefan Marinov's tone\n(2-4 sentences in Marinov's cadence: Bulgarian experimental "
+          "physicist and defender of absolute space and time; experimental refutation of relativistic light "
+          "velocity dogma via coupled shutters and rotating mirrors; rejection of the Lorentz and Biot-Savart "
+          "force for unclosed circuits; the Marinov motor and motional-transformer induction without mechanical "
+          "back-reaction; unwavering insistence on laboratory measurement over theoretical fiction)\n"
           "## In Charles Proteus Steinmetz's tone\n(2-4 sentences in Steinmetz's cadence: the engineer who "
           "made alternating current calculable via the symbolic method; current and voltage as mathematical "
           "fictions of the dielectric and magnetic fields in space; reactance as wattless surging of energy; "
@@ -641,11 +647,11 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             sysm=(viewpoint+"\n\n"+base+
                   " Output Markdown with a direct substantive answer. Verified-ledger grounding is "
                   "unavailable on this host, so do NOT add Walter Russell, Tom Bearden, Ilya Prigogine, "
-                  "Hilarion, Charles Proteus Steinmetz, or Don Smith tone sections — answer directly.")
+                  "Hilarion, Stefan Marinov, Charles Proteus Steinmetz, or Don Smith tone sections — answer directly.")
     elif viewpoint:
         sysm=(viewpoint+"\n\n"+base+
               " Output Markdown with a direct substantive answer. FREE_ENERGY_LENS_VOICES is off, "
-              "so do not add Walter Russell, Tom Bearden, Ilya Prigogine, Hilarion, Charles Proteus Steinmetz, or Don Smith tone sections.")
+              "so do not add Walter Russell, Tom Bearden, Ilya Prigogine, Hilarion, Stefan Marinov, Charles Proteus Steinmetz, or Don Smith tone sections.")
     else:           # off-corpus (e.g. parenting) → plain direct answer, no preamble, no tones
         sysm=base+" Output ONLY the final answer — no reasoning preamble; begin directly with the answer."
         if lens:    # a skill-backed space (apple/health/hyp) → frame the answer through the skill's lens
