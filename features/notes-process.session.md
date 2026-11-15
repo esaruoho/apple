@@ -91,3 +91,22 @@ material/tool/mousetrap at 0.15 confidence. Notes delivery failed with -609 Conn
 is invalid. The error remained visible, revealing another problem: periodic forced
 Notes restarts can race another worker's write. Default refresh changed to off;
 one-shot errors now return nonzero, and delivery errors are marked uncertain.
+
+### Verified delivery/result
+
+Commits d9992580 and 139fd5b9 pushed directly to main (no PR), pulled on Cloudcity.
+Cloudcity-Boot restarted through the standard Syncthing command; both Notes workers
+reappeared in their Boot panes with the updated defaults. All 15 tests passed on
+Mini Python 3.9. Source files plus generated card indexes are in those commits.
+
+Read-only verification found the actual new reply p12498 already contained Processing
+ID NP-20261115T060856Z-43018e9b80fc despite the -609 return error. Recovery checked for
+that ID before writing and therefore created NO duplicate; status/ledger were reconciled
+to delivered. Full source description is present in p12498 (Notes normalizes trailing
+whitespace). Original p12480's compressed source bytes match the archived bytes exactly.
+The original PNG stays in the source note and a hashed copy is in the run archive.
+
+The exact original text, images, Vision results, model messages, raw response and
+rendered reply are preserved in comms/queue/notes-process-runs/<ID>. This real image
+contains no OCR text, so image evidence is limited to low-confidence classification
+labels, explicitly described as such; no claim of detailed coil geometry interpretation.

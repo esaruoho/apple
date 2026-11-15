@@ -1068,19 +1068,19 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Fallback — reply as a linked rich-text note (note p13583) — `@built @hw-verified`
 - True append via Shortcut (wiki/concepts/notes-process-append-shortcut.md) — `@todo`
 - No feedback loop — `@built @hw-verified`
-- Never rewrites a note (test_notes_process.py: 7 tests) — `@built @sim-verified`
+- Never rewrites a note (test_notes_process.py) — `@built @sim-verified`
 - Guards — `@built @designed`
 - Running on the Mini under Cloudcity-Boot via systems.yaml — `@untested`
 - Notes.app self-heals on the unattended Mini — `@built`
 - iCloud sync is forced on the Mini — `@built`
 - LaTeX in replies is rendered as Unicode math (Notes can't show TeX) — `@sim-verified`
 - Unicode separators and damaged ledger records cannot cause a restart loop — `@built @sim-verified`
-- Complete source text and image evidence enter an auditable request — `@built @sim-verified`
+- Complete source text and image evidence enter an auditable request — `@built @sim-verified @hw-verified`
 - Delivery failure stays visible and is not reported as a successful one-shot command — `@built @sim-verified`
 
 **How it does it:** **Source files:** `test_notes_process.py`
 
-**Grade:** @built ×10 · @designed ×1 · @hw-verified ×3 · @sim-verified ×5 · @todo ×1 · @untested ×1
+**Grade:** @built ×10 · @designed ×1 · @hw-verified ×4 · @sim-verified ×5 · @todo ×1 · @untested ×1
 
 
 <a id="notes-variants"></a>

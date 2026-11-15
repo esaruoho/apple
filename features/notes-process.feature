@@ -1,6 +1,8 @@
 # Report card: bin/notes-process — #process tag in Apple Notes → Cloudcity LLM reply, APPEND-ONLY
 # RESULT: 33e9dee9, direct-push to main, no PR; fast-forward deployed on Cloudcity.
 # RESULT: 11 tests pass on Mini Python 3.9; live ledger loads all 33 original keys.
+# RESULT: d9992580 + 139fd5b9, direct-push main, no PR; deployed and Boot-reloaded on Cloudcity.
+# RESULT: live run NP-20261115T060856Z-43018e9b80fc verified in reply p12498; 15 Mini tests pass.
 # Session: features/notes-process.session.md
 Feature: a #process tag in a note gets an LLM reply added as rich text, never by rewriting the note
 
@@ -8,7 +10,7 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
   Scenario: A real orange Notes tag is found (2026-11-08, note p13544)
     Given Esa typed "hey i want you to tell me about electricity #process" in Notes.app
     Then find_occurrences() finds it in NoteStore.sqlite opened read-only (hashtag UTI, ZALTTEXT)
-    And prompts_for() sends "hey i want you to tell me about electricity" verbatim to fmremote
+    And the complete stored note text is included in the audited model input
 
   @built @hw-verified
   Scenario: Fallback — reply as a linked rich-text note (note p13583)
@@ -29,7 +31,7 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     And the reply ends with "#done" and is sanitised so it never contains the trigger
 
   @built @sim-verified
-  Scenario: Never rewrites a note (test_notes_process.py: 7 tests)
+  Scenario: Never rewrites a note (test_notes_process.py)
     Then the source contains no "set body"
 
   @built @designed
@@ -71,7 +73,7 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     And concurrent ledger reads and appends use file locks and writes are flushed to disk
     And the watcher logs unexpected pass errors and retries after its configured interval
 
-  @built @sim-verified
+  @built @sim-verified @hw-verified
   # WATCH: bin/notes_input.py snapshot vision_images make_prompt start_run call_llm handle
   # cite: bin/notes-process handle(), call_llm(); bin/notes_input.py; bin/notes-brain audit()
   Scenario: Complete source text and image evidence enter an auditable request
