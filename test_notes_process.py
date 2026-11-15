@@ -82,6 +82,13 @@ def test_full_source_and_vision_prompt_preserve_first_paragraph():
     assert '#JohnKeely' in prompt and '12 volts' in prompt and 'coil 0.7' in prompt
 
 
+def test_text_only_prompt_never_mentions_images():
+    # Bug 2026-11-15: text-only #process notes got "No image evidence is provided" replies.
+    prompt = np.notes_input.make_prompt('Where is the Dirac sea?\n#process', '#process', [])
+    assert 'Where is the Dirac sea?' in prompt
+    assert 'image' not in prompt.lower()
+
+
 def test_sqlite_source_snapshot_keeps_first_line_and_reads_image():
     import sqlite3, gzip, tempfile
     def field(n, b):

@@ -1,0 +1,21 @@
+#!/bin/bash
+# Re-run every distinct note from saved notes-process runs (default: runs since a UTC prefix).
+# Usage: notes-reprocess-runs [RUN_ID_PREFIX]   e.g. NP-20261115   (must run on the Mini)
+# Made 2026-11-15 to redo replies poisoned by the always-on "image evidence" prompt.
+# Card: features/notes-process.feature
+set -u
+HERE="$(cd "$(dirname "$0")" && pwd)"
+PREFIX="${1:-NP-20261115}"
+RUNS="${NOTES_PROCESS_RUNS:-$HOME/work/comms/queue/notes-process-runs}"
+python3 - "$RUNS" "$PREFIX" <<'PY' | while IFS= read -r nid; do
+import json, glob, os, sys
+seen = []
+for d in sorted(glob.glob(os.path.join(sys.argv[1], sys.argv[2] + '*'))):
+    try: nid = json.load(open(d + '/source.json'))['note_id']
+    except Exception: continue
+    if nid not in seen: seen.append(nid)
+print('\n'.join(seen))
+PY
+  echo "== reprocess $nid"
+  NOTES_VISION_ON_MINI=1 "$HERE/notes-process" --once --reprocess "$nid" || echo "!! failed $nid"
+done

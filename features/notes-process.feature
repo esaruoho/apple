@@ -93,3 +93,11 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     Then the run is marked delivery_uncertain with the saved reply and error
     And the one-shot command exits nonzero
     And the default watcher does not force-restart Notes during another worker's delivery
+
+  @built @sim-verified
+  # cite: bin/notes_input.py make_prompt(); test_notes_process.py test_text_only_prompt_never_mentions_images
+  # cite: bin/notes-reprocess-runs (batch redo of 2026-11-15 runs)
+  Scenario: Text-only notes get no image instructions
+    Given a #process note with no image attachments
+    Then the model prompt never mentions images or image evidence
+    And the reply answers the note instead of reporting "no image evidence"

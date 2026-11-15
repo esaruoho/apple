@@ -114,9 +114,12 @@ def vision_images(source, run):
 def make_prompt(text, tag, vision):
     import re
     text = re.sub(re.escape(tag) + r'(?![\w-])', '', text, flags=re.I).replace('\ufffc', '').strip()
-    chunks = ['Process the complete source note below. Use its text and the image evidence together. '
+    if not vision:
+        # Text-only note: say nothing about images, or the model reports "no image evidence".
+        return 'Process the complete source note below.\n\nSOURCE NOTE:\n' + text
+    chunks = ['Process the complete source note below. Use its text and the attached image evidence together. '
               'Image labels are uncertain classifier suggestions, not a detailed visual interpretation. '
-              'Report missing or failed image processing explicitly.\n\nSOURCE NOTE:\n' + text]
+              'Report failed image processing explicitly.\n\nSOURCE NOTE:\n' + text]
     for i, image in enumerate(vision, 1):
         chunks.append(f"IMAGE {i} ({image['uti']}, {image['state']}):\n"
                       + 'Apple Vision recognized text:\n' + (image.get('text') or '[no text recognized]')
