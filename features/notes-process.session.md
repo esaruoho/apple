@@ -49,9 +49,15 @@ local Python interpreters without contacting Notes or generating replies.
 - Transcript: file:///Users/esaruoho/.codex/sessions/2026/11/15/rollout-2026-11-15T00-06-22-01a1dc4f-d609-7e50-abc7-7655000ad9d4.jsonl
 - Session ID: 01a1dc4f-d609-7e50-abc7-7655000ad9d4
 - Resume: codex --resume 01a1dc4f-d609-7e50-abc7-7655000ad9d4
-- Session timestamp: 2026-11-15T00:06:22 (transcript filename; timezone not inferred).
+- Session timestamp: 2026-11-14T23:06:22.124Z (verified transcript session_meta).
 - Work clock checked: 2026-11-15T00:57:05+01:00.
 
 ### RESULT
-- Delivery pending verification; changes: bin/notes-process, test_notes_process.py,
-  features/notes-process.feature, features/notes-process.session.md.
+- Fix commit: 33e9dee9, direct push to main, no PR. Fast-forward pulled on Cloudcity.
+- Mini diagnosis: splitlines yielded 32 valid + 2 invalid fragments; LF yielded 33 valid
+  records and zero invalid records. The ledger was intact, not corrupt.
+- Mini verification: ledger() loaded all 33 keys; all 11 tests passed under /usr/bin/python3.
+- Changes: bin/notes-process, test_notes_process.py, features/notes-process.feature,
+  features/notes-process.session.md; generated features/README.md and STATUS.md.
+- Syncthing diagnostic bridge did not return. Used verified Tailscale SSH fallback
+  for read-only diagnosis and a fast-forward pull; existing Boot wrappers relaunched workers.

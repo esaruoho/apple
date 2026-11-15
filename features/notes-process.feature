@@ -1,4 +1,7 @@
 # Report card: bin/notes-process — #process tag in Apple Notes → Cloudcity LLM reply, APPEND-ONLY
+# RESULT: 33e9dee9, direct-push to main, no PR; fast-forward deployed on Cloudcity.
+# RESULT: 11 tests pass on Mini Python 3.9; live ledger loads all 33 original keys.
+# Session: features/notes-process.session.md
 Feature: a #process tag in a note gets an LLM reply added as rich text, never by rewriting the note
 
   @built @hw-verified
