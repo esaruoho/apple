@@ -61,3 +61,24 @@ local Python interpreters without contacting Notes or generating replies.
   features/notes-process.session.md; generated features/README.md and STATUS.md.
 - Syncthing diagnostic bridge did not return. Used verified Tailscale SSH fallback
   for read-only diagnosis and a fast-forward pull; existing Boot wrappers relaunched workers.
+
+## Complete source + Vision + Processing ID
+
+Esa reported the Keely note's image and text appeared missing from its Re: note.
+Read-only inspection found the original p12480 still has its complete 2,896-character
+text and a 3,103,922-byte PNG; the separate response p12497 only quoted hashtags.
+The old pipeline had no image input and dropped the first plaintext line.
+
+Esa requested: integrate Apple Vision, fix text insertion, and log model inputs with
+an ID shown in the response so the run can be revisited. Implemented full stored-note
+reading using the existing notes-variants decoder; on-Mini Vision OCR/classification;
+full source text in the new rich-text reply; source/image/input/backend/output/delivery
+records; visible NP Processing IDs; Syncthing run archives and --show-run inspection.
+An explicit --once --reprocess NOTE_ID supports a deliberate new reply without resetting
+the at-most-once ledger. Source notes are never rewritten. Tests mock Vision locally.
+
+Codespace: bin/notes-process, bin/notes_input.py, bin/notes-brain, test_notes_process.py.
+Thinkspace: this session, with the existing verified transcript link above.
+Areaspace: Notes input preparation, evidence, request audit and additive reply delivery;
+no changes to the shared LLM service or the original Notes content.
+Delivery/live Vision verification pending at authoring time.

@@ -70,3 +70,16 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     And a complete leading key in a torn record remains remembered to prevent duplicate replies
     And concurrent ledger reads and appends use file locks and writes are flushed to disk
     And the watcher logs unexpected pass errors and retries after its configured interval
+
+  @built @sim-verified
+  # WATCH: bin/notes_input.py snapshot vision_images make_prompt start_run call_llm handle
+  # cite: bin/notes-process handle(), call_llm(); bin/notes_input.py; bin/notes-brain audit()
+  Scenario: Complete source text and image evidence enter an auditable request
+    Given a tagged note whose first paragraph is its entire description and which contains an image
+    When Cloudcity processes it
+    Then the first paragraph is preserved in the prompt and the rich-text reply
+    And Apple Vision recognized text and classification labels are included as image evidence
+    And source bytes, image hashes, Vision results, exact model requests and responses are saved
+    And a unique Processing ID appears in the reply, ledger and run directory
+    And missing or failed image processing and model failures remain visible in the saved records
+    And the original note is never rewritten and OCR does not run on the laptop

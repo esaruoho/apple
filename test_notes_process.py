@@ -6,21 +6,6 @@ spec = importlib.util.spec_from_loader('np', importlib.machinery.SourceFileLoade
 np = importlib.util.module_from_spec(spec); spec.loader.exec_module(np)
 O = np.OBJ
 
-def test_real_tag_object_line():
-    # how Notes reports "hey i want you to tell me about electricity #process"
-    plain = f'hey i want you to tell me about electricity {O}\n'
-    assert np.prompts_for(plain, '#process', 'tag') == \
-        [(f'hey i want you to tell me about electricity {O}', 'hey i want you to tell me about electricity')]
-
-def test_plain_text_tag_line():
-    assert np.prompts_for('T\nhello world #process\nother', '#process', 'text') == [('hello world #process', 'hello world')]
-
-def test_bare_tag_sends_note_above_minus_title():
-    assert np.prompts_for(f'Title\nline a\nline b\n{O}', '#process', 'tag') == [(O, 'line a\nline b')]
-
-def test_no_partial_tag_match():
-    assert np.prompts_for('x #processed\ny #process-later', '#process', 'text') == []
-
 def test_reply_cannot_retrigger():
     assert np.tag_re('#process').search(np.sanitize('say #process again', '#process')) is None
 
@@ -88,6 +73,107 @@ def test_watch_retries_failed_pass():
             pass
         assert calls == [10, 10]
         sleep.assert_called_once_with(10)
+
+
+def test_full_source_and_vision_prompt_preserve_first_paragraph():
+    src = 'The entire important first paragraph.\n\n#JohnKeely\n' + O
+    prompt = np.notes_input.make_prompt(src, '#process', [dict(uti='public.png', state='ok', text='12 volts', labels='coil 0.7')])
+    assert 'The entire important first paragraph.' in prompt
+    assert '#JohnKeely' in prompt and '12 volts' in prompt and 'coil 0.7' in prompt
+
+
+def test_sqlite_source_snapshot_keeps_first_line_and_reads_image():
+    import sqlite3, gzip, tempfile
+    def field(n, b):
+        def vi(x):
+            out = b''
+            while x > 127:
+                out += bytes([(x & 127) | 128]); x >>= 7
+            return out + bytes([x])
+        return vi(n * 8 + 2) + vi(len(b)) + b
+    text = 'Full first paragraph\n' + O + '\n' + O
+    blob = gzip.compress(field(2, field(3, field(2, text.encode()))))
+    with sqlite3.connect(':memory:') as c, tempfile.TemporaryDirectory() as d:
+        c.execute('create table ZICCLOUDSYNCINGOBJECT (Z_PK integer,ZTITLE1 text,ZMODIFICATIONDATE1 real,ZNOTEDATA integer,ZISPASSWORDPROTECTED integer,ZMARKEDFORDELETION integer,ZIDENTIFIER text,ZTYPEUTI text,ZMEDIA integer,ZNOTE integer,ZFILENAME text)')
+        c.execute('create table ZICNOTEDATA (Z_PK integer,ZDATA blob)')
+        c.execute('insert into ZICCLOUDSYNCINGOBJECT (Z_PK,ZTITLE1,ZMODIFICATIONDATE1,ZNOTEDATA) values(1,"Title",0,2)')
+        c.execute('insert into ZICNOTEDATA values(2,?)', (blob,))
+        c.execute('insert into ZICCLOUDSYNCINGOBJECT (Z_PK,ZNOTE,ZTYPEUTI,ZMEDIA,ZIDENTIFIER) values(3,1,"public.png",4,"image")')
+        c.execute('insert into ZICCLOUDSYNCINGOBJECT (Z_PK,ZIDENTIFIER,ZFILENAME) values(4,"media","Image.png")')
+        image = Path(d) / 'Accounts/account/Media/media/version/Image.png'
+        image.parent.mkdir(parents=True); image.write_bytes(b'example')
+        result = np.notes_input.snapshot(c, 'x-coredata://store/ICNote/p1', Path(d))
+        assert result['text'].startswith('Full first paragraph')
+        assert result['attachments'][0]['path'] == str(image)
+
+
+def test_vision_logs_each_result_without_local_ocr():
+    import tempfile, subprocess
+    from unittest.mock import patch
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d); image = root / 'source.png'; image.write_bytes(b'fixture image')
+        run = root / 'run'; run.mkdir()
+        source = dict(attachments=[dict(id='i', uti='public.png', image=True, path=str(image))])
+        with patch.dict(np.os.environ, {'NOTES_VISION_ON_MINI':'1'}), \
+             patch.object(np.notes_input.subprocess, 'run', return_value=subprocess.CompletedProcess([],0,'recognized text','')) as call:
+            results = np.notes_input.vision_images(source, run)
+        assert call.call_count == 2
+        assert results[0]['text'] == 'recognized text' and results[0]['sha256']
+        assert (run / 'vision.json').exists() and (run / 'image-0.png').read_bytes() == b'fixture image'
+
+
+def test_handle_archives_exact_input_and_visible_id():
+    import tempfile, types, json, sys
+    from unittest.mock import patch
+    source = dict(note_id='x-coredata://store/ICNote/p1', title='T', text='Entire first paragraph.\nSecond paragraph.\n#process', age=100, attachments=[])
+    occ = dict(key='tag:one',nid=source['note_id'],title='T',folder='Notes',kind='tag')
+    a = types.SimpleNamespace(settle=5,tag='#process',dry_run=False,llm=sys.executable+' -c "print(12345)"',llm_timeout=10,samples=1,label='Test',done_tag='#done',reply_account='iCloud',reply_folder='Notes')
+    with tempfile.TemporaryDirectory() as d, patch.object(np,'STATE',Path(d)), \
+         patch.object(np,'db'), patch.object(np.notes_input,'snapshot',return_value=source), \
+         patch.object(np,'linked_note',return_value='new-note') as deliver:
+        np.handle(occ,a,set(),False)
+        run = next((Path(d)/'runs').iterdir())
+        request=json.loads((run/'model-001/request.json').read_text())
+        assert request['stdin'] == (run/'prompt.txt').read_text()
+        assert source['text'].split('\n')[0] in request['stdin']
+        md=deliver.call_args[0][1]
+        assert run.name in md and 'Entire first paragraph.' in md and 'Second paragraph.' in md
+        assert json.loads((run/'status.json').read_text())['state']=='delivered'
+        assert all(json.loads(row)['run_id']==run.name for row in (Path(d)/'ledger.jsonl').read_text().split('\n') if row)
+
+
+def test_model_failure_keeps_input_and_error():
+    import tempfile, sys, json
+    with tempfile.TemporaryDirectory() as d:
+        run=Path(d)
+        try:
+            np.call_llm(sys.executable+' -c "raise SystemExit(2)"','full input',10,audit_dir=run)
+        except RuntimeError:
+            pass
+        else:
+            raise AssertionError('failure must be reported')
+        assert (run/'model-001/prompt.txt').read_text()=='full input'
+        assert json.loads((run/'model-001/response.json').read_text())['returncode']==2
+
+
+def test_brain_records_full_backend_messages():
+    import tempfile, runpy, types, sys, io, json
+    from unittest.mock import patch
+    module=types.ModuleType('convey.brain_routes')
+    module.FLUBUILD_MODEL='test-model'
+    module.call_flubuild=lambda messages, **kw: ('answer','test-route')
+    prompt='First paragraph.\n' + 'body ' * 1500
+    with tempfile.TemporaryDirectory() as d, \
+         patch.dict(sys.modules, {'convey.brain_routes':module}), \
+         patch.dict(np.os.environ, {'NOTES_PROCESS_AUDIT_DIR':d}), \
+         patch.object(sys,'argv',['notes-brain']), patch.object(sys,'stdin',io.StringIO(prompt)):
+        try:
+            runpy.run_path(str(p.parent/'notes-brain'),run_name='__main__')
+        except SystemExit as e:
+            assert e.code==0
+        rec=json.loads((Path(d)/'backend-flubuild-request.json').read_text())
+        assert rec['messages']==[{'role':'user','content':prompt.strip()}]
+        assert json.loads((Path(d)/'backend-flubuild-response.json').read_text())['text']=='answer'
 
 
 if __name__ == '__main__':

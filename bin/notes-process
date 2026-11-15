@@ -5,16 +5,17 @@ Report card: features/notes-process.feature
 
 Type   hello world #process   in a note (a real orange Notes tag, or plain text).
 On the next pass:
-  1. that line's text (minus the tag) is sent VERBATIM to the LLM
-     (default `notes-brain`: Flubuild Qwen → MLX Qwen → Apple FM; override --llm).
-     A line that is only the tag sends the whole note text above it.
+  1. the complete stored note text and on-Mini Apple Vision image OCR/classification
+     are saved under a unique Processing ID, then sent to notes-brain.
+     The first paragraph is preserved, even when Notes treats it as the title.
   2. the reply (markdown) is added as RICH TEXT, never by rewriting the note:
        a) APPEND via the Shortcut named --shortcut (default "notes-process-append",
           actions: Get Dictionary from Input → Make Rich Text from Markdown →
           Find Notes (Name is title) → Append to Note) — only when the note's
           title is unique, so it cannot append to the wrong note;
        b) otherwise a NEW linked note "Re: <title>" via bin/notes-new.
-  3. the reply ends with a "#done" line, and the tag occurrence is logged in a
+  3. the reply includes the Processing ID and the complete original text, then
+     ends with a "#done" line, and the tag occurrence is logged in a
      ledger keyed by the tag object's own identifier → it never fires twice.
      The reply is sanitised so it can never contain the trigger tag.
 
@@ -28,6 +29,8 @@ Usage:
 """
 import argparse, datetime, fcntl, hashlib, json, os, re, shlex, sqlite3, subprocess, sys, tempfile, time
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import notes_input
 
 HERE = Path(__file__).resolve().parent
 STATE = Path(os.environ.get('NOTES_PROCESS_HOME', Path.home() / '.local/share/notes-process'))
@@ -144,25 +147,6 @@ PLAINTEXT_FIND = '''on run argv
 end run'''
 
 
-# ---------- prompt extraction (pure, tested) ----------
-def prompts_for(plain, tag, kind):
-    """Lines that carry the trigger. kind='tag' → line holds the object char U+FFFC;
-    kind='text' → line holds the literal tag. Returns [(line, prompt)]."""
-    lines = plain.splitlines()
-    rx = tag_re(tag)
-    hit = (lambda l: OBJ in l) if kind == 'tag' else (lambda l: bool(rx.search(l)))
-    out = []
-    for i, line in enumerate(lines):
-        if not hit(line):
-            continue
-        stripped = rx.sub('', line).replace(OBJ, '').strip()
-        prompt = stripped or '\n'.join(l.replace(OBJ, '') for l in lines[1:i]
-                                       if not hit(l)).strip()
-        if prompt:
-            out.append((line.strip(), prompt))
-    return out
-
-
 def _latex():
     import importlib.machinery, importlib.util
     ldr = importlib.machinery.SourceFileLoader('latex2unicode', str(HERE / 'latex2unicode'))
@@ -253,12 +237,27 @@ def ledger_add(rec):
 
 
 # ---------- LLM + writers ----------
-def call_llm(cmd, prompt, timeout, context=''):
+def call_llm(cmd, prompt, timeout, context='', audit_dir=None):
     argv = shlex.split(cmd)
     if context and Path(argv[0]).name in ('fmremote', 'notes-brain'):  # verbatim prompt; earlier note text as context
-        argv[1:1] = ['--system', 'Earlier in this note (context for the question):\n' + context[-6000:]]
-    r = subprocess.run(argv, input=prompt, capture_output=True, text=True,
-                       timeout=timeout, cwd=str(HERE.parent))
+        argv[1:1] = ['--system', 'Earlier in this note (context for the question):\n' + context]
+    env = os.environ.copy()
+    attempt = None
+    if audit_dir:
+        attempt = Path(audit_dir) / ('model-%03d' % (len(list(Path(audit_dir).glob('model-*'))) + 1))
+        attempt.mkdir()
+        env['NOTES_PROCESS_AUDIT_DIR'] = str(attempt)
+        notes_input.save_json(attempt / 'request.json', dict(argv=argv, stdin=prompt, timeout=timeout))
+        (attempt / 'prompt.txt').write_text(prompt, encoding='utf-8')
+    try:
+        r = subprocess.run(argv, input=prompt, capture_output=True, text=True,
+                           timeout=timeout, cwd=str(HERE.parent), env=env)
+    except Exception as e:
+        if attempt:
+            notes_input.save_json(attempt / 'error.json', dict(error=str(e), type=type(e).__name__))
+        raise
+    if attempt:
+        notes_input.save_json(attempt / 'response.json', dict(stdout=r.stdout, stderr=r.stderr, returncode=r.returncode))
     if r.returncode != 0 or not r.stdout.strip():
         raise RuntimeError(f'llm failed rc={r.returncode}: {r.stderr.strip()[-300:]}')
     route = next((l[6:] for l in r.stderr.splitlines() if l.startswith('route=')), '')
@@ -306,62 +305,62 @@ def linked_note(title, md, account, folder):
 # ---------- pass ----------
 def handle(occ, a, seen, use_shortcut):
     label = f'"{occ["title"]}" [{occ["folder"]}]'
-    if occ.get('trash'):
-        return log(f'skip {label}: Recently Deleted')
-    if occ.get('locked'):
-        return log(f'skip {label}: password-protected')
-    age, plain = osa(INFO, occ['nid']).split('\x1f', 1)
-    if int(age) < a.settle:
-        return log(f'wait {label}: edited {age}s ago (< {a.settle}s)')
-    found = prompts_for(plain, a.tag, occ['kind'])
-    if occ['kind'] == 'text':
-        found = [(l, p) for l, p in found
-                 if f'text:{occ["nid"]}:{hashlib.sha256(l.encode()).hexdigest()[:16]}' not in seen]
-    if not found:
-        return log(f'skip {label}: no trigger line found')
-    line, prompt = found[0]
-    key = occ['key'] if occ['kind'] == 'tag' else \
-        f'text:{occ["nid"]}:{hashlib.sha256(line.encode()).hexdigest()[:16]}'
+    if occ.get('trash') or occ.get('locked'):
+        return log(f'skip {label}: deleted or locked')
+    with db() as c:
+        source = notes_input.snapshot(c, occ['nid'], DB.parent)
+    if source['age'] < a.settle:
+        return log(f'wait {label}: recently edited')
+    if occ['kind'] == 'text' and not tag_re(a.tag).search(source['text']):
+        return
+    key = occ['key'] or f'text:{occ["nid"]}:{hashlib.sha256(source["text"].encode()).hexdigest()[:16]}'
     if key in seen:
         return
-    unique = title_count(occ['title']) == 1
-    how = 'append (Shortcut)' if (use_shortcut and unique) else 'linked note "Re: …"'
     if a.dry_run:
-        return log(f'DRY {label}: send {prompt!r} → {how}')
-    log(f'send {label}: {prompt[:80]!r}')
-    lines = plain.replace(OBJ, '').splitlines()
-    idx = next((i for i, l in enumerate(plain.splitlines()) if l.strip() == line), len(lines))
-    context = '\n'.join(lines[:idx]).strip()
-    if prompt in context:
-        context = ''
-    # AT-MOST-ONCE (2026-11-11): claim the key in the ledger BEFORE any side effect. Before this,
-    # a notes-new timeout (note created, error raised) left the key unlogged → a new "Re:" note
-    # every 15s pass (~400 duplicates). A lost reply is fine; a duplicate loop is not.
-    seen.add(key)
-    ledger_add({'key': key, 'note': occ['nid'], 'title': occ['title'], 'line': line,
-                'at': datetime.datetime.now().isoformat(timespec='seconds'), 'where': 'claimed'})
-    if a.samples > 1:
-        reply, route = consensus_reply(a, prompt, context, occ)
-    else:
-        reply, route = call_llm(a.llm, prompt, a.llm_timeout, context)
-    reply = sanitize(reply, a.tag)
-    md = reply_markdown(reply, f'{a.label} · {route.split("/")[-1]}' if route else a.label, a.done_tag)
-    md = '> ' + prompt.replace('\n', '\n> ') + '\n' + md  # keep the question with the answer (context)
-    if use_shortcut and unique:
-        append_via_shortcut(a.shortcut, occ['title'], md)
-        header = next(l for l in md.splitlines() if l.startswith('**🤖')).strip('* ')  # "🤖 label · stamp"
-        after = osa(INFO, occ['nid']).split('\x1f', 1)[1]
-        where = 'appended in note' if header in after else 'APPEND NOT VERIFIED (logged, not retried)'
-    else:
-        if use_shortcut and not unique:
-            log(f'note title not unique → linked note instead of append')
-        where = 'linked note ' + linked_note(occ['title'], md, a.reply_account, a.reply_folder)
-    ledger_add({'key': key, 'note': occ['nid'], 'title': occ['title'], 'line': line,
-                'at': datetime.datetime.now().isoformat(timespec='seconds'), 'where': where})
-    log(f'done {label}: {where}')
+        return log(f'DRY {label}: {len(source["text"])} source chars, {len(source["attachments"])} attachments')
+    run = notes_input.start_run(STATE, source, a.tag, key)
+    status = dict(id=run.name, note_id=occ['nid'], key=key, tag=a.tag)
+    record = dict(key=key, note=occ['nid'], title=occ['title'], run_id=run.name)
+    try:
+        vision = notes_input.vision_images(source, run)
+        prompt = notes_input.make_prompt(source['text'], a.tag, vision)
+        (run / 'prompt.txt').write_text(prompt, encoding='utf-8')
+        notes_input.save_json(run / 'status.json', dict(status, state='request_ready'))
+        # Claim only after the complete input is durably saved, before model/delivery side effects.
+        seen.add(key)
+        ledger_add(dict(record, at=datetime.datetime.now().isoformat(timespec='seconds'), where='claimed'))
+        log(f'{run.name}: send {label}: {len(prompt)} chars, {len(vision)} attachments')
+        notes_input.save_json(run / 'status.json', dict(status, state='generating'))
+        if a.samples > 1:
+            reply, route = consensus_reply(a, prompt, '', occ, audit_dir=run)
+        else:
+            reply, route = call_llm(a.llm, prompt, a.llm_timeout, audit_dir=run)
+        (run / 'reply.raw.txt').write_text(reply, encoding='utf-8')
+        reply = sanitize(reply, a.tag)
+        md = reply_markdown(reply, f'{a.label} · {route.split("/")[-1]}' if route else a.label, a.done_tag)
+        source_text = tag_re(a.tag).sub('', source['text']).strip()
+        image_summary = '\n'.join(f"- Image {i}: {v['state']}; Vision text {len(v.get('text', ''))} chars" for i, v in enumerate(vision, 1))
+        md = (f'**Processing ID: {run.name}**\n\n'
+              f'## Source note\n\n' + '\n'.join('> ' + l for l in source_text.split('\n'))
+              + ('\n\n' + image_summary if vision else '') + '\n' + md)
+        (run / 'reply.md').write_text(md, encoding='utf-8')
+        notes_input.save_json(run / 'status.json', dict(status, state='delivering', route=route))
+        if use_shortcut and title_count(occ['title']) == 1:
+            append_via_shortcut(a.shortcut, occ['title'], md)
+            after = osa(INFO, occ['nid']).split('\x1f', 1)[1]
+            where = 'appended in note' if run.name in after else 'APPEND NOT VERIFIED (logged, not retried)'
+        else:
+            where = 'linked note ' + linked_note(occ['title'], md, a.reply_account, a.reply_folder)
+        ledger_add(dict(record, at=datetime.datetime.now().isoformat(timespec='seconds'), where=where))
+        notes_input.save_json(run / 'status.json', dict(status, state='delivered' if not where.startswith('APPEND NOT') else 'delivery_uncertain', route=route, where=where))
+        log(f'{run.name}: {where}')
+    except Exception as e:
+        notes_input.save_json(run / 'status.json', dict(status, state='failed', error=str(e), error_type=type(e).__name__))
+        log(f'{run.name}: failed; saved at {run}: {e}')
+        raise
 
 
-def consensus_reply(a, prompt, context, occ):
+def consensus_reply(a, prompt, context, occ, audit_dir=None):
     """--samples N: ask the same question N times, align the answers (bin/notes-variants),
     reply with the MASTER consensus. All N answers + branches are kept on disk."""
     import importlib.machinery, importlib.util
@@ -371,7 +370,7 @@ def consensus_reply(a, prompt, context, occ):
     vs, route = [], ''
     for i in range(a.samples):
         try:
-            r, route = call_llm(a.llm, prompt, a.llm_timeout, context)
+            r, route = call_llm(a.llm, prompt, a.llm_timeout, context, audit_dir=audit_dir)
             vs.append(dict(pk=i, at=datetime.datetime.now().isoformat(timespec='seconds'), text=r))
             log(f'  sample {i + 1}/{a.samples} ok')
         except Exception as e:
@@ -400,6 +399,11 @@ def one_pass(a):
         return log(f'STOP file present ({STATE}/STOP) — not processing')
     seen = ledger()
     occs = [o for o in find_occurrences(a.tag) if o['key'] not in seen]
+    if a.reprocess:
+        import uuid
+        occs = [dict(o, key='manual:' + uuid.uuid4().hex) for o in find_occurrences(a.tag) if o['nid'] == a.reprocess]
+        if not occs:
+            raise ValueError('no matching tagged note for --reprocess')
     if a.plain_text:
         ids = [i for i in osa(PLAINTEXT_FIND, a.tag, timeout=120).splitlines() if i.strip()]
         occs += [dict(key=None, nid=i, kind='text', title=osa(
@@ -423,6 +427,7 @@ def main():
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument('--once', action='store_true')
     g.add_argument('--watch', type=int, metavar='SECONDS')
+    g.add_argument('--show-run', metavar='ID', help='print saved status and exact model input for a processing ID')
     ap.add_argument('--tag', default='#process')
     ap.add_argument('--done-tag', default='#done')
     ap.add_argument('--llm', default=f'{HERE}/notes-brain')
@@ -444,11 +449,22 @@ def main():
     ap.add_argument('--quorum', type=float, default=0.3, help='--samples: fraction of answers a claim needs')
     ap.add_argument('--consensus-dir', default=str(HERE.parent / 'analysis/notes-variants/consensus'))
     ap.add_argument('--dry-run', action='store_true')
+    ap.add_argument('--reprocess', metavar='NOTE_ID', help='deliberately create one new audited reply for this note (--once only)')
     a = ap.parse_args()
+    if a.show_run:
+        if not re.fullmatch(r'NP-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}', a.show_run):
+            ap.error('invalid processing ID')
+        run = notes_input.runs_root(STATE) / a.show_run
+        print((run / 'status.json').read_text())
+        if (run / 'prompt.txt').exists():
+            print((run / 'prompt.txt').read_text())
+        return
     if not a.tag.startswith('#') or tag_re(a.tag).search(a.done_tag):
         sys.exit('tag must start with # and the done tag must not contain it')
     if a.watch is not None and a.watch < 10:
         sys.exit('--watch must be >= 10 seconds')  # discovery is one cheap read-only SQLite query
+    if a.reprocess and not a.once:
+        ap.error('--reprocess requires --once')
     if a.once:
         return one_pass(a)
     while True:
