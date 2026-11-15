@@ -1062,7 +1062,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/notes-process.feature` · [session](notes-process.session.md)
 
-**Behaviour (10 scenarios):**
+**Behaviour (11 scenarios):**
 
 - A real orange Notes tag is found (2026-11-08, note p13544) — `@built @hw-verified`
 - Fallback — reply as a linked rich-text note (note p13583) — `@built @hw-verified`
@@ -1074,8 +1074,11 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Notes.app self-heals on the unattended Mini — `@built`
 - iCloud sync is forced on the Mini — `@built`
 - LaTeX in replies is rendered as Unicode math (Notes can't show TeX) — `@sim-verified`
+- Unicode separators and damaged ledger records cannot cause a restart loop — `@built @sim-verified`
 
-**Grade:** @built ×7 · @designed ×1 · @hw-verified ×3 · @sim-verified ×2 · @todo ×1 · @untested ×1
+**How it does it:** **Source files:** `test_notes_process.py`
+
+**Grade:** @built ×8 · @designed ×1 · @hw-verified ×3 · @sim-verified ×3 · @todo ×1 · @untested ×1
 
 
 <a id="notes-variants"></a>

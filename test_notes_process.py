@@ -36,6 +36,60 @@ def test_reply_title_flattens_thread():
     assert np.reply_title('Re: katsotaampa toimiiko tämä #process') == 'Re: katsotaampa toimiiko tämä'
     assert np.reply_title('Re: Re: x #process #done') == 'Re: x'
 
+def test_ledger_unicode_separators():
+    import tempfile, json
+    with tempfile.TemporaryDirectory() as d:
+        old = np.STATE
+        np.STATE = Path(d)
+        try:
+            np.ledger_add({'key': 'one', 'title': 'a\u2028b\u2029c\x85d'})
+            np.ledger_add({'key': 'two'})
+            assert np.ledger() == {'one', 'two'}
+        finally:
+            np.STATE = old
+
+
+def test_ledger_damage_preserved_and_append_recovers():
+    import tempfile, json
+    with tempfile.TemporaryDirectory() as d:
+        old = np.STATE
+        np.STATE = Path(d)
+        try:
+            p = np.STATE / 'ledger.jsonl'
+            original = b'{"key":"good"}\nnot json\n[]\n{"key":null}\n{"key":"torn","title":"unfinished'
+            p.write_bytes(original)
+            assert np.ledger() == {'good', 'torn'}
+            assert p.read_bytes() == original
+            assert any(f.read_bytes() == original for f in np.STATE.glob('ledger.corrupt-*.bin'))
+            np.ledger_add({'key': 'after'})
+            assert np.ledger() == {'good', 'torn', 'after'}
+            assert json.loads(p.read_bytes().split(b'\n')[-2])['key'] == 'after'
+        finally:
+            np.STATE = old
+
+
+def test_watch_retries_failed_pass():
+    import sys
+    from unittest.mock import patch
+    calls = []
+    class StopTest(BaseException):
+        pass
+    def attempt(a):
+        calls.append(a.watch)
+        if len(calls) == 1:
+            raise RuntimeError('temporary failure')
+        raise StopTest()
+    with patch.object(sys, 'argv', ['notes-process', '--watch', '10']), \
+         patch.object(np, 'one_pass', side_effect=attempt), \
+         patch.object(np.time, 'sleep') as sleep:
+        try:
+            np.main()
+        except StopTest:
+            pass
+        assert calls == [10, 10]
+        sleep.assert_called_once_with(10)
+
+
 if __name__ == '__main__':
     for n, f in list(globals().items()):
         if n.startswith('test_'): f(); print('ok', n)

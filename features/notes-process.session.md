@@ -34,3 +34,24 @@
 10. Brain: notes-brain → Flubuild Qwen2.5-7B (→ MLX Qwen → Apple FM). "katsotaampa toimiiko tämä #process"
     answered as linked note p13588; 2nd pass no-op. Hand-built Shortcut documented in
     wiki/concepts/notes-process-append-shortcut.md (not yet built/verified).
+
+## Ledger crash fix — 2026-11-15
+
+Esa supplied a Cloudcity screenshot showing notes-consensus repeatedly crashing in ledger()
+with JSONDecodeError: Unterminated string, and asked for a quick fix preventing recurrence.
+The first response inferred malformed JSON; inspection also found str.splitlines() breaks
+valid JSON containing Unicode separators. A regression reproduced this exact exception.
+The fix uses LF boundaries, locked reads/appends, fsync, damage backups and recovery of
+complete leading keys. Watch mode catches pass errors and retries. Tests run on both
+local Python interpreters without contacting Notes or generating replies.
+
+### How to get back
+- Transcript: file:///Users/esaruoho/.codex/sessions/2026/11/15/rollout-2026-11-15T00-06-22-01a1dc4f-d609-7e50-abc7-7655000ad9d4.jsonl
+- Session ID: 01a1dc4f-d609-7e50-abc7-7655000ad9d4
+- Resume: codex --resume 01a1dc4f-d609-7e50-abc7-7655000ad9d4
+- Session timestamp: 2026-11-15T00:06:22 (transcript filename; timezone not inferred).
+- Work clock checked: 2026-11-15T00:57:05+01:00.
+
+### RESULT
+- Delivery pending verification; changes: bin/notes-process, test_notes_process.py,
+  features/notes-process.feature, features/notes-process.session.md.

@@ -26,7 +26,7 @@ Usage:
   notes-process --watch 60        (on the Mini: run under Cloudcity-Boot, never nohup)
   notes-process --tag '#ask' --done-tag '#answered' --once
 """
-import argparse, datetime, hashlib, json, os, re, shlex, sqlite3, subprocess, sys, tempfile, time
+import argparse, datetime, fcntl, hashlib, json, os, re, shlex, sqlite3, subprocess, sys, tempfile, time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -186,15 +186,70 @@ def reply_markdown(reply, llm_name, done_tag):
 
 
 # ---------- ledger ----------
+# REPORT-CARD >> features/notes-process.feature
+_LEDGER_WARNED = set()
+
+
 def ledger():
     p = STATE / 'ledger.jsonl'
-    return {json.loads(l)['key'] for l in p.read_text().splitlines() if l.strip()} if p.exists() else set()
+    try:
+        with p.open('rb') as f:
+            fcntl.flock(f, fcntl.LOCK_SH)
+            data = f.read()
+    except FileNotFoundError:
+        return set()
+    seen, damaged = set(), []
+    # JSONL uses LF only. str.splitlines() also splits U+2028/U+2029/NEL
+    # inside perfectly valid JSON strings (e.g. pasted Notes titles).
+    for n, raw in enumerate(data.split(b'\n'), 1):
+        if not raw.strip():
+            continue
+        try:
+            rec = json.loads(raw)
+            if not isinstance(rec, dict) or not isinstance(rec.get('key'), str) or not rec['key']:
+                raise ValueError('record needs a nonempty string key')
+            seen.add(rec['key'])
+        except (ValueError, UnicodeError):
+            damaged.append(n)
+            # Our writer puts key first. Preserve a complete key even if later
+            # fields were torn, so an already answered note isn't replayed.
+            prefix = re.match(rb'\s*\{\s*"key"\s*:\s*', raw)
+            if prefix:
+                try:
+                    key, end = json.JSONDecoder().raw_decode(raw[prefix.end():].decode('utf-8', errors='replace'))
+                    rest = raw[prefix.end():].decode('utf-8', errors='replace')[end:].lstrip()
+                    if isinstance(key, str) and key and rest.startswith((',', '}')):
+                        seen.add(key)
+                except ValueError:
+                    pass
+    if damaged:
+        digest = hashlib.sha256(data).hexdigest()
+        backup = STATE / f'ledger.corrupt-{digest}.bin'
+        try:
+            with backup.open('xb') as f:
+                f.write(data)
+        except FileExistsError:
+            pass
+        if digest not in _LEDGER_WARNED:
+            log(f'ledger: damaged records at lines {damaged}; original preserved at {backup}; continuing with {len(seen)} keys')
+            _LEDGER_WARNED.add(digest)
+    return seen
 
 
 def ledger_add(rec):
     STATE.mkdir(parents=True, exist_ok=True)
-    with open(STATE / 'ledger.jsonl', 'a') as f:
-        f.write(json.dumps(rec, ensure_ascii=False) + '\n')
+    # Shared by #process and #consensus. Lock readers/writers against partial
+    # reads and concurrent appends; terminate a torn tail before the next row.
+    with open(STATE / 'ledger.jsonl', 'a+b') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        f.seek(0, os.SEEK_END)
+        if f.tell():
+            f.seek(-1, os.SEEK_END)
+            if f.read(1) != b'\n':
+                f.write(b'\n')
+        f.write((json.dumps(rec, ensure_ascii=True) + '\n').encode('utf-8'))
+        f.flush()
+        os.fsync(f.fileno())
 
 
 # ---------- LLM + writers ----------
@@ -397,7 +452,10 @@ def main():
     if a.once:
         return one_pass(a)
     while True:
-        one_pass(a)
+        try:
+            one_pass(a)
+        except Exception as e:
+            log(f'pass failed ({type(e).__name__}): {e}; retrying in {a.watch}s')
         time.sleep(a.watch)
 
 

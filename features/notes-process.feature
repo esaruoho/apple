@@ -55,3 +55,15 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     Then the note shows "L = |ℰ|/(dI/dt)" on its own line and "E = 1/2 L I²"
     And plain dollar amounts like "$5 and $10" are left alone
     # verified 2026-11-11 under /usr/bin/python3 (the Cloudcity-Boot interpreter)
+
+  @built @sim-verified
+  # WATCH: bin/notes-process ledger ledger_add main
+  # cite: bin/notes-process ledger(), ledger_add(), main(); test_notes_process.py
+  Scenario: Unicode separators and damaged ledger records cannot cause a restart loop
+    Given ledger titles contain U+2028, U+2029 or NEL, or a record is truncated
+    When the worker reads its ledger
+    Then only LF separates records and valid completed keys remain remembered
+    And damaged bytes are preserved in a content-addressed backup without rewriting the ledger
+    And a complete leading key in a torn record remains remembered to prevent duplicate replies
+    And concurrent ledger reads and appends use file locks and writes are flushed to disk
+    And the watcher logs unexpected pass errors and retries after its configured interval
