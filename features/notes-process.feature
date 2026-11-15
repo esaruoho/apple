@@ -83,3 +83,11 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     And a unique Processing ID appears in the reply, ledger and run directory
     And missing or failed image processing and model failures remain visible in the saved records
     And the original note is never rewritten and OCR does not run on the laptop
+
+  @built @sim-verified
+  # cite: bin/notes-process main(), handle(), one_pass()
+  Scenario: Delivery failure stays visible and is not reported as a successful one-shot command
+    Given Notes rejects a write or times out after delivery has started
+    Then the run is marked delivery_uncertain with the saved reply and error
+    And the one-shot command exits nonzero
+    And the default watcher does not force-restart Notes during another worker's delivery

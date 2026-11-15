@@ -1062,7 +1062,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/notes-process.feature` · [session](notes-process.session.md)
 
-**Behaviour (12 scenarios):**
+**Behaviour (13 scenarios):**
 
 - A real orange Notes tag is found (2026-11-08, note p13544) — `@built @hw-verified`
 - Fallback — reply as a linked rich-text note (note p13583) — `@built @hw-verified`
@@ -1076,10 +1076,11 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - LaTeX in replies is rendered as Unicode math (Notes can't show TeX) — `@sim-verified`
 - Unicode separators and damaged ledger records cannot cause a restart loop — `@built @sim-verified`
 - Complete source text and image evidence enter an auditable request — `@built @sim-verified`
+- Delivery failure stays visible and is not reported as a successful one-shot command — `@built @sim-verified`
 
 **How it does it:** **Source files:** `test_notes_process.py`
 
-**Grade:** @built ×9 · @designed ×1 · @hw-verified ×3 · @sim-verified ×4 · @todo ×1 · @untested ×1
+**Grade:** @built ×10 · @designed ×1 · @hw-verified ×3 · @sim-verified ×5 · @todo ×1 · @untested ×1
 
 
 <a id="notes-variants"></a>

@@ -176,6 +176,39 @@ def test_brain_records_full_backend_messages():
         assert json.loads((Path(d)/'backend-flubuild-response.json').read_text())['text']=='answer'
 
 
+def test_delivery_failure_has_id_and_is_not_retried():
+    import tempfile, types, sys, json
+    from unittest.mock import patch
+    source=dict(note_id='x-coredata://store/ICNote/p1',title='T',text='Full text',age=100,attachments=[])
+    occ=dict(key='tag:one',nid=source['note_id'],title='T',folder='Notes',kind='tag')
+    a=types.SimpleNamespace(settle=5,tag='#process',dry_run=False,llm=sys.executable+' -c "print(12345)"',llm_timeout=10,samples=1,label='Test',done_tag='#done',reply_account='iCloud',reply_folder='Notes')
+    with tempfile.TemporaryDirectory() as d, patch.object(np,'STATE',Path(d)), \
+         patch.object(np,'db'),patch.object(np.notes_input,'snapshot',return_value=source), \
+         patch.object(np,'linked_note',side_effect=RuntimeError('Connection is invalid')) as deliver:
+        seen=set()
+        try:np.handle(occ,a,seen,False)
+        except RuntimeError:pass
+        run=next((Path(d)/'runs').iterdir())
+        assert json.loads((run/'status.json').read_text())['state']=='delivery_uncertain'
+        assert run.name in (run/'reply.md').read_text()
+        np.handle(occ,a,seen,False)
+        assert deliver.call_count==1
+
+
+def test_once_reports_failed_pass_and_defaults_to_no_forced_refresh():
+    import tempfile,sys
+    from unittest.mock import patch
+    with tempfile.TemporaryDirectory() as d,patch.object(np,'STATE',Path(d)), \
+         patch.object(sys,'argv',['notes-process','--once']),patch.object(np,'ledger',return_value=set()), \
+         patch.object(np,'find_occurrences',return_value=[{'key':'x'}]), \
+         patch.object(np,'heal_notes') as heal,patch.object(np,'shortcut_installed',return_value=False), \
+         patch.object(np,'handle',side_effect=RuntimeError('write failed')):
+        try:np.main()
+        except SystemExit as e:assert e.code==1
+        else:raise AssertionError('one-shot failure must return nonzero')
+        heal.assert_called_once_with()
+
+
 if __name__ == '__main__':
     for n, f in list(globals().items()):
         if n.startswith('test_'): f(); print('ok', n)

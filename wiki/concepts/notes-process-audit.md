@@ -34,3 +34,9 @@ This requires the original trigger tag and leaves previous replies intact.
 
 Related: [append Shortcut](notes-process-append-shortcut.md),
 [report card](../../features/notes-process.feature).
+
+Periodic forced Notes refresh is off by default: restarting Notes while another
+worker creates a reply can invalidate that worker's connection (-609). Use
+`--refresh` only deliberately. A failed one-shot command exits nonzero. A failure
+once delivery has started is marked `delivery_uncertain`: check the actual note
+before retrying, since the note may have been created before the error.

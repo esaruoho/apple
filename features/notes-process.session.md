@@ -82,3 +82,12 @@ Thinkspace: this session, with the existing verified transcript link above.
 Areaspace: Notes input preparation, evidence, request audit and additive reply delivery;
 no changes to the shared LLM service or the original Notes content.
 Delivery/live Vision verification pending at authoring time.
+
+Live Keely run NP-20261115T060856Z-43018e9b80fc successfully archived the full
+2,894-character source (inline placeholders removed), a 3,103,922-byte image,
+Vision OCR/classification results, 3,284-character prompt, exact Flubuild messages
+and model reply. Vision found no text in this photograph; classifier labels were
+material/tool/mousetrap at 0.15 confidence. Notes delivery failed with -609 Connection
+is invalid. The error remained visible, revealing another problem: periodic forced
+Notes restarts can race another worker's write. Default refresh changed to off;
+one-shot errors now return nonzero, and delivery errors are marked uncertain.

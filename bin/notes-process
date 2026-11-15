@@ -321,6 +321,7 @@ def handle(occ, a, seen, use_shortcut):
     run = notes_input.start_run(STATE, source, a.tag, key)
     status = dict(id=run.name, note_id=occ['nid'], key=key, tag=a.tag)
     record = dict(key=key, note=occ['nid'], title=occ['title'], run_id=run.name)
+    delivery_started = False
     try:
         vision = notes_input.vision_images(source, run)
         prompt = notes_input.make_prompt(source['text'], a.tag, vision)
@@ -345,6 +346,7 @@ def handle(occ, a, seen, use_shortcut):
               + ('\n\n' + image_summary if vision else '') + '\n' + md)
         (run / 'reply.md').write_text(md, encoding='utf-8')
         notes_input.save_json(run / 'status.json', dict(status, state='delivering', route=route))
+        delivery_started = True
         if use_shortcut and title_count(occ['title']) == 1:
             append_via_shortcut(a.shortcut, occ['title'], md)
             after = osa(INFO, occ['nid']).split('\x1f', 1)[1]
@@ -355,7 +357,7 @@ def handle(occ, a, seen, use_shortcut):
         notes_input.save_json(run / 'status.json', dict(status, state='delivered' if not where.startswith('APPEND NOT') else 'delivery_uncertain', route=route, where=where))
         log(f'{run.name}: {where}')
     except Exception as e:
-        notes_input.save_json(run / 'status.json', dict(status, state='failed', error=str(e), error_type=type(e).__name__))
+        notes_input.save_json(run / 'status.json', dict(status, state='delivery_uncertain' if delivery_started else 'failed', error=str(e), error_type=type(e).__name__))
         log(f'{run.name}: failed; saved at {run}: {e}')
         raise
 
@@ -415,11 +417,14 @@ def one_pass(a):
     use_shortcut = shortcut_installed(a.shortcut)
     if not use_shortcut:
         log(f'Shortcut "{a.shortcut}" not installed → replies go to linked notes')
+    errors = 0
     for o in occs:
         try:
             handle(o, a, seen, use_shortcut)
         except Exception as e:
+            errors += 1
             log(f'error {o.get("title")}: {e}')
+    return 1 if errors else 0
 
 
 def main():
@@ -442,8 +447,8 @@ def main():
     ap.add_argument('--plain-text', action='store_true',
                     help='also catch the tag typed as plain text (not an orange tag)')
     ap.add_argument('--settle', type=int, default=5)
-    ap.add_argument('--refresh', type=int, default=60,
-                    help='relaunch Notes (background) every N s to force iCloud sync; 0 = off')
+    ap.add_argument('--refresh', type=int, default=0,
+                    help='optional Notes refresh interval; default off to avoid interrupting reply delivery')
     ap.add_argument('--samples', type=int, default=1,
                     help='ask N times and reply with the consensus (bin/notes-variants); e.g. --tag "#consensus" --samples 25')
     ap.add_argument('--quorum', type=float, default=0.3, help='--samples: fraction of answers a claim needs')
@@ -466,7 +471,7 @@ def main():
     if a.reprocess and not a.once:
         ap.error('--reprocess requires --once')
     if a.once:
-        return one_pass(a)
+        return sys.exit(one_pass(a) or 0)
     while True:
         try:
             one_pass(a)
