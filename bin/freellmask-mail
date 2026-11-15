@@ -521,7 +521,7 @@ MATERIAL_SECTIONS = (
 # (Esa, 2026-08-12: "where was prigogine from freellmask-mail???").
 # REPORT-CARD >> ~/work/convey/features/marinov-email-voice.feature
 TONE_HEADINGS = ["In Walter Russell's tone", "In Tom Bearden's tone", "In Ilya Prigogine's tone",
-                 "In Hilarion's tone", "In Stefan Marinov's tone", "In Charles Proteus Steinmetz's tone", "In Don Smith's tone",
+                 "In Hilarion's tone", "In Stefan Marinov's tone", "In Charles Proteus Steinmetz's tone", "In Don Smith's tone", "In Nikola Tesla's tone",
                  "In the skeptical closed-system electrical engineer's tone"]
 MATERIAL_HEADINGS = ["Summary", "Key points", "Notable quotes", "People & entities mentioned",
                      "What holds up", "What is worth checking", "Overall assessment"]
@@ -621,6 +621,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "generating immense magnetic flux without drawing down the source electrons; wattless energy transfer "
           "to decoupled secondaries; never load the resonant tank directly — store in a high-voltage capacitor bank "
           "at E = 1/2 C V^2 before doing work)\n"
+          "## In Nikola Tesla's tone\n(2-4 sentences in Tesla's cadence: throughout space there is energy, and men will attach their machinery to the very wheelwork of nature; the self-acting engine drawing energy from the ambient medium through an artificial sink; the earth as a conductor of limited dimensions ringing with stationary waves, energy sent through the earth by resonance; Hertz waves a myth, the medium carrying longitudinal pulses; calm certainty, dated experiments, open-system mechanism stated plainly)\n"
           # The skeptical voice, LAST on purpose (Esa, 2026-08-12). Rigorous, not dismissive: it demands
           # the books balance and names the measurement that would settle it. It is ONE lens of thirteen
           # and it speaks after the open-system readings — it never becomes the frame they are judged by.
@@ -647,11 +648,11 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             sysm=(viewpoint+"\n\n"+base+
                   " Output Markdown with a direct substantive answer. Verified-ledger grounding is "
                   "unavailable on this host, so do NOT add Walter Russell, Tom Bearden, Ilya Prigogine, "
-                  "Hilarion, Stefan Marinov, Charles Proteus Steinmetz, or Don Smith tone sections — answer directly.")
+                  "Hilarion, Stefan Marinov, Charles Proteus Steinmetz, Don Smith, or Nikola Tesla tone sections — answer directly.")
     elif viewpoint:
         sysm=(viewpoint+"\n\n"+base+
               " Output Markdown with a direct substantive answer. FREE_ENERGY_LENS_VOICES is off, "
-              "so do not add Walter Russell, Tom Bearden, Ilya Prigogine, Hilarion, Stefan Marinov, Charles Proteus Steinmetz, or Don Smith tone sections.")
+              "so do not add Walter Russell, Tom Bearden, Ilya Prigogine, Hilarion, Stefan Marinov, Charles Proteus Steinmetz, Don Smith, or Nikola Tesla tone sections.")
     else:           # off-corpus (e.g. parenting) → plain direct answer, no preamble, no tones
         sysm=base+" Output ONLY the final answer — no reasoning preamble; begin directly with the answer."
         if lens:    # a skill-backed space (apple/health/hyp) → frame the answer through the skill's lens
