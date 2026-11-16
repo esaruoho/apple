@@ -101,3 +101,11 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     Given a #process note with no image attachments
     Then the model prompt never mentions images or image evidence
     And the reply answers the note instead of reporting "no image evidence"
+
+  @built
+  # cite: comms/scripts/repo-puller.sh apple post-pull (pkill 'MacOS/Python …/apple/bin/notes-process --watch' — must not match the pane-wrapper argv)
+  # 2026-11-16: NP-20261115T191432Z ran OLD prompt 4 min after the Mini pulled the fix —
+  # the --watch worker had imported notes_input before the pull and was never restarted.
+  Scenario: A pulled fix reaches the running watchers
+    Given the Mini pulls a new apple commit
+    Then the notes-process --watch panes are killed and pane-wrapper relaunches them on new code

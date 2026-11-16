@@ -10,12 +10,6 @@
 
 **13 card conversations** plugged in:
 
-### `070edd2e-d868-47ea-a2ba-a8104dd6a979`  (2026-10-16)
-- Resume: `claude --resume 070edd2e-d868-47ea-a2ba-a8104dd6a979`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/070edd2e-d868-47ea-a2ba-a8104dd6a979.jsonl
-- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
-- Cards touched (7): app-audio-record.feature, apple-energy.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, iphone-compass.feature, iphonemirror-rotated-live-mirror.feature
-
 ### `878e0965-389c-48d8-a4ec-5df46f48edcd`  (2026-10-19)
 - Resume: `claude --resume 878e0965-389c-48d8-a4ec-5df46f48edcd`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/878e0965-389c-48d8-a4ec-5df46f48edcd.jsonl
@@ -84,5 +78,11 @@
 ### `4d241c66-1825-4abe-86eb-abd5cd78289e`  (2026-11-15)
 - Resume: `claude --resume 4d241c66-1825-4abe-86eb-abd5cd78289e`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/4d241c66-1825-4abe-86eb-abd5cd78289e.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (16): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature, mail-material-editor-contract.feature, mail-reply-attachment-fallback.feature, me-address.feature … (+2)
+
+### `109d8f8c-3cc4-44a4-89b3-e03e06cab498`  (2026-11-16)
+- Resume: `claude --resume 109d8f8c-3cc4-44a4-89b3-e03e06cab498`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/109d8f8c-3cc4-44a4-89b3-e03e06cab498.jsonl
 - Tooling touched: INDEX.md, STATUS.md
-- Cards touched (4): aimeat-roundtable.feature, apple-harness.feature, notes-process.feature, transcript-vault-email-analysis.feature
+- Cards touched (1): notes-process.feature
