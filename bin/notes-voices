@@ -42,8 +42,18 @@ print(f'space={space} ({why})', file=sys.stderr)
 viewpoint = mail.VIEWPOINT if space == 'free-energy' else ''
 if space != 'free-energy':
     wctx = ''  # same rule as mail: no free-energy RAG leakage into other spaces
-answer, model = mail.fm_research(note, '', wiki_ctx=wctx, viewpoint=viewpoint)
+# FreeLLMAPI only: never Flubuild/MLX for the voices. All throttled (429) → exit 75 (EX_TEMPFAIL) and
+# notes-process defers the note an hour (Esa 2026-11-17: "if it fails because 429, delay by one hour").
+mail.brain_routes.GATEWAY_ONLY.set(True)
+try:
+    answer, model = mail.fm_research(note, '', wiki_ctx=wctx, viewpoint=viewpoint)
+except Exception as e:
+    answer, model = mail.REQUEUE_FAILED + '\x00\x00\x00' + str(e), ''
 if mail._is_requeue(answer):
-    sys.exit('voices brain gave no deliverable answer: ' + (mail._requeue_why(answer) or 'requeue'))
+    why = mail._requeue_why(answer) or answer.replace('\x00', ' ')
+    if '429' in why or 'Too Many Requests' in why or 'rate-limited' in why or 'exhausted' in why:
+        print('THROTTLED: ' + why[-400:])
+        sys.exit(75)
+    sys.exit('voices brain gave no deliverable answer: ' + why[-400:])
 print(f'route=freellm/{model}', file=sys.stderr)
 print(answer, file=_reply_out)

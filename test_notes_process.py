@@ -231,3 +231,23 @@ def test_once_reports_failed_pass_and_defaults_to_no_forced_refresh():
 if __name__ == '__main__':
     for n, f in list(globals().items()):
         if n.startswith('test_'): f(); print('ok', n)
+
+
+def test_throttled_brain_defers_an_hour_instead_of_answering(tmp_path=None):
+    # Esa 2026-11-17: "if it fails because 429, we delay by one hour the queue and re-try".
+    import sys, tempfile, time as _t
+    try:
+        np.call_llm(sys.executable + ' -c "import sys; sys.stderr.write(\'429\'); raise SystemExit(75)"', 'x', 10)
+        raise AssertionError('rc 75 must raise Deferred')
+    except np.Deferred:
+        pass
+    old = np.STATE
+    with tempfile.TemporaryDirectory() as d:
+        np.STATE = Path(d)
+        try:
+            np.set_deferred('tag:A', _t.time() + 3600)
+            assert 'tag:A' in np.deferred()
+            np.set_deferred('tag:A')
+            assert np.deferred() == {}
+        finally:
+            np.STATE = old

@@ -128,3 +128,12 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     Then it is answered by the same ledger-grounded voice brain as freellmask-mail
     And it routes to free-energy unless an explicit [space:x] tag or a keyword match says otherwise
     And the disabled hyp space is never chosen
+
+  @built @sim-verified
+  # cite: bin/notes-voices (GATEWAY_ONLY, exit 75); bin/notes-process Deferred/deferred()/set_deferred
+  # cite: test_notes_process.py test_throttled_brain_defers_an_hour_instead_of_answering
+  # live 2026-11-17: chain=[exhausted gemini-3.1-flash-lite] → rc 75 in 23s, no Flubuild/Qwen fallback
+  Scenario: A throttled brain defers the note an hour instead of answering thinly
+    Given every FreeLLMAPI model answers 429
+    Then no local model (Flubuild Qwen / MLX) writes the voices
+    And the note is parked in STATE/deferred.json for one hour, then retried by the watcher

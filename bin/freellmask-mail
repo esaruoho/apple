@@ -106,7 +106,7 @@ FM_MODEL  = os.environ.get("FREELLMASK_MAIL_MODEL", "gemini-3.1-flash-lite")
 # and only behind the leak splitter).
 FM_MODEL_CHAIN = [x.strip() for x in os.environ.get(
     "FREELLMASK_MAIL_MODEL_CHAIN",
-    f"{FM_MODEL},free-router,auto").split(",") if x.strip()]
+    f"{FM_MODEL},gemini-3-flash-preview,gemini-2.5-flash,free-router,auto").split(",") if x.strip()]
 # These mean "this endpoint is unavailable right now" — try the next model rather than waiting.
 FM_DEAD_CODES = (429, 500, 502, 503, 504)
 # Big-context escalation: nemotron holds ~256k tokens. When the assembled context (attachments +
@@ -912,6 +912,15 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
 
 # The common researcher covers direct emails, material, model fallbacks and mosaics.
 fm_research = mail_language.guard_research(fm_research, _rewrite_report_language, REQUEUE_FAILED)
+
+# VOICE REPLIES: FreeLLMAPI first, Flubuild/MLX last (Esa 2026-11-17). Only when the voices are on.
+_fm_research_routed = fm_research
+def fm_research(question, thread_context, attachments="", *args, viewpoint="", **kw):
+    token = brain_routes.LOCAL_LAST.set(bool(viewpoint) and lens_voices_enabled())
+    try:
+        return _fm_research_routed(question, thread_context, attachments, *args, viewpoint=viewpoint, **kw)
+    finally:
+        brain_routes.LOCAL_LAST.reset(token)
 
 # REPORT-CARD >> features/mail-material-editor-contract.feature
 # REQUIRED-DUAL-SOURCE-ANALYSES v1

@@ -220,6 +220,33 @@ def ledger():
     return seen
 
 
+class Deferred(Exception):
+    """The brain is throttled (429). The note waits DEFER_SECONDS and is retried, never thin-answered."""
+
+
+DEFER_SECONDS = int(os.environ.get('NOTES_DEFER_SECONDS', '3600'))
+
+
+def deferred():
+    """{tag key: retry-at epoch} for notes parked by a 429 (STATE/deferred.json)."""
+    try:
+        return json.loads((STATE / 'deferred.json').read_text())
+    except (OSError, ValueError):
+        return {}
+
+
+def set_deferred(key, until=None):
+    d = deferred()
+    if until is None:
+        d.pop(key, None)
+    else:
+        d[key] = until
+    STATE.mkdir(parents=True, exist_ok=True)
+    tmp = STATE / 'deferred.json.tmp'
+    tmp.write_text(json.dumps(d, indent=1))
+    tmp.replace(STATE / 'deferred.json')
+
+
 def ledger_add(rec):
     STATE.mkdir(parents=True, exist_ok=True)
     # Shared by #process and #consensus. Lock readers/writers against partial
@@ -258,6 +285,8 @@ def call_llm(cmd, prompt, timeout, context='', audit_dir=None):
         raise
     if attempt:
         notes_input.save_json(attempt / 'response.json', dict(stdout=r.stdout, stderr=r.stderr, returncode=r.returncode))
+    if r.returncode == 75:
+        raise Deferred(r.stderr.strip()[-300:] or 'all FreeLLMAPI routes throttled')
     if r.returncode != 0 or not r.stdout.strip():
         raise RuntimeError(f'llm failed rc={r.returncode}: {r.stderr.strip()[-300:]}')
     route = next((l[6:] for l in r.stderr.splitlines() if l.startswith('route=')), '')
@@ -356,7 +385,7 @@ def handle(occ, a, seen, use_shortcut):
         notes_input.save_json(run / 'status.json', dict(status, state='delivered' if not where.startswith('APPEND NOT') else 'delivery_uncertain', route=route, where=where))
         log(f'{run.name}: {where}')
     except Exception as e:
-        notes_input.save_json(run / 'status.json', dict(status, state='delivery_uncertain' if delivery_started else 'failed', error=str(e), error_type=type(e).__name__))
+        notes_input.save_json(run / 'status.json', dict(status, state='deferred' if isinstance(e, Deferred) else 'delivery_uncertain' if delivery_started else 'failed', error=str(e), error_type=type(e).__name__))
         log(f'{run.name}: failed; saved at {run}: {e}')
         raise
 
@@ -399,10 +428,12 @@ def one_pass(a):
     if (STATE / 'STOP').exists():
         return log(f'STOP file present ({STATE}/STOP) — not processing')
     seen = ledger()
+    due = {k for k, t in deferred().items() if t <= time.time()}
+    seen -= due  # a deferred note was claimed; once its hour is up it is handled again
     occs = [o for o in find_occurrences(a.tag) if o['key'] not in seen]
     if a.reprocess:
         import uuid
-        occs = [dict(o, key='manual:' + uuid.uuid4().hex) for o in find_occurrences(a.tag) if o['nid'] == a.reprocess]
+        occs = [dict(o, key='manual:' + uuid.uuid4().hex, defer_key=o['key']) for o in find_occurrences(a.tag) if o['nid'] == a.reprocess]
         if not occs:
             raise ValueError('no matching tagged note for --reprocess')
     if a.plain_text:
@@ -418,8 +449,15 @@ def one_pass(a):
         log(f'Shortcut "{a.shortcut}" not installed → replies go to linked notes')
     errors = 0
     for o in occs:
+        dkey = o.get('defer_key') or o.get('key')
         try:
             handle(o, a, seen, use_shortcut)
+            if dkey:
+                set_deferred(dkey)  # answered: drop any parked retry
+        except Deferred as e:
+            if dkey:
+                set_deferred(dkey, time.time() + DEFER_SECONDS)
+            log(f'deferred {o.get("title")}: brain throttled (429) — retrying in {DEFER_SECONDS // 60} min')
         except Exception as e:
             errors += 1
             log(f'error {o.get("title")}: {e}')
