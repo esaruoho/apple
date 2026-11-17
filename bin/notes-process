@@ -340,10 +340,9 @@ def handle(occ, a, seen, use_shortcut):
         reply = sanitize(reply, a.tag)
         md = reply_markdown(reply, f'{a.label} · {route.split("/")[-1]}' if route else a.label, a.done_tag)
         source_text = tag_re(a.tag).sub('', source['text']).strip()
-        image_summary = '\n'.join(f"- Image {i}: {v['state']}; Vision text {len(v.get('text', ''))} chars" for i, v in enumerate(vision, 1))
         md = (f'**Processing ID: {run.name}**\n\n'
               f'## Source note\n\n' + '\n'.join('> ' + l for l in source_text.split('\n'))
-              + ('\n\n' + image_summary if vision else '') + '\n' + md)
+              + '\n' + md)
         (run / 'reply.md').write_text(md, encoding='utf-8')
         notes_input.save_json(run / 'status.json', dict(status, state='delivering', route=route))
         delivery_started = True

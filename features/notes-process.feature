@@ -109,3 +109,12 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
   Scenario: A pulled fix reaches the running watchers
     Given the Mini pulls a new apple commit
     Then the notes-process --watch panes are killed and pane-wrapper relaunches them on new code
+
+  @built @sim-verified
+  # cite: bin/notes_input.py make_prompt(); test_notes_process.py test_image_prompt_is_conversation_not_report
+  # 2026-11-17 NP-20261117T054235Z "Tesla induction" + diagram → evidence report, not a conversation.
+  Scenario: A note with a picture gets a conversation, not a pipeline report
+    Given a #process note with text and an image
+    Then the prompt is the note verbatim plus the picture's read text
+    And it carries no "process/evidence/report/classification label" framing
+    And the reply above the answer shows no per-image processing summary

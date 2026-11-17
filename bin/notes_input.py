@@ -112,16 +112,18 @@ def vision_images(source, run):
 
 
 def make_prompt(text, tag, vision):
+    """The note IS the message: send it verbatim so the model talks to Esa about it.
+    Images join as plain text he wrote on the page. Never add processing/report/label framing:
+    2026-11-15 and 2026-11-17 "image evidence" wording turned every reply into a pipeline report."""
     import re
     text = re.sub(re.escape(tag) + r'(?![\w-])', '', text, flags=re.I).replace('\ufffc', '').strip()
-    if not vision:
-        # Text-only note: say nothing about images, or the model reports "no image evidence".
-        return 'Process the complete source note below.\n\nSOURCE NOTE:\n' + text
-    chunks = ['Process the complete source note below. Use its text and the attached image evidence together. '
-              'Image labels are uncertain classifier suggestions, not a detailed visual interpretation. '
-              'Report failed image processing explicitly.\n\nSOURCE NOTE:\n' + text]
-    for i, image in enumerate(vision, 1):
-        chunks.append(f"IMAGE {i} ({image['uti']}, {image['state']}):\n"
-                      + 'Apple Vision recognized text:\n' + (image.get('text') or '[no text recognized]')
-                      + '\nApple Vision classification labels:\n' + (image.get('labels') or '[no labels]'))
+    pictures = [v.get('text', '').strip() for v in vision if v.get('state') == 'ok' and v.get('text', '').strip()]
+    if not pictures:
+        return text
+    chunks = [text]
+    for i, ptext in enumerate(pictures, 1):
+        name = 'my picture' if len(pictures) == 1 else f'my picture {i}'
+        chunks.append(f'[Text from {name}:]\n{ptext}')
+    chunks.append('(Talk with me about this as one thing: my note plus the picture. '
+                  'Engage the idea itself; do not describe the picture or how it was read.)')
     return '\n\n'.join(chunks)

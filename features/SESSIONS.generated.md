@@ -81,8 +81,8 @@
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
 - Cards touched (16): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, apple-harness.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature, mail-material-editor-contract.feature, mail-reply-attachment-fallback.feature, me-address.feature … (+2)
 
-### `109d8f8c-3cc4-44a4-89b3-e03e06cab498`  (2026-11-16)
+### `109d8f8c-3cc4-44a4-89b3-e03e06cab498`  (2026-11-16 → 2026-11-17)
 - Resume: `claude --resume 109d8f8c-3cc4-44a4-89b3-e03e06cab498`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/109d8f8c-3cc4-44a4-89b3-e03e06cab498.jsonl
-- Tooling touched: INDEX.md, STATUS.md
-- Cards touched (1): notes-process.feature
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (19): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, app-audio-record.feature, apple-energy.feature, apple-harness.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature … (+5)

@@ -79,7 +79,19 @@ def test_full_source_and_vision_prompt_preserve_first_paragraph():
     src = 'The entire important first paragraph.\n\n#JohnKeely\n' + O
     prompt = np.notes_input.make_prompt(src, '#process', [dict(uti='public.png', state='ok', text='12 volts', labels='coil 0.7')])
     assert 'The entire important first paragraph.' in prompt
-    assert '#JohnKeely' in prompt and '12 volts' in prompt and 'coil 0.7' in prompt
+    assert '#JohnKeely' in prompt and '12 volts' in prompt
+
+
+def test_image_prompt_is_conversation_not_report():
+    # Bug 2026-11-17: "Tesla induction" + diagram got an evidence report instead of a conversation.
+    note = 'Tesla induction\n\nArmature field at right angle to inducing field. #process'
+    prompt = np.notes_input.make_prompt(note, '#process', [dict(uti='public.png', state='ok', text='Exciters Field', labels='art 0.58')])
+    assert prompt.startswith('Tesla induction')
+    assert 'Exciters Field' in prompt
+    for junk in ('art 0.58', 'classif', 'evidence', 'Report', 'Process the', 'Apple Vision'):
+        assert junk not in prompt, junk
+    failed = np.notes_input.make_prompt(note, '#process', [dict(uti='public.png', state='error', text='', labels='')])
+    assert failed == 'Tesla induction\n\nArmature field at right angle to inducing field.'
 
 
 def test_text_only_prompt_never_mentions_images():
