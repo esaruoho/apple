@@ -118,3 +118,13 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     Then the prompt is the note verbatim plus the picture's read text
     And it carries no "process/evidence/report/classification label" framing
     And the reply above the answer shows no per-image processing summary
+
+  @built
+  # cite: bin/notes-voices (imports bin/freellmask-mail: route_space, wiki_context, fm_research)
+  # cite: bin/notes-process main() — #process → notes-voices, #consensus → notes-brain
+  # local run 2026-11-17: "Tesla induction" → Thought/Answer + 11 voice tones + skeptic, 13.7 kB
+  Scenario: #process notes get the voices
+    Given a #process note
+    Then it is answered by the same ledger-grounded voice brain as freellmask-mail
+    And it routes to free-energy unless an explicit [space:x] tag or a keyword match says otherwise
+    And the disabled hyp space is never chosen

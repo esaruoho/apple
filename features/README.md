@@ -1062,7 +1062,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/notes-process.feature` · [session](notes-process.session.md)
 
-**Behaviour (16 scenarios):**
+**Behaviour (17 scenarios):**
 
 - A real orange Notes tag is found (2026-11-08, note p13544) — `@built @hw-verified`
 - Fallback — reply as a linked rich-text note (note p13583) — `@built @hw-verified`
@@ -1080,10 +1080,11 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - Text-only notes get no image instructions — `@built @sim-verified`
 - A pulled fix reaches the running watchers — `@built`
 - A note with a picture gets a conversation, not a pipeline report — `@built @sim-verified`
+- #process notes get the voices — `@built`
 
 **How it does it:** **Source files:** `test_notes_process.py`, `bin/notes_input.py`
 
-**Grade:** @built ×13 · @designed ×1 · @hw-verified ×4 · @sim-verified ×7 · @todo ×1 · @untested ×1
+**Grade:** @built ×14 · @designed ×1 · @hw-verified ×4 · @sim-verified ×7 · @todo ×1 · @untested ×1
 
 
 <a id="notes-variants"></a>

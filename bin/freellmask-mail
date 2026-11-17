@@ -648,7 +648,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "## Thought about it\n(4-7 sentences of GENUINE reasoning — how you're approaching it, what connects "
           "across the sources, where the tension is. Think out loud, here only.)\n"
           "## Answer\n(the substantive, concrete analysis — grounded in the wiki context + your knowledge)\n"
-          + (MATERIAL_SECTIONS if material else "") +
+          + (MATERIAL_SECTIONS if material else "")
           + _voice_template() +
           # The skeptical voice, LAST on purpose (Esa, 2026-08-12). Rigorous, not dismissive: it demands
           # the books balance and names the measurement that would settle it. It is ONE lens of thirteen
@@ -1649,7 +1649,9 @@ def _load_spaces_config():
         try:
             data=json.loads(FA_SPACES_CONFIG.read_text())
             for sid,card in (data.get("spaces") or data).items():
-                if isinstance(card, dict): SPACECARDS[sid]=card
+                # "disabled": true keeps a card on file but out of routing (hyp, 2026-11-17).
+                if isinstance(card, dict) and card.get("disabled"): SPACECARDS.pop(sid, None)
+                elif isinstance(card, dict): SPACECARDS[sid]=card
         except Exception as e:
             print(f"fa-spaces-config load error: {e}")
 _load_spaces_config()

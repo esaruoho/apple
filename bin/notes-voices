@@ -1,0 +1,45 @@
+#!/opt/homebrew/bin/python3
+"""notes-voices — #process brain that answers WITH the voices (stdin note → stdout markdown).
+
+Card: features/notes-process.feature ("#process notes get the voices").
+Not a second copy of the voice system: it imports bin/freellmask-mail and calls the SAME
+route_space() + wiki_context() + fm_research() the mail agent uses. So the roster
+(convey kb/roster/sages.yaml), the ledger grounding (convey.voice_grounding), the heading
+contract and the verbatim-quote citation gate are all shared. A free-energy note gets
+"Thought about it / Answer / In <voice>'s tone…". Any other space gets a plain direct answer.
+On requeue/failure it exits 1, so notes-process saves the failure and never delivers junk.
+Made 2026-11-17 at Esa's request: "why don't we have the voices weighing in in the #process notes?"
+"""
+import importlib.machinery, importlib.util, sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+loader = importlib.machinery.SourceFileLoader('freellmask_mail', str(HERE / 'freellmask-mail'))
+spec = importlib.util.spec_from_loader('freellmask_mail', loader)
+mail = importlib.util.module_from_spec(spec)
+loader.exec_module(mail)
+
+note = sys.stdin.read().strip()
+if not note:
+    sys.exit('empty note')
+subject = note.splitlines()[0][:120]
+owner = sorted(mail.OWNER_ADDRS)[0] if mail.OWNER_ADDRS else ''
+try:
+    wctx, wslugs = mail.wiki_context(note)
+except Exception as e:
+    print(f'wiki context unavailable: {e}', file=sys.stderr)
+    wctx, wslugs = '', []
+space, why = mail.route_space(owner, subject, note, wslugs)
+# #process notes are Esa's research notebook: voices by default. Only an explicit [space:x] tag or a
+# clear keyword match moves a note elsewhere; the LLM guess sent "Tesla induction" to hyp (2026-11-17).
+if not (why == 'explicit-tag' or why.startswith('keywords:')):
+    space, why = 'free-energy', f'notes-default (router guessed {space}/{why})'
+print(f'space={space} ({why})', file=sys.stderr)
+viewpoint = mail.VIEWPOINT if space == 'free-energy' else ''
+if space != 'free-energy':
+    wctx = ''  # same rule as mail: no free-energy RAG leakage into other spaces
+answer, model = mail.fm_research(note, '', wiki_ctx=wctx, viewpoint=viewpoint)
+if mail._is_requeue(answer):
+    sys.exit('voices brain gave no deliverable answer: ' + (mail._requeue_why(answer) or 'requeue'))
+print(f'route=freellm/{model}', file=sys.stderr)
+print(answer)
