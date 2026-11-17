@@ -10,10 +10,14 @@ contract and the verbatim-quote citation gate are all shared. A free-energy note
 On requeue/failure it exits 1, so notes-process saves the failure and never delivers junk.
 Made 2026-11-17 at Esa's request: "why don't we have the voices weighing in in the #process notes?"
 """
-import importlib.machinery, importlib.util, sys
+import contextlib, importlib.machinery, importlib.util, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+# The mail engine prints progress ("↻ still missing…", 429s) to stdout; stdout here IS the reply.
+# Everything it prints goes to stderr; only the final answer is written to stdout (2026-11-17).
+_reply_out = sys.stdout
+sys.stdout = sys.stderr
 loader = importlib.machinery.SourceFileLoader('freellmask_mail', str(HERE / 'freellmask-mail'))
 spec = importlib.util.spec_from_loader('freellmask_mail', loader)
 mail = importlib.util.module_from_spec(spec)
@@ -42,4 +46,4 @@ answer, model = mail.fm_research(note, '', wiki_ctx=wctx, viewpoint=viewpoint)
 if mail._is_requeue(answer):
     sys.exit('voices brain gave no deliverable answer: ' + (mail._requeue_why(answer) or 'requeue'))
 print(f'route=freellm/{model}', file=sys.stderr)
-print(answer)
+print(answer, file=_reply_out)
