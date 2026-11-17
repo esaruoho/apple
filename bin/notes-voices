@@ -55,5 +55,12 @@ if mail._is_requeue(answer):
         print('THROTTLED: ' + why[-400:])
         sys.exit(75)
     sys.exit('voices brain gave no deliverable answer: ' + why[-400:])
+# Complete voices or nothing: the mail engine ships a "partial mosaic" when the gateway drops out
+# mid-run (2026-11-17: FreeLLMAPI restarted for an update, Bearden + Bedini vanished). #process defers.
+if viewpoint and mail.lens_voices_enabled():
+    missing = [h for h in mail.TONE_HEADINGS if f'## {h}' not in answer]
+    if missing:
+        print('INCOMPLETE (deferring): missing ' + ', '.join(missing))
+        sys.exit(75)
 print(f'route=freellm/{model}', file=sys.stderr)
 print(answer, file=_reply_out)

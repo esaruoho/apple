@@ -137,3 +137,10 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
     Given every FreeLLMAPI model answers 429
     Then no local model (Flubuild Qwen / MLX) writes the voices
     And the note is parked in STATE/deferred.json for one hour, then retried by the watcher
+
+  @built
+  # cite: bin/notes-voices (missing TONE_HEADINGS → exit 75)
+  # 2026-11-17 NP-20261117T112857Z: FreeLLMAPI restarted mid-run → "partial mosaic", Bearden + Bedini missing
+  Scenario: A partial set of voices is deferred, never delivered
+    Given the brain returns without every voice section
+    Then the note is deferred an hour like a 429, not delivered
