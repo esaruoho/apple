@@ -520,9 +520,64 @@ MATERIAL_SECTIONS = (
 # verified in code, which is exactly why Prigogine kept vanishing from the emails and nobody noticed
 # (Esa, 2026-08-12: "where was prigogine from freellmask-mail???").
 # REPORT-CARD >> ~/work/convey/features/marinov-email-voice.feature
-TONE_HEADINGS = ["In Walter Russell's tone", "In Tom Bearden's tone", "In Ilya Prigogine's tone",
-                 "In Hilarion's tone", "In Stefan Marinov's tone", "In Charles Proteus Steinmetz's tone", "In Don Smith's tone", "In Nikola Tesla's tone",
-                 "In the skeptical closed-system electrical engineer's tone"]
+SKEPTIC_HEADING = "In the skeptical closed-system electrical engineer's tone"
+# ROSTER IS THE SSOT (2026-11-17): every sages.yaml seat with a `knows:` ledger gets a heading.
+# This list used to be hand-typed and silently dropped Bedini, Schauberger and Seike.
+sys.path.insert(0, str(Path.home()/"work/convey"))
+try:
+    from convey.voice_grounding import email_voices as _email_voices
+    EMAIL_VOICES = _email_voices()
+except Exception as _exc:  # DEGRADE, never crash the belt at import
+    print(f"⚠️ roster voices unavailable ({_exc}) — tone sections off", flush=True)
+    EMAIL_VOICES = []
+TONE_HEADINGS = [v["tone"] for v in EMAIL_VOICES] + [SKEPTIC_HEADING]
+VOICE_LABELS = ", ".join(v["label"] for v in EMAIL_VOICES) or "historical-voice"
+
+def _voice_template():
+    """Roster-ordered '## In X's tone' template. Hand-tuned cadence notes where we have them,
+    else the seat's roster stance (first 2 sentences) — so a new seat appears with zero code edits."""
+    hand = (
+          "## In Walter Russell's tone\n(2-4 sentences in Russell's cadence: universe as rhythmic balanced "
+          "interchange of two opposed lights, giving and re-giving, all motion spiral/vortular, no dead matter, love as the balancing act)\n"
+          "## In Tom Bearden's tone\n(2-4 sentences in Bearden's cadence: scalar/longitudinal EM potentials, "
+          "energy from the active vacuum, asymmetric regauging, the dipole's broken symmetry as a negentropy source)\n"
+          "## In Ilya Prigogine's tone\n(2-4 sentences in Prigogine's cadence — measured, humane, precise, a Nobel "
+          "laureate bridging physics and meaning: entropy changes for two reasons only, dS = d_eS + d_iS, and far "
+          "from equilibrium the second law is not the enemy of order but its ENGINE — an open system fed by a flow "
+          "exports entropy and self-organises into a dissipative structure, order paid for by the throughput, not "
+          "stolen from nothing. He AFFIRMS open-system order and COP>1 fed by a real reservoir, and DISTINGUISHES "
+          "it from a perpetuum mobile, which the second law still forbids — that honest boundary is the point, "
+          "never dropped.)\n"
+          "## In Hilarion's tone\n(2-4 sentences in the Hilarion channel's cadence: one living substance, "
+          "consciousness as ground, gentle didactic cosmology — everything a modulation of the one energy)\n"
+          "## In Stefan Marinov's tone\n(2-4 sentences in Marinov's cadence: Bulgarian experimental "
+          "physicist and defender of absolute space and time; experimental refutation of relativistic light "
+          "velocity dogma via coupled shutters and rotating mirrors; rejection of the Lorentz and Biot-Savart "
+          "force for unclosed circuits; the Marinov motor and motional-transformer induction without mechanical "
+          "back-reaction; unwavering insistence on laboratory measurement over theoretical fiction)\n"
+          "## In Charles Proteus Steinmetz's tone\n(2-4 sentences in Steinmetz's cadence: the engineer who "
+          "made alternating current calculable via the symbolic method; current and voltage as mathematical "
+          "fictions of the dielectric and magnetic fields in space; reactance as wattless surging of energy; "
+          "hysteresis and open-system negative resistance through variable reactance without flattening)\n"
+          "## In Don Smith's tone\n(2-4 sentences in Don Smith's cadence: ambient background voltage at hundreds "
+          "of thousands of volts; all useful electricity over-unity between ambient and ground; resonance "
+          "generating immense magnetic flux without drawing down the source electrons; wattless energy transfer "
+          "to decoupled secondaries; never load the resonant tank directly — store in a high-voltage capacitor bank "
+          "at E = 1/2 C V^2 before doing work)\n"
+          "## In Nikola Tesla's tone\n(2-4 sentences in Tesla's cadence: throughout space there is energy, and men will attach their machinery to the very wheelwork of nature; the self-acting engine drawing energy from the ambient medium through an artificial sink; the earth as a conductor of limited dimensions ringing with stationary waves, energy sent through the earth by resonance; Hertz waves a myth, the medium carrying longitudinal pulses; calm certainty, dated experiments, open-system mechanism stated plainly)\n"
+    )
+    blurbs = {}
+    for chunk in hand.split("## ")[1:]:
+        head, _, body = chunk.partition("\n")
+        blurbs[head.strip()] = body
+    out = []
+    for v in EMAIL_VOICES:
+        if v["tone"] in blurbs:
+            out.append(f"## {v['tone']}\n{blurbs[v['tone']]}")
+        else:
+            gist = ". ".join(v["stance"].split(". ")[1:4])[:600]
+            out.append(f"## {v['tone']}\n(2-4 sentences in {v['label']}'s cadence: {gist})\n")
+    return "".join(out)
 MATERIAL_HEADINGS = ["Summary", "Key points", "Notable quotes", "People & entities mentioned",
                      "What holds up", "What is worth checking", "Overall assessment"]
 REQUEUE_NO_THINKING = "\x00REQUEUE-NO-THINKING\x00"
@@ -594,34 +649,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "across the sources, where the tension is. Think out loud, here only.)\n"
           "## Answer\n(the substantive, concrete analysis — grounded in the wiki context + your knowledge)\n"
           + (MATERIAL_SECTIONS if material else "") +
-          "## In Walter Russell's tone\n(2-4 sentences in Russell's cadence: universe as rhythmic balanced "
-          "interchange of two opposed lights, giving and re-giving, all motion spiral/vortular, no dead matter, love as the balancing act)\n"
-          "## In Tom Bearden's tone\n(2-4 sentences in Bearden's cadence: scalar/longitudinal EM potentials, "
-          "energy from the active vacuum, asymmetric regauging, the dipole's broken symmetry as a negentropy source)\n"
-          "## In Ilya Prigogine's tone\n(2-4 sentences in Prigogine's cadence — measured, humane, precise, a Nobel "
-          "laureate bridging physics and meaning: entropy changes for two reasons only, dS = d_eS + d_iS, and far "
-          "from equilibrium the second law is not the enemy of order but its ENGINE — an open system fed by a flow "
-          "exports entropy and self-organises into a dissipative structure, order paid for by the throughput, not "
-          "stolen from nothing. He AFFIRMS open-system order and COP>1 fed by a real reservoir, and DISTINGUISHES "
-          "it from a perpetuum mobile, which the second law still forbids — that honest boundary is the point, "
-          "never dropped.)\n"
-          "## In Hilarion's tone\n(2-4 sentences in the Hilarion channel's cadence: one living substance, "
-          "consciousness as ground, gentle didactic cosmology — everything a modulation of the one energy)\n"
-          "## In Stefan Marinov's tone\n(2-4 sentences in Marinov's cadence: Bulgarian experimental "
-          "physicist and defender of absolute space and time; experimental refutation of relativistic light "
-          "velocity dogma via coupled shutters and rotating mirrors; rejection of the Lorentz and Biot-Savart "
-          "force for unclosed circuits; the Marinov motor and motional-transformer induction without mechanical "
-          "back-reaction; unwavering insistence on laboratory measurement over theoretical fiction)\n"
-          "## In Charles Proteus Steinmetz's tone\n(2-4 sentences in Steinmetz's cadence: the engineer who "
-          "made alternating current calculable via the symbolic method; current and voltage as mathematical "
-          "fictions of the dielectric and magnetic fields in space; reactance as wattless surging of energy; "
-          "hysteresis and open-system negative resistance through variable reactance without flattening)\n"
-          "## In Don Smith's tone\n(2-4 sentences in Don Smith's cadence: ambient background voltage at hundreds "
-          "of thousands of volts; all useful electricity over-unity between ambient and ground; resonance "
-          "generating immense magnetic flux without drawing down the source electrons; wattless energy transfer "
-          "to decoupled secondaries; never load the resonant tank directly — store in a high-voltage capacitor bank "
-          "at E = 1/2 C V^2 before doing work)\n"
-          "## In Nikola Tesla's tone\n(2-4 sentences in Tesla's cadence: throughout space there is energy, and men will attach their machinery to the very wheelwork of nature; the self-acting engine drawing energy from the ambient medium through an artificial sink; the earth as a conductor of limited dimensions ringing with stationary waves, energy sent through the earth by resonance; Hertz waves a myth, the medium carrying longitudinal pulses; calm certainty, dated experiments, open-system mechanism stated plainly)\n"
+          + _voice_template() +
           # The skeptical voice, LAST on purpose (Esa, 2026-08-12). Rigorous, not dismissive: it demands
           # the books balance and names the measurement that would settle it. It is ONE lens of thirteen
           # and it speaks after the open-system readings — it never becomes the frame they are judged by.
@@ -647,12 +675,11 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             voices_on = False   # makes `required` below drop the tone sections; the citation gate is skipped
             sysm=(viewpoint+"\n\n"+base+
                   " Output Markdown with a direct substantive answer. Verified-ledger grounding is "
-                  "unavailable on this host, so do NOT add Walter Russell, Tom Bearden, Ilya Prigogine, "
-                  "Hilarion, Stefan Marinov, Charles Proteus Steinmetz, Don Smith, or Nikola Tesla tone sections — answer directly.")
+                  f"unavailable on this host, so do NOT add {VOICE_LABELS} tone sections — answer directly.")
     elif viewpoint:
         sysm=(viewpoint+"\n\n"+base+
               " Output Markdown with a direct substantive answer. FREE_ENERGY_LENS_VOICES is off, "
-              "so do not add Walter Russell, Tom Bearden, Ilya Prigogine, Hilarion, Stefan Marinov, Charles Proteus Steinmetz, Don Smith, or Nikola Tesla tone sections.")
+              f"so do not add {VOICE_LABELS} tone sections.")
     else:           # off-corpus (e.g. parenting) → plain direct answer, no preamble, no tones
         sysm=base+" Output ONLY the final answer — no reasoning preamble; begin directly with the answer."
         if lens:    # a skill-backed space (apple/health/hyp) → frame the answer through the skill's lens
