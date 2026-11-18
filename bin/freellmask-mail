@@ -485,12 +485,9 @@ MLX_HOST  = os.environ.get("FREELLMASK_MAIL_MLX_HOST", "http://cloudcitymacmini:
 # every other caller too, so guessing wrong is not a private mistake.
 # So: try the candidates in order and keep the first that actually GENERATES. Probing is the only
 # check that cannot go stale (2026-08-12).
-MLX_CANDIDATES = [c for c in [
-    os.environ.get("FREELLMASK_MAIL_MLX_MODEL"),
-    os.environ.get("CONVEY_MLX_MODEL"),
-    "Qwen/Qwen3-14B-MLX-4bit",
-    "mlx-community/Qwen3-4B-Instruct-2507-8bit",
-] if c]
+# 2026-11-18: name NO model — 'default_model' is whatever mlx_lm.server was started with. Naming any
+# other id makes the server LOAD it beside the resident one (a 14B on a 32 GB Mini → swap death spiral).
+MLX_CANDIDATES = [os.environ.get("FREELLMASK_MAIL_MLX_MODEL") or "default_model"]
 MLX_MODEL = MLX_CANDIDATES[0]          # provisional; _mlx_alive() settles it against the server
 
 # The four sections that used to be a SEPARATE email from `convey email-transcript --analyze`. They

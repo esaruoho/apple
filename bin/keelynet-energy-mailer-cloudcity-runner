@@ -30,7 +30,7 @@ fi
 
 export KEELYNET_MAILER_STATE="$STATE_DIR/state.json"
 export KEELYNET_MLX_HOST="http://127.0.0.1:8080/v1/chat/completions"
-export KEELYNET_MLX_MODEL="Qwen/Qwen3-14B-MLX-4bit"
-export KEELYNET_MLX_LABEL="Qwen3-14B-MLX-4bit"
+export KEELYNET_MLX_MODEL="default_model"   # never name a model: see fm-mlx
+export KEELYNET_MLX_LABEL="MLX/Qwen (Mini)"
 
 bin/keelynet-energy-mailer --limit "${KEELYNET_MAILER_LIMIT:-1}"

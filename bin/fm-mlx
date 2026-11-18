@@ -32,7 +32,9 @@ SSH_HOST="${FM_MLX_SSH_HOST:-100.117.30.102}"
 # Per-call HTTP budget. Batch callers (convey relay) raise it: the Mini GPU is shared with the OCR
 # worker, and a 180s ceiling failed every long mail-belt chunk under load (2026-11-18).
 MLX_TIMEOUT="${FM_MLX_TIMEOUT:-180}"
-MODEL_ID="${FM_MLX_MODEL:-mlx-community/Qwen3-4B-Instruct-2507-8bit}"
+# 2026-11-18: name NO model — 'default_model' is whatever mlx_lm.server was started with. Naming any
+# other id makes the server LOAD it beside the resident one (a 14B on a 32 GB Mini → swap death spiral).
+MODEL_ID="${FM_MLX_MODEL:-default_model}"
 MODEL_LABEL="${FM_MLX_MODEL_LABEL:-MLX/Qwen3-4B-8bit}"
 
 say="auto"                      # auto = talk on an interactive terminal; --say forces, --quiet disables
