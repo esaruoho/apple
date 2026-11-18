@@ -35,6 +35,7 @@
 #
 # RESULT-LOG >> (auto-maintained by the report-card hooks — newest below)
 #   2026-11-18  direct-commit  touched: resolve
+#   2026-11-18  direct-commit  touched: resolve
 #   2026-11-17  direct-commit  touched: resolve
 #   2026-11-17  direct-commit  touched: describe
 #   2026-11-15  direct-commit  touched: extract resolve

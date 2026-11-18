@@ -205,6 +205,7 @@ def http(url, key, method="GET", body=None):
             detail = ""
             try: detail = (e.read() or b"").decode("utf-8", "replace").strip()[:400]
             except Exception: pass
+            finally: e.close()       # FD-LEAK guard: an HTTPError holds its socket until closed
             # A 429 whose body says the pool has NO USABLE KEY is PERMANENT, not transient.
             # Retrying it (5s, then 10s) — inside fm_research's tries=4..12, inside compose's
             # heading gate — is what turned a 10ms refusal into a 27-minute silence.
@@ -378,6 +379,11 @@ def _fm_call_one(messages, max_tokens=3000, temperature=0.3, model=None, patient
         try:
             with urllib.request.urlopen(req, timeout=CALL_TIMEOUT) as r: d=json.load(r); break
         except urllib.error.HTTPError as e:
+            # FD-LEAK guard (2026-11-18): a caught HTTPError keeps its socket open until GC; a 429/502
+            # retry storm on 2026-11-16 ran the belt into [Errno 24] for 5h. Read what we need, close.
+            try: _err_body = e.read()
+            except Exception: _err_body = b""
+            e.close()
             # 429 = free-tier per-minute cap (Gemini) or provider throttle. DON'T fail — WAIT for the
             # window to clear (≈40s, or the server's Retry-After if longer), then retry. This is the
             # "delayed" automatic pacing: the call is deferred, never pushed past the free tier.
@@ -3201,6 +3207,24 @@ def belt_priority(p: Path, folder: Path):
     return (0 if rel[:1] == ("now",) else 1, -mt)
 
 
+def _open_fds():
+    """Open file descriptors in this process (macOS /dev/fd); -1 if unknown."""
+    try: return len(os.listdir("/dev/fd"))
+    except Exception: return -1
+
+
+def _raise_fd_limit(want=4096):
+    """The Mini's pane shells inherit a 256 soft limit — a few hundred gateway retries hit it."""
+    try:
+        import resource
+        soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+        target = want if hard == resource.RLIM_INFINITY else min(want, hard)
+        if soft < target:
+            resource.setrlimit(resource.RLIMIT_NOFILE, (target, hard))
+    except Exception:
+        pass
+
+
 def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", chapters=False,
              tries=4, limit=0, once=False, verbose=True, no_legs=False):
     """Drain a folder one proper analysis at a time. Returns (n_sent, n_failed)."""
@@ -3239,6 +3263,7 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
     except Exception: pass
     atexit.register(lambda: shutil.rmtree(lock, ignore_errors=True))
     code_version = code_digest()
+    _raise_fd_limit()
     while True:
         if code_digest() != code_version:
             shutil.rmtree(lock, ignore_errors=True)
@@ -3282,6 +3307,16 @@ def belt_run(folder, to, every=1800, tag="default", pattern="*.txt", space="", c
                                             space_hint=space, verbose=verbose)
             except Exception as e:                      # one bad file must never stop the belt
                 ok, info = False, f"belt error: {e}"
+            # FD-LEAK self-heal (2026-11-18): [Errno 24] once failed 355 items in a row for 5h (every
+            # file, instantly) because leaked descriptors never come back. Re-exec instead: exec closes
+            # every non-inheritable fd, and the item is NOT ledgered, so it is simply retried fresh.
+            if "Errno 24" in str(info) or "Too many open files" in str(info):
+                print(f"   ♻️ out of file descriptors ({_open_fds()} open) — re-exec to shed them",
+                      flush=True)
+                shutil.rmtree(lock, ignore_errors=True)
+                os.execv(sys.executable, [sys.executable, str(Path(__file__).resolve())] + sys.argv[1:])
+            if verbose:
+                print(f"   🔢 fds open: {_open_fds()}", flush=True)
             # A failure is ledgered too, but in the FAILED ledger — so the next pass retries it
             # instead of the belt silently deciding that file was never worth mailing.
             belt_record(tag, key, p, ok, info)
