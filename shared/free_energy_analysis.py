@@ -27,10 +27,27 @@ MAIN_SYS = (
     "short sentence saying there is no visual source in this packet. Keep it concise but useful."
 )
 
+def _roster_names():
+    """Lens roster from convey's sages.yaml (the SSOT); hardcoded fallback if convey is absent."""
+    try:
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path.home() / "work/convey"))
+        from convey.voice_grounding import email_voices
+        names = [v["name"] for v in email_voices()]
+        if names:
+            return ", ".join(f"**{n}**" for n in names)
+    except Exception:
+        pass
+    return "**Russell**, **Bearden**, **Prigogine**, **Hilarion**, **Steinmetz**, **Don Smith**, **Keely**"
+
+
+_ROSTER = _roster_names()
+
 LENS_SYS = (
     "\n\nBecause FREE_ENERGY_LENS_VOICES is enabled, include one final section exactly named "
     "## Cross-Lens Reads — but it is a privilege the material has to earn, not a form to fill. "
-    "The roster is **Russell**, **Bearden**, **Prigogine**, **Hilarion**, **Steinmetz**, **Don Smith**, **Keely**. "
+    "The roster is " + _ROSTER + ". "
     "A lens bullet is allowed ONLY when that voice can say something concrete and grounded about a "
     "mechanism, claim, or reservoir the text actually puts on the table — naming the specific thing in the "
     "text it reads. Two hard bans: (1) NEVER an absence bullet ('no reference to scalar waves', 'no mention "

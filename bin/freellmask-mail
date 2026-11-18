@@ -1613,7 +1613,7 @@ SPACECARDS = {
                   "reactive power","reactive-power","reactive energy","longitudinal","longitudinal waves",
                   "radiant energy","cold electricity","zero point","zero-point","zpe","phase conjugation",
                   "phase-conjugate","bearden","bedini","russell","walter russell","steinmetz","don smith",
-                  "donald smith","keely","sympathetic vibration","etheric force","tesla coil","magnifying transmitter","asymmetrical regauging","open system",
+                  "donald smith","tesla coil","magnifying transmitter","asymmetrical regauging","open system",
                   "open-system","vacuum reservoir","dielectric","parametric resonance","back-emf","lenz","scalar"],
       "access":"open"},
   "spirituality": {"label":"Spirituality / esoteric / mysticism","mode":"answer","personas":False,"headings":False,
@@ -1665,6 +1665,13 @@ def _load_spaces_config():
         except Exception as e:
             print(f"fa-spaces-config load error: {e}")
 _load_spaces_config()
+# ROSTER-DRIVEN ROUTING (2026-11-18): every voice seat's name, label and `keywords:` route mail to the
+# free-energy space, so `convey voice-seat` adding a person needs no edit here.
+for _v in EMAIL_VOICES:
+    _kw = SPACECARDS.get("free-energy", {}).get("keywords")
+    if isinstance(_kw, list):
+        for _k in [_v["name"].lower(), _v["label"].lower()] + list(_v.get("keywords") or []):
+            if _k and _k not in _kw: _kw.append(_k)
 
 def _sender_email(frm):
     m=re.search(r"<([^>]+)>", frm or ""); return (m.group(1) if m else (frm or "")).strip().lower()
