@@ -30,7 +30,7 @@ MAIN_SYS = (
 LENS_SYS = (
     "\n\nBecause FREE_ENERGY_LENS_VOICES is enabled, include one final section exactly named "
     "## Cross-Lens Reads — but it is a privilege the material has to earn, not a form to fill. "
-    "The roster is **Russell**, **Bearden**, **Prigogine**, **Hilarion**, **Steinmetz**, **Don Smith**. "
+    "The roster is **Russell**, **Bearden**, **Prigogine**, **Hilarion**, **Steinmetz**, **Don Smith**, **Keely**. "
     "A lens bullet is allowed ONLY when that voice can say something concrete and grounded about a "
     "mechanism, claim, or reservoir the text actually puts on the table — naming the specific thing in the "
     "text it reads. Two hard bans: (1) NEVER an absence bullet ('no reference to scalar waves', 'no mention "
