@@ -932,7 +932,22 @@ def fm_research(question, thread_context, attachments="", *args, viewpoint="", *
 # REPORT-CARD >> features/mail-material-editor-contract.feature
 # REQUIRED-DUAL-SOURCE-ANALYSES v1
 def _required_mlx(text, title, language=None):
-    return document_brains.ensure_mlx(text, title=title, language=language)
+    """MLX-DEGRADE v1 (2026-11-18, Esa: "fix leak, then cycle, then degrade"). The local MLX brain
+    shares the Mini GPU with the OCR backlog; when it is wedged or timing out, requiring it froze the
+    whole OCR→mail belt (457 queued, ~13 mails/day). Now an MLX failure omits that ONE section,
+    states so in the email, and the mail still goes out on Bluefield + the synthesis brains.
+    Bluefield stays required. FREELLMASK_MAIL_REQUIRE_MLX=1 restores the strict behaviour."""
+    try:
+        return document_brains.ensure_mlx(text, title=title, language=language)
+    except document_brains.ContributionPending as exc:
+        if os.environ.get("FREELLMASK_MAIL_REQUIRE_MLX") == "1":
+            raise
+        why = str(exc).replace("Required MLX analysis: ", "")[:240]
+        print(f"      ⚠️ MLX unavailable — mailing without the MLX section ({why})", flush=True)
+        return {"markdown": "## MLX/Qwen — independent source analysis\n\n"
+                            f"_Not included: the local MLX brain was unavailable ({why})._",
+                "model": "unavailable", "path": "", "source_chars": len(text),
+                "language": language}
 
 def _required_bluefield(text, title, language=None):
     return document_brains.ensure_flubuild(text, title=title, language=language,
