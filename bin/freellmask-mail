@@ -934,10 +934,16 @@ def _required_mlx(text, title, language=None):
     whole OCR→mail belt (457 queued, ~13 mails/day). Now an MLX failure omits that ONE section,
     states so in the email, and the mail still goes out on Bluefield + the synthesis brains.
     Bluefield stays required. FREELLMASK_MAIL_REQUIRE_MLX=1 restores the strict behaviour."""
+    strict = os.environ.get("FREELLMASK_MAIL_REQUIRE_MLX") == "1"
     try:
+        # FAST PROBE: a GPU-starved server times out per chunk (180s+ each), so a 40-chunk document
+        # burned hours before degrading — and the puller restarts the belt every few minutes, so it
+        # never finished an item. Two tokens decide it up front.
+        if not strict and not _mlx_alive(timeout=25):
+            raise document_brains.ContributionPending("local MLX brain not generating (GPU busy?)")
         return document_brains.ensure_mlx(text, title=title, language=language)
     except document_brains.ContributionPending as exc:
-        if os.environ.get("FREELLMASK_MAIL_REQUIRE_MLX") == "1":
+        if strict:
             raise
         why = str(exc).replace("Required MLX analysis: ", "")[:240]
         print(f"      ⚠️ MLX unavailable — mailing without the MLX section ({why})", flush=True)
