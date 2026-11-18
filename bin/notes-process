@@ -282,6 +282,10 @@ def call_llm(cmd, prompt, timeout, context='', audit_dir=None):
     except Exception as e:
         if attempt:
             notes_input.save_json(attempt / 'error.json', dict(error=str(e), type=type(e).__name__))
+        if isinstance(e, subprocess.TimeoutExpired):
+            # A slow gateway is transient, not a verdict: park the note and retry, never drop it
+            # (2026-11-18: "Leedskalnin and Magnetic Current" timed out at 900s and was silently failed).
+            raise Deferred(f'brain timed out after {timeout}s') from e
         raise
     if attempt:
         notes_input.save_json(attempt / 'response.json', dict(stdout=r.stdout, stderr=r.stderr, returncode=r.returncode))
@@ -497,7 +501,7 @@ def main():
     # Other tags (#consensus: 25 samples) keep the single fast notes-brain. Esa 2026-11-17.
     voices = a.tag.lower() == '#process' and a.samples <= 1
     a.llm = a.llm or f"{HERE}/{'notes-voices' if voices else 'notes-brain'}"
-    a.llm_timeout = a.llm_timeout or (900 if voices else 240)
+    a.llm_timeout = a.llm_timeout or (1800 if voices else 240)
     if a.show_run:
         if not re.fullmatch(r'NP-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}', a.show_run):
             ap.error('invalid processing ID')
