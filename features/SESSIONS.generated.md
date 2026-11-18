@@ -8,13 +8,7 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**13 card conversations** plugged in:
-
-### `878e0965-389c-48d8-a4ec-5df46f48edcd`  (2026-10-19)
-- Resume: `claude --resume 878e0965-389c-48d8-a4ec-5df46f48edcd`
-- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/878e0965-389c-48d8-a4ec-5df46f48edcd.jsonl
-- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
-- Cards touched (3): converse-to-obsidian.feature, fm-converse.feature, sesh.feature
+**12 card conversations** plugged in:
 
 ### `40b0d1ae-cb5e-4a07-b7b8-cb543600a045`  (2026-10-21)
 - Resume: `claude --resume 40b0d1ae-cb5e-4a07-b7b8-cb543600a045`

@@ -29,6 +29,9 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 HOST="${FM_MLX_HOST:-http://cloudcitymacmini.taild55c11.ts.net:8080}"
 RESOLVE_IP="${FM_MLX_RESOLVE_IP:-100.117.30.102}"
 SSH_HOST="${FM_MLX_SSH_HOST:-100.117.30.102}"
+# Per-call HTTP budget. Batch callers (convey relay) raise it: the Mini GPU is shared with the OCR
+# worker, and a 180s ceiling failed every long mail-belt chunk under load (2026-11-18).
+MLX_TIMEOUT="${FM_MLX_TIMEOUT:-180}"
 MODEL_ID="${FM_MLX_MODEL:-mlx-community/Qwen3-4B-Instruct-2507-8bit}"
 MODEL_LABEL="${FM_MLX_MODEL_LABEL:-MLX/Qwen3-4B-8bit}"
 
@@ -72,7 +75,7 @@ if [ -n "$RESOLVE_IP" ]; then
   curl_resolve=(--resolve "$hostport:$RESOLVE_IP")
 fi
 
-raw_reply=$(curl -sS -m 180 "${curl_resolve[@]}" -X POST "$HOST/v1/chat/completions" \
+raw_reply=$(curl -sS -m "$MLX_TIMEOUT" "${curl_resolve[@]}" -X POST "$HOST/v1/chat/completions" \
   -H "Content-Type: application/json" -d "$body")
 curl_rc=$?
 if [ "$curl_rc" -ne 0 ] || [ -z "$raw_reply" ]; then
@@ -89,7 +92,7 @@ if [ "$curl_rc" -ne 0 ] || [ -z "$raw_reply" ]; then
   # prompts; ConnectTimeout bounds the handshake; ServerAlive kills a dead link in ~60s.
   raw_reply=$(printf '%s' "$body" | ssh -o BatchMode=yes -o ConnectTimeout=10 \
     -o ServerAliveInterval=15 -o ServerAliveCountMax=4 "$SSH_HOST" \
-    "curl -sS -m 180 -X POST http://127.0.0.1:8080/v1/chat/completions -H 'Content-Type: application/json' --data-binary @-")
+    "curl -sS -m $MLX_TIMEOUT -X POST http://127.0.0.1:8080/v1/chat/completions -H 'Content-Type: application/json' --data-binary @-")
 fi
 
 reply=$(printf '%s' "$raw_reply" | FM_THINK_QUESTION="$prompt" FM_BIN="$HERE" python3 -c '
