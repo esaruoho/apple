@@ -1,0 +1,191 @@
+#!/usr/bin/env python3
+"""ocrs — one-screen live view of the Cloudcity OCR queue.
+
+Left column:  what's running now (page progress, ETA), what runs next
+              (priority/), then the first pending jobs and the most recent finished ones.
+Right column: the rest of the pending queue, in the order it will run.
+
+Reads the Syncthing-mirrored queue locally (no SSH):
+  ~/work/comms/queue/worker-status/   and   ~/work/comms/queue/ocr-heartbeat.json
+
+Usage:  ocrs            live, refreshes every 5s (Ctrl-C to quit)
+        ocrs -n 10      refresh every 10s
+        ocrs --once     print once and exit
+"""
+import json, os, re, shutil, sys, time
+from datetime import datetime, timezone
+
+Q = os.path.expanduser("~/work/comms/queue")
+WS = os.path.join(Q, "worker-status")
+HB = os.path.join(Q, "ocr-heartbeat.json")
+
+PREFIX = re.compile(r"^(\d+_)?(\d{8}-\d{6}-)?")
+
+
+def nice(name):
+    name = PREFIX.sub("", name)
+    for suf in (".job", ".pdf"):
+        if name.endswith(suf):
+            name = name[: -len(suf)]
+    return name.replace("-image-only-needs-OCR", "")
+
+
+def jobs(sub, key):
+    d = os.path.join(WS, sub)
+    try:
+        names = [f for f in os.listdir(d) if f.endswith(".job")]
+    except FileNotFoundError:
+        return []
+    return sorted(names, key=lambda f: key(os.path.join(d, f), f))
+
+
+def epoch(f):
+    m = re.match(r"^(\d+)_", f)
+    return int(m.group(1)) if m else 0
+
+
+def dur(ms):
+    s = int(ms / 1000)
+    h, s = divmod(s, 3600)
+    m, s = divmod(s, 60)
+    return f"{h}h{m:02d}m" if h else f"{m}m{s:02d}s"
+
+
+def cut(s, w):
+    return s if len(s) <= w else s[: w - 1] + "…"
+
+
+def heartbeat():
+    try:
+        with open(HB) as fh:
+            hb = json.load(fh)
+    except Exception:
+        return None
+    try:
+        ts = datetime.fromisoformat(hb["ts"].replace("Z", "+00:00"))
+        hb["_age"] = (datetime.now(timezone.utc) - ts).total_seconds()
+    except Exception:
+        hb["_age"] = None
+    return hb
+
+
+def render():
+    cols, rows = shutil.get_terminal_size((160, 45))
+    gap = 3
+    lw = (cols - gap) // 2
+    rw = cols - gap - lw
+
+    processing = jobs("processing", lambda p, f: -os.path.getmtime(p))
+    priority = jobs("priority", lambda p, f: -os.path.getmtime(p))  # newest first = runs next
+    pending = jobs("pending", lambda p, f: (epoch(f), f))           # FIFO
+    done = jobs("done", lambda p, f: -os.path.getmtime(p))
+    failed = jobs("failed", lambda p, f: -os.path.getmtime(p))
+    hb = heartbeat()
+
+    L = []
+    now = datetime.now().strftime("%H:%M:%S")
+    L.append(f"OCR QUEUE  ·  {now}")
+    L.append(f"{len(processing)} running · {len(priority)} priority · "
+             f"{len(pending)} pending · {len(failed)} failed · {len(done)} done")
+    L.append("")
+    L.append("▶ NOW")
+    current = hb.get("current_job") if hb else None
+    if hb and current:
+        L.append("  " + nice(current))
+        cp, tp = hb.get("current_page") or 0, hb.get("total_pages") or 0
+        pct = (100 * cp / tp) if tp else 0
+        bw = max(10, lw - 22)
+        fill = int(bw * pct / 100)
+        L.append(f"  [{'█' * fill}{'·' * (bw - fill)}] {cp}/{tp} {pct:.0f}%")
+        extra = []
+        if hb.get("elapsed_ms"):
+            extra.append("elapsed " + dur(hb["elapsed_ms"]))
+        if hb.get("eta_ms"):
+            extra.append("ETA " + dur(hb["eta_ms"]))
+        age = hb.get("_age")
+        if age is not None:
+            # Heartbeats arrive via Syncthing, so 5-10 min gaps are usually sync lag
+            # (e.g. a folder rescan), not a hung worker. ocr-guardian.sh on the Mini
+            # kills a worker only after 1800s of frozen heartbeat — match that.
+            if age > 1800:
+                flag = "  ⚠ STALE (>30m — guardian should restart it)"
+            elif age > 600:
+                flag = "  (sync lag?)"
+            else:
+                flag = ""
+            extra.append(f"heartbeat {int(age // 60)}m{int(age % 60):02d}s ago" + flag)
+        L.append("  " + " · ".join(extra))
+        others = [j for j in processing if nice(j) != nice(current)]
+        if others:
+            L.append(f"  ({len(others)} more marked processing:)")
+            for j in others[:3]:
+                L.append("   · " + nice(j))
+    elif processing:
+        for j in processing:
+            L.append("  " + nice(j))
+    else:
+        L.append("  (idle)")
+    L.append("")
+
+    L.append(f"⏭ NEXT — priority ({len(priority)})")
+    for i, j in enumerate(priority, 1):
+        L.append(f"  {i:>2}. {nice(j)}")
+    if not priority:
+        L.append("  (none — pending runs in FIFO order)")
+    L.append("")
+
+    # Left column: recent failures, then as many recently-done as fit (>=30).
+    # All of PENDING lives in the right column.
+    if failed:
+        L += [f"✗ FAILED ({len(failed)})"] + ["   " + nice(j) for j in failed[:3]] + [""]
+    body = rows - 2  # leave room for the prompt line
+    done_slots = max(30, body - len(L) - 1)
+    L.append(f"✓ RECENTLY DONE (showing {min(done_slots, len(done))} of {len(done)})")
+    L += ["   " + nice(j) for j in done[:done_slots]]
+
+    n0 = len(priority)
+    R = [f"⋯ PENDING ({len(pending)}, FIFO)", ""]
+    slots = max(len(L), body) - len(R)
+    if len(pending) > slots:
+        shown, more = pending[: slots - 1], len(pending) - (slots - 1)
+    else:
+        shown, more = pending, 0
+    for i, j in enumerate(shown, n0 + 1):
+        R.append(f"{i:>3}. {nice(j)}")
+    if more:
+        R.append(f"     … +{more} more")
+
+    out = []
+    for i in range(max(len(L), len(R))):
+        a = cut(L[i] if i < len(L) else "", lw).ljust(lw)
+        b = cut(R[i] if i < len(R) else "", rw)
+        out.append(a + " │ " + b)
+    return "\n".join(out[:max(body, len(L))])
+
+
+def main():
+    args = sys.argv[1:]
+    if "-h" in args or "--help" in args:
+        print(__doc__)
+        return
+    if "--once" in args:
+        print(render())
+        return
+    interval = 5
+    if "-n" in args:
+        interval = float(args[args.index("-n") + 1])
+    try:
+        sys.stdout.write("\033[?25l")  # hide cursor
+        while True:
+            frame = render()
+            sys.stdout.write("\033[H\033[2J" + frame + "\n")
+            sys.stdout.flush()
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        sys.stdout.write("\033[?25h\n")
+
+
+if __name__ == "__main__":
+    main()
