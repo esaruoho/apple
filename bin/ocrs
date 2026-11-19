@@ -5,19 +5,68 @@ Left column:  what's running now (page progress, ETA), what runs next
               (priority/), then the first pending jobs and the most recent finished ones.
 Right column: the rest of the pending queue, in the order it will run.
 
-Reads the Syncthing-mirrored queue locally (no SSH):
-  ~/work/comms/queue/worker-status/   and   ~/work/comms/queue/ocr-heartbeat.json
+Reads the LIVE queue on the Mini over Tailscale SSH (`ssh cloudcity`, one
+read-only call per refresh, multiplexed): PDFWorkshop/queue/ + ocr-heartbeat.json.
+If the Mini is unreachable it falls back to the Syncthing mirror
+(~/work/comms/queue/worker-status/) and says so loudly — that copy lags minutes.
 
 Usage:  ocrs            live, refreshes every 5s (Ctrl-C to quit)
         ocrs -n 10      refresh every 10s
         ocrs --once     print once and exit
 """
-import json, os, re, shutil, sys, time
+import json, os, re, shutil, subprocess, sys, time
 from datetime import datetime, timezone
 
 Q = os.path.expanduser("~/work/comms/queue")
 WS = os.path.join(Q, "worker-status")
 HB = os.path.join(Q, "ocr-heartbeat.json")
+
+MINI_Q = "/Users/esaruoho/work/PDFWorkshop/queue"
+MINI_HB = "/Users/esaruoho/work/comms/queue/ocr-heartbeat.json"
+SUBS = ("processing", "priority", "pending", "done", "failed")
+SSH = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=4",
+       "-o", "ControlMaster=auto", "-o", "ControlPath=~/.ssh/cm-ocrs-%r@%h-%p",
+       "-o", "ControlPersist=60", "cloudcity"]
+# Runs on the Mini: dump {sub: [[name, mtime], ...], "hb": {...}} as JSON.
+REMOTE = r"""python3 -c '
+import json,os
+q=%s;out={}
+for s in %s:
+    d=os.path.join(q,s)
+    try: out[s]=[[f,os.path.getmtime(os.path.join(d,f))] for f in os.listdir(d) if f.endswith(".job")]
+    except OSError: out[s]=[]
+try: out["hb"]=json.load(open(%s))
+except Exception: out["hb"]=None
+print(json.dumps(out))'""" % tuple(json.dumps(x) for x in (MINI_Q, list(SUBS), MINI_HB))
+
+
+def snapshot():
+    """Live state from the Mini; None if unreachable."""
+    try:
+        r = subprocess.run(SSH + [REMOTE], capture_output=True, text=True, timeout=12)
+        if r.returncode == 0:
+            return json.loads(r.stdout)
+    except Exception:
+        pass
+    return None
+
+
+def local_snapshot():
+    out = {}
+    for sub in SUBS:
+        d = os.path.join(WS, sub)
+        try:
+            out[sub] = [[f, os.path.getmtime(os.path.join(d, f))]
+                        for f in os.listdir(d) if f.endswith(".job")]
+        except FileNotFoundError:
+            out[sub] = []
+    try:
+        with open(HB) as fh:
+            out["hb"] = json.load(fh)
+    except Exception:
+        out["hb"] = None
+    return out
+
 
 PREFIX = re.compile(r"^(\d+_)?(\d{8}-\d{6}-)?")
 
@@ -30,13 +79,9 @@ def nice(name):
     return name.replace("-image-only-needs-OCR", "")
 
 
-def jobs(sub, key):
-    d = os.path.join(WS, sub)
-    try:
-        names = [f for f in os.listdir(d) if f.endswith(".job")]
-    except FileNotFoundError:
-        return []
-    return sorted(names, key=lambda f: key(os.path.join(d, f), f))
+def jobs(snap, sub, key):
+    """key(mtime, name) -> sort key."""
+    return [f for f, m in sorted(snap.get(sub, []), key=lambda e: key(e[1], e[0]))]
 
 
 def epoch(f):
@@ -55,11 +100,9 @@ def cut(s, w):
     return s if len(s) <= w else s[: w - 1] + "…"
 
 
-def heartbeat():
-    try:
-        with open(HB) as fh:
-            hb = json.load(fh)
-    except Exception:
+def heartbeat(snap):
+    hb = snap.get("hb")
+    if not hb:
         return None
     try:
         ts = datetime.fromisoformat(hb["ts"].replace("Z", "+00:00"))
@@ -75,16 +118,22 @@ def render():
     lw = (cols - gap) // 2
     rw = cols - gap - lw
 
-    processing = jobs("processing", lambda p, f: -os.path.getmtime(p))
-    priority = jobs("priority", lambda p, f: -os.path.getmtime(p))  # newest first = runs next
-    pending = jobs("pending", lambda p, f: (epoch(f), f))           # FIFO
-    done = jobs("done", lambda p, f: -os.path.getmtime(p))
-    failed = jobs("failed", lambda p, f: -os.path.getmtime(p))
-    hb = heartbeat()
+    snap = snapshot()
+    live = snap is not None
+    if not live:
+        snap = local_snapshot()
+    processing = jobs(snap, "processing", lambda m, f: -m)
+    priority = jobs(snap, "priority", lambda m, f: -m)  # newest first = runs next
+    pending = jobs(snap, "pending", lambda m, f: (epoch(f), f))           # FIFO
+    done = jobs(snap, "done", lambda m, f: -m)
+    failed = jobs(snap, "failed", lambda m, f: -m)
+    hb = heartbeat(snap)
 
     L = []
     now = datetime.now().strftime("%H:%M:%S")
-    L.append(f"OCR QUEUE  ·  {now}")
+    src = ("LIVE from Mini (tailscale)" if live else
+           "\033[1;31m⚠ MINI UNREACHABLE — Syncthing copy, may be minutes stale\033[0m")
+    L.append(f"OCR QUEUE  ·  {now}  ·  {src}")
     L.append(f"{len(processing)} running · {len(priority)} priority · "
              f"{len(pending)} pending · {len(failed)} failed · {len(done)} done")
     L.append("")
