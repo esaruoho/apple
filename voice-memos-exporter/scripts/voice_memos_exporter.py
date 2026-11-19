@@ -18,13 +18,17 @@ Selector grammar (used by `open` and single-target `export`):
 from __future__ import annotations
 
 import argparse
+import glob
 import json
+import math
 import os
 import re
 import shutil
 import sqlite3
 import subprocess
 import sys
+import tempfile
+import time
 from collections import Counter
 from dataclasses import dataclass, asdict
 from datetime import datetime, timedelta, timezone
@@ -668,13 +672,22 @@ def slugify(s: str, max_len: int = 60) -> str:
 
 
 def write_sidecar(env: dict, m: Memo, audio_target: Path | None,
-                   audio_info: dict | None = None) -> Path:
+                   audio_info: dict | None = None,
+                   transcript_target: Path | None = None,
+                   transcript_meta: dict | None = None) -> Path:
     year = m.date_dt.strftime("%Y")
     month = m.date_dt.strftime("%m")
     out_dir = Path(env["VAULT_PATH"]) / year / month
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = f"{m.date_dt.strftime('%Y-%m-%d__%H%M')}__{slugify(m.title)}__{m.uuid[:8]}"
     md_path = out_dir / f"{stem}.md"
+
+    # Auto-detect existing transcript file if not passed explicitly
+    if transcript_target is None:
+        cand = out_dir / f"{stem}.transcript.txt"
+        if cand.exists():
+            transcript_target = cand
+
     fm = {
         "uuid": m.uuid,
         "title": m.title,
@@ -698,6 +711,12 @@ def write_sidecar(env: dict, m: Memo, audio_target: Path | None,
             "encoder": audio_info.get("encoder", ""),
             "device": audio_info.get("device", ""),
         })
+    if transcript_target:
+        fm["transcript_file"] = transcript_target.name
+        if transcript_meta:
+            fm["transcript_engine"] = transcript_meta.get("engine", "")
+            fm["transcript_lang"] = transcript_meta.get("lang", "")
+            fm["transcript_model"] = transcript_meta.get("model", "")
     lines = ["---"]
     for k, v in fm.items():
         if isinstance(v, str):
@@ -718,7 +737,10 @@ def write_sidecar(env: dict, m: Memo, audio_target: Path | None,
                      f"{kbps} kbps")
         if audio_info.get("device"):
             lines.append(f"- **Recorded on**: {audio_info['device']}")
-    if m.has_apple_transcript:
+    if transcript_target:
+        eng_desc = f" ({transcript_meta['engine']})" if (transcript_meta and transcript_meta.get("engine")) else ""
+        lines.append(f"- **Transcript**: `{transcript_target.name}`{eng_desc} (next to this file)")
+    elif m.has_apple_transcript:
         lines.append("- **Apple transcript**: ✅ embedded in m4a (extract via "
                      "`voice-memos-export transcripts --extract`)")
     if m.evicted:
@@ -904,6 +926,353 @@ def cmd_export(args) -> int:
     return 0
 
 
+# ---------- transcription & watcher pipeline ----------
+
+def find_transcriber() -> tuple[str, str] | tuple[None, None]:
+    """Find the best available transcription engine on this machine.
+
+    Priority:
+      1. ~/work/whisp/whisp (canonical CLI wrapper, supports --fi / --en / captions)
+      2. whisper (OpenAI whisper CLI in PATH / /opt/homebrew/bin)
+      3. speech-transcribe (Apple Speech framework, fast on-device fallback)
+    """
+    whisp = Path(os.path.expanduser("~/work/whisp/whisp"))
+    if whisp.exists() and os.access(str(whisp), os.X_OK):
+        return ("whisp", str(whisp))
+    wcli = shutil.which("whisper") or (Path("/opt/homebrew/bin/whisper") if Path("/opt/homebrew/bin/whisper").exists() else None)
+    if wcli and os.access(str(wcli), os.X_OK):
+        return ("whisper", str(wcli))
+    st = ROOT.parent / "bin" / "speech-transcribe"
+    if st.exists() and os.access(str(st), os.X_OK):
+        return ("speech", str(st))
+    return (None, None)
+
+
+def get_whisp_lang_flags(lang: str) -> list[str]:
+    if not lang or lang == "auto":
+        return []
+    if lang in ("fi", "en", "de", "ru", "sv", "fa"):
+        return [f"--{lang}"]
+    return ["--language", lang]
+
+
+def get_whisper_lang_flags(lang: str) -> list[str]:
+    if not lang or lang == "auto":
+        return []
+    return ["--language", lang]
+
+
+def get_speech_locale(lang: str) -> str:
+    locales = {
+        "fi": "fi-FI",
+        "en": "en-US",
+        "sv": "sv-SE",
+        "de": "de-DE",
+        "ru": "ru-RU",
+        "fr": "fr-FR",
+        "es": "es-ES",
+        "it": "it-IT",
+    }
+    return locales.get(lang.lower(), f"{lang.lower()}-{lang.upper()}")
+
+
+def transcribe_audio_file(audio_path: Path, engine: str, bin_path: str,
+                           lang: str = "fi", model: str = "turbo") -> str:
+    """Run transcription engine on a single audio file and return text."""
+    env = dict(os.environ)
+    env["PATH"] = "/opt/homebrew/bin:" + env.get("PATH", "")
+
+    if engine == "whisp":
+        out_dir = tempfile.mkdtemp(prefix="whisp_out_")
+        cmd = [bin_path]
+        cmd.extend(get_whisp_lang_flags(lang))
+        if model:
+            cmd.extend(["--model", model])
+        cmd.extend(["--out", out_dir, str(audio_path)])
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=1800)
+            txts = sorted(glob.glob(os.path.join(out_dir, "*.txt")))
+            if txts:
+                return Path(txts[0]).read_text(encoding="utf-8").strip()
+            if res.stdout:
+                return res.stdout.strip()
+            return ""
+        finally:
+            shutil.rmtree(out_dir, ignore_errors=True)
+
+    elif engine == "whisper":
+        out_dir = tempfile.mkdtemp(prefix="whisper_out_")
+        cmd = [bin_path, str(audio_path), "--output_format", "txt", "--output_dir", out_dir]
+        if model:
+            cmd.extend(["--model", model])
+        cmd.extend(get_whisper_lang_flags(lang))
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=1800)
+            txts = sorted(glob.glob(os.path.join(out_dir, "*.txt")))
+            if txts:
+                return Path(txts[0]).read_text(encoding="utf-8").strip()
+            if res.stdout:
+                return res.stdout.strip()
+            return ""
+        finally:
+            shutil.rmtree(out_dir, ignore_errors=True)
+
+    elif engine == "speech":
+        locale = get_speech_locale(lang)
+        cmd = [bin_path, str(audio_path), "--locale", locale, "--timeout", "600"]
+        res = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=660)
+        return res.stdout.strip()
+
+    else:
+        raise ValueError(f"Unknown transcription engine: {engine}")
+
+
+def notify_discord(msg: str) -> bool:
+    """Send Discord announcement via pakettibot inbox file-drop bridge."""
+    inbox = Path.home() / "work" / "comms" / "queue" / "pakettibot-inbox"
+    if not inbox.exists():
+        return False
+    ts = int(time.time() * 1000)
+    cmd_file = inbox / f"voice-memo-{ts}.cmd"
+    tmp_file = inbox / f"voice-memo-{ts}.tmp"
+    clean_msg = msg.replace('"', '\\"')
+    try:
+        tmp_file.write_text(f'ask "{clean_msg}"\n', encoding="utf-8")
+        tmp_file.replace(cmd_file)
+        return True
+    except Exception as e:
+        print(f"Warning: could not write to pakettibot inbox: {e}", file=sys.stderr)
+        return False
+
+
+def transcribe_single_memo(env: dict, m: Memo, engine_name: str, bin_path: str,
+                           lang: str = "fi", model: str = "turbo",
+                           chunked: bool = False, print_stdout: bool = False) -> Path:
+    year = m.date_dt.strftime("%Y")
+    month = m.date_dt.strftime("%m")
+    out_dir = Path(env["VAULT_PATH"]) / year / month
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stem = f"{m.date_dt.strftime('%Y-%m-%d__%H%M')}__{slugify(m.title)}__{m.uuid[:8]}"
+    txt_path = out_dir / f"{stem}.transcript.txt"
+
+    audio_file = m.m4a
+    if not audio_file or not audio_file.exists():
+        raise FileNotFoundError(f"Audio file for {m.title} not found on disk: {audio_file}")
+
+    print(f"Transcribing {m.title} ({fmt_dur(m.duration)}) with {engine_name} [{lang}]...")
+    t0 = time.time()
+
+    if chunked or m.duration > 1800:
+        chunk_sec = 1200
+        num_chunks = math.ceil(m.duration / chunk_sec)
+        chunks_text = []
+        with tempfile.TemporaryDirectory(prefix="vm_chunks_") as tmp_dir:
+            for idx in range(num_chunks):
+                c_start = idx * chunk_sec
+                c_len = min(chunk_sec, m.duration - c_start)
+                c_path = Path(tmp_dir) / f"chunk_{idx:03d}.m4a"
+                subprocess.run(
+                    ["ffmpeg", "-y", "-v", "quiet", "-ss", str(c_start),
+                     "-t", str(c_len), "-i", str(audio_file), "-c", "copy", str(c_path)],
+                    check=True
+                )
+                c_text = transcribe_audio_file(c_path, engine_name, bin_path, lang=lang, model=model)
+                mm = int(c_start // 60)
+                ss = int(c_start % 60)
+                chunks_text.append(f"[{mm:02d}:{ss:02d}]\n{c_text}")
+        text = "\n\n".join(chunks_text)
+    else:
+        text = transcribe_audio_file(audio_file, engine_name, bin_path, lang=lang, model=model)
+
+    dt = time.time() - t0
+    print(f"  ✓ Finished in {dt:.1f}s ({len(text.split())} words)")
+
+    header = (
+        f"# Voice Memo Transcript\n"
+        f"# Title: {m.title}\n"
+        f"# UUID: {m.uuid}\n"
+        f"# Recorded: {m.date_iso}  ({fmt_dur(m.duration)})\n"
+        f"# Engine: {engine_name} ({model})\n"
+        f"# Language: {lang}\n"
+        f"# Wall clock: {dt:.1f}s\n\n"
+    )
+    txt_path.write_text(header + text + "\n", encoding="utf-8")
+
+    # Update or create sidecar .md
+    audio_target = out_dir / f"{stem}.m4a"
+    if not audio_target.exists():
+        if audio_file.exists():
+            try:
+                audio_target.symlink_to(audio_file)
+            except OSError:
+                pass
+    write_sidecar(env, m, audio_target if audio_target.exists() else None,
+                  transcript_target=txt_path,
+                  transcript_meta={"engine": engine_name, "lang": lang, "model": model, "duration": dt})
+
+    if print_stdout:
+        print(f"\n=== Transcript for {m.title} ===\n{text}\n")
+
+    return txt_path
+
+
+def cmd_transcribe(args) -> int:
+    env = load_env()
+    memos = load_memos()
+    if not args.all and not args.selector:
+        print("Pass a selector, or --all to transcribe matching recordings.", file=sys.stderr)
+        return 2
+
+    targets = memos if args.all else [resolve_selector(memos, args.selector)]
+    targets = filter_memos(targets, args)
+
+    engine_name, bin_path = find_transcriber() if args.engine == "auto" else (args.engine, shutil.which(args.engine))
+    if not bin_path:
+        print(f"Error: No suitable transcription engine found for {args.engine!r}.", file=sys.stderr)
+        return 1
+
+    print(f"Engine: {engine_name} ({bin_path}) · Lang: {args.lang} · Model: {args.model}")
+    print(f"Vault:  {env['VAULT_PATH']}\n")
+
+    n_done = n_skipped = 0
+    for m in targets:
+        if m.evicted or not m.m4a_exists:
+            print(f"  ! {m.title}: audio not available locally (evicted or missing)")
+            n_skipped += 1
+            continue
+
+        year = m.date_dt.strftime("%Y")
+        month = m.date_dt.strftime("%m")
+        out_dir = Path(env["VAULT_PATH"]) / year / month
+        stem = f"{m.date_dt.strftime('%Y-%m-%d__%H%M')}__{slugify(m.title)}__{m.uuid[:8]}"
+        txt_path = out_dir / f"{stem}.transcript.txt"
+
+        if txt_path.exists() and not args.force:
+            print(f"  - {m.title}: already transcribed (pass --force to re-transcribe)")
+            n_skipped += 1
+            continue
+
+        try:
+            txt_out = transcribe_single_memo(
+                env, m, engine_name, bin_path,
+                lang=args.lang, model=args.model,
+                chunked=args.chunked or m.duration > 1800,
+                print_stdout=args.print
+            )
+            print(f"  → {txt_out.relative_to(Path(env['VAULT_PATH']).parent)}")
+            n_done += 1
+        except Exception as e:
+            print(f"  ❌ {m.title}: {e}", file=sys.stderr)
+
+    print(f"\nTranscribed: {n_done}  Skipped: {n_skipped}")
+    return 0
+
+
+def cmd_watch(args) -> int:
+    env = load_env()
+    rec_dir = VM_REC_DIR
+    if not rec_dir.exists():
+        print(f"Recordings directory not found: {rec_dir}", file=sys.stderr)
+        return 1
+
+    engine_name, bin_path = find_transcriber() if args.engine == "auto" else (args.engine, shutil.which(args.engine))
+    if not bin_path:
+        print(f"Error: No suitable transcription engine found ({args.engine}).", file=sys.stderr)
+        return 1
+
+    print(f"🎙️ Watching Voice Memos in {rec_dir}")
+    print(f"   Engine: {engine_name} ({bin_path}) · Lang: {args.lang} · Model: {args.model}")
+    print(f"   Vault:  {env['VAULT_PATH']}")
+    if args.once:
+        print("   Mode: --once (transcribe untranscribed recordings on disk, then exit)")
+    else:
+        print(f"   Polling every {args.interval}s (Ctrl-C to stop)")
+
+    state_path = ROOT / ".watch-state.json"
+    seen: set[str] = set()
+    if state_path.exists():
+        try:
+            seen = set(json.loads(state_path.read_text()).get("seen", []))
+        except Exception:
+            pass
+
+    def is_transcribed(m: Memo) -> bool:
+        year = m.date_dt.strftime("%Y")
+        month = m.date_dt.strftime("%m")
+        stem = f"{m.date_dt.strftime('%Y-%m-%d__%H%M')}__{slugify(m.title)}__{m.uuid[:8]}"
+        txt = Path(env["VAULT_PATH"]) / year / month / f"{stem}.transcript.txt"
+        return txt.exists()
+
+    def process_all_pending() -> int:
+        nonlocal seen
+        memos = load_memos()
+        processed = 0
+        for m in memos:
+            if not m.m4a_exists or m.evicted:
+                continue
+            if m.uuid in seen or is_transcribed(m):
+                seen.add(m.uuid)
+                continue
+            print(f"\n[watch] New recording detected: {m.title} ({fmt_dur(m.duration)})")
+            try:
+                txt_path = transcribe_single_memo(
+                    env, m, engine_name, bin_path,
+                    lang=args.lang, model=args.model,
+                    chunked=args.chunked or m.duration > 1800
+                )
+                seen.add(m.uuid)
+                processed += 1
+                if not args.no_discord:
+                    notify_discord(f"🎙️ Voice Memo transcribed: **{m.title}** ({fmt_dur(m.duration)}) → `{txt_path.name}`")
+            except Exception as e:
+                print(f"[watch] Error transcribing {m.title}: {e}", file=sys.stderr)
+        try:
+            state_path.write_text(json.dumps({"seen": sorted(seen)}, indent=2))
+        except OSError:
+            pass
+        return processed
+
+    if args.once:
+        n = process_all_pending()
+        print(f"\nDone. Processed {n} recording(s).")
+        return 0
+
+    fswatch_bin = shutil.which("fswatch")
+    if fswatch_bin:
+        print(f"   Using fswatch ({fswatch_bin}) for real-time filesystem events")
+        process_all_pending()
+        proc = subprocess.Popen(
+            [fswatch_bin, "-0", "-e", ".*", "-i", r"\.m4a$", str(rec_dir)],
+            stdout=subprocess.PIPE, text=False
+        )
+        try:
+            buf = bytearray()
+            while True:
+                c = proc.stdout.read(1)
+                if not c:
+                    break
+                if c == b"\x00":
+                    path_str = buf.decode("utf-8", errors="ignore")
+                    buf.clear()
+                    if path_str.endswith(".m4a"):
+                        time.sleep(1.0)
+                        process_all_pending()
+                else:
+                    buf.extend(c)
+        except KeyboardInterrupt:
+            proc.terminate()
+            print("\nWatcher stopped.")
+            return 0
+    else:
+        try:
+            while True:
+                process_all_pending()
+                time.sleep(args.interval)
+        except KeyboardInterrupt:
+            print("\nWatcher stopped.")
+            return 0
+
+
 # ---------- argparse ----------
 
 def add_filter_args(p: argparse.ArgumentParser) -> None:
@@ -986,6 +1355,34 @@ def main() -> int:
     sp.add_argument("--json", action="store_true")
     sp.add_argument("--csv", action="store_true")
     sp.set_defaults(func=cmd_export)
+
+    sp = sub.add_parser("transcribe", help="Transcribe recordings using Whisper/whisp")
+    add_filter_args(sp)
+    sp.add_argument("selector", nargs="?", help="Single recording selector (omit with --all)")
+    sp.add_argument("--all", action="store_true", help="Transcribe all matching recordings")
+    sp.add_argument("--lang", default="fi", help="Language code (fi, en, sv, de, auto; default: fi)")
+    sp.add_argument("--model", default="turbo", help="Whisper model (default: turbo)")
+    sp.add_argument("--engine", choices=["auto", "whisp", "whisper", "speech"], default="auto",
+                    help="Transcription engine (default: auto)")
+    sp.add_argument("--chunked", action="store_true",
+                    help="Force chunked mode (>30m recordings chunk automatically)")
+    sp.add_argument("--force", action="store_true",
+                    help="Overwrite existing transcript in vault")
+    sp.add_argument("--print", action="store_true",
+                    help="Print transcript to stdout")
+    sp.set_defaults(func=cmd_transcribe)
+
+    sp = sub.add_parser("watch", help="Watch Recordings/ for new m4a files and auto-transcribe")
+    sp.add_argument("--once", action="store_true",
+                    help="Transcribe any untranscribed recordings on disk, then exit")
+    sp.add_argument("--interval", type=float, default=5.0,
+                    help="Polling interval in seconds (default: 5.0)")
+    sp.add_argument("--lang", default="fi", help="Language code (default: fi)")
+    sp.add_argument("--model", default="turbo", help="Whisper model (default: turbo)")
+    sp.add_argument("--engine", choices=["auto", "whisp", "whisper", "speech"], default="auto")
+    sp.add_argument("--chunked", action="store_true", help="Enable chunked mode for long files")
+    sp.add_argument("--no-discord", action="store_true", help="Disable pakettibot Discord notifications")
+    sp.set_defaults(func=cmd_watch)
 
     args = p.parse_args()
     return args.func(args)

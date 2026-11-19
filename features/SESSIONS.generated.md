@@ -96,5 +96,5 @@
 ### `cd799999-8bda-4291-86db-431b3822131e`  (2026-11-18 → 2026-11-19)
 - Resume: `claude --resume cd799999-8bda-4291-86db-431b3822131e`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/cd799999-8bda-4291-86db-431b3822131e.jsonl
-- Tooling touched: INDEX.md
-- Cards touched (3): apple-harness.feature, mail-material-editor-contract.feature, notes-process.feature
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (17): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, app-audio-record.feature, apple-energy.feature, apple-harness.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature … (+3)

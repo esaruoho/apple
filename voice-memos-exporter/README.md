@@ -82,6 +82,31 @@ your Finnish recordings — Apple's transcripts are kept here mainly so
 you know which recordings already have any kind of automated transcript
 and can compare quality.
 
+### `transcribe` — Whisper / whisp transcription
+
+Transcribe Voice Memos using OpenAI Whisper via `~/work/whisp/whisp` (with fallback to `whisper` CLI or on-device Apple Speech). Supports Finnish (`--fi`), English (`--en`), chunking for long files (>30 min), and updates vault sidecars with transcript metadata.
+
+```bash
+voice-memos-exporter transcribe latest                   # transcribe newest recording
+voice-memos-exporter transcribe "Mauri Rantala" --print  # print to stdout
+voice-memos-exporter transcribe --all --lang fi          # transcribe all local recordings
+voice-memos-exporter transcribe --since 2026-05 --chunked# chunk long files
+voice-memos-exporter transcribe #0 --force               # overwrite existing transcript
+```
+
+Saves output as `$VAULT_PATH/YYYY/MM/<stem>.transcript.txt` and updates the `.md` sidecar with `transcript_file: ...`.
+
+### `watch` — automatic watcher + Discord notification
+
+Continuously monitors `~/Library/Group Containers/group.com.apple.VoiceMemos.shared/Recordings/` using `fswatch` (or interval polling). Automatically transcribes newly arrived `.m4a` files and drops an announcement into `~/work/comms/queue/pakettibot-inbox/` so PakettiBot announces it to Discord.
+
+```bash
+voice-memos-exporter watch                               # run live watcher daemon
+voice-memos-exporter watch --once                        # transcribe pending recordings and exit
+voice-memos-exporter watch --interval 3.0 --lang fi      # custom poll interval & language
+voice-memos-exporter watch --no-discord                  # disable pakettibot notifications
+```
+
 ### `stats` — aggregates
 
 ```bash
