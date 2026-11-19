@@ -945,7 +945,9 @@ def _required_mlx(text, title, language=None):
         # FAST PROBE: a GPU-starved server times out per chunk (180s+ each), so a 40-chunk document
         # burned hours before degrading — and the puller restarts the belt every few minutes, so it
         # never finished an item. Two tokens decide it up front.
-        if not strict and not _mlx_alive(timeout=25):
+        # 2026-11-19: 25s → 120s. Behind a queued soft prompt the server answers in ~100s; 25s
+        # dropped the MLX section from EVERY mail. Soft is now throttled to one in-flight request.
+        if not strict and not _mlx_alive(timeout=120):
             raise document_brains.ContributionPending("local MLX brain not generating (GPU busy?)")
         return document_brains.ensure_mlx(text, title=title, language=language)
     except document_brains.ContributionPending as exc:
