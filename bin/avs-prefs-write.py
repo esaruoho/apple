@@ -79,7 +79,7 @@ def reload_cfprefsd() -> None:
 
 
 def kick_daemons() -> None:
-    for d in ("assistantd", "siriinferenced"):
+    for d in ("AXVisualSupportAgent", "assistantd", "siriinferenced"):
         subprocess.run(["killall", d], check=False, capture_output=True)
 
 

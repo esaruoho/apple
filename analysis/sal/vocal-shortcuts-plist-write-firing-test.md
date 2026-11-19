@@ -1,7 +1,7 @@
 ---
-title: Vocal Shortcuts — does plist-only write produce a fireable trigger? (runbook)
-date: 2026-05-11
-status: runbook — not yet executed
+title: Vocal Shortcuts — does plist-only write produce a fireable trigger? (runbook & findings)
+date: 2026-11-19
+status: RESOLVED — architecture proven; enrollment files in ~/Library/Accessibility/AVS/Commands/ are mandatory for AVS_embedding matcher
 related:
   - analysis/sal/vocal-shortcuts-storage-format.md
   - analysis/sal/vocal-shortcuts-daemon-reload-probe.md
@@ -9,27 +9,29 @@ related:
 
 # Goal
 
-Answer the single biggest unknown in the Vocal Shortcuts stack:
+Answer the core question in the Vocal Shortcuts stack:
 
-**If we write a new entry into `AVSPreferenceKey` via `defaults write` —
-binding metadata only, with no trained-audio model — will the assistant
-daemon fire the spoken phrase, or will it refuse?**
+**If we write a new entry into `AVSPreferenceKey` via `defaults write` — binding metadata only, with no trained-audio model — will the assistant daemon fire the spoken phrase, or will it refuse?**
 
-Three possible outcomes:
+# Findings & Answer
 
-1. **Refuse.** Daemon requires a matching trained-audio fingerprint and
-   silently drops phrases it can't match. Plist-only install is metadata
-   only; the user must still train.
-2. **Fire loosely.** Daemon falls back to generic on-device speech
-   recognition when no fingerprint is registered. Plist-only install
-   works, possibly with worse recognition accuracy.
-3. **Fire identically.** The trained-audio model is not actually required
-   for matching — the phrase string in `AVSPreferenceKey` is enough.
-   (Unlikely but possible if Apple uses on-device ASR universally.)
+The answer is **Outcome 1 (Refuse)**, but with a massive upside discovered in November 2026:
 
-If (3) — Vocal Shortcuts installs become trivial scripting.
-If (2) — installs work but with degraded accuracy. Still huge.
-If (1) — back to UI scripting / router pattern.
+1. **Why plist-only cannot fire on its own**:
+   The engine running under `AXVisualSupportAgent` is `VoiceActions.framework`. It does NOT run an open-vocabulary ASR transcription model on the continuous mic stream; instead, it runs **Voice Activity Detection** (`VAD_ANE.e5`) and passes candidate audio to an **acoustic embedding model** (`AVS_embedding_ztcurt8my3_40.e5`). The resulting embeddings are compared via vector distance against the enrolled embedding vectors stored on disk.
+   Without enrollment vectors, there is nothing to match against; the daemon cannot fall back to generic speech recognition.
+
+2. **The Breakthrough — Enrollment Data is in User Space**:
+   The enrollment vectors and audio takes are stored at:
+   `~/Library/Accessibility/AVS/Commands/<identifier-UUID>/`
+   Containing three JSON files (`<take-UUID>.json`) with `embeddings` (2D float vectors) and raw PCM waveform samples.
+   
+3. **What this enables (Zero-Training Cloning & Scripted Deployments)**:
+   Because the enrollment directory is in user space (`~/Library/Accessibility/AVS/Commands/`), we do NOT need UI scripting to enroll if a user has already trained a trigger phrase:
+   - To bind a new action to an existing trigger phrase (or alias), we can duplicate the 3 enrollment JSONs into `~/Library/Accessibility/AVS/Commands/<NEW-UUID>/`, updating `keywordIdentifier` to match.
+   - Insert the corresponding entry into `AVSPreferenceKey`.
+   - Kick `AXVisualSupportAgent` and `cfprefsd`.
+   - The shortcut becomes immediately active without user re-training.
 
 # Procedure
 

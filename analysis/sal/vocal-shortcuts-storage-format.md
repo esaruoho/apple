@@ -15,8 +15,13 @@ Apple did not publish where Vocal Shortcuts (the new System Settings → Accessi
 
 ```
 ~/Library/Preferences/com.apple.Accessibility.plist
-  └── key: AVSPreferenceKey   (likely "Accessibility Vocal Shortcuts Preference Key")
+  └── key: AVSPreferenceKey   ("Accessibility Vocal Shortcuts Preference Key")
         type: bytes (UTF-8 JSON)
+
+~/Library/Accessibility/AVS/Commands/<identifier-UUID>/
+  ├── <take-1-UUID>.json
+  ├── <take-2-UUID>.json
+  └── <take-3-UUID>.json
 ```
 
 The plist key holds a binary blob whose content is a UTF-8 JSON array, one element per Vocal Shortcut entry. Reading it requires:
@@ -27,6 +32,36 @@ The plist key holds a binary blob whose content is a UTF-8 JSON array, one eleme
 4. `json.loads` the decoded string.
 
 Apple's `defaults read com.apple.Accessibility AVSPreferenceKey` shows only the hex-bytes summary (`{length = 234, bytes = 0x5b7b226e ... }`); use `/usr/libexec/PlistBuddy -c "Print :AVSPreferenceKey"` to dump the underlying string, or our `bin/list-vocal-shortcuts.py` reader.
+
+# Acoustic Enrollment Data (Trained Voice Takes)
+
+Unlike earlier speculation that training audio was locked inside `siriinferenced` or protected assistant containers, the acoustic enrollment data is stored **directly in user space**:
+
+```
+~/Library/Accessibility/AVS/Commands/<identifier-UUID>/
+```
+
+For each Vocal Shortcut, macOS records exactly 3 takes (when the user repeats the phrase 3 times during enrollment). Each take produces a ~650 KB JSON file containing:
+- `embeddings`: 2D float array of acoustic embedding vectors computed by Apple's Neural Engine model.
+- Raw PCM samples: integer array representing the audio waveform captured by CoreAudio during that take.
+- `keywordIdentifier`: lowercase UUID matching the command's `identifier`.
+- `debugEndFrame`: frame count integer.
+- `status`: `{"success": {}}`.
+
+Some entries in `AVSPreferenceKey` explicitly define `"urlEnrollmentData": "/Users/<user>/Library/Accessibility/AVS/Commands/<UUID>"`, while others omit the key — but the folder is always indexed by the command's `identifier` UUID.
+
+# Daemon & Model Stack (Reverse-Engineered 2026-11)
+
+Through process mapping and framework analysis:
+- **Daemon**: `/System/Library/PrivateFrameworks/UniversalAccess.framework/Versions/A/Resources/AXVisualSupportAgent.app/Contents/MacOS/AXVisualSupportAgent launchd -s`
+  - Runs continuously under launchd.
+  - Spawns CoreAudio IO loops listening on the default microphone.
+- **Framework**: `/System/Library/PrivateFrameworks/VoiceActions.framework`
+- **On-Device Models (Apple Neural Engine / CoreML)**:
+  - `AVS_embedding_ztcurt8my3_40.e5` / `AVS_embedding_ztcurt8my3_40.mlmodelc` — the acoustic embedding model.
+  - `VAD_ANE.e5` / `VAD_ANE.mlmodelc` — Voice Activity Detection running on the Apple Neural Engine.
+  - `ANE_AX_FP16_20240430.e5` / `.mlmodelc` — FP16 ANE execution weights.
+- **Reload Signal**: `killall AXVisualSupportAgent` causes launchd to cleanly respawn the agent, which flushes its CoreAudio and AVS command caches. `killall -HUP cfprefsd` flushes preference caches.
 
 # JSON schema
 

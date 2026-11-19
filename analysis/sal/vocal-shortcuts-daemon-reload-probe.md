@@ -1,7 +1,7 @@
 ---
-title: Vocal Shortcuts — daemon reload probe (runbook)
-date: 2026-05-11
-status: runbook — not yet executed; results when complete will overwrite this file
+title: Vocal Shortcuts — daemon reload probe (runbook & findings)
+date: 2026-11-19
+status: SOLVED — daemon identified as AXVisualSupportAgent backed by VoiceActions.framework
 related:
   - analysis/sal/vocal-shortcuts-storage-format.md
   - analysis/sal/vocal-shortcuts-plist-write-firing-test.md
@@ -9,27 +9,26 @@ related:
 
 # Goal
 
-Determine what signal — if any — the System Settings UI sends when the user
-adds, edits, or deletes a Vocal Shortcut, that a raw plist write does NOT.
+Determine what signal and daemon manage Vocal Shortcuts, what runtime listens for speech, and how to trigger a reload without UI scripting.
 
-If we can identify and reproduce that signal, we can install Vocal Shortcut
-*bindings* purely via `defaults write` and a follow-up nudge, without UI
-scripting. Whether the daemon will *fire* such an entry without trained
-audio is a separate question handled in
-`vocal-shortcuts-plist-write-firing-test.md`.
+# Findings (November 2026 Discovery)
 
-# Hypothesis
+The earlier hypothesis assumed `assistantd` or `siriinferenced` handled Vocal Shortcuts. Runtime inspection of open files, weights, and CoreAudio loops revealed the true architecture:
 
-The Add flow in System Settings:
-1. Writes the new entry into `AVSPreferenceKey` (binary plist blob).
-2. Notifies `assistantd` / `siriinferenced` to reload via either:
-   a. a Darwin notification (`notify_post(...)`),
-   b. an XPC message to a known service name,
-   c. a direct `cfprefsd` cache-flush + filesystem watch,
-   d. nothing — the daemon polls on a timer.
+1. **Responsible Daemon**:
+   `/System/Library/PrivateFrameworks/UniversalAccess.framework/Versions/A/Resources/AXVisualSupportAgent.app/Contents/MacOS/AXVisualSupportAgent launchd -s`
+   - Spawns CoreAudio IO worker loops (`HALC_ProxyIOContext::IOWorkLoop`) continuously listening to the default microphone.
+   - It is managed by `launchd` and respawns automatically if signaled.
 
-Of these, (a) and (b) are interception targets. (c) is invisible to us
-(internal to cfprefsd). (d) means we can write the plist and just wait.
+2. **Framework & ML Architecture**:
+   - Framework: `/System/Library/PrivateFrameworks/VoiceActions.framework`
+   - Acoustic Embedding Model: `AVS_embedding_ztcurt8my3_40.e5` / `AVS_embedding_ztcurt8my3_40.mlmodelc`
+   - Voice Activity Detection (ANE): `VAD_ANE.e5` / `VAD_ANE.mlmodelc` (running on Apple Neural Engine)
+   - Neural Engine Quantization: `ANE_AX_FP16_20240430.e5`
+
+3. **Reload Mechanism**:
+   - `killall AXVisualSupportAgent` flushes the running instance; `launchd` respawns it within milliseconds.
+   - `killall -HUP cfprefsd` flushes cached plist preference changes to disk so the newly spawned `AXVisualSupportAgent` immediately reads the updated `AVSPreferenceKey` and `~/Library/Accessibility/AVS/Commands/<UUID>` directory.
 
 # Procedure
 

@@ -102,4 +102,5 @@
 ### `428ead0d-fc27-4ee1-b110-6a74840ad3b6`  (2026-11-19)
 - Resume: `claude --resume 428ead0d-fc27-4ee1-b110-6a74840ad3b6`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/428ead0d-fc27-4ee1-b110-6a74840ad3b6.jsonl
-- Tooling touched: INDEX.md
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (15): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, app-audio-record.feature, apple-energy.feature, apple-harness.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature … (+1)
