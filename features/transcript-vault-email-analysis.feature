@@ -13,6 +13,7 @@
 #        sync/deployment tools, focused tests, report-card/session and generated views.
 # WATCH: prepare delivered compose_and_send cmd_email_transcript make_email_analysis collect _build
 # RESULT-LOG >>
+#   2026-11-19  direct-commit  touched: collect
 #   2026-11-19  direct-commit  touched: delivered collect
 #   2026-11-15  direct-commit  touched: delivered
 #   2026-11-13  direct-commit  touched: collect

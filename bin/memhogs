@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""memhogs — what is eating this Mac's memory, and what is each process doing?
+
+Report card: report-cards/memhogs.feature
+
+Usage:
+  memhogs                     # this Mac
+  memhogs --host cloudcity    # any SSH host (script is piped over ssh; nothing installed remotely)
+  memhogs -n 30 --json
+
+Method (Python stdlib + Apple-shipped CLIs only):
+  * system totals   — sysctl hw.memsize, vm_stat (wired/active/inactive/compressed/free), swap, memory_pressure
+  * per-process     — `top -l 1 -stats pid,mem` (phys footprint, incl. compressed — what Activity Monitor shows)
+                       joined with `ps -axo pid,ppid,etime,command` for the full argv ("doing what")
+  * grouping        — processes rolled up into FAMILIES: .app bundle, or interpreter+script
+                       (python3 foo.py, node bar.js), so 40 Chrome helpers become one line.
+"""
+import json, os, re, subprocess, sys
+
+def sh(cmd):
+    try:
+        return subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30).stdout
+    except Exception:
+        return ""
+
+def to_mb(s):
+    m = re.match(r"([\d.]+)([BKMGT])?", s.strip().rstrip("+-"))
+    if not m: return 0.0
+    v = float(m.group(1)); u = m.group(2) or "B"
+    return v * {"B": 1/1048576, "K": 1/1024, "M": 1, "G": 1024, "T": 1048576}[u]
+
+INTERP = ("python", "Python", "node", "ruby", "perl", "bash", "zsh", "sh", "java", "osascript", "deno", "bun")
+
+def family(cmd):
+    args = cmd.split(" ")
+    base = os.path.basename(args[0]).lstrip("-")
+    if any(base.startswith(i) for i in INTERP):          # interpreter: name it by its script/module
+        for i, a in enumerate(args[1:], 1):
+            if a == "-m" and i + 1 < len(args): return f"{base} -m {args[i+1]}"
+            if a and not a.startswith("-"): return f"{base} {os.path.basename(a)}"
+        return base
+    m = re.search(r"/([^/]+)\.app/", cmd)
+    return m.group(1) + ".app" if m else base
+
+def collect():
+    total = int(sh("sysctl -n hw.memsize") or 0) / 1048576
+    vm = sh("vm_stat")
+    page = int((re.search(r"page size of (\d+)", vm) or [0, 16384])[1])
+    def pages(k):
+        m = re.search(rf"{k}:\s+(\d+)", vm)
+        return int(m.group(1)) * page / 1048576 if m else 0
+    sysmem = {
+        "total_mb": total,
+        "wired_mb": pages("Pages wired down"), "active_mb": pages("Pages active"),
+        "inactive_mb": pages("Pages inactive"), "free_mb": pages("Pages free"),
+        "compressed_mb": pages("Pages occupied by compressor"),
+        "swap": sh("sysctl -n vm.swapusage").strip(),
+        "pressure": (re.search(r"free percentage: (\d+%)", sh("memory_pressure")) or [None, "?"])[1],
+        "uptime": sh("uptime").strip(),
+    }
+    foot = {}
+    for line in sh("top -l 1 -stats pid,mem").splitlines():
+        p = line.split()
+        if len(p) == 2 and p[0].isdigit():
+            foot[int(p[0])] = to_mb(p[1])
+    procs = []
+    for line in sh("ps -axww -o pid=,ppid=,rss=,etime=,user=,command=").splitlines():
+        p = line.split(None, 5)
+        if len(p) < 6: continue
+        pid = int(p[0])
+        procs.append({"pid": pid, "ppid": int(p[1]), "rss_mb": int(p[2]) / 1024,
+                      "mb": foot.get(pid, int(p[2]) / 1024), "etime": p[3], "user": p[4],
+                      "cmd": p[5], "family": family(p[5])})
+    return sysmem, procs
+
+def main():
+    a = sys.argv[1:]
+    n = int(a[a.index("-n") + 1]) if "-n" in a else 20
+    if "--host" in a:
+        host = a[a.index("--host") + 1]
+        rest = [x for i, x in enumerate(a) if x != "--host" and (i == 0 or a[i-1] != "--host")]
+        with open(__file__) as f:
+            r = subprocess.run(["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", host,
+                                "python3 - " + " ".join(rest)], stdin=f, timeout=90)
+        sys.exit(r.returncode)
+    sysmem, procs = collect()
+    fams = {}
+    for p in procs:
+        f = fams.setdefault(p["family"], {"mb": 0, "n": 0, "top": p})
+        f["mb"] += p["mb"]; f["n"] += 1
+        if p["mb"] > f["top"]["mb"]: f["top"] = p
+    if "--json" in a:
+        print(json.dumps({"system": sysmem, "processes": sorted(procs, key=lambda p: -p["mb"])[:n],
+                          "families": {k: {"mb": v["mb"], "n": v["n"]} for k, v in fams.items()}}, indent=1))
+        return
+    s = sysmem; G = lambda mb: f"{mb/1024:5.1f} GB"
+    print(f"== {sh('hostname -s').strip()} — {G(s['total_mb'])} RAM · free-pressure {s['pressure']} · {s['uptime']}")
+    print(f"   wired {G(s['wired_mb'])} · active {G(s['active_mb'])} · inactive {G(s['inactive_mb'])} · "
+          f"compressed {G(s['compressed_mb'])} · free {G(s['free_mb'])}")
+    print(f"   swap: {s['swap']}")
+    print(f"   sum of process footprints: {G(sum(p['mb'] for p in procs))} across {len(procs)} processes\n")
+    print(f"-- Top {n} families (app / interpreter+script) --")
+    for k, v in sorted(fams.items(), key=lambda kv: -kv[1]["mb"])[:n]:
+        print(f"{G(v['mb'])}  x{v['n']:<3} {k[:60]}")
+    print(f"\n-- Top {n} processes (footprint, uptime, what it is doing) --")
+    for p in sorted(procs, key=lambda p: -p["mb"])[:n]:
+        print(f"{G(p['mb'])}  pid {p['pid']:<6} up {p['etime']:>11}  {p['cmd'][:220]}")
+
+if __name__ == "__main__":
+    main()
