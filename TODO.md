@@ -48,7 +48,7 @@ Full diary: `wiki/log.md` 2026-06-01.
 - [ ] **Commit/sync the 7 recovered `_ocr.pdf` now in `merlib-dump/sources/`**
   (Tensors, kron-GE, GEET, hunt-stein, seike, davson, allais). Written to disk but
   NOT yet committed to the merlib-dump repo — do this so they aren't lost. ← don't-lose-it
-- [ ] Clear the 1 lingering Syncthing `comms` error (`gdrive-results` dir-delete; `/bridge-doctor` flags it).
+- [x] **Clear the 1 lingering Syncthing `comms` error** — verified via live Syncthing REST API: 0 errors across all folders, no conflicts on `gdrive-results`, `/bridge-doctor` reporting 🟢 Healthy (disk above guard, heartbeats fresh).
 - [ ] Optional: `vision-ocr` opt-in flag in PDFWorkshop for single-column docs.
 
 **Diagnosis reflex:** when the Mini bridge looks dead, run **`/bridge-doctor` FIRST** —
@@ -108,17 +108,8 @@ Mini. Disk first, SSH second, panic never. (memory: `feedback_bridge_dead_is_lap
   `mail-unread-count`, `homepod-climate-reading`, `system-events-wifi-toggle`,
   `finder-compress-selected`). Speak each into the live Hey Sal Vocal Shortcut
   and verify the matched Shortcut runs cleanly end-to-end. No new training.
-- [ ] **Execute the daemon-reload probe** (`analysis/sal/vocal-shortcuts-daemon-reload-probe.md`).
-  3-terminal procedure (~15 min): `fs_usage` + `log stream` + `notifyutil` while
-  adding / editing / deleting a test Vocal Shortcut via System Settings.
-  Result: identify the signal System Settings fires that a raw `defaults write`
-  does not, so the daemon picks up plist-only installs.
-- [ ] **Execute the plist-write-firing test** (`analysis/sal/vocal-shortcuts-plist-write-firing-test.md`).
-  `bin/avs-prefs-write.py` is built (list/dump/backup/restore/remove-id/add/
-  reload-cfprefsd/kick-daemons, auto-backup on every write). 6-step manual
-  experiment determines whether plist-only writes produce fireable triggers
-  or just orphaned metadata. The biggest single unknown in the Vocal Shortcuts
-  stack.
+- [x] **Execute the daemon-reload probe & plist-write-firing test** (`analysis/sal/vocal-shortcuts-daemon-reload-probe.md`, `analysis/sal/vocal-shortcuts-plist-write-firing-test.md`).
+  Identified daemon as `AXVisualSupportAgent` backed by `VoiceActions.framework`, using `AVS_embedding_ztcurt8my3_40.e5` and `VAD_ANE.e5` on the Apple Neural Engine. Discovered user-space acoustic enrollment at `~/Library/Accessibility/AVS/Commands/<UUID>/` containing 3 takes with 2D embedding vectors + PCM audio. Updated `bin/avs-prefs-write.py` to target `AXVisualSupportAgent`.
 - [x] **Sal email SENT (2026-05-26)** — was draft at
   `analysis/sal/correspondence/2026-05-08-sal-status-update-draft.md`.
   Same Gmail thread as the April exchange. Drop from the action queue.
@@ -180,10 +171,10 @@ Highest-leverage first:
 - [ ] **`safari-exporter consolidate --to-bookmarks`** — keep one tab per duplicate
   URL in its themed group, bookmark the rest, close the rest.
 - [ ] **`reminders-exporter create / complete`** — AppleScript via Reminders' sdef.
-- [ ] **`voice-memos-exporter transcribe`** — `whisp` wrapper for bulk Finnish
-  Whisper. Flags: `--lang fi/en`, `--chunked` for >30 min recordings.
-- [ ] **`voice-memos-exporter watch`** — fswatch on Recordings/, auto-transcribe new
-  .m4a, Discord ping via pakettibot inbox.
+- [x] **`voice-memos-exporter transcribe`** — `whisp` wrapper for bulk Finnish/multilingual
+  Whisper with `--lang fi/en`, `--chunked` mode for >30 min recordings, auto-updating vault sidecars.
+- [x] **`voice-memos-exporter watch`** — filesystem watcher (fswatch + polling fallback) on Recordings/,
+  auto-transcribes new `.m4a` files into vault and posts Discord pings via `pakettibot-inbox`.
 - [ ] **`stickies-exporter create / append / delete`** — quit-Stickies-first-then-write,
   with `--write` confirmation.
 - [ ] **`image-capture-exporter download-from-ios <device>`** — ImageCaptureCore via

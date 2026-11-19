@@ -35,6 +35,7 @@
 #
 # RESULT-LOG >> (auto-maintained by the report-card hooks — newest below)
 #   2026-11-19  direct-commit  touched: embed
+#   2026-11-19  direct-commit  touched: embed
 #   2026-11-19  direct-commit  touched: resolve
 #   2026-11-19  direct-commit  touched: extract embed judge resolve describe
 #   2026-11-18  direct-commit  touched: resolve
