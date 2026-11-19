@@ -144,3 +144,25 @@ Feature: a #process tag in a note gets an LLM reply added as rich text, never by
   Scenario: A partial set of voices is deferred, never delivered
     Given the brain returns without every voice section
     Then the note is deferred an hour like a 429, not delivered
+
+  # 2026-11-19 — voices opt-in per note; duplicate-flood fix (Esa: "#process #bearden → only bearden")
+  @built @untested
+  Scenario: plain #process gets one fast answer, no voices
+    Given a note tagged only #process
+    Then bin/notes-process uses bin/notes-brain (240s) and no roster voice is asked
+
+  @built @untested
+  Scenario: #process #bearden asks exactly Bearden
+    Given a note tagged #process and #bearden
+    Then note_voices() returns ["Bearden"] and notes-voices runs with FREELLMASK_ONLY_VOICES=Bearden
+    And freellmask-mail promises/requires only "In Tom Bearden's tone" (no skeptic section)
+
+  @built @sim-verified
+  Scenario: a truncated reply title is not a failure
+    Given notes-new exits 4 because Notes shortened a long "Re:" title
+    Then the reply counts as delivered and the note is not answered again
+
+  @built @untested
+  Scenario: a once-deferred note does not loop
+    Given a note deferred by a timeout that later fails with a non-Deferred error
+    Then its deferral is cleared and it is not re-answered every pass

@@ -1062,7 +1062,7 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 
 `features/notes-process.feature` · [session](notes-process.session.md)
 
-**Behaviour (19 scenarios):**
+**Behaviour (23 scenarios):**
 
 - A real orange Notes tag is found (2026-11-08, note p13544) — `@built @hw-verified`
 - Fallback — reply as a linked rich-text note (note p13583) — `@built @hw-verified`
@@ -1083,10 +1083,14 @@ Each card is a triad: the `.feature` spec, a `.session.md` (the conversation tha
 - #process notes get the voices — `@built`
 - A throttled brain defers the note an hour instead of answering thinly — `@built @sim-verified`
 - A partial set of voices is deferred, never delivered — `@built`
+- plain #process gets one fast answer, no voices — `@built @untested`
+- #process #bearden asks exactly Bearden — `@built @untested`
+- a truncated reply title is not a failure — `@built @sim-verified`
+- a once-deferred note does not loop — `@built @untested`
 
 **How it does it:** **Source files:** `test_notes_process.py`, `bin/notes_input.py`
 
-**Grade:** @built ×16 · @designed ×1 · @hw-verified ×4 · @sim-verified ×8 · @todo ×1 · @untested ×1
+**Grade:** @built ×20 · @designed ×1 · @hw-verified ×4 · @sim-verified ×9 · @todo ×1 · @untested ×4
 
 
 <a id="notes-variants"></a>

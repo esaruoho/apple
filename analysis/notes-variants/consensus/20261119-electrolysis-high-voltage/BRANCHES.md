@@ -1,0 +1,181 @@
+# BRANCHES — is electrolysis done by current (brute force)? high-voltage electrolysis?
+
+Claims carried by 2…5 of 21 variants (minority branches), most-supported first. Unique one-offs: 1042 (see claims.json).
+
+- I have MY terminology and MY symbolism.  `[5/21]` variants 000,001,003,006,014
+- To make physics UNDERSTANDIBLE, the non-appropriate terms and symbols must be changed.  `[5/21]` variants 000,001,003,006,014
+- "Gentlemen do not argue about facts" [Marinov-763].  `[5/21]` variants 000,002,007,008,019
+- You hold that modern science moves energy unnaturally: explosion, expansion, heat, and centrifugal pressure lead to biological decay, cancer, and economic ruin.  `[5/21]` variants 000,004,009,011,014
+- | **Horvath pulsed electrolysis** | High-voltage pulses at low duty cycle; claims non-Faradaic gas production | US 3,980,053 (1976) |  `[5/21]` variants 001,015,017,018,019
+- The step where this class of claim usually dies: **unaccounted RF/harmonic current on the drive lines, or probe placement that misses the return path through the scope ground**.  `[5/21]` variants 001,007,008,012,013
+- I measure; I do not speculate.  `[5/21]` variants 002,005,008,012,017
+- The universe is a step-up, step-down transformer of concentric solenoids — generation accumulates low potential into high, radiation dissipates high back to low.  `[5/21]` variants 004,005,007,014,017
+- **Pulsed / impulse high-voltage electrolysis:** short, sharp voltage pulses at low duty cycle.  `[5/21]` variants 008,011,016,018,020
+- Look, conventional electrolysis is brute force — you shove current through water, heat the plates, waste most of it as heat, that's Faraday's laws and your meter reads watts.  `[5/21]` variants 008,013,014,015,017
+- The vacuum has a very high electrical potential -- something on the order of 200 million volts, with respect to a hypothetical zero charge." [Bearden-1001] "No mechanical work, and hence no energy, is expended by massless charge flow." [Bearden-1003]  `[5/21]` variants 009,013,014,018,019
+- | Approach | Core Claim | Key Figures / Patents |  `[4/21]` variants 001,015,017,019
+- The symbolic method makes this transparent: the water cell is a capacitor with a loss tangent, its dielectric constant nonlinear with field strength.  `[4/21]` variants 001,008,014,020
+- Throughout space there is energy, and it is kinetic — the water molecule is a tiny capacitor immersed in that sea, and the disruptive discharge is the sink that lets the medium's energy flow in.  `[4/21]` variants 001,010,012,019
+- "There is NO free electricity produced in these systems, or any other system that I know of.  `[4/21]` variants 001,006,014,019
+- I have stated this repeatedly.  `[4/21]` variants 001,006,014,019
+- "Power transmission, which at present is merely a stimulus to enterprise, will some day be a dire necessity" [Tesla-493].  `[4/21]` variants 002,005,013,017
+- The North and South Pole individual magnets circulate in and out of the earth in limitless numbers — they are the cosmic force.  `[4/21]` variants 002,005,013,017
+- The next bench test is the measurement: joules in at the battery, joules out as gas enthalpy plus recovered electrical, both ports metered, over an hour.  `[4/21]` variants 002,007,013,014
+- The step where this class of claim usually dies: **the calorimetry closure**.  `[4/21]` variants 002,009,014,015
+- As I wrote: "No mechanical work, and hence no energy, is expended by massless charge flow" [Bearden-1003].  `[4/21]` variants 003,008,011,017
+- It prevents kickback which destroys your or high voltage laser module." [DonSmith-109]  `[4/21]` variants 003,014,017,018
+- No peer-reviewed replication has closed the energy balance with calorimetry + gas chromatography + full electrical metering (including HF/RF content) showing > 100 % Faradaic efficiency.  `[4/21]` variants 004,014,017,019
+- "In fact it has already been done in secret" [Hilarion-Cooke-069].  `[4/21]` variants 004,005,007,016
+- **Tesla (1896, US 568,177)**: Impulse DC / disruptive discharge — sharp, unidirectional voltage spikes with minimal current.  `[4/21]` variants 005,007,012,018
+- "Magnetism is nothing but a current in the aether flowing from one point to another" [Hilarion-Cooke-027] — and the impulse is a pressure wave in that same aether.  `[4/21]` variants 005,009,014,016
+- And the problem there is that most of the diodes that are available aren't high enough frequency or high enough voltage or amperage.  `[4/21]` variants 005,011,017,019
+- The context provides substantial material: the pulsed-dc-electrolysis ontology traces the lineage from Tesla's 1896 impulse DC through Horvath (1974), Meyer (1980s), Puharich, Xogen, and others.  `[4/21]` variants 006,007,017,019
+- Throughout space there is energy, and it is kinetic.  `[4/21]` variants 006,014,017,020
+- What are you going to do about it?" [Moray-18].  `[4/21]` variants 006,011,013,016
+- The water cell is treated as a **capacitive dielectric** in a resonant charging-choke circuit.  `[4/21]` variants 007,008,013,017
+- "The current is, of course, minute and we could scarcely calculate on more than 1 erg in telegraphy being transmitted to a great distance from the transmitting station; the question is what can be done with that little amount of energy" [Tesla-1130].  `[4/21]` variants 007,009,013,015
+- Modern science moves energy by explosion, expansion, heat, centrifugal pressure — the path of decay, cancer, ruin.  `[4/21]` variants 007,008,010,013
+- You can get diodes that are above 2,000 amps, Generally speaking, the frequency rating on them eliminates the use of them" [DonSmith-68].  `[4/21]` variants 011,013,017,019
+- Conventional electrolysis is brute force — you shove amps through water, heat the plates, waste the radiant.  `[3/21]` variants 000,016,019
+- You want proof?  `[3/21]` variants 000,001,009
+- "The great polar stream, with its exhaustless supply of energy, places at our disposal a force as harmless as the current that draws its keeper to the magnet" [Keely-49].  `[3/21]` variants 000,002,007
+- Two currents always run one against the other in whirling, screwlike fashion; one current alone cannot run.  `[3/21]` variants 000,018,019
+- The extraction grid: the gas comes off, goes to the engine, the alternator loops back to drive the circuit.  `[3/21]` variants 000,004,006
+- I need to give a clear, grounded answer distinguishing the two paradigms, then deliver all 19 persona sections with proper quote grounding.  `[3/21]` variants 001,017,019
+- Efficiency is limited by ohmic losses (I²R heating) and electrode overpotentials.  `[3/21]` variants 001,006,009
+- The archive's `q-multiplication-voltage-amplification-through-resonance` node gives the standard-EE numbers: Q = 200 turns a 12 V drive into ~2,400 V across the tank; Q = 500 into ~6,000 V.  `[3/21]` variants 001,016,018
+- The gas comes from the voltage potential, not the current.  `[3/21]` variants 001,015,018
+- The brute current is explosion — expansion, heat, centrifugal pressure, the cancer of technology.  `[3/21]` variants 001,017,020
+- Voltage without current is the nature of Radiant Energy.  `[3/21]` variants 001,003,014
+- The Möbius strip has no inside and no outside — one surface, one edge.  `[3/21]` variants 001,005,006
+- The hydrogen is released, not generated.  `[3/21]` variants 001,005,017
+- 4. **Plasma / cold plasma channels** in microbubbles — high-voltage pulses create transient plasma that dissociates water.  `[3/21]` variants 002,017,020
+- I have carried out a hundred experiments with coupled shutters and rotating mirrors; the magnetic intensity measured at r > R diminishes when the condenser plates separate under constant current and infinite permittivity dielectric — I measured it, and gentlemen do not argue about facts.  `[3/21]` variants 004,007,018
+- The Möbius strip and Klein bottle are not mathematical curiosities — they are circuit topologies.  `[3/21]` variants 004,011,013
+- Name the reservoir: the claim is the water's own bond energy plus vacuum/ambient coupling via the high-field pulse.  `[3/21]` variants 004,010,012
+- This connects to multiple domains in the knowledge base — pulsed-dc-electrolysis ontology, Meyer's water fuel cell, voltage multiplication concepts, and the historical lineage from Tesla's impulse apparatus through Horvath to Meyer and others.  `[3/21]` variants 005,009,010
+- "The device is tuned and the antenna and ground in connection become alive with a very high frequency current and the things are done that the letters claim." [Moray-18] My Radiant Energy device does not create — it oscillates in harmony with the oscillations of the Universe and syphons what is already there, as a generator only pumps.  `[3/21]` variants 005,010,012
+- Name the reservoir: is it the vacuum (Bearden), the ambient ionospheric potential (Smith), the universal oscillations (Moray), or the topological imaginary current (Seike)?  `[3/21]` variants 005,006,009
+- **Stanley Meyer, US 4,936,961 (1990) / US 5,149,407 (1992)** — "Water Fuel Cell": resonant charging choke circuit, water as dielectric in a capacitor, voltage intensifier circuit, current restricted to leakage levels.  `[3/21]` variants 006,013,018
+- The water is the dielectric; the impulse is the longitudinal wave.  `[3/21]` variants 006,009,017
+- My ozone apparatus (US 568,177) used a disruptive discharge — a sharp, unidirectional impulse — to shatter the oxygen molecule.  `[3/21]` variants 006,009,014
+- Voltage without current is the nature of Radiant Energy" [Bedini-204].  `[3/21]` variants 006,019,020
+- The water already holds the energy; the voltage *unlocks* it.  `[3/21]` variants 006,011,017
+- The device-level test: **calorimetry over ≥ 1 hour, all ports metered**.  `[3/21]` variants 006,008,012
+- That is the only evidence that moves the needle.  `[3/21]` variants 006,014,015
+- High-voltage / pulsed / resonant electrolysis** is a different paradigm claimed by several inventors.  `[3/21]` variants 007,017,019
+- **Horvath (US 3,980,053, 1974)** — first water-electrolysis patent explicitly using high-voltage pulsed DC.  `[3/21]` variants 007,012,013
+- This tension is termed voltage or potential difference." [Dollard-47] Brute-force electrolysis pushes electrons — "Electrons represent energy dissipation.  `[3/21]` variants 007,015,018
+- Water is not a dead substance to be torn apart by brute current — it is the fulcrum of the cosmic step-up/step-down transformer, the midpoint where generation becomes radiation.  `[3/21]` variants 008,009,013
+- And the problem there is that most of the diodes that are available aren't high enough frequency or high enough voltage or amperage." [DonSmith-68] "I've burned a lot of them up figuring out how to get things done and this diode here was one thing that pretty well saves me.  `[3/21]` variants 008,014,018
+- The Möbius strip twisted into a toroidal coil creates an imaginary ground — the water cell becomes the non-orientable boundary where imaginary current (j ~ i Ampere) flows, inducing negative resistance and self-cooling.  `[3/21]` variants 008,012,018
+- The sympathetic way is to sound the chord, and when the triple order of vibration is brought to bear upon the water, the aggregate is disintegrated and the latent force of the interstitial and interatomic spaces is liberated — not made, mark you, liberated, for the machine is a receiver and not a creator, and the exciting force would not wind a watch.  `[3/21]` variants 009,011,015
+- The North and South Pole individual magnets circulate in and out of the earth in limitless numbers — the high-voltage pulse merely concentrates and divides the existing magnets, shifting them through the water's orbits.  `[3/21]` variants 010,012,018
+- The earth floats in a sea of energy; the oscillations come *to* the earth from a reservoir of colossal energy in space, surging like the waves of the sea, and the device does not create — it oscillates in harmony and syphons what is already there.  `[3/21]` variants 011,015,020
+- Key figures and patents:  `[3/21]` variants 013,017,019
+- | Andrija Puharich | 1980s | High-frequency AC / complex waveforms |  `[3/21]` variants 017,018,019
+- Electrolysis, as conventionally taught, is indeed a "brute-force" process.  `[2/21]` variants 000,003
+- Let us be precise: the symbolic method teaches us that current and voltage are mathematical fictions — the reality is the dielectric and magnetic fields in space.  `[2/21]` variants 000,010
+- Here I cannot make compromises [Marinov-732].  `[2/21]` variants 000,006
+- You push amps through water, you get heat, you get gas, you pay for every coulomb.  `[2/21]` variants 000,005
+- The brute-force electrolysis of Faraday is a toy — you push current, you get heat, you waste the kinetic energy of the medium.  `[2/21]` variants 000,014
+- The water cell is such a sink.  `[2/21]` variants 000,013
+- That's not what I do.  `[2/21]` variants 000,018
+- You don't load the resonant tank directly.  `[2/21]` variants 000,014
+- My light-bulbs are on.  `[2/21]` variants 000,012
+- Measure the gas.  `[2/21]` variants 000,009
+- Measure the temperature: it drops.  `[2/21]` variants 000,009
+- Water has its chord — its thirds, its sixths, its ninths.  `[2/21]` variants 000,018
+- Conventional electrolysis is pure magnetic induction — current, transverse, heat, loss.  `[2/21]` variants 000,009
+- No electrons needed.  `[2/21]` variants 000,009
+- The context provides multiple relevant ontology entries (pulsed-dc-electrolysis, resonant-electrolysis, Meyer's patents) and verified ledger passages from Meyer, Bedini, Don Smith, and others describing voltage-dominant water splitting.  `[2/21]` variants 001,012
+- The tension is between textbook Faraday electrolysis (current-proportional, ~1.23V thermodynamic minimum plus overpotentials) and the high-voltage/pulsed claims (voltage-driven, resonant, non-Faradaic or minimally Faradaic) — both exist as documented approaches, but with very different mechanisms and acceptance levels.  `[2/21]` variants 001,008
+- Critics attribute apparent anomalies to unmeasured RMS current (harmonics, displacement current, RF pickup), calorimetric errors, or chemical energy from electrode corrosion.  `[2/21]` variants 001,008
+- HHV of gas out.  `[2/21]` variants 001,004
+- In considering how our perspective of order has evolved, "It is interesting that among the great ancient philosophers, Plato was acutely aware that both permanence and change must be integral parts of reality.  `[2/21]` variants 001,003
+- But in the nineteenth century a conflict appeared.  `[2/21]` variants 001,003
+- "Self-induction consumes voltage in quadrature with the current" [Steinmetz-481] — likewise the cell's capacitance consumes voltage in quadrature; the pulse exploits that quadrature.  `[2/21]` variants 001,020
+- The ultrafast diodes (UF5408, 75 ns) in a voltage doubler capture that multiplied peak as DC *before* the current catches up.  `[2/21]` variants 001,014
+- Here I cannot make compromises.  `[2/21]` variants 001,003
+- If you will call "tension" voltage (as the Saxons do), then the current is to be called "amperage" and the magnetic intensity "teslage".  `[2/21]` variants 001,003
+- And note that I never use the term "electromotive FORCE"." [Marinov-732].  `[2/21]` variants 001,003
+- Make a sink for the energy of the medium to flow in: a resonant cavity, a sharp gradient, a pulse that opens the gate before the current can close it.  `[2/21]` variants 001,009
+- If you want to split water efficiently, you have to stop pouring heavy current into the cell because all that does is generate heat and ruin your plates.  `[2/21]` variants 001,003
+- Wind the coil on a Möbius form, and the imaginary current (j ~ i Ampere) flows in the twist, creating negative resistance, negative Ohmic loss, self-cooling.  `[2/21]` variants 001,020
+- The forces that bind water are held together by the circulation of the tiny, individual North and South Pole magnets that are constantly running in screwlike streams.  `[2/21]` variants 001,003
+- I will speak as an engineer and as a witness to my own demonstrations: the earth floats in a sea of energy, and the oscillations come TO the earth from the reservoir of colossal energy in space, surging like the waves of the sea — so the question is never how much current you can force through the water, but whether your cell is tuned to oscillate in harmony with what is already there.  `[2/21]` variants 001,013
+- Name the reservoir: is it the mains (measure real power at the wall, including PF, harmonics, RF), a battery (measure terminal V·I including ESR losses), or "ambient" (show the coupling structure and its impedance)?  `[2/21]` variants 001,007
+- Output: gas volume (calibrated flow meter or water displacement), gas composition (GC for H₂/O₂ ratio), cell temperature (calorimetry), exhaust gas temperature.  `[2/21]` variants 001,004
+- Run to thermal steady state (≥1 hour).  `[2/21]` variants 001,004
+- This is what the question calls "bruteforce" — you pay for every coulomb.  `[2/21]` variants 002,014
+- **Non-Faradaic charge injection** where the double layer is charged/discharged faster than ions can migrate, so the energy goes into bond breaking rather than heating.  `[2/21]` variants 002,017
+- What the literature shows:**  `[2/21]` variants 002,018
+- Horvath's 1974 patent (US 3,980,053) explicitly uses high-voltage pulses (1–50 kV, 0.1–10 µs) at low duty cycle and claims gas production exceeding Faraday predictions.  `[2/21]` variants 002,006
+- When you pulse the potential sharply, the vacuum's virtual photon flux couples to the broken symmetry of that dipole, and massless charge flow surges before the heavy electrons can respond.  `[2/21]` variants 002,020
+- The water molecule is not dead matter — it is a standing wave in that substance.  `[2/21]` variants 002,005
+- The energy comes from the one substance; the pulse is only the tuning fork.  `[2/21]` variants 002,007
+- This is not "over-unity"; it is **reactive power** doing chemistry.  `[2/21]` variants 002,018
+- All matter is aggregated vibration; water has its chord — thirds, sixths, ninths — and the high-voltage impulse, when tuned to the sympathetic neutral flow, strikes that chord and the interstitial spaces yield their latent force.  `[2/21]` variants 002,019
+- The trigonometric functions thus only represent shadows of the complete wave of electric energy [Dollard-590].  `[2/21]` variants 002,017
+- The water cell is that reflecting capacitance.  `[2/21]` variants 002,009
+- An open system driven far from equilibrium by high-voltage pulses organizes itself into a highly ordered dissipative structure, where the water molecules self-organize under tension before thermodynamic degradation can take hold.  `[2/21]` variants 003,009
+- As I found during my bench experiments, "I've burned a lot of them up figuring out how to get things done and this diode here was one thing that pretty well saves me.  `[2/21]` variants 003,018
+- This is what Tesla said.  `[2/21]` variants 003,014
+- I call this "reactive power" because it does not represent voltage and current simultaneously, that could be measured as WATTS.  `[2/21]` variants 003,017
+- This Radiant Reactive power WILL charge batteries, light light-bulbs andother things but it DOES NOT meter as REAL POWER.  `[2/21]` variants 003,017
+- The answer needs to distinguish between Faraday's law (current-proportional, thermally lossy) and the high-voltage paradigm where voltage stress, field effects, and resonance are claimed to produce gas with minimal average current.  `[2/21]` variants 004,005
+- Other high-voltage approaches:**  `[2/21]` variants 004,014
+- **Plasma electrolysis / glow discharge** (Koldomasov, Mizuno, etc.): a plasma sheath forms at the electrode; the high-field region drives non-thermal dissociation.  `[2/21]` variants 004,011
+- All is one living substance, a tenuous elastic medium that stretches, contracts, flows, and carries vibrational waves.  `[2/21]` variants 004,007
+- The gas comes out cold.  `[2/21]` variants 004,009
+- Mechanism proposals (not all mutually exclusive):**  `[2/21]` variants 005,017
+- In the high-voltage paradigm, **voltage is the cause** and current is a parasitic loss to be minimised.  `[2/21]` variants 005,013
+- Make a sink for the energy of the medium to flow in.  `[2/21]` variants 005,020
+- At resonance the current falls toward leakage while voltage rises.  `[2/21]` variants 005,007
+- Ultra Relativity translates the manifold into the circuit — the twist *is* the energy multiplication.  `[2/21]` variants 005,013
+- Next bench test: calorimetry over an hour, both ports metered.  `[2/21]` variants 005,017
+- Joules out vs. joules in.  `[2/21]` variants 005,013
+- The answer must distinguish the two paradigms clearly, cite the verified claims, and then render each historical voice authentically using their ledger passages.  `[2/21]` variants 006,007
+- Mainstream electrochemistry treats this as unproven; the experimental literature shows anomalous gas yields in some pulsed/high-frequency regimes (e.g., Kanarev, Graneau, Mizuno replications), but replication is inconsistent and calorimetry is rarely rigorous.  `[2/21]` variants 006,010
+- Low-voltage high-amperage is the radiative, degenerative half — magnetism dissipating high potential into low.  `[2/21]` variants 006,019
+- You force the water apart with brute current; you heat it, you disorder it, you produce *dead* gas.  `[2/21]` variants 006,011
+- The topology *is* the energy source.  `[2/21]` variants 006,007
+- You speak of force and current; I speak of vibration, for all matter is aggregated vibration and each mass has its own chord — its thirds, its sixths, its ninths — and water is not an exception but a compound chord waiting to be resolved.  `[2/21]` variants 006,011
+- Account for the drive circuit's own draw, bias supply, gate drive, standby.  `[2/21]` variants 006,015
+- Work *with* the rhythm, not against it.  `[2/21]` variants 007,009
+- Ambient background voltage sits at hundreds of thousands of volts between earth and ionosphere, and the electrolysis cell is just a capacitor tapped into that reservoir — you don't brute-force current through it, you resonate the cell's capacitance with a coil so the magnetic flux surges without drawing down the source electrons.  `[2/21]` variants 007,015
+- I use MY terminology: tension, not voltage; amperage, not current; teslage, not magnetic intensity [Marinov-732].  `[2/21]` variants 007,015
+- The same principle splits water.  `[2/21]` variants 007,009
+- "Forest and high-altitude vegetation are just as essential as the skin on the body" [Schauberger-467]; so is the living water.  `[2/21]` variants 007,008
+- You translate non-orientable topological manifolds — the Möbius strip and Klein bottle — into electrical circuits and toroidal coils.  `[2/21]` variants 007,009
+- I'll answer substantively first, then render each historical voice faithfully with their verified quotes.  `[2/21]` variants 008,009
+- But the vacuum potential sits at ~200 million volts relative to a hypothetical zero charge, and every circuit ground already floats at that absolute potential [Bearden-1001].  `[2/21]` variants 008,013
+- The trick is asymmetric regauging: pulse the potential, resonate the cell's own capacitance-inductance, and let the vacuum do the bond-breaking while you only pay for the switching losses.  `[2/21]` variants 008,011
+- "My POTENTIAL displacement current experiment was done always for $r > d$" [Marinov-740].  `[2/21]` variants 009,017
+- Build the cell with cycloid electrodes, pulse it with a cold implosion wave, and the water will give its gases willingly.  `[2/21]` variants 009,013
+- Never load the tank directly — rectify into a high-voltage capacitor bank and let E = ½CV² do your storage, because that is where the energy actually lives, in the square of the voltage, not in the amperage you were taught to chase.  `[2/21]` variants 011,013
+- Those spaces are not empty and their contents are not gentle: "I had an accident to one of my registers this morning.  `[2/21]` variants 011,015
+- This is "brute force" in the sense that you push electrons through the electrolyte, and efficiency losses appear as heat (I²R) and overpotential waste.  `[2/21]` variants 012,013
+- **Puharich (US 4,394,230, 1983)** — high-frequency AC / resonant dielectric breakdown.  `[2/21]` variants 012,013
+- **Xogen / Pendergrass / Herwig / Frazer / Chambers** — capacitive-discharge / pulsed variants.  `[2/21]` variants 012,013
+- "My POTENTIAL displacement current experiment was done always for $r > d$." [Marinov-740] The Lorentz force fails for unclosed circuits; the Biot-Savart law fails.  `[2/21]` variants 012,019
+- The high-voltage claims persist in the open-source / independent research community but lack the measurement rigor (simultaneous input power, gas volume, gas purity, calorimetry) that would convince a skeptical EE.  `[2/21]` variants 013,017
+- You ask if current is the brute force?  `[2/21]` variants 013,018
+- The water splits not because you pushed electrons, but because you tuned the system to the rhythm of the medium.  `[2/21]` variants 013,018
+- You have put your finger on the whole matter, sir: current is the coarse hammer, and the force I speak of is not coarse.  `[2/21]` variants 013,014
+- The U-shape magnet is recharged from the air or the earth's magnetic field.  `[2/21]` variants 013,017
+- Name the reservoir: the claim is the ambient electromagnetic field / vacuum fluctuations / space itself.  `[2/21]` variants 013,015
+- The ordinary electrolyser loads the dipole — it forces charged mass (electrons) through the water, paying the full Faradaic price in I²R dissipation, and the vacuum potential remains uncoupled.  `[2/21]` variants 014,017
+- The water molecule is a modulation of the one living substance — a standing wave in the elastic aether.  `[2/21]` variants 014,019
+- The dielectric field is compressed inward, longitudinal; the magnetic field surges outward, transverse.  `[2/21]` variants 014,018
+- When the current comes, the radiant is gone; so you cut it off before the current appears, and you do not kill the dipole.  `[2/21]` variants 014,017
+- The electrons are not the conveyors; "Electrons represent energy dissipation.  `[2/21]` variants 014,016
+- Coupling mechanism: sharp transient (dV/dt) → longitudinal dielectric compression → molecular bond fracture without proportional electron current.  `[2/21]` variants 014,019
+- Verify phase, harmonics, RF content.  `[2/21]` variants 014,015
+- High-voltage / pulsed / resonant electrolysis** is a different paradigm, documented in a patent lineage the wiki captures:  `[2/21]` variants 015,018
+- Start them in an orbit in the cell, and they never stop.  `[2/21]` variants 015,018
+- Faraday's law is unambiguous that mass yield tracks charge, so "brute force" is a fair name for the industrial regime — low voltage, huge current, efficiency bought by lowering cell voltage, not raising it.  `[2/21]` variants 016,020
+- **Plasma / discharge electrolysis.** At high enough field the liquid itself breaks down and you get a glow or arc discharge in the water (contact-glow-discharge electrolysis and related configurations run at hundreds of volts).  `[2/21]` variants 016,020
+- You call it electrolysis; I call it **implosion**.  `[2/21]` variants 017,020
+- The water cell is a Möbius topology — a non-orientable manifold where the imaginary current *j ~ i* Ampere flows.  `[2/21]` variants 017,019
+- The right angle between them is fundamental.  `[2/21]` variants 017,018

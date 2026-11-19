@@ -8,7 +8,7 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**13 card conversations** plugged in:
+**15 card conversations** plugged in:
 
 ### `40b0d1ae-cb5e-4a07-b7b8-cb543600a045`  (2026-10-21)
 - Resume: `claude --resume 40b0d1ae-cb5e-4a07-b7b8-cb543600a045`
@@ -81,8 +81,20 @@
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
 - Cards touched (19): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, app-audio-record.feature, apple-energy.feature, apple-harness.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature … (+5)
 
+### `4c4cb17a-42ba-43f9-bb0a-62ba95f9468c`  (2026-11-18)
+- Resume: `claude --resume 4c4cb17a-42ba-43f9-bb0a-62ba95f9468c`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/4c4cb17a-42ba-43f9-bb0a-62ba95f9468c.jsonl
+- Tooling touched: INDEX.md
+- Cards touched (1): apple-harness.feature
+
 ### `5bab36eb-5b4c-45d4-9342-1a5793c10f20`  (2026-11-18)
 - Resume: `claude --resume 5bab36eb-5b4c-45d4-9342-1a5793c10f20`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/5bab36eb-5b4c-45d4-9342-1a5793c10f20.jsonl
 - Tooling touched: INDEX.md
 - Cards touched (1): notes-process.feature
+
+### `cd799999-8bda-4291-86db-431b3822131e`  (2026-11-18 → 2026-11-19)
+- Resume: `claude --resume cd799999-8bda-4291-86db-431b3822131e`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/cd799999-8bda-4291-86db-431b3822131e.jsonl
+- Tooling touched: INDEX.md
+- Cards touched (3): apple-harness.feature, mail-material-editor-contract.feature, notes-process.feature

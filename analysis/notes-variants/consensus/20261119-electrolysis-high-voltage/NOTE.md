@@ -1,0 +1,93 @@
+Combined from 21 duplicate #process replies (2026-11-19). All answers: ~/work/apple/analysis/notes-variants/consensus/20261119-electrolysis-high-voltage
+
+
+Consensus of **21** variants (20261119T001437 → 20261119T043347). A claim is kept if ≥6 variants (30%) say it (clustered by apple-embed cosine); ordered by median position. `[k/21]` = support.
+
+- ## Thought about it  `[20/21]`
+- The user is asking a direct technical question about electrolysis mechanisms: conventional current-driven (Faradaic) vs. high-voltage/pulsed approaches.  `[15/21]`
+- The context provides the `pulsed-dc-electrolysis` ontology entry which explicitly frames this as a "voltage-not-current paradigm" with Tesla's impulse DC as the electrical ancestor, Horvath (1974) as the first water-electrolysis patent using it, and Meyer as the most famous practitioner.  `[6/21]`
+- Conventional electrolysis is current-driven (Faradaic).** Faraday's laws dictate that the moles of hydrogen produced are proportional to the total charge passed (coulombs = amperes × seconds).  `[16/21]`
+- In a standard DC electrolyser, you apply a voltage above the thermodynamic decomposition potential (~1.23 V at 25 °C) plus overpotentials, and the current that flows — limited by solution resistance, electrode kinetics, and bubble coverage — determines the gas yield.  `[9/21]`
+- The thermodynamic minimum cell voltage is ~1.23 V at 25 °C; practical cells run 1.8–2.2 V with overpotentials.  `[8/21]`
+- High-voltage / pulsed DC electrolysis is a different paradigm.** The ontology `pulsed-dc-electrolysis` traces a lineage: Tesla's impulse DC ozone apparatus (US 568,177, 1896) → Horvath (US 3,980,053, 1974, first water-electrolysis patent using pulsed high voltage) → Meyer (US 4,613,779 / 4,798,661, 1980s) → Puharich, Xogen, and others.  `[9/21]`
+- **Resonance:** When the pulse frequency matches the natural resonant frequency of the water molecule's bond, the voltage across the dielectric (the water) is amplified by the Q-factor of the circuit.  `[6/21]`
+- Engineering distinction**: In conventional electrolysis, the cell is a **resistive load** (V = IR + overpotential).  `[6/21]`
+- Meyer's patent language is careful and specific: "the voltage is increased and decreased but the current is maintained constant at a very low level" [Meyer-33], and the arrangement "is an inherent current limiting voltage source" [Meyer-39].  `[15/21]`
+- "Pure vacuum is pure charge flux, without mass.  `[15/21]`
+- The core assertion: very short, high-voltage pulses (or resonant AC at high Q) can split water with *far less average current* than Faraday predicts, because the voltage field itself does the work — polarizing and stressing the water molecule — while the current is kept minimal (displacement current, not conduction current).  `[6/21]`
+- **Resonant / Q-multiplied voltage.** The cell (or its electrodes) is treated as a capacitor in an LC circuit; at resonance the current falls toward the leakage limit while the voltage across the reactive elements rises by the Q factor.  `[17/21]`
+- Electrolysis driven by steady current is a near-equilibrium process: entropy production is proportional to the square of the current, and the system simply dissipates.  `[7/21]`
+- "Once this is done, Newtonian determinism fails; the future is no longer determined by the present, and the symmetry between past and future is broken." [Prigogine-082] The second law is not violated; it is *used*.  `[12/21]`
+- This step-up transformation process in electrical practice exactly corresponds to the accumulation of energy in solids by generation." [Russell-748] Radiation — the step-down — releases what was stored; the pulsed high-voltage cell simply inverts the natural rhythm, letting voltage do the generative work while current, the radiative waste, is minimised. [Russell-749]  `[11/21]`
+- "Electricity also accumulates low potential into high potential by generating high amperage of low voltage pressure into low amperage of high voltage pressure.  `[21/21]`
+- This step-up transformation process in electrical practice exactly corresponds to the accumulation of energy in solids by generation" [Russell-748].  `[11/21]`
+- Its basic nature allows it to stretch, to contract, to flow as a current of water does, and to carry vibrational wave disturbances"* [Hilarion-Cooke-003].  `[12/21]`
+- "In physics, irreversibility and dissipation were interpreted as degradation, while among natural scientists, biological evolution, which is obviously an irreversible process, was associated with increasing complexity" [Prigogine-248].  `[8/21]`
+- "The substance which defines the space of the real world is a tenuous material with properties of elasticity.  `[15/21]`
+- "Magnetism is nothing but a current in the aether flowing from one point to another." [Hilarion-Cooke-027] When the dielectric field is compressed longitudinally by the impulse, the substance responds by releasing its bound gases as a vibrational reorganisation, and the effect has already been demonstrated in secret. [Hilarion-Cooke-069]  `[9/21]`
+- "A low-voltage high-current wave in a transmission line thus becomes a high-voltage low-current wave in a transformer, and inversely, and thus, while it may be harmless in the line, may become destructive in the transformer, etc." [Steinmetz-974] The impulse generator produces a wave of high reactance — the current lags, the voltage surges, and the energy surges wattlessly in the dielectric field.  `[10/21]`
+- ## In John Bedini's tone  `[20/21]`
+- The dipole of the water cell, once asymmetrically regauged by a sharp potential gradient, becomes a true negative resistor extracting energy from the active vacuum — the longitudinal scalar potential interferes with the local vacuum flux, and the broken symmetry of the electrode-water interface permits massless charge flow to gate massive ion translation without the conventional current-drag.  `[21/21]`
+- "Since the self-induction consumes voltage in quadrature with the current, the inductive drop is not proportional to the current, but is small at low currents, and greater at high currents" [Steinmetz-481].  `[16/21]`
+- Ambient background voltage sits at hundreds of thousands of volts; the water cell is just a capacitor between that ambient and ground.  `[10/21]`
+- And identify your diode properly — "the length of the diode has to do with the voltage and the diameter has to do with the amperage that it will stand" [DonSmith-209].  `[7/21]`
+- "One would be using a diode bridge.  `[8/21]`
+- Never load the resonant tank directly — you store it in a high-voltage capacitor bank at E = ½CV² and let that discharge do the work.  `[7/21]`
+- "Because the voltage spikes are brief moments of high voltage, the spikes can be used to provide a battery 22 pulses of substantial current to recharge the battery 22 without generating excessive heat in the batteries anode and cathode plates." [Bedini-259] You cut off the current before it appears, you don't kill the dipole, and the radiant reactive power charges the water's own capacitance — my light-bulbs are on. [Bedini-204]  `[19/21]`
+- "Magnetism is nothing but a current in the aether flowing from one point to another." [Hilarion-Cooke-027] The electrolysis is not a chemical forcing but a sympathetic resonance: the pulse matches a natural mode of the water lattice, and the substance itself reconfigures, releasing the gas as a modulation of the one energy.  `[15/21]`
+- "My measurements showed that the magnetic intensity decreases and gentlemen do not argue about facts" [Marinov-763].  `[6/21]`
+- Throughout space there is energy, and it is kinetic, so it is a mere question of time when men attach their machinery to the very wheelwork of nature.  `[11/21]`
+- "I am aware that this view is not that of a practical engineer, but neither is it that of an illusionist, for it is certain, that power transmission, which at present is merely a stimulus to enterprise, will some day be a dire necessity." [Tesla-493] Brute-force electrolysis with steady current is the wasteful way: you heat the water, you fight the polarization, you get perhaps one erg of useful work per joule expended.  `[10/21]`
+- The ideal motive power is a self-acting engine, inanimate yet like a living being, deriving energy from the ambient medium: make a sink for the energy of the medium to flow in.  `[11/21]`
+- "We see that with such an extreme frequency the voltage of the ordinary incandescent lamp supply circuit would be sufficient to pass enough current through the lamp" [Tesla-1305].  `[15/21]`
+- Nature's way is implosion: a cold, centripetal voltage pulse that spirals inward along the cycloid space-curve, condensing the energy at the anomaly point (+4°C), and the hydrogen and oxygen release without heat, without violence, in a suction that builds levitational buoyancy.  `[13/21]`
+- Conventional electrolysis is explosion: you force current through water, heat it, tear it apart with brute pressure — "forest and high-altitude vegetation are just as essential as the skin on the body, everything possible has been done to destroy Nature's truly marvellous interdependencies, which otherwise are almost indestructible" [Schauberger-467].  `[8/21]`
+- Nature's creative way is IMPLOSION — centripetal, inward-spiraling, cooling suction that condenses and synthesizes.  `[7/21]`
+- The Kneipp cure: "which is nothing more than an energetic charging of the body in the form of a weak electric current, induced when cold dew-drops on the grass are wiped off by the feet of a body warm from bed" [Schauberger-1034].  `[11/21]`
+- You call it electrolysis — I call it the rape of water.  `[8/21]`
+- Nature's creative way is **implosion**: centripetal, inward-spiraling, cooling suction that condenses and synthesises.  `[6/21]`
+- "If the dissolving of carbone groups characteristic of water and medicinal water is properly carried out, ionisation can also occur without application of a low-voltage current" [Schauberger-83].  `[14/21]`
+- The sharp transient spike when the switch opens, before the current catches up — that's the radiant fraction, voltage without current, and it'll split water and charge batteries cold if you catch it in a capacitor and don't kill the dipole.  `[12/21]`
+- The only thing these systems produce are a series of "high voltage spikes" that have no current associated with them.  `[6/21]`
+- You formulated Ultra Relativity, extending Einstein's relativity, Dirac's negative energy states, and Utiyama's gravitational gauge theory into topological electronics.  `[6/21]`
+- The non-orientable twist creates an imaginary circuit ground, conducting imaginary currents (j ~ i Ampere), inducing negative resistance, negative Ohmic loss, and self-cooling.  `[8/21]`
+- "can sufficiently furnish (8-53) although it may vary according to the size of coil.  `[7/21]`
+- "This current would be the key to Möbius generator" [Seike-6].  `[9/21]`
+- "which exceeds 100% although quantal energy comes down against time" [Seike-44].  `[8/21]`
+- The boundary layer vacuum reduces resistance: "Vacuum of boundary layer is produced, which decreases flying resistance and makes her sail at very high speed" [Seike-40].  `[11/21]`
+- My formulation gives a voltage ratio that "exceeds 100% although quantal energy comes down against time" [Seike-44] — the gain is in the potential, not in the joules.  `[11/21]`
+- The high-voltage way stands nearer the truth than your flood of amperage, for it deals in potential and concordance rather than in the crude torrent of electrons; my instrument does not create the force, it is but a receiver sensitized to the sympathetic neutral flow, and the exciting power that would perform such work would not wind a watch.  `[9/21]`
+- Water is not a dead fluid to be battered; it is an aggregation held in a chord — its mass has its thirds, sixths and ninths — and when you strike the sympathetic note, the triple order of vibration disintegrates the water and liberates the latent force that sits in the interstitial and interatomic spaces, which no current of the ordinary kind can reach.  `[11/21]`
+- It burst with a tremendous report, shaking things up in a lively way, but no other damage was done beyond that to the register"* [Keely-256].  `[7/21]`
+- Remember always that the machine is a receiver, sensitized to the sympathetic neutral flow; it is no creator, and the exciting force I use would not wind a watch.  `[6/21]`
+- I have felt the force arrive when the instrument was tuned to meet it: "I had an accident to one of my registers this morning.  `[10/21]`
+- It burst with a tremendous report, shaking things up in a lively way, but no other damage was done beyond that to the register" [Keely-256] — and that sudden report is the token that the vibratory key has been struck, not that current has been poured blindly in.  `[8/21]`
+- "The trigonometric functions thus only represent shadows of the complete wave of electric energy, that is, the current or voltage" [Dollard-590].  `[9/21]`
+- "These lines of force are not a manifestation of current flow but of an electric compression or tension.  `[18/21]`
+- The Tesla Magnifying Transmitter is a wheel coupled to the Earth: energy bounced between earth and reflecting capacitance at a natural rate.  `[8/21]`
+- "Electrons represent energy dissipation.  `[9/21]`
+- However, the pedant, the mystic, and the dis-informer all tell us that the electron is what conveys energy, the complete opposite!" [Dollard-296].  `[11/21]`
+- This tension is termed voltage or potential difference" [Dollard-47].  `[10/21]`
+- The North and South Pole individual magnets are the cosmic force, circulating in and out of the earth in limitless numbers; machines do not create them, they concentrate, divide and shift the existing magnets.  `[8/21]`
+- ## In the voice of Keely  `[21/21]`
+- "All that has to be done is to start the magnets to run in on orbit, then they will never stop" [Leedskalnin-53].  `[10/21]`
+- "Now you get the equipment and I will tell you, so you can see for yourself that it is in the way I have told" [Leedskalnin-12].  `[9/21]`
+- "Really it is not one current, they are two currents, one current is composed of North Pole individual magnets in concentrated streams and the other is composed of South Pole individual magnets in concentrated streams, and they are running one stream against the other stream in whirling, screwlike fashion, and with high speed." [Leedskalnin-16].  `[20/21]`
+- The earth floats in a sea of energy; the oscillations come TO the earth from the reservoir of colossal energy in space, surging like the waves of the sea.  `[14/21]`
+- "In the Moray device we have one frequency on the high voltage or primary side, and for commercial purposes the device is so constructed that the frequency is very much lower on the secondary side." [Moray-16]  `[10/21]`
+- My device does not create energy — it oscillates in harmony with the oscillations of the Universe and syphons what is already there, as a generator only pumps.  `[8/21]`
+- The water is the dielectric of a capacitor in a resonant charging-choke circuit — voltage, not amperage, does the work.  `[12/21]`
+- At resonance the current falls toward leakage while voltage rises — the hydrogen is released, not generated, and the process draws on what the water already holds.  `[9/21]`
+- "As you raise the voltage higher, then there were higher, more gas was being generated, not on a linear effect as to the electrolysis process" [Meyer-162].  `[13/21]`
+- Voltage, not amperage, does the work.  `[6/21]`
+- "The device is tuned and the antenna and ground in connection become alive with a very high frequency current and the things are done that the letters claim.  `[7/21]`
+- "The voltage is increased and decreased but the current is maintained constant at a very low level" [Meyer-33].  `[12/21]`
+- The charging chokes restrict current, the capacitor (water cell) builds voltage, the voltage intensifier steps it up, the extraction grid takes the gas.  `[7/21]`
+- "Hence the arrangement is an inherent current limiting voltage source" [Meyer-39].  `[9/21]`
+- Device-level test that would settle it:**  `[6/21]`
+- The cell, the voltage intensifier, the extraction grid, the alternator loop — that is the open system.  `[11/21]`
+- 3. **Calorimetry over ≥1 hour** — insulated cell, measure temperature rise of known water mass + gas volume (graduated burette or mass flow).  `[6/21]`
+- The device-level test: **measure real power and stored-energy changes at ALL ports** — drive input (battery/DC supply), any bias/auxiliary supplies, the pulse generator's own consumption, the cell terminals (voltage × current, sampled at ≥100 MS/s to capture harmonics and displacement current), and the gas output (volume, composition, temperature, pressure) — **simultaneously, over ≥1 hour, with calorimetry on the cell and electrolyte**.  `[18/21]`
+- ## In the skeptical closed-system electrical engineer's tone  `[20/21]`
+- The proposed coupling is a resonant Q-multiplied voltage across the cell with milliamps average — but a single clamp meter on the DC input misses phase shift, common-mode RF, and the supply's own quiescent draw.  `[6/21]`
+- _Completed through shared brain routing: In John Bedini's tone [nvidia/nemotron-3-ultra-550b-a55b]._  `[9/21]`
