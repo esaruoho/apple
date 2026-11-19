@@ -533,7 +533,13 @@ try:
 except Exception as _exc:  # DEGRADE, never crash the belt at import
     print(f"⚠️ roster voices unavailable ({_exc}) — tone sections off", flush=True)
     EMAIL_VOICES = []
-TONE_HEADINGS = [v["tone"] for v in EMAIL_VOICES] + [SKEPTIC_HEADING]
+# ONLY-VOICES (2026-11-19, Esa: "#process #bearden → it only gets bearden"): a caller may narrow the
+# roster to named seats; then ONLY those headings are promised/required — no skeptic, no other voices.
+_ONLY = {x.strip().lower() for x in os.environ.get("FREELLMASK_ONLY_VOICES", "").split(",") if x.strip()}
+if _ONLY:
+    EMAIL_VOICES = [v for v in EMAIL_VOICES if v["name"].lower() in _ONLY]
+SKEPTIC_ON = not _ONLY
+TONE_HEADINGS = [v["tone"] for v in EMAIL_VOICES] + ([SKEPTIC_HEADING] if SKEPTIC_ON else [])
 VOICE_LABELS = ", ".join(v["label"] for v in EMAIL_VOICES) or "historical-voice"
 
 def _voice_template():
@@ -653,7 +659,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "across the sources, where the tension is. Think out loud, here only.)\n"
           "## Answer\n(the substantive, concrete analysis — grounded in the wiki context + your knowledge)\n"
           + (MATERIAL_SECTIONS if material else "")
-          + _voice_template() +
+          + _voice_template() + ("" if not SKEPTIC_ON else
           # The skeptical voice, LAST on purpose (Esa, 2026-08-12). Rigorous, not dismissive: it demands
           # the books balance and names the measurement that would settle it. It is ONE lens of thirteen
           # and it speaks after the open-system readings — it never becomes the frame they are judged by.
@@ -663,7 +669,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "(phase, harmonics, RF, common-mode), and the ONE measurement that would settle it — "
           "calorimetry over an hour, joules out minus joules in, both ports metered. Name the step "
           "where this class of claim usually dies. Be specific and testable; do NOT declare it "
-          "impossible and do NOT argue from the ceiling — say what would falsify it.)")
+          "impossible and do NOT argue from the ceiling — say what would falsify it.)"))
         # REPORT-CARD >> convey/features/don-smith-email-grounding.feature
         # DEGRADE, DON'T FAIL (2026-11-01): if the verified ledgers cannot be resolved on this host
         # (the Mini does not mirror merlib-dump; see convey/kb/quote-ledgers + voice_grounding), fall

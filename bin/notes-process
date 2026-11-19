@@ -264,11 +264,12 @@ def ledger_add(rec):
 
 
 # ---------- LLM + writers ----------
-def call_llm(cmd, prompt, timeout, context='', audit_dir=None):
+def call_llm(cmd, prompt, timeout, context='', audit_dir=None, extra_env=None):
     argv = shlex.split(cmd)
     if context and Path(argv[0]).name in ('fmremote', 'notes-brain'):  # verbatim prompt; earlier note text as context
         argv[1:1] = ['--system', 'Earlier in this note (context for the question):\n' + context]
     env = os.environ.copy()
+    env.update(extra_env or {})
     attempt = None
     if audit_dir:
         attempt = Path(audit_dir) / ('model-%03d' % (len(list(Path(audit_dir).glob('model-*'))) + 1))
@@ -330,9 +331,45 @@ def linked_note(title, md, account, folder):
     r = subprocess.run([str(HERE / 'notes-new'), '--title', reply_title(title), '--account', account,
                         '--folder', folder, '-'], input=md, capture_output=True, text=True,
                        timeout=90)
-    if r.returncode != 0:
+    # rc 4 = the note WAS created; Notes just truncated a long title ("…"). Treating that as a failure
+    # re-answered the electrolysis note every pass, ~100 duplicate replies (2026-11-19).
+    if r.returncode not in (0, 4) or not r.stdout.strip():
         raise RuntimeError(f'notes-new failed: {r.stderr.strip()}')
     return r.stdout.strip()
+
+
+# ---------- voices: opt-in per note (#process #bearden) ----------
+# Esa 2026-11-19: "#process does not use the voices. instead i write #process #bearden and it only
+# gets bearden." All 16 roster voices on every note took ~25 min, timed out and failed. Now a plain
+# #process is one fast notes-brain answer; each roster voice tag on the note adds exactly that voice.
+def _norm(s):
+    return re.sub(r'[^a-z0-9]', '', s.lower())
+
+
+def roster_voices():
+    sys.path.insert(0, str(Path.home() / 'work/convey'))
+    try:
+        from convey.voice_grounding import email_voices
+        return email_voices()
+    except Exception as e:
+        log(f'roster voices unavailable ({e}) — voice tags ignored')
+        return []
+
+
+def note_voices(occ, text):
+    """Roster seat names whose tag (#bearden, #tesla, #donsmith, #walterrussell…) is on the note."""
+    tags = {_norm(t) for t in re.findall(r'#([\w-]+)', f"{occ.get('title', '')}\n{text}")}
+    if occ.get('pk'):
+        with db() as c:
+            tags |= {_norm(t or '').lstrip('#') for (t,) in c.execute(
+                'select ZALTTEXT from ZICCLOUDSYNCINGOBJECT where ZNOTE1 = ? and ZTYPEUTI1 = ? '
+                'and coalesce(ZMARKEDFORDELETION,0) = 0', (occ['pk'], HASHTAG_UTI))}
+    out = []
+    for v in roster_voices():
+        keys = {_norm(v['name']), _norm(v['label']), _norm(v['label'].split()[-1])}
+        if keys & tags:
+            out.append(v['name'])
+    return out
 
 
 # ---------- pass ----------
@@ -365,10 +402,17 @@ def handle(occ, a, seen, use_shortcut):
         ledger_add(dict(record, at=datetime.datetime.now().isoformat(timespec='seconds'), where='claimed'))
         log(f'{run.name}: send {label}: {len(prompt)} chars, {len(vision)} attachments')
         notes_input.save_json(run / 'status.json', dict(status, state='generating'))
+        voices = note_voices(occ, source['text']) if a.samples <= 1 and not a.llm else []
+        llm = a.llm or f"{HERE}/{'notes-voices' if voices else 'notes-brain'}"
+        timeout = a.llm_timeout or (900 if voices else 240)
+        if voices:
+            log(f'{run.name}: voices requested: {", ".join(voices)}')
+            notes_input.save_json(run / 'status.json', dict(status, state='generating', voices=voices))
         if a.samples > 1:
             reply, route = consensus_reply(a, prompt, '', occ, audit_dir=run)
         else:
-            reply, route = call_llm(a.llm, prompt, a.llm_timeout, audit_dir=run)
+            reply, route = call_llm(llm, prompt, timeout, audit_dir=run,
+                                    extra_env={'FREELLMASK_ONLY_VOICES': ','.join(voices)} if voices else None)
         (run / 'reply.raw.txt').write_text(reply, encoding='utf-8')
         reply = sanitize(reply, a.tag)
         md = reply_markdown(reply, f'{a.label} · {route.split("/")[-1]}' if route else a.label, a.done_tag)
@@ -404,7 +448,7 @@ def consensus_reply(a, prompt, context, occ, audit_dir=None):
     vs, route = [], ''
     for i in range(a.samples):
         try:
-            r, route = call_llm(a.llm, prompt, a.llm_timeout, context, audit_dir=audit_dir)
+            r, route = call_llm(a.llm or f'{HERE}/notes-brain', prompt, a.llm_timeout or 240, context, audit_dir=audit_dir)
             vs.append(dict(pk=i, at=datetime.datetime.now().isoformat(timespec='seconds'), text=r))
             log(f'  sample {i + 1}/{a.samples} ok')
         except Exception as e:
@@ -464,6 +508,10 @@ def one_pass(a):
             log(f'deferred {o.get("title")}: brain throttled (429) — retrying in {DEFER_SECONDS // 60} min')
         except Exception as e:
             errors += 1
+            if dkey:
+                # A note that was deferred once stayed "due" forever when a later attempt raised a
+                # non-Deferred error, so every pass re-answered it (2026-11-19 electrolysis flood).
+                set_deferred(dkey)
             log(f'error {o.get("title")}: {e}')
     return 1 if errors else 0
 
@@ -497,11 +545,8 @@ def main():
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--reprocess', metavar='NOTE_ID', help='deliberately create one new audited reply for this note (--once only)')
     a = ap.parse_args()
-    # #process = conversation WITH the voices (bin/notes-voices → mail's fm_research, ledger-grounded).
-    # Other tags (#consensus: 25 samples) keep the single fast notes-brain. Esa 2026-11-17.
-    voices = a.tag.lower() == '#process' and a.samples <= 1
-    a.llm = a.llm or f"{HERE}/{'notes-voices' if voices else 'notes-brain'}"
-    a.llm_timeout = a.llm_timeout or (1800 if voices else 240)
+    # The brain is chosen PER NOTE in handle(): notes-brain, or notes-voices with only the voices
+    # tagged on that note (#process #bearden). Esa 2026-11-19; supersedes "voices on every #process".
     if a.show_run:
         if not re.fullmatch(r'NP-[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}', a.show_run):
             ap.error('invalid processing ID')
