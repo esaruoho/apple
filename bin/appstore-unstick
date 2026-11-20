@@ -1,0 +1,18 @@
+#!/bin/bash
+# appstore-unstick — unwedge a stuck Mac App Store update (endless spinner).
+# Wiki: wiki/concepts/app-store-stuck-update.md
+# Usage: appstore-unstick            restart App Store + download daemons
+#        appstore-unstick --cache    also reveal the appstoreagent cache folder
+set -u
+osascript -e 'quit app "App Store"' 2>/dev/null
+killall storedownloadd appstoreagent commerce 2>/dev/null
+echo "Stopped App Store + storedownloadd/appstoreagent/commerce (launchd respawns them on demand)."
+if [ "${1:-}" = "--cache" ]; then
+  d="$(getconf DARWIN_USER_CACHE_DIR)com.apple.appstoreagent"
+  echo "Cache: $d — delete the partial download for the stuck app, then rerun without --cache."
+  open "$d"
+  exit 0
+fi
+sleep 2
+open -a "App Store"
+echo "Reopened App Store. Go to Updates, press Cmd-R, click Update."
