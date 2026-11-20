@@ -1,0 +1,10 @@
+#!/bin/bash
+# network — open System Settings ▸ Network.
+# Usage: network [wifi|vpn|firewall]
+case "$1" in
+  wifi)     pane="com.apple.wifi-settings-extension" ;;
+  vpn)      pane="com.apple.NetworkExtensionSettingsUI.NESettingsUIExtension" ;;
+  firewall) pane="com.apple.Network-Settings.extension?Firewall" ;;
+  *)        pane="com.apple.Network-Settings.extension" ;;
+esac
+open "x-apple.systempreferences:${pane}"
