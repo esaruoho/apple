@@ -11,7 +11,7 @@ has no visible Stop/Retry button.
 
 ## Escalation ladder (stop at the first that works)
 
-1. **In-app:** hover the spinner (it may turn into ⏹ stop) → ⌘R (Store ▸ Reload Page) → click Update again.
+1. **In-app:** ⌘R (Store ▸ Reload Page) → click Update again. *Hovering over the spinner does NOT show a ⏹ stop button (checked on Sequoia, 2026-11-20), so the app itself gives you no way to cancel. Go straight to step 2.*
 2. **Restart the App Store and its download processes** (fixes most cases — it worked on 2026-11-20):
    `appstore-unstick`
    This quits App Store and kills `storedownloadd`, `appstoreagent`, `commerce`.
