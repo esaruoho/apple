@@ -933,6 +933,19 @@ def fm_research(question, thread_context, attachments="", *args, viewpoint="", *
         brain_routes.LOCAL_LAST.reset(token)
 
 # REPORT-CARD >> features/mail-material-editor-contract.feature
+def _mlx_target():
+    """'<served model id> at <host>' for the mail. MLX_MODEL is the alias "default_model", which tells
+    a reader nothing, so ask the server which model it actually serves. /v1/models answers in ~0.1s
+    even when generation is hung; if even that fails, say so rather than guess."""
+    host = MLX_HOST.rstrip('/')
+    try:
+        with urllib.request.urlopen(host + "/models", timeout=5) as r:
+            ids = [m.get("id") for m in json.load(r).get("data", []) if m.get("id")]
+        name = ", ".join(ids) or MLX_MODEL
+    except Exception as e:
+        name = f"{MLX_MODEL} (server not answering /models: {type(e).__name__})"
+    return f"{name} at {host}"
+
 # REQUIRED-DUAL-SOURCE-ANALYSES v1
 def _required_mlx(text, title, language=None):
     """MLX-DEGRADE v1 (2026-11-18, Esa: "fix leak, then cycle, then degrade"). The local MLX brain
@@ -941,6 +954,20 @@ def _required_mlx(text, title, language=None):
     states so in the email, and the mail still goes out on Bluefield + the synthesis brains.
     Bluefield stays required. FREELLMASK_MAIL_REQUIRE_MLX=1 restores the strict behaviour."""
     strict = os.environ.get("FREELLMASK_MAIL_REQUIRE_MLX") == "1"
+    # GPU-YIELD v1 (2026-11-20, Esa: "option1"). MLX and the OCR backlog (Ollama glm-ocr) share the
+    # Mini's one GPU; with OCR running a 2-token MLX reply took 330s+. Ask OCR to pause between pages
+    # while this section is written. The flag expires by itself (15 min) and is removed in `finally`;
+    # PDFWorkshop/batch-ocr.mjs gpuYield() is the reader. FREELLMASK_MAIL_OCR_YIELD=0 disables.
+    yield_file = Path(os.environ.get("OCR_YIELD_FILE",
+                                     str(Path.home()/".cache/cloudcity/ocr-gpu-yield.json")))
+    yielding = os.environ.get("FREELLMASK_MAIL_OCR_YIELD", "1") == "1"
+    if yielding:
+        try:
+            yield_file.parent.mkdir(parents=True, exist_ok=True)
+            yield_file.write_text(json.dumps({"until": int((time.time() + 900) * 1000),
+                                              "by": f"cloudcity-llm mail ({title[:60]})"}))
+        except OSError:
+            yielding = False
     try:
         # FAST PROBE: a GPU-starved server times out per chunk (180s+ each), so a 40-chunk document
         # burned hours before degrading — and the puller restarts the belt every few minutes, so it
@@ -949,16 +976,31 @@ def _required_mlx(text, title, language=None):
         # dropped the MLX section from EVERY mail. Soft is now throttled to one in-flight request.
         if not strict and not _mlx_alive(timeout=120):
             raise document_brains.ContributionPending("local MLX brain not generating (GPU busy?)")
-        return document_brains.ensure_mlx(text, title=title, language=language)
+        got = document_brains.ensure_mlx(text, title=title, language=language)
+        # NAME THE MODEL (Esa 2026-11-20: "we need to know which model it is").
+        target = _mlx_target()
+        got["markdown"] = got["markdown"].replace(
+            "## MLX/Qwen — independent source analysis\n\n",
+            f"## MLX/Qwen — independent source analysis\n\n_Model: {target}_\n\n", 1)
+        got["model"] = target
+        return got
     except document_brains.ContributionPending as exc:
         if strict:
             raise
         why = str(exc).replace("Required MLX analysis: ", "")[:240]
-        print(f"      ⚠️ MLX unavailable — mailing without the MLX section ({why})", flush=True)
+        target = _mlx_target()
+        print(f"      ⚠️ MLX unavailable ({target}) — mailing without the MLX section ({why})", flush=True)
         return {"markdown": "## MLX/Qwen — independent source analysis\n\n"
-                            f"_Not included: the local MLX brain was unavailable ({why})._",
+                            f"_Not included: the local MLX brain was unavailable ({why}). "
+                            f"Tried: {target}._",
                 "model": "unavailable", "path": "", "source_chars": len(text),
                 "language": language}
+    finally:
+        if yielding:
+            try:
+                yield_file.unlink()
+            except OSError:
+                pass
 
 def _required_bluefield(text, title, language=None):
     return document_brains.ensure_flubuild(text, title=title, language=language,
