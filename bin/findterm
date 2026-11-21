@@ -5,11 +5,11 @@
   findterm heaviside 2        jump to match #2 instead
   findterm -l heaviside       list only, don't jump
 
-Searches each tab's full scrollback (Terminal's `history`), case-insensitive.
+Skips the tab you run it from. Searches each tab's full scrollback (Terminal's `history`), case-insensitive.
 Shows the last matching line per tab, plus the tab's process list, so you can
 tell a live monitor from an old log. Plain script, no LLM.
 """
-import subprocess, sys, time
+import os, subprocess, sys
 
 SEP_TAB, SEP_REC = "\x1f", "\x1e"
 
@@ -62,6 +62,20 @@ tell application "Terminal"
 end tell''')
 
 
+def own_tty():
+    """tty of the tab we were launched from (walk up parents; Claude's bash has none)."""
+    pid = os.getpid()
+    while pid > 1:
+        out = subprocess.run(["ps", "-o", "tty=,ppid=", "-p", str(pid)],
+                             capture_output=True, text=True).stdout.split()
+        if len(out) < 2:
+            return None
+        if out[0] not in ("??", "-"):
+            return "/dev/" + out[0]
+        pid = int(out[1])
+    return None
+
+
 def main():
     args = sys.argv[1:]
     list_only = "-l" in args
@@ -71,12 +85,15 @@ def main():
     word = args[0].lower()
     pick = int(args[1]) if len(args) > 1 else 1
 
+    me = own_tty()
     hits = []
     for rec in osa(DUMP).split(SEP_REC):
         parts = rec.split(SEP_TAB, 5)
         if len(parts) < 6:
             continue
         wid, idx, tty, procs, busy, hist = parts
+        if tty == me:
+            continue
         lines = [l for l in hist.splitlines() if word in l.lower()]
         if lines:
             hits.append((wid, idx.strip(), tty, procs, busy, len(lines), lines[-1].strip()))
