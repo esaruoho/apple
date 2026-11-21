@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""findterm — find which open Terminal.app tab(s) contain a word, and jump there.
+
+  findterm heaviside          list matching tabs, jump to the first, flash it red
+  findterm heaviside 2        jump to match #2 instead
+  findterm -l heaviside       list only, don't jump
+
+Searches each tab's full scrollback (Terminal's `history`), case-insensitive.
+Shows the last matching line per tab, plus the tab's process list, so you can
+tell a live monitor from an old log. Plain script, no LLM.
+"""
+import subprocess, sys, time
+
+SEP_TAB, SEP_REC = "\x1f", "\x1e"
+
+DUMP = f'''
+set out to ""
+tell application "Terminal"
+  repeat with w in windows
+    set wid to id of w
+    set n to count of tabs of w
+    repeat with i from 1 to n
+      set t to tab i of w
+      try
+        set h to history of t
+        set p to processes of t
+        set AppleScript's text item delimiters to ","
+        set ps to p as text
+        set AppleScript's text item delimiters to ""
+        set out to out & wid & "{SEP_TAB}" & i & "{SEP_TAB}" & (tty of t) & "{SEP_TAB}" & ps & "{SEP_TAB}" & (busy of t) & "{SEP_TAB}" & h & "{SEP_REC}"
+      end try
+    end repeat
+  end repeat
+end tell
+return out
+'''
+
+
+def osa(script):
+    r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True)
+    if r.returncode:
+        sys.exit(f"osascript failed: {r.stderr.strip()}")
+    return r.stdout
+
+
+def jump(wid, idx):
+    osa(f'''
+tell application "Terminal"
+  set w to window id {wid}
+  set miniaturized of w to false
+  set selected tab of w to tab {idx} of w
+  set index of w to 1
+  activate
+  set t to tab {idx} of w
+  set oldbg to background color of t
+  repeat 3 times
+    set background color of t to {{40000, 0, 0}}
+    delay 0.25
+    set background color of t to oldbg
+    delay 0.25
+  end repeat
+end tell''')
+
+
+def main():
+    args = sys.argv[1:]
+    list_only = "-l" in args
+    args = [a for a in args if a != "-l"]
+    if not args or args[0] in ("-h", "--help"):
+        print(__doc__); return
+    word = args[0].lower()
+    pick = int(args[1]) if len(args) > 1 else 1
+
+    hits = []
+    for rec in osa(DUMP).split(SEP_REC):
+        parts = rec.split(SEP_TAB, 5)
+        if len(parts) < 6:
+            continue
+        wid, idx, tty, procs, busy, hist = parts
+        lines = [l for l in hist.splitlines() if word in l.lower()]
+        if lines:
+            hits.append((wid, idx.strip(), tty, procs, busy, len(lines), lines[-1].strip()))
+
+    if not hits:
+        print(f'No open Terminal tab mentions "{args[0]}".'); sys.exit(1)
+
+    for n, (wid, idx, tty, procs, busy, cnt, last) in enumerate(hits, 1):
+        state = "BUSY" if busy == "true" else "idle"
+        print(f"#{n}  window {wid} tab {idx}  {tty}  [{state}: {procs}]  {cnt} hit(s)")
+        print(f"     last: {last[:160]}")
+
+    if not list_only:
+        if not 1 <= pick <= len(hits):
+            sys.exit(f"No match #{pick}; there are {len(hits)}.")
+        wid, idx = hits[pick - 1][0], hits[pick - 1][1]
+        print(f"→ jumping to #{pick} (window {wid}, tab {idx})")
+        jump(wid, idx)
+
+
+if __name__ == "__main__":
+    main()
