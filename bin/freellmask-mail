@@ -466,6 +466,12 @@ def _is_wiki_refusal(t):
 # Returned by fm_research when the free-energy viewpoint is active but the model would not produce
 # the required '## Thought about it' heading within this pass. The poll loop treats it as "not
 # sendable yet": it does NOT send and does NOT mark the email seen, so the next poll retries it fresh.
+# CAUSE 2 of 2026-11-22 ("missing document sections"): 26 voices + analysis headings did not fit a
+# 12000-token reply, so the LAST voices in roster order were truncated. Three levers, all on:
+MAIL_MAX_TOKENS = int(os.environ.get("MAIL_MAX_TOKENS", "24000"))   # raised cap (was 12000)
+SECTION_CHUNK   = int(os.environ.get("MAIL_SECTION_CHUNK", "16"))   # split: ask ≤ this many headings per call
+BELT_MIN_TRIES  = int(os.environ.get("MAIL_BELT_MIN_TRIES", "10"))  # more mosaic rounds for belt mail (was 4)
+LOCAL_LEG_ROUNDS = int(os.environ.get("MAIL_LOCAL_LEG_ROUNDS", "4"))  # local fill rounds (was 2)
 TRY_FLOOR = 12                 # attempts the viewpoint template gets; compose lowers it (see fm_research)
 
 # The LOCAL brain on the Mini. Not rate-limited, which is precisely why `convey soft`'s fm-mlx leg
@@ -539,10 +545,16 @@ _ONLY = {x.strip().lower() for x in os.environ.get("FREELLMASK_ONLY_VOICES", "")
 if _ONLY:
     EMAIL_VOICES = [v for v in EMAIL_VOICES if v["name"].lower() in _ONLY]
 SKEPTIC_ON = not _ONLY
-TONE_HEADINGS = [v["tone"] for v in EMAIL_VOICES] + ([SKEPTIC_HEADING] if SKEPTIC_ON else [])
+# AFTER-SKEPTIC (Esa 2026-11-22): the Utility Man is placed below the skeptic, closing the voices.
+_AFTER_SKEPTIC = {"utility man"}
+EMAIL_VOICES = ([v for v in EMAIL_VOICES if v["name"].lower() not in _AFTER_SKEPTIC]
+                + [v for v in EMAIL_VOICES if v["name"].lower() in _AFTER_SKEPTIC])
+_TAIL_VOICES = [v for v in EMAIL_VOICES if v["name"].lower() in _AFTER_SKEPTIC]
+TONE_HEADINGS = ([v["tone"] for v in EMAIL_VOICES if v not in _TAIL_VOICES]
+                 + ([SKEPTIC_HEADING] if SKEPTIC_ON else []) + [v["tone"] for v in _TAIL_VOICES])
 VOICE_LABELS = ", ".join(v["label"] for v in EMAIL_VOICES) or "historical-voice"
 
-def _voice_template():
+def _voice_template(tail=False):
     """Roster-ordered '## In X's tone' template. Hand-tuned cadence notes where we have them,
     else the seat's roster stance (first 2 sentences) — so a new seat appears with zero code edits."""
     hand = (
@@ -573,7 +585,7 @@ def _voice_template():
           "generating immense magnetic flux without drawing down the source electrons; wattless energy transfer "
           "to decoupled secondaries; never load the resonant tank directly — store in a high-voltage capacitor bank "
           "at E = 1/2 C V^2 before doing work)\n"
-          "## In the voice of Keely\n(2-4 sentences in John Worrell Keely's cadence: the Philadelphia mechanic-musician of sympathetic vibratory physics; all matter is aggregated vibration with its own chord of mass, thirds, sixths and ninths; the triple order of vibration disintegrates water and liberates the latent force of the interstitial and interatomic spaces; the machine is a receiver sensitized to the sympathetic neutral flow, not a creator, and the exciting force would not wind a watch; earnest, rhapsodic, stubborn. Quote only Keely's own rows, never ABOUT/CONTESTED rows)\n"
+          "## In John Ernst Worrell Keely's tone\n(2-4 sentences in John Worrell Keely's cadence: the Philadelphia mechanic-musician of sympathetic vibratory physics; all matter is aggregated vibration with its own chord of mass, thirds, sixths and ninths; the triple order of vibration disintegrates water and liberates the latent force of the interstitial and interatomic spaces; the machine is a receiver sensitized to the sympathetic neutral flow, not a creator, and the exciting force would not wind a watch; earnest, rhapsodic, stubborn. Quote only Keely's own rows, never ABOUT/CONTESTED rows)\n"
           "## In Nikola Tesla's tone\n(2-4 sentences in Tesla's cadence: throughout space there is energy, and men will attach their machinery to the very wheelwork of nature; the self-acting engine drawing energy from the ambient medium through an artificial sink; the earth as a conductor of limited dimensions ringing with stationary waves, energy sent through the earth by resonance; Hertz waves a myth, the medium carrying longitudinal pulses; calm certainty, dated experiments, open-system mechanism stated plainly)\n"
     )
     blurbs = {}
@@ -582,6 +594,8 @@ def _voice_template():
         blurbs[head.strip()] = body
     out = []
     for v in EMAIL_VOICES:
+        if (v in _TAIL_VOICES) != tail:
+            continue
         if v["tone"] in blurbs:
             out.append(f"## {v['tone']}\n{blurbs[v['tone']]}")
         else:
@@ -669,7 +683,8 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
           "(phase, harmonics, RF, common-mode), and the ONE measurement that would settle it — "
           "calorimetry over an hour, joules out minus joules in, both ports metered. Name the step "
           "where this class of claim usually dies. Be specific and testable; do NOT declare it "
-          "impossible and do NOT argue from the ceiling — say what would falsify it.)"))
+          "impossible and do NOT argue from the ceiling — say what would falsify it.)\n")
+          + _voice_template(tail=True))
         # REPORT-CARD >> convey/features/don-smith-email-grounding.feature
         # DEGRADE, DON'T FAIL (2026-11-01): if the verified ledgers cannot be resolved on this host
         # (the Mini does not mirror merlib-dump; see convey/kb/quote-ledgers + voice_grounding), fall
@@ -806,6 +821,16 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
                  else (max(tries, TRY_FLOOR) if (viewpoint and voices_on) else max(1, tries)))
     has_content = bool((question or "").strip()) or bool((attachments or "").strip())
     used=chosen_model; cur=msgs; saw_failure=False; have={}; why=[]
+    # SPLIT THE VOICES ACROSS CALLS: a template this long gets truncated at the tail, so ask for at
+    # most SECTION_CHUNK headings per call; the mosaic below asks for the next chunk each round.
+    if required and len(required) > SECTION_CHUNK:
+        _first = required[:SECTION_CHUNK]
+        cur=[{"role":"system","content":sysm+(
+                "\n\nTHIS REPLY IS WRITTEN IN PARTS. In THIS part write ONLY these sections, in order:\n"
+                + "\n".join(f"## {m}" for m in _first)
+                + "\n\nEmit each heading verbatim with its full content beneath. The remaining "
+                  "sections will be requested separately — do not write them now.")},
+             cur[1]]
     # Every rejection SAYS WHY. Until 2026-08-12 only the missing-heading branch printed, so a run that
     # burned twelve attempts on 502s looked identical to one that burned them on a refusal — the log
     # said only "would not produce the required shape", which was not even true.
@@ -819,7 +844,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             _need = len([h for h in required if h not in have]) or len(required) or 1
             _budget = 1400 + 620 * min(_need, len(required) or 1)
             # MAIL-ROUTING-FALLBACK v1: pin only an explicit override or big-context model.
-            ans, used = _fm_call(cur, model=(chosen_model if (big or model_override) else None), max_tokens=max(3000, min(_budget, 12000)), validate=lambda t: bool(t) and not _looks_garbage(t) and not _has_leak(t))
+            ans, used = _fm_call(cur, model=(chosen_model if (big or model_override) else None), max_tokens=max(3000, min(_budget, MAIL_MAX_TOKENS)), validate=lambda t: bool(t) and not _looks_garbage(t) and not _has_leak(t))
         except Exception as e:
             why.append(f"call failed: {e}"); print(f"      ↻ {_attempt}/{eff_tries} call failed: {e}", flush=True); continue
         if not ans:
@@ -859,7 +884,7 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
         # Ask ONLY for what is missing. Re-requesting sections we already hold wastes the attempt and
         # invites the model to spend its tokens rewriting work that was already good.
         nudge = ("\n\nWRITE ONLY THESE SECTIONS, nothing else — the rest of the reply is already "
-                 "written and will be kept:\n" + "\n".join(f"## {m}" for m in miss) +
+                 "written and will be kept:\n" + "\n".join(f"## {m}" for m in miss[:SECTION_CHUNK]) +
                  "\n\nEmit each heading verbatim, in that order, with its full content beneath. Do "
                  "not write any other heading, and do not apologise or explain.")
         cur=[{"role":"system","content":sysm+nudge},{"role":"user","content":cur[1]["content"]}]
@@ -874,16 +899,16 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
         from_local = []
         completion_models = {}
         if miss:
-            for lattempt in (1, 2):
+            for lattempt in range(1, LOCAL_LEG_ROUNDS + 1):
                 try:
-                    print(f"      🖥️ shared brain route fills {len(miss)} section(s), try {lattempt}/2",
+                    print(f"      🖥️ shared brain route fills {len(miss)} section(s), try {lattempt}/{LOCAL_LEG_ROUNDS}",
                           flush=True)
                     lnudge = ("\n\nWRITE ONLY THESE SECTIONS, nothing else:\n"
-                              + "\n".join(f"## {x}" for x in miss)
+                              + "\n".join(f"## {x}" for x in miss[:SECTION_CHUNK])
                               + "\n\nEmit each heading verbatim, in that order. No other heading, "
                                 "no apology, no explanation.")
                     lans, _lu = _fm_call([{"role":"system","content":sysm+lnudge},
-                                           {"role":"user","content":cur[1]["content"]}], max_tokens=3000, validate=lambda t: bool(t) and not _has_leak(t))
+                                           {"role":"user","content":cur[1]["content"]}], max_tokens=min(MAIL_MAX_TOKENS, 1400 + 620 * min(len(miss), SECTION_CHUNK)), validate=lambda t: bool(t) and not _has_leak(t))
                 except Exception as e:
                     print(f"      ✗ shared brain route: {e}", flush=True); break
                 if not lans or _has_leak(lans):
@@ -901,8 +926,8 @@ def fm_research(question, thread_context, attachments="", tries=6, wiki_ctx="", 
             # analysis from the 14b one; silently mixing them would misrepresent both.
             body = _assemble(have)
             if from_local:
-                body += ("\n\n---\n\n_Completed through shared brain routing: " +
-                         ", ".join(h + " [" + completion_models[h] + "]" for h in from_local) + "._")
+                body += ("\n\n---\n\n**Completed through shared brain routing:**\n\n" +
+                         "\n".join(f"- {h} — `{completion_models[h]}`" for h in from_local))
             return body, used
         if have.get("Thought about it") and have.get("Answer") and len(have) >= (2 * len(required)) // 3:
             print(f"      🧩 sending partial mosaic: {len(have)}/{len(required)} sections", flush=True)
@@ -946,6 +971,20 @@ def _mlx_target():
         name = f"{MLX_MODEL} (server not answering /models: {type(e).__name__})"
     return f"{name} at {host}"
 
+def _mlx_heading():
+    """'MLX/Qwen3-4B-Instruct-2507-8bit running on CloudcityMacMini' (Esa 2026-11-22): one line, no
+    repeated MLX/model/backend rows."""
+    host = MLX_HOST.rstrip('/')
+    try:
+        with urllib.request.urlopen(host + "/models", timeout=5) as r:
+            ids = [m.get("id") for m in json.load(r).get("data", []) if m.get("id")]
+    except Exception:
+        ids = []
+    model = (ids[0] if ids else MLX_MODEL).split("/")[-1]
+    hostname = urllib.parse.urlparse(host).hostname or host
+    machine = "CloudcityMacMini" if "cloudcity" in hostname.lower() or hostname in ("localhost", "127.0.0.1") else hostname
+    return f"MLX/{model} running on {machine}"
+
 # REQUIRED-DUAL-SOURCE-ANALYSES v1
 def _required_mlx(text, title, language=None):
     """MLX-DEGRADE v1 (2026-11-18, Esa: "fix leak, then cycle, then degrade"). The local MLX brain
@@ -980,8 +1019,7 @@ def _required_mlx(text, title, language=None):
         # NAME THE MODEL (Esa 2026-11-20: "we need to know which model it is").
         target = _mlx_target()
         got["markdown"] = got["markdown"].replace(
-            "## MLX/Qwen — independent source analysis\n\n",
-            f"## MLX/Qwen — independent source analysis\n\n_Model: {target}_\n\n", 1)
+            "## MLX/Qwen — independent source analysis\n\n", f"## {_mlx_heading()}\n\n", 1)
         got["model"] = target
         return got
     except document_brains.ContributionPending as exc:
@@ -990,7 +1028,7 @@ def _required_mlx(text, title, language=None):
         why = str(exc).replace("Required MLX analysis: ", "")[:240]
         target = _mlx_target()
         print(f"      ⚠️ MLX unavailable ({target}) — mailing without the MLX section ({why})", flush=True)
-        return {"markdown": "## MLX/Qwen — independent source analysis\n\n"
+        return {"markdown": f"## {_mlx_heading()}\n\n"
                             f"_Not included: the local MLX brain was unavailable ({why}). "
                             f"Tried: {target}._",
                 "model": "unavailable", "path": "", "source_chars": len(text),
@@ -2965,6 +3003,7 @@ def compose_and_send(to, subject, body_text, source="", label="", verbose=True, 
         print(f"  → composing [{space}·{why}] for {to}: {subject[:60]}"
               + (f" [+wiki:{len(wslugs)}]" if (in_fe and wslugs) else ""))
     global TRY_FLOOR
+    tries = max(tries, BELT_MIN_TRIES) if in_fe else tries   # more mosaic rounds for belt mail
     _floor, TRY_FLOOR = TRY_FLOOR, max(1, tries)          # bounded for the belt, restored after
     try:
         answer, used = research_email_material(question, "", body_text, space=space,
