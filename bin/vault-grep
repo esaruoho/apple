@@ -56,6 +56,20 @@ def die(msg, code=1):
     print(msg, file=sys.stderr); sys.exit(code)
 
 
+# Kill switch (2026-11-22, Esa): the ~/.vault-embeds cache (24 GB) was deleted
+# and must not silently regrow. While this flag file exists, nothing may write
+# embeddings — every vault-* tool, embed, convergence, and the MLX/FM agent
+# tools all funnel through ensure_file_embedded / build_matrix_cache below.
+# Remove the flag file to re-enable.
+EMBED_DISABLED_FLAG = f"{HOME}/.config/apple/vault-embeds-disabled"
+
+
+def guard_embedding():
+    if os.path.exists(EMBED_DISABLED_FLAG):
+        die(f"vault embedding is disabled ({EMBED_DISABLED_FLAG} exists). "
+            f"Delete that file to re-enable.", 3)
+
+
 def find_apple_embed():
     for c in [f"{HOME}/work/apple/bin/apple-embed",
               f"{HOME}/bin/apple-embed",
@@ -107,6 +121,7 @@ def cache_path_for(abs_path):
 
 def ensure_file_embedded(abs_path, force=False, verbose=False):
     """Embed one source file into the cache. Returns the cache path."""
+    guard_embedding()
     out = cache_path_for(abs_path)
     if os.path.exists(out) and not force:
         return out
@@ -352,6 +367,7 @@ def build_matrix_cache(verbose=True, dim=DEFAULT_DIM):
     Single-pass: assumes a known `dim` (default 512 for NLEmbedding). Any rows
     of a different length are silently skipped — they belong to a different
     embedder family (MiniLM=384) and should get their own matrix later."""
+    guard_embedding()
     import numpy as np
     if verbose:
         print(f"building matrix cache (one-time, after embedding changes; dim={dim}) …",
