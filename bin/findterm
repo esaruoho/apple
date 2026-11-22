@@ -5,11 +5,42 @@
   findterm heaviside 2        jump to match #2 instead
   findterm -l heaviside       list only, don't jump
 
-Skips the tab you run it from. Searches each tab's full scrollback (Terminal's `history`), case-insensitive.
+Skips the tab you run it from. Ignores URLs and the bash "use zsh" banner.
+Shows each tab's working directory; a word matching the directory counts as a
+hit and those tabs list first (so `findterm apple` finds sessions in ~/work/apple). Searches each tab's full scrollback (Terminal's `history`), case-insensitive.
 Shows the last matching line per tab, plus the tab's process list, so you can
 tell a live monitor from an old log. Plain script, no LLM.
 """
-import os, subprocess, sys
+import os, re, subprocess, sys
+
+URL = re.compile(r"\S*://\S+|\b[\w.-]+\.(?:com|org|net|io)(?:/\S*)?", re.I)
+# login-shell banner lines every bash tab starts with — never real conversation
+NOISE = ("default interactive shell is now zsh", "chsh -s /bin/zsh",
+         "For more details, please visit")
+
+
+def tab_cwd(tty):
+    """Working dir of the deepest process on this tty (claude, vim, ...), else the shell."""
+    out = subprocess.run(["ps", "-t", tty.replace("/dev/", ""), "-o", "pid=,comm="],
+                         capture_output=True, text=True).stdout.split("\n")
+    pids = [l.split()[0] for l in out if l.strip()]
+    best = None
+    for pid in pids:  # ps lists oldest first; prefer claude, else the last shell/app
+        r = subprocess.run(["lsof", "-a", "-p", pid, "-d", "cwd", "-Fn"],
+                           capture_output=True, text=True).stdout
+        cwd = next((l[1:] for l in r.splitlines() if l.startswith("n")), None)
+        comm = next((l.split(None, 1)[1] for l in out if l.split()[:1] == [pid]), "")
+        if cwd and cwd != "/":
+            if "claude" in comm:
+                return cwd
+            best = best or cwd
+    return best or "?"
+
+
+def clean(line):
+    if any(n in line for n in NOISE):
+        return ""
+    return URL.sub(" ", line)
 
 SEP_TAB, SEP_REC = "\x1f", "\x1e"
 
@@ -94,16 +125,24 @@ def main():
         wid, idx, tty, procs, busy, hist = parts
         if tty == me:
             continue
-        lines = [l for l in hist.splitlines() if word in l.lower()]
-        if lines:
-            hits.append((wid, idx.strip(), tty, procs, busy, len(lines), lines[-1].strip()))
+        lines = [l for l in hist.splitlines() if word in clean(l).lower()]
+        cwd = tab_cwd(tty)
+        in_cwd = word in cwd.lower()
+        if lines or in_cwd:
+            last = lines[-1].strip() if lines else "(directory match)"
+            hits.append((wid, idx.strip(), tty, procs, busy, len(lines), last, cwd, in_cwd))
+    hits.sort(key=lambda h: not h[8])  # directory matches first, stable otherwise
 
     if not hits:
         print(f'No open Terminal tab mentions "{args[0]}".'); sys.exit(1)
 
-    for n, (wid, idx, tty, procs, busy, cnt, last) in enumerate(hits, 1):
+    home = os.path.expanduser("~")
+    for n, (wid, idx, tty, procs, busy, cnt, last, cwd, in_cwd) in enumerate(hits, 1):
         state = "BUSY" if busy == "true" else "idle"
-        print(f"#{n}  window {wid} tab {idx}  {tty}  [{state}: {procs}]  {cnt} hit(s)")
+        app = next((p for p in ("claude", "vim", "nvim", "python", "ssh")
+                    if p in procs.lower().split(",")), procs.split(",")[-1])
+        where = cwd.replace(home, "~", 1) + ("  ◀ dir match" if in_cwd else "")
+        print(f"#{n}  {where}   [{state}: {app}]  {tty}  {cnt} hit(s)")
         print(f"     last: {last[:160]}")
 
     if not list_only:
