@@ -555,38 +555,39 @@ TONE_HEADINGS = ([v["tone"] for v in EMAIL_VOICES if v not in _TAIL_VOICES]
 VOICE_LABELS = ", ".join(v["label"] for v in EMAIL_VOICES) or "historical-voice"
 
 def _voice_template(tail=False):
-    """Roster-ordered '## In X's tone' template. Hand-tuned cadence notes where we have them,
+    """Roster-ordered '## In X's tone' template (headings DERIVED from sages.yaml labels; never typed
+    here). Hand-tuned cadence notes are keyed by seat name where we have them,
     else the seat's roster stance (first 2 sentences) — so a new seat appears with zero code edits."""
     hand = (
-          "## In Walter Russell's tone\n(2-4 sentences in Russell's cadence: universe as rhythmic balanced "
+          "## Russell\n(2-4 sentences in Russell's cadence: universe as rhythmic balanced "
           "interchange of two opposed lights, giving and re-giving, all motion spiral/vortular, no dead matter, love as the balancing act)\n"
-          "## In Tom Bearden's tone\n(2-4 sentences in Bearden's cadence: scalar/longitudinal EM potentials, "
+          "## Bearden\n(2-4 sentences in Bearden's cadence: scalar/longitudinal EM potentials, "
           "energy from the active vacuum, asymmetric regauging, the dipole's broken symmetry as a negentropy source)\n"
-          "## In Ilya Prigogine's tone\n(2-4 sentences in Prigogine's cadence — measured, humane, precise, a Nobel "
+          "## Prigogine\n(2-4 sentences in Prigogine's cadence — measured, humane, precise, a Nobel "
           "laureate bridging physics and meaning: entropy changes for two reasons only, dS = d_eS + d_iS, and far "
           "from equilibrium the second law is not the enemy of order but its ENGINE — an open system fed by a flow "
           "exports entropy and self-organises into a dissipative structure, order paid for by the throughput, not "
           "stolen from nothing. He AFFIRMS open-system order and COP>1 fed by a real reservoir, and DISTINGUISHES "
           "it from a perpetuum mobile, which the second law still forbids — that honest boundary is the point, "
           "never dropped.)\n"
-          "## In Hilarion's tone\n(2-4 sentences in the Hilarion channel's cadence: one living substance, "
+          "## Hilarion\n(2-4 sentences in the Hilarion channel's cadence: one living substance, "
           "consciousness as ground, gentle didactic cosmology — everything a modulation of the one energy)\n"
-          "## In Stefan Marinov's tone\n(2-4 sentences in Marinov's cadence: Bulgarian experimental "
+          "## Marinov\n(2-4 sentences in Marinov's cadence: Bulgarian experimental "
           "physicist and defender of absolute space and time; experimental refutation of relativistic light "
           "velocity dogma via coupled shutters and rotating mirrors; rejection of the Lorentz and Biot-Savart "
           "force for unclosed circuits; the Marinov motor and motional-transformer induction without mechanical "
           "back-reaction; unwavering insistence on laboratory measurement over theoretical fiction)\n"
-          "## In Charles Proteus Steinmetz's tone\n(2-4 sentences in Steinmetz's cadence: the engineer who "
+          "## Steinmetz\n(2-4 sentences in Steinmetz's cadence: the engineer who "
           "made alternating current calculable via the symbolic method; current and voltage as mathematical "
           "fictions of the dielectric and magnetic fields in space; reactance as wattless surging of energy; "
           "hysteresis and open-system negative resistance through variable reactance without flattening)\n"
-          "## In Don Smith's tone\n(2-4 sentences in Don Smith's cadence: ambient background voltage at hundreds "
+          "## Don Smith\n(2-4 sentences in Don Smith's cadence: ambient background voltage at hundreds "
           "of thousands of volts; all useful electricity over-unity between ambient and ground; resonance "
           "generating immense magnetic flux without drawing down the source electrons; wattless energy transfer "
           "to decoupled secondaries; never load the resonant tank directly — store in a high-voltage capacitor bank "
           "at E = 1/2 C V^2 before doing work)\n"
-          "## In John Ernst Worrell Keely's tone\n(2-4 sentences in John Worrell Keely's cadence: the Philadelphia mechanic-musician of sympathetic vibratory physics; all matter is aggregated vibration with its own chord of mass, thirds, sixths and ninths; the triple order of vibration disintegrates water and liberates the latent force of the interstitial and interatomic spaces; the machine is a receiver sensitized to the sympathetic neutral flow, not a creator, and the exciting force would not wind a watch; earnest, rhapsodic, stubborn. Quote only Keely's own rows, never ABOUT/CONTESTED rows)\n"
-          "## In Nikola Tesla's tone\n(2-4 sentences in Tesla's cadence: throughout space there is energy, and men will attach their machinery to the very wheelwork of nature; the self-acting engine drawing energy from the ambient medium through an artificial sink; the earth as a conductor of limited dimensions ringing with stationary waves, energy sent through the earth by resonance; Hertz waves a myth, the medium carrying longitudinal pulses; calm certainty, dated experiments, open-system mechanism stated plainly)\n"
+          "## Keely\n(2-4 sentences in John Worrell Keely's cadence: the Philadelphia mechanic-musician of sympathetic vibratory physics; all matter is aggregated vibration with its own chord of mass, thirds, sixths and ninths; the triple order of vibration disintegrates water and liberates the latent force of the interstitial and interatomic spaces; the machine is a receiver sensitized to the sympathetic neutral flow, not a creator, and the exciting force would not wind a watch; earnest, rhapsodic, stubborn. Quote only Keely's own rows, never ABOUT/CONTESTED rows)\n"
+          "## Tesla\n(2-4 sentences in Tesla's cadence: throughout space there is energy, and men will attach their machinery to the very wheelwork of nature; the self-acting engine drawing energy from the ambient medium through an artificial sink; the earth as a conductor of limited dimensions ringing with stationary waves, energy sent through the earth by resonance; Hertz waves a myth, the medium carrying longitudinal pulses; calm certainty, dated experiments, open-system mechanism stated plainly)\n"
     )
     blurbs = {}
     for chunk in hand.split("## ")[1:]:
@@ -596,8 +597,8 @@ def _voice_template(tail=False):
     for v in EMAIL_VOICES:
         if (v in _TAIL_VOICES) != tail:
             continue
-        if v["tone"] in blurbs:
-            out.append(f"## {v['tone']}\n{blurbs[v['tone']]}")
+        if v["name"] in blurbs:   # keyed by seat NAME; the heading itself is derived from the roster label
+            out.append(f"## {v['tone']}\n{blurbs[v['name']]}")
         else:
             gist = ". ".join(v["stance"].split(". ")[1:4])[:600]
             out.append(f"## {v['tone']}\n(2-4 sentences in {v['label']}'s cadence: {gist})\n")
