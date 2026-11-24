@@ -138,5 +138,5 @@
 ### `8e489c04-0f53-4c8c-877a-b36fc1407f95`  (2026-11-24)
 - Resume: `claude --resume 8e489c04-0f53-4c8c-877a-b36fc1407f95`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/8e489c04-0f53-4c8c-877a-b36fc1407f95.jsonl
-- Tooling touched: INDEX.md
-- Cards touched (1): transcript-vault-email-analysis.feature
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (15): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, app-audio-record.feature, apple-energy.feature, apple-harness.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature … (+1)
