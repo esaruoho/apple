@@ -8,7 +8,7 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**20 card conversations** plugged in:
+**23 card conversations** plugged in:
 
 ### `cfa8c45f-fde4-49b4-8c7d-f7ecf2b3acf0`  (2026-10-26 → 2026-10-29)
 - Resume: `claude --resume cfa8c45f-fde4-49b4-8c7d-f7ecf2b3acf0`
@@ -116,9 +116,27 @@
 ### `8a4100f8-db99-4dda-a2bf-6e8c13fb4c92`  (2026-11-21 → 2026-11-22)
 - Resume: `claude --resume 8a4100f8-db99-4dda-a2bf-6e8c13fb4c92`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/8a4100f8-db99-4dda-a2bf-6e8c13fb4c92.jsonl
-- Tooling touched: INDEX.md
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (15): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, app-audio-record.feature, apple-energy.feature, apple-harness.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature … (+1)
+
+### `9a69d3b7-1c27-4d4d-9410-fa3d79b62aa4`  (2026-11-21 → 2026-11-23)
+- Resume: `claude --resume 9a69d3b7-1c27-4d4d-9410-fa3d79b62aa4`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/9a69d3b7-1c27-4d4d-9410-fa3d79b62aa4.jsonl
+- Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
+- Cards touched (15): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, app-audio-record.feature, apple-energy.feature, apple-harness.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature … (+1)
 
 ### `b3dabae8-a702-4d0b-bf43-3f23de07d474`  (2026-11-22)
 - Resume: `claude --resume b3dabae8-a702-4d0b-bf43-3f23de07d474`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/b3dabae8-a702-4d0b-bf43-3f23de07d474.jsonl
 - Tooling touched: INDEX.md
+
+### `dfff2796-bdc4-4f28-b4d5-de24105500a9`  (2026-11-22)
+- Resume: `claude --resume dfff2796-bdc4-4f28-b4d5-de24105500a9`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/dfff2796-bdc4-4f28-b4d5-de24105500a9.jsonl
+- Tooling touched: INDEX.md
+
+### `8e489c04-0f53-4c8c-877a-b36fc1407f95`  (2026-11-24)
+- Resume: `claude --resume 8e489c04-0f53-4c8c-877a-b36fc1407f95`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/8e489c04-0f53-4c8c-877a-b36fc1407f95.jsonl
+- Tooling touched: INDEX.md
+- Cards touched (1): transcript-vault-email-analysis.feature
