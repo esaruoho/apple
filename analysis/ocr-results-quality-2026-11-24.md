@@ -312,3 +312,7 @@ MOSTLY-EMPTY | 20260527-114235-ast_ce17f81f1db3c985__19190126-new-york-tribune-0
 MOSTLY-EMPTY | 20260527-114255-ast_daa1d408a8ab085f__US2004169572A1.pdfws | OCR DEFECTS: 0 loops (0 chars), 0 repeat-blocks, 0 blurry/fail pages, 13 empty — re-OCR pages []
 MOSTLY-EMPTY | 20260804-183903-JBR-vol-47-no-1-1991-jan-feb-image-only-needs-OCR.pdfws | OCR DEFECTS: 0 loops (0 chars), 0 repeat-blocks, 0 blurry/fail pages, 29 empty — re-OCR pages []
 ```
+
+## 2026-11-25: confession item 21, text layers of the empty-OCR originals (pdftotext only, no OCR)
+- Fine, archive already has a good text layer (the empty queue result is a stale leftover; delete it): US2003098388A1 (2,838 words / 10 pp), US2004169572A1 (5,388 / 14), US2010141073A1 (11,776 / 46), US12206315 (9,879 / 27). Each .pre-ocr.pdf has 0 words, so the replacement is the good copy.
+- Still empty, need real OCR: JBR vol 42 no 1 (1986), 32 of 38 pages empty; JBR vol 47 no 1 (1991), 29 of 32 pages empty; Tesla clippings 18960308-new-york-world-01 and 19190126-new-york-tribune-01 (0 words, 1 page each).
