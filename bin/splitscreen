@@ -1,0 +1,32 @@
+#!/bin/bash
+# splitscreen 1 <cmd...> 2 <cmd...> [3 <cmd...>]
+# Runs pane 1 in THIS iTerm pane, opens pane 2+ as vertical splits (same cwd).
+# Pane numbers are the separators: "splitscreen 1 claude 2 cloudcity.sh bedini-ssg".
+set -u
+declare -a CMDS=(); cur=-1
+for a in "$@"; do
+  if [[ "$a" =~ ^[1-9]$ ]] && [ "$a" -eq $((cur+2)) ]; then cur=$((cur+1)); CMDS[$cur]=""; continue; fi
+  [ $cur -lt 0 ] && { echo "usage: splitscreen 1 <cmd> 2 <cmd> ..." >&2; exit 2; }
+  CMDS[$cur]="${CMDS[$cur]:+${CMDS[$cur]} }$(printf '%q' "$a")"
+done
+[ ${#CMDS[@]} -ge 1 ] || { echo "usage: splitscreen 1 <cmd> 2 <cmd> ..." >&2; exit 2; }
+[ "${TERM_PROGRAM:-}" = "iTerm.app" ] || echo "splitscreen: not in iTerm; running pane 1 only" >&2
+dir=$(printf '%q' "$PWD")
+if [ "${TERM_PROGRAM:-}" = "iTerm.app" ]; then
+  for ((i=${#CMDS[@]}-1; i>=1; i--)); do
+    line="cd $dir && ${CMDS[$i]}"
+    osascript - "$line" <<'OSA' >/dev/null
+on run argv
+  tell application "iTerm2"
+    tell current session of current window
+      set s to (split vertically with default profile)
+    end tell
+    tell s to write text (item 1 of argv)
+  end tell
+end run
+OSA
+  done
+  # keep focus on pane 1
+  osascript -e 'tell application "iTerm2" to tell current window to select (session 1 of current tab)' >/dev/null 2>&1
+fi
+eval "${CMDS[0]}"

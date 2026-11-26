@@ -1,0 +1,6 @@
+#!/bin/bash
+# Pane 1 of `cloudcity [topic]`: claude, primed for the topic.
+t="${1:-}"
+[ -z "$t" ] && exec claude
+cd "$(cloudcity-topic "$t" dir)" 2>/dev/null
+exec claude "$(cloudcity-topic "$t" prompt)"

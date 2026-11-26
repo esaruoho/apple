@@ -1,0 +1,25 @@
+#!/bin/bash
+# cloudcity-topic <topic> <field>   field = kind|dir|url|prompt
+# Resolves a topic to what each pane should boot into.
+# Custom topics: ~/work/convey/projects/cloudcity/topics.tsv
+#   name<TAB>dir<TAB>url<TAB>prompt     (blank fields fall back to defaults)
+t="${1:-}"; f="${2:-kind}"
+CC=~/work/convey/projects/cloudcity; BL=~/work/convey/buildloop
+BBS="http://127.0.0.1:8765"
+kind=bbs; dir=$CC; url=$BBS; prompt=""
+if [ -n "$t" ]; then
+  row=$(awk -F'\t' -v t="$t" '$1==t{print;exit}' "$CC/topics.tsv" 2>/dev/null)
+  if [ -n "$row" ]; then
+    kind=custom
+    IFS=$'\t' read -r _ d u p <<<"$row"
+    dir=$(eval echo "${d:-$CC}"); url=${u:-$BBS}
+    prompt=${p:-"Boot topic: $t. Orient yourself in $dir and tell me where this stands."}
+  elif [ -d "$BL/$t" ]; then
+    kind=sim; dir=$BL/$t; url="file://$BL/$t/index.html"
+    prompt="We're booting into the $t simulation ($dir). Read its .feature card, index.html and BUILDLOOP-LOG.md entries for it, tell me the current state in a few lines, and stand by to iterate. The page is open in the browser."
+  else
+    kind=topic
+    prompt="Boot topic: $t. Find where '$t' lives across ~/work (convey, merlib-dump, apple, projects), summarise the current state and open threads in a few lines, then stand by."
+  fi
+fi
+case $f in kind) echo "$kind";; dir) echo "$dir";; url) echo "$url";; prompt) echo "$prompt";; esac
