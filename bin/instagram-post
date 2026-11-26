@@ -19,7 +19,7 @@ OSA
 notify() { osascript -e "display notification \"$1\" with title \"Instagram\"" >/dev/null 2>&1; }
 notify "Posting $name …"
 log="$HOME/Library/Logs/instagram-post.log"
-out="$(convey instagram "$f" --caption "$caption" --confirm 2>&1)"
+out="$(convey instagram "$f" "$caption" 2>&1)"
 rc=$?
 { echo "=== $(date) $f"; echo "$out"; } >> "$log"
 link="$(printf '%s\n' "$out" | grep -oE 'https://www\.instagram\.com/[^ ]+' | tail -1)"
