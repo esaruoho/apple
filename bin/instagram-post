@@ -1,0 +1,32 @@
+#!/bin/bash
+# instagram-post <file> — ask for a caption, then publish the file to Instagram via `convey instagram`.
+# Backs the Finder Quick Action "Instagram" (~/Library/Services/Instagram.workflow).
+# Typing the caption + Enter IS the confirmation; Cancel/Esc posts nothing.
+export PATH="/usr/local/bin:/opt/homebrew/bin:$HOME/work/apple/bin:$PATH"
+f="$1"
+[ -f "$f" ] || exit 1
+name="$(basename "$f")"
+
+caption="$(osascript - "$name" <<'OSA'
+on run argv
+  tell application "System Events" to activate
+  set r to display dialog "Instagram caption for " & item 1 of argv & ":" default answer "" with title "Post to Instagram" buttons {"Cancel", "Post"} default button "Post" cancel button "Cancel"
+  return text returned of r
+end run
+OSA
+)" || exit 0
+
+notify() { osascript -e "display notification \"$1\" with title \"Instagram\"" >/dev/null 2>&1; }
+notify "Posting $name …"
+log="$HOME/Library/Logs/instagram-post.log"
+out="$(convey instagram "$f" --caption "$caption" --confirm 2>&1)"
+rc=$?
+{ echo "=== $(date) $f"; echo "$out"; } >> "$log"
+link="$(printf '%s\n' "$out" | grep -oE 'https://www\.instagram\.com/[^ ]+' | tail -1)"
+if [ $rc -eq 0 ] && printf "%s" "$out" | grep -qF "published"; then
+  notify "Posted: $name"
+  [ -n "$link" ] && open "$link"
+else
+  notify "Failed — see ~/Library/Logs/instagram-post.log"
+  open -a Console "$log"
+fi
