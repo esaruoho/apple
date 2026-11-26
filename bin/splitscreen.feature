@@ -1,20 +1,23 @@
-# Report card: splitscreen + cloudcity topic boot  (bin/splitscreen, cloudcity-topic, cloudcity-claude, cloudcity.sh)
-Feature: Boot Cloudcity straight into a simulation or topic
-  `cloudcity [topic]` (function in ~/.bash_profile) = splitscreen 1 cloudcity-claude 2 cloudcity.sh
+# Report card: `cloudcity` = splitscreen 1 claude 2 cloudcity.sh   (bin/splitscreen, bin/cloudcity.sh)
+Feature: Cloudcity dev split — claude on the left, the live BBS on the right
 
   @built @untested
-  Scenario: splitscreen splits the current iTerm pane
-    Given iTerm is the terminal
-    When I run "splitscreen 1 <cmd> 2 <cmd>"
-    Then pane 1 runs in place and pane 2 opens as a vertical split in the same cwd
+  Scenario: splitscreen
+    When I run "splitscreen 1 claude 2 cloudcity.sh" in iTerm
+    Then claude runs in the current pane and cloudcity.sh in a vertical split, same cwd
 
   @built @sim-verified
-  Scenario: topic resolution
-    Then "cloudcity-topic bedini-ssg kind" is "sim" because ~/work/convey/buildloop/bedini-ssg exists
-    And an unknown topic is "topic" and falls back to the BBS at :8765
-    And topics.tsv rows (name, dir, url, prompt) override both
+  Scenario: cloudcity.sh boots the BBS
+    Then it starts python3 server.py --port 8765 in ~/work/convey/projects/cloudcity
+    And when :8765 answers, iTerm fills the screen and Safari covers the right half on the BBS page
 
   @built @untested
-  Scenario: cloudcity bedini-ssg
-    Then pane 1 claude starts in the sim dir with a prompt to read its card and report state
-    And pane 2 starts the BBS server (or reuses a running one) and opens the sim page
+  Scenario: edits show up live
+    Then a *.py change restarts the server and reloads Safari
+    And a web/ change reloads Safari
+    And a crashed server is restarted
+
+  @built
+  Scenario: always-on on the Mini (existing, not this script)
+    Then Boot pane "Cloudcity BBS" runs comms/cloudcity-boot/start-cloudcity-bbs.sh (tailnet :8765)
+    And pushing convey makes repo-puller kill 'server.py --port 8765' so the pane restarts on new code
