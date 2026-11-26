@@ -8,7 +8,7 @@
 > Metadata only -- no conversation content is copied into the repo. The list
 > reflects the machine it was generated on (transcripts are local).
 
-**23 card conversations** plugged in:
+**24 card conversations** plugged in:
 
 ### `cfa8c45f-fde4-49b4-8c7d-f7ecf2b3acf0`  (2026-10-26 → 2026-10-29)
 - Resume: `claude --resume cfa8c45f-fde4-49b4-8c7d-f7ecf2b3acf0`
@@ -135,8 +135,13 @@
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/dfff2796-bdc4-4f28-b4d5-de24105500a9.jsonl
 - Tooling touched: INDEX.md
 
-### `8e489c04-0f53-4c8c-877a-b36fc1407f95`  (2026-11-24)
+### `8e489c04-0f53-4c8c-877a-b36fc1407f95`  (2026-11-24 → 2026-11-26)
 - Resume: `claude --resume 8e489c04-0f53-4c8c-877a-b36fc1407f95`
 - Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/8e489c04-0f53-4c8c-877a-b36fc1407f95.jsonl
 - Tooling touched: INDEX.md, STATUS.md, cards.conf, gen-sessions.py, gen-status.py, print-card.py
 - Cards touched (15): aimeat-email-pdf.feature, aimeat-roundtable.feature, aimeat-whiteboard.feature, app-audio-record.feature, apple-energy.feature, apple-harness.feature, applebar-karaoke.feature, converse-to-obsidian.feature, fm-converse.feature, image-playground.feature, iphone-clip.feature, iphone-compass.feature, iphone-latest.feature, iphonemirror-rotated-live-mirror.feature … (+1)
+
+### `538de23b-1f81-4599-b9e4-54087cbf255f`  (2026-11-26)
+- Resume: `claude --resume 538de23b-1f81-4599-b9e4-54087cbf255f`
+- Transcript: file:///Users/esaruoho/.claude/projects/-Users-esaruoho-work-apple/538de23b-1f81-4599-b9e4-54087cbf255f.jsonl
+- Tooling touched: INDEX.md

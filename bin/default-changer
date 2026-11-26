@@ -1,0 +1,27 @@
+#!/bin/bash
+# default-changer — "the default changer": reassociate every file of an extension to an app.
+#   default-changer <ext>                 show current default
+#   default-changer <ext> <app|bundle-id> set it (app name like "TextEdit" or "Sublime Text")
+#   default-changer <ext> flip [A] [B]    toggle between two apps (default: Sublime Text <-> TextEdit)
+#   default-changer <ext> list            all apps that can open it (* = current)
+# Card: ~/work/apple/default-changer/default-changer.feature
+set -euo pipefail
+DIR="$(cd "$(dirname "$0")/.." && pwd)/default-changer"
+BIN="$DIR/.build/default-changer-bin"; SRC="$DIR/DefaultChanger.swift"
+if [ ! -x "$BIN" ] || [ "$SRC" -nt "$BIN" ]; then
+  mkdir -p "$DIR/.build"; xcrun swiftc -O "$SRC" -o "$BIN" >&2
+fi
+resolve() { # app name or bundle id -> bundle id
+  case "$1" in *.*.*) echo "$1";; *) osascript -e "id of app \"$1\"" 2>/dev/null || { echo "no app: $1" >&2; exit 1; };; esac; }
+[ $# -ge 1 ] || { sed -n '2,7p' "$0"; exit 1; }
+ext="$1"; verb="${2:-get}"
+case "$verb" in
+  get)  "$BIN" get "$ext" ;;
+  list) "$BIN" list "$ext" ;;
+  flip)
+    A=$(resolve "${3:-Sublime Text}"); B=$(resolve "${4:-TextEdit}")
+    cur=$("$BIN" get "$ext" | cut -f2 | tr '[:upper:]' '[:lower:]')
+    if [ "$cur" = "$(echo "$A" | tr '[:upper:]' '[:lower:]')" ]; then to="$B"; else to="$A"; fi
+    "$BIN" set "$ext" "$to" ;;
+  *) "$BIN" set "$ext" "$(resolve "$verb")" ;;
+esac
